@@ -14,6 +14,9 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+const QUOTE_CACHE_MS = 30_000;
+const quoteCache = new Map<string, { quote: Quote; expires: number }>();
+const quoteInflight = new Map<string, Promise<Quote>>();
 
 // 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
 // 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底。
@@ -131,7 +134,7 @@ async function yahooOHLCV(market: string, code: string, range: string, interval:
 }
 
 // ---- 统一入口 ----
-export async function getQuote(symbol: string): Promise<Quote> {
+async function fetchQuote(symbol: string): Promise<Quote> {
   if (API_BASE) {
     const r = await fetch(`${API_BASE}/api/v1/quotes?symbols=${encodeURIComponent(symbol)}`);
     const d = (await r.json())[0];
@@ -139,6 +142,57 @@ export async function getQuote(symbol: string): Promise<Quote> {
   }
   const { market, code } = parseSymbol(symbol);
   return market === "CRYPTO" ? binanceQuote(code) : yahooQuote(market, code);
+}
+
+export async function getQuotes(symbols: string[]): Promise<Record<string, Quote>> {
+  const unique = Array.from(new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)));
+  const now = Date.now();
+  const out: Record<string, Quote> = {};
+  const missing: string[] = [];
+
+  for (const symbol of unique) {
+    const cached = quoteCache.get(symbol);
+    if (cached && cached.expires > now) out[symbol] = cached.quote;
+    else missing.push(symbol);
+  }
+
+  if (API_BASE && missing.length > 1) {
+    const r = await fetch(`${API_BASE}/api/v1/quotes?symbols=${encodeURIComponent(missing.join(","))}`);
+    const rows = await r.json();
+    for (const d of rows) {
+      if (d.error) continue;
+      const quote = {
+        symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
+        high: d.high, low: d.low, currency: d.currency, source: d.source,
+      };
+      quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
+      out[quote.symbol] = quote;
+    }
+    return out;
+  }
+
+  await Promise.all(missing.map(async (symbol) => {
+    let req = quoteInflight.get(symbol);
+    if (!req) {
+      req = fetchQuote(symbol).finally(() => quoteInflight.delete(symbol));
+      quoteInflight.set(symbol, req);
+    }
+    try {
+      const quote = await req;
+      quoteCache.set(symbol, { quote, expires: Date.now() + QUOTE_CACHE_MS });
+      out[symbol] = quote;
+    } catch {
+      // Keep partial results usable; callers can decide how to show missing symbols.
+    }
+  }));
+  return out;
+}
+
+export async function getQuote(symbol: string): Promise<Quote> {
+  const normalized = symbol.trim().toUpperCase();
+  const quotes = await getQuotes([normalized]);
+  if (!quotes[normalized]) throw new Error(`无法获取 ${normalized} 行情`);
+  return quotes[normalized];
 }
 
 export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {

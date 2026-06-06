@@ -10,6 +10,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import cache
 from .analysis.chan import compute_chan
 from .analysis.chips import compute_chips
 from .analysis.moneyflow import compute_moneyflow
@@ -39,6 +40,11 @@ async def search(q: str = Query(..., description="关键词:代码或名称,如 
     """标的联想搜索(Yahoo 搜索 + 加密常用对),带 SQLite 缓存。"""
     async with httpx.AsyncClient() as client:
         return await store.search_symbols(client, q)
+
+
+@app.get("/api/v1/cache")
+async def cache_status():
+    return cache.stats()
 
 
 @app.get("/api/v1/quotes")

@@ -1,15 +1,24 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
+import { getQuotes, type Quote } from "@/lib/datasource";
 import { MARKETS, symbolsForTab } from "@/lib/markets";
 import { getWatchlist } from "@/lib/watchlist";
+
+type SortMode = "default" | "gainers" | "losers";
 
 export default function Home() {
   const [tab, setTab] = useState("ALL");
   const [watch, setWatch] = useState<string[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, Quote | null>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshId, setRefreshId] = useState(0);
+  const [sortMode, setSortMode] = useState<SortMode>("default");
 
   useEffect(() => {
     const sync = () => setWatch(getWatchlist());
@@ -18,7 +27,49 @@ export default function Home() {
     return () => window.removeEventListener("watchlist-changed", sync);
   }, []);
 
-  const symbols = symbolsForTab(tab);
+  const baseSymbols = useMemo(() => symbolsForTab(tab), [tab]);
+  const allVisibleSymbols = useMemo(
+    () => Array.from(new Set([...watch, ...baseSymbols])),
+    [baseSymbols, watch],
+  );
+
+  useEffect(() => {
+    if (!allVisibleSymbols.length) return;
+    let alive = true;
+    setLoadingQuotes(true);
+    setErrors({});
+    (async () => {
+      try {
+        const next = await getQuotes(allVisibleSymbols);
+        if (!alive) return;
+        setQuotes((prev) => ({ ...prev, ...next }));
+        setErrors(Object.fromEntries(allVisibleSymbols.filter((s) => !next[s]).map((s) => [s, "暂时无数据"])));
+        setLastUpdated(new Date());
+      } finally {
+        if (alive) setLoadingQuotes(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [allVisibleSymbols, refreshId]);
+
+  const symbols = useMemo(() => {
+    const arr = [...baseSymbols];
+    if (sortMode === "gainers") {
+      return arr.sort((a, b) => (quotes[b]?.changePct ?? -Infinity) - (quotes[a]?.changePct ?? -Infinity));
+    }
+    if (sortMode === "losers") {
+      return arr.sort((a, b) => (quotes[a]?.changePct ?? Infinity) - (quotes[b]?.changePct ?? Infinity));
+    }
+    return arr;
+  }, [baseSymbols, quotes, sortMode]);
+
+  const marketStats = useMemo(() => {
+    const rows = symbols.map((s) => quotes[s]).filter((x): x is Quote => Boolean(x));
+    const gainers = rows.filter((x) => (x.changePct ?? 0) > 0).length;
+    const losers = rows.filter((x) => (x.changePct ?? 0) < 0).length;
+    const avg = rows.length ? rows.reduce((sum, x) => sum + (x.changePct ?? 0), 0) / rows.length : null;
+    return { loaded: rows.length, total: symbols.length, gainers, losers, avg };
+  }, [quotes, symbols]);
 
   return (
     <div className="container">
@@ -31,10 +82,30 @@ export default function Home() {
 
       <div className="search"><SearchBox /></div>
 
+      <div className="toolbar">
+        <div className="stat">
+          <span>已加载 {marketStats.loaded}/{marketStats.total}</span>
+          <span className="up">涨 {marketStats.gainers}</span>
+          <span className="down">跌 {marketStats.losers}</span>
+          <span>均值 {marketStats.avg == null ? "—" : `${marketStats.avg >= 0 ? "+" : ""}${marketStats.avg.toFixed(2)}%`}</span>
+        </div>
+        <div className="segmented">
+          <button className={sortMode === "default" ? "active" : ""} onClick={() => setSortMode("default")}>默认</button>
+          <button className={sortMode === "gainers" ? "active" : ""} onClick={() => setSortMode("gainers")}>强势</button>
+          <button className={sortMode === "losers" ? "active" : ""} onClick={() => setSortMode("losers")}>弱势</button>
+        </div>
+        <button className="btn subtle" onClick={() => setRefreshId((x) => x + 1)} disabled={loadingQuotes}>
+          {loadingQuotes ? "刷新中" : "刷新行情"}
+        </button>
+        {lastUpdated && <span className="src">更新 {lastUpdated.toLocaleTimeString()}</span>}
+      </div>
+
       {watch.length > 0 && (
         <>
           <h2 className="block-title">⭐ 我的自选</h2>
-          <div className="grid">{watch.map((s) => <QuoteCard key={s} symbol={s} />)}</div>
+          <div className="grid">{watch.map((s) => (
+            <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes} />
+          ))}</div>
         </>
       )}
 
@@ -45,10 +116,12 @@ export default function Home() {
       </div>
 
       <h2 className="block-title">涨跌热力图</h2>
-      <Heatmap symbols={symbols} />
+      <Heatmap symbols={symbols} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
 
       <h2 className="block-title">行情卡片</h2>
-      <div className="grid">{symbols.map((s) => <QuoteCard key={s} symbol={s} />)}</div>
+      <div className="grid">{symbols.map((s) => (
+        <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes} />
+      ))}</div>
 
       <div className="disclaimer">
         数据来源:暗号 = Binance(data-api.binance.vision)· 美/港/A股 = Yahoo Finance(经公共 CORS 代理,自动多代理回退)。

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getQuote } from "@/lib/datasource";
+import { getQuotes, type Quote } from "@/lib/datasource";
 import { nameOf } from "@/lib/markets";
 
 interface Tile { symbol: string; pct: number | null; price: number | null }
@@ -14,30 +14,38 @@ function color(pct: number | null): string {
   return `rgba(239,83,80,${0.25 + 0.6 * -x})`;
 }
 
-export default function Heatmap({ symbols }: { symbols: string[] }) {
+export default function Heatmap({
+  symbols,
+  quotes,
+  loading = false,
+}: {
+  symbols: string[];
+  quotes?: Record<string, Quote | null>;
+  loading?: boolean;
+}) {
+  const controlled = quotes !== undefined;
   const [tiles, setTiles] = useState<Tile[]>([]);
 
   useEffect(() => {
+    if (controlled) {
+      setTiles(symbols.map((s) => ({
+        symbol: s,
+        pct: quotes?.[s]?.changePct ?? null,
+        price: quotes?.[s]?.price ?? null,
+      })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)));
+      return;
+    }
     let alive = true;
     setTiles([]);
     (async () => {
-      const out: Tile[] = [];
-      await Promise.all(
-        symbols.map(async (s) => {
-          try {
-            const q = await getQuote(s);
-            out.push({ symbol: s, pct: q.changePct, price: q.price });
-          } catch {
-            out.push({ symbol: s, pct: null, price: null });
-          }
-        })
-      );
+      const quoteMap = await getQuotes(symbols);
+      const out = symbols.map((s) => ({ symbol: s, pct: quoteMap[s]?.changePct ?? null, price: quoteMap[s]?.price ?? null }));
       if (alive) setTiles(out.sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)));
     })();
     return () => { alive = false; };
-  }, [symbols]);
+  }, [controlled, quotes, symbols]);
 
-  if (!tiles.length) return <div className="loading">热力图加载中…</div>;
+  if (!tiles.length || loading) return <div className="loading">热力图加载中…</div>;
 
   return (
     <div className="heatmap">
