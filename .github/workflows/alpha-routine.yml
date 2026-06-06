@@ -1,0 +1,75 @@
+name: Alpha routine (做多做空模型每日/每小时优化)
+
+# 「在 Claude 里生成一个 routine,不断 post 报告」的执行端:
+#   定时运行流 B 残差统计套利引擎 + 市场快照,产出一份情报报告写入 feed/,commit 回仓。
+#   静态网页(/intel 情报看板)通过 GitHub raw 直接消费 feed/,无需重建 Pages 即可看到最新。
+#
+# 节流:盘中每小时一次(美东 09:30–16:00 ≈ UTC 14–21),收盘后再跑一次终版;周末不跑。
+# 注:GitHub 定时任务只在默认分支(main)上触发 —— 合并到 main 后自动生效。
+
+on:
+  schedule:
+    - cron: "20 14-21 * * 1-5"   # 盘中每小时(UTC),每点过 20 分
+    - cron: "30 22 * * 1-5"      # 收盘后 EOD 终版
+  workflow_dispatch:
+    inputs:
+      fast:
+        description: "fast 模式(缩短区间,几秒出结果)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: alpha-routine
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache 行情缓存(按天)
+        uses: actions/cache@v4
+        with:
+          path: backtest/data_cache
+          key: data-cache-${{ github.run_id }}
+          restore-keys: |
+            data-cache-
+      - name: 安装依赖
+        run: pip install -r scripts/requirements.txt
+      - name: 下载演示 universe 行情(SPY + 行业 ETF + 流动大盘)
+        working-directory: backtest
+        run: |
+          python - <<'PY'
+          import data as d, statarb as sa
+          tickers = sa.DEMO_UNIVERSE + sa.SECTOR_ETFS + ["SPY"]
+          res = d.fetch_universe(tickers, range_="10y", workers=12)
+          ok = sum(1 for v in res.values() if v > 0)
+          print(f"下载 {ok}/{len(set(tickers))} 成功")
+          PY
+      - name: 运行 routine,产出报告写入 feed/
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.fast }}" = "true" ]; then ARGS="--fast"; fi
+          python scripts/run_routine.py $ARGS
+      - name: Commit + push feed 更新
+        run: |
+          git config user.name  "alpha-routine[bot]"
+          git config user.email "actions@github.com"
+          git add feed/
+          if git diff --cached --quiet; then
+            echo "feed 无变化,跳过提交。"
+          else
+            git commit -m "routine: 更新情报馈送 feed/ ($(date -u +%Y-%m-%dT%H:%MZ))"
+            for i in 1 2 3 4; do
+              git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+            done
+          fi

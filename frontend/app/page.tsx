@@ -33,7 +33,8 @@ export default function Home() {
       <div className="header">
         <h1>📈 多市场股票数据看板</h1>
         <span className="tag">美股 · 港股 · A股 · 加密 · 实时行情 · 主力资金 · 非 LLM 技术分析</span>
-        <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>🔌 数据源</Link>
+        <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>🛰️ 情报看板</Link>
+        <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🔌 数据源</Link>
       </div>
 
       <form className="search" onSubmit={go}>

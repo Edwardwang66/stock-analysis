@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node / Next.js(前端有自己的 .gitignore,这里兜底)
+node_modules/
+frontend/.next/
+frontend/out/
+
+# 本地行情缓存(可由脚本重新下载,见 backtest/.gitignore)
+**/data_cache/
+**/crypto_cache/
+**/binance_cache/
+
+# OS / 编辑器
+.DS_Store

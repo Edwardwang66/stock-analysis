@@ -1,0 +1,71 @@
+name: Feed validate (OpenClaw 投递校验闸门)
+
+# 外部投递(OpenClaw / 其他 agent)进入本仓的安全闸门:
+#   - pull_request 改动 feed/inbox/**:仅校验(schema + 签名 + 边界),失败则阻止合并。
+#   - repository_dispatch(openclaw-report):接收 payload 里的报告,校验通过则并入 feed/reports/ 并推送。
+#
+# 把外部投递当不可信输入:openclaw 报告必须带有效 HMAC 签名(共享密钥 FEED_HMAC_SECRET)。
+
+on:
+  pull_request:
+    paths: ["feed/inbox/**"]
+  repository_dispatch:
+    types: [openclaw-report]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feed-validate-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r scripts/requirements.txt
+
+      # PR:只校验 inbox,不合并(失败即红,阻止合并)
+      - name: 校验 PR 投递
+        if: github.event_name == 'pull_request'
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+        run: |
+          shopt -s nullglob
+          files=(feed/inbox/*.json)
+          if [ ${#files[@]} -eq 0 ]; then echo "inbox 为空,通过。"; exit 0; fi
+          python scripts/validate_feed.py "${files[@]}"
+
+      # repository_dispatch:落 payload -> 校验+合并 -> 推送
+      - name: 接收并合并 dispatch 投递
+        if: github.event_name == 'repository_dispatch'
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+          PAYLOAD: ${{ toJson(github.event.client_payload.report) }}
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          sys.path.insert(0, "scripts")
+          import feed_lib as fl
+          report = json.loads(os.environ["PAYLOAD"])
+          rid = report.get("id", "openclaw-unknown")
+          fl.save_json(os.path.join(fl.FEED, "inbox", f"{rid}.json"), report)
+          print("收到投递:", rid)
+          PY
+          python scripts/validate_feed.py --merge feed/inbox/*.json
+          git config user.name  "feed-validate[bot]"
+          git config user.email "actions@github.com"
+          git add feed/
+          if git diff --cached --quiet; then
+            echo "无变化。"
+          else
+            git commit -m "openclaw: 并入投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
+            for i in 1 2 3 4; do
+              git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+            done
+          fi

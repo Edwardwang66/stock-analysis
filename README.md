@@ -7,6 +7,24 @@
 
 新增 **富途式看板(Futu-style)** 模块:**资金流向 / 主力资金**、**筹码分布 / 获利比例 / 支撑位·压力位**、**买卖盘口**、**基本面财报**,对标富途个股页。
 
+---
+
+## 🛰️ 自我优化的做多做空情报闭环(新)
+
+按设计文档《美股中频混合量化系统 v1.0》落成的**持续运转回路**:做多做空引擎(流 B 残差统计套利)+
+每小时/每日 routine + LLM 假设工厂 + OpenClaw 外部 agent + 情报看板。总览见
+[`docs/self-improving-alpha-loop.md`](docs/self-improving-alpha-loop.md)。
+
+- **优化后的做多做空逻辑** [`backtest/statarb.py`](backtest/statarb.py):残差→OU s-score→滞回→**协整断裂熔断**→
+  Garleanu-Pedersen aim 组合(控换手)→分层限额+**容量地板**→**净·扣成本** + Deflated Sharpe。
+  诚实结论:免费数据上净 alpha ≈0/为负 —— 实证「真 alpha 在容量受限冷门层」。见 [`backtest/README_statarb.md`](backtest/README_statarb.md)。
+- **routine(不断 post 报告)** [`routines/daily-alpha-routine.md`](routines/daily-alpha-routine.md) +
+  [`scripts/run_routine.py`](scripts/run_routine.py) + 定时工作流 `alpha-routine.yml`。
+- **静态网页不断接受** [`frontend/lib/feed.ts`](frontend/lib/feed.ts):GitHub raw 实时 + 捆绑快照兜底,**无需重建 Pages**。
+- **OpenClaw 完整方案** [`docs/openclaw-integration.md`](docs/openclaw-integration.md):agent 名册 + 三投递通道 +
+  HMAC 签名 + CI 安全闸门(`scripts/validate_feed.py`)。
+- **情报看板 `/intel`**:何时获得多少信息 / 怎么帮助到系统 / 仓库是否最新(站内 🛰️ 情报看板入口)。
+
 **主力资金的数据真实性(重要)**:
 - **暗号**:接入 Binance **真实逐笔(aggTrades)+ 真实盘口(depth)**,按成交额分档 + 主动买卖方向算 → **真·主力资金 / 真·买卖盘**(免费源里少数能拿到逐笔的市场)。
 - **股票**:免费行情无逐笔/盘口,用 **分钟 K 线** 做透明代理估算(成交额分位数分档 + 收盘涨跌定方向,主力=特大+大),UI 标注「K线估算」,仅供趋势参考。要还原券商口径需券商 LV2 / 富途 OpenAPI,A 股可在境内部署接东方财富资金流。
@@ -34,9 +52,13 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ```
 .
 ├── README.md                          # 本文件:项目总览
-├── frontend/                          # Next.js 静态前端(GitHub Pages),非LLM分析(TS)
+├── frontend/                          # Next.js 静态前端(GitHub Pages):看板 + /intel 情报看板
 ├── backend/                           # FastAPI 后端:行情适配器 + 非LLM分析(Python)
-├── .github/workflows/deploy-pages.yml # 自动构建并发布前端到 GitHub Pages
+├── backtest/                          # 因子研究 + 回测;statarb.py = 流 B 做多做空引擎
+├── feed/                              # 情报馈送(JSON 单一真相源):routine + OpenClaw 写,看板读
+├── scripts/                           # run_routine / openclaw_client / validate_feed / feed_lib
+├── routines/                          # Claude 可执行 routine playbook
+├── .github/workflows/                 # deploy-pages + alpha-routine(定时) + feed-validate(投递闸门)
 ├── research/
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
