@@ -135,6 +135,42 @@ paths:
               interval: { type: string },
               bars: { type: array, items: { $ref: "#/components/schemas/Bar" } } } } } } }
 
+  /moneyflow:
+    get:
+      summary: 资金流向 / 主力资金(估算,对标富途看板)
+      description: >
+        分钟 K 线成交额按分位数分档(特大/大/中/小),收盘涨跌定方向,主力=特大+大。
+        ⚠️ 非真实逐笔(Level-2)数据,趋势性估算,非投资建议。
+      parameters:
+        - { name: symbol, in: query, required: true, schema: { type: string } }
+        - { name: interval, in: query, schema: { type: string, default: "5m" } }
+        - { name: range, in: query, schema: { type: string, default: "1d" } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: {
+            inflow: { type: number }, outflow: { type: number }, net: { type: number },
+            main_inflow: { type: number }, main_outflow: { type: number }, main_net: { type: number },
+            buckets: { type: array, items: { type: object, properties: {
+              name: { type: string }, inflow: { type: number }, outflow: { type: number }, net: { type: number } } } },
+            series: { type: array, items: { type: object, properties: {
+              time: { type: integer }, cum_all: { type: number }, cum_main: { type: number } } } },
+            note: { type: string } } } } } }
+
+  /chips:
+    get:
+      summary: 筹码分布(成本分布 · 估算)
+      description: >
+        历史日 K 量价堆积 + 时间衰减,得获利比例 / 平均成本 / 支撑位 / 压力位。
+        ⚠️ 非真实持仓成本,估算参考。
+      parameters:
+        - { name: symbol, in: query, required: true, schema: { type: string } }
+        - { name: interval, in: query, schema: { type: string, default: "1d" } }
+        - { name: range, in: query, schema: { type: string, default: "1y" } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: {
+            price: { type: number }, profit_ratio: { type: number }, avg_cost: { type: number },
+            support: { type: number }, resistance: { type: number },
+            conc90: { type: object }, levels: { type: array }, note: { type: string } } } } } }
+
   /fundamentals/{symbol}:
     get: { summary: 基本面, responses: { "200": { description: OK,
       content: { application/json: { schema: { $ref: "#/components/schemas/Fundamentals" } } } },

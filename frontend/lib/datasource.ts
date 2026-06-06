@@ -16,11 +16,27 @@ export interface Quote {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 // 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
+// 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底。
 const CORS_PROXIES: ((u: string) => string)[] = [
-  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.codetabs.com/v1/proxy/?quest=${u}`,
   (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
 ];
+
+// 通用:经公共 CORS 代理取 JSON(给无 CORS 的源用,如 Yahoo search / SEC ticker 映射)。
+export async function fetchViaProxy(url: string): Promise<any> {
+  let lastErr: any;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url));
+      if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
+      const j = await r.json();
+      if (j) return j;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`代理全部失败:${lastErr?.message || lastErr}`);
+}
 
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
@@ -29,7 +45,9 @@ export function parseSymbol(s: string): { market: string; code: string } {
 
 // ---- Binance (crypto) ----
 const BINANCE = "https://data-api.binance.vision";
-const B_INTERVAL: Record<string, string> = { "1d": "1d", "1wk": "1w", "1h": "1h" };
+const B_INTERVAL: Record<string, string> = {
+  "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1h", "1d": "1d", "1wk": "1w",
+};
 // 不同周期下取的根数(配合 range 控制时间跨度)
 const B_LIMIT: Record<string, number> = { "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730, "5y": 1000 };
 
@@ -43,24 +61,35 @@ async function binanceQuote(code: string): Promise<Quote> {
 }
 async function binanceOHLCV(code: string, range: string, interval: string): Promise<Bar[]> {
   const bi = B_INTERVAL[interval] ?? "1d";
-  const limit = interval === "1h" ? 500 : B_LIMIT[range] ?? 365;
+  const intraday = ["1m", "5m", "15m", "30m", "1h"].includes(interval);
+  const limit = intraday ? 500 : B_LIMIT[range] ?? 365;
   const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${code}&interval=${bi}&limit=${limit}`);
   const d: any[] = await r.json();
   return d.map((k) => ({ time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
 }
 
 // ---- Yahoo (US/HK/CN) via CORS proxy ----
-const Y_RANGE: Record<string, string> = { "1mo": "1mo", "3mo": "3mo", "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y" };
+const Y_RANGE: Record<string, string> = {
+  "1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo", "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y",
+};
 function yahooCode(market: string, code: string): string {
   if (market === "US") return code;
   if (market === "HK") return `${code.padStart(4, "0")}.HK`;
   if (market === "CN") return code.startsWith("6") ? `${code}.SS` : `${code}.SZ`;
   return code;
 }
-const Y_INTERVAL: Record<string, string> = { "1d": "1d", "1wk": "1wk", "1h": "60m" };
+const Y_INTERVAL: Record<string, string> = {
+  "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "60m", "1d": "1d", "1wk": "1wk",
+};
+// Yahoo 对分钟线有跨度上限:1m≤7d、5m/15m/30m≤60d、60m≤730d
+const Y_INTRADAY_MAX: Record<string, string> = { "1m": "5d", "5m": "1mo", "15m": "1mo", "30m": "3mo", "1h": "3mo" };
+const _RANGE_DAYS: Record<string, number> = { "1d": 1, "5d": 5, "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730, "5y": 1825 };
 async function yahooChart(ycode: string, range: string, interval: string): Promise<any> {
-  // 小时线 Yahoo 限制跨度,range 上限收窄
-  const yr = interval === "1h" ? (["1mo", "3mo"].includes(range) ? range : "3mo") : (Y_RANGE[range] ?? "1y");
+  // 分钟/小时线 Yahoo 限制跨度,range 上限收窄
+  const cap = Y_INTRADAY_MAX[interval];
+  const yr = cap
+    ? ((_RANGE_DAYS[range] ?? 999) <= (_RANGE_DAYS[cap] ?? 0) ? (Y_RANGE[range] ?? cap) : cap)
+    : (Y_RANGE[range] ?? "1y");
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ycode}?range=${yr}&interval=${Y_INTERVAL[interval] ?? "1d"}`;
   let lastErr: any;
   for (const proxy of CORS_PROXIES) {
@@ -113,6 +142,17 @@ export async function getQuote(symbol: string): Promise<Quote> {
 }
 
 export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {
+  if (API_BASE) {
+    const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
+    const d = await r.json();
+    return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
+  }
+  const { market, code } = parseSymbol(symbol);
+  return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
+}
+
+// 分钟级 K 线(资金流向 / 主力资金估算用)。interval ∈ 1m/5m/15m/30m/1h。
+export async function getIntraday(symbol: string, interval = "5m", range = "1d"): Promise<Bar[]> {
   if (API_BASE) {
     const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
     const d = await r.json();

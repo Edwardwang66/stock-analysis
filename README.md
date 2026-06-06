@@ -5,6 +5,16 @@
 
 当前阶段:**P1 MVP 编码中** — 美股 + 加密的实时行情看板 + **非 LLM 技术分析**已可运行,静态前端可部署到 GitHub Pages。
 
+新增 **富途式看板(Futu-style)** 模块:**资金流向 / 主力资金**、**筹码分布 / 获利比例 / 支撑位·压力位**、**买卖盘口**、**基本面财报**,对标富途个股页。
+
+**主力资金的数据真实性(重要)**:
+- **暗号**:接入 Binance **真实逐笔(aggTrades)+ 真实盘口(depth)**,按成交额分档 + 主动买卖方向算 → **真·主力资金 / 真·买卖盘**(免费源里少数能拿到逐笔的市场)。
+- **股票**:免费行情无逐笔/盘口,用 **分钟 K 线** 做透明代理估算(成交额分位数分档 + 收盘涨跌定方向,主力=特大+大),UI 标注「K线估算」,仅供趋势参考。要还原券商口径需券商 LV2 / 富途 OpenAPI,A 股可在境内部署接东方财富资金流。
+
+**新接入的免费数据源(2026-06 实测,零/免费 key)**:Binance(逐笔+盘口)、SEC EDGAR(美股官方财报)、Frankfurter/ECB(外汇)、OKX/Coinbase/CoinPaprika(跨所校验)、open.er-api。站内 **`/sources`** 页有实时演示 + 完整登记表(详见 [`docs/working-apis.md`](docs/working-apis.md))。
+> ⚠️ 均为免费源,仅供演示/自用,**非投资建议**;商用对外须换授权源(见 [`docs/compliance.md`](docs/compliance.md))。
+> 修复:公共代理 `corsproxy.io` 已失效,改为 `allorigins` 优先(影响全部美/港/A 股浏览器直连)。
+
 ## 🚀 快速开始
 
 ```bash
@@ -66,6 +76,7 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 - 想了解**合规怎么办** → [`docs/compliance.md`](docs/compliance.md)
 - 想了解**数据模型与 API 长什么样** → [`docs/data-model-api.md`](docs/data-model-api.md)
 - 想了解**哪些数据 API 实测可用** → [`docs/working-apis.md`](docs/working-apis.md)
+- 想速查**所有接入的端点(上游源 + 本平台 API)** → [`docs/endpoints.md`](docs/endpoints.md)
 - 想跑**后端** → [`backend/README.md`](backend/README.md)
 - 想**部署后端**(摆脱公共代理限流) → [`docs/deploy-backend.md`](docs/deploy-backend.md)
 
