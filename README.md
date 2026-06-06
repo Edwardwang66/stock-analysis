@@ -14,7 +14,11 @@
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
     ├── architecture.md                # 平台技术架构设计
-    └── roadmap.md                     # 分阶段路线图与 MVP 范围
+    ├── roadmap.md                     # 分阶段路线图与 MVP 范围
+    ├── positioning.md                 # 差异化定位分析(vs 竞品)
+    ├── cost-estimate.md               # 成本测算(数据源 + Claude API + 基建)
+    ├── compliance.md                  # 合规 / 法律专项
+    └── data-model-api.md              # 数据模型 / REST·WS API 契约
 ```
 
 ## 🎯 项目定位
@@ -40,6 +44,10 @@
 - 想了解**市面上有哪些 AI 股票工具/Agent/Skills** → [`research/ai-agents-skills-market-scan.md`](research/ai-agents-skills-market-scan.md)
 - 想了解**平台怎么搭** → [`docs/architecture.md`](docs/architecture.md)
 - 想了解**先做什么、后做什么** → [`docs/roadmap.md`](docs/roadmap.md)
+- 想了解**我们凭什么赢(竞品差异化)** → [`docs/positioning.md`](docs/positioning.md)
+- 想了解**要花多少钱** → [`docs/cost-estimate.md`](docs/cost-estimate.md)
+- 想了解**合规怎么办** → [`docs/compliance.md`](docs/compliance.md)
+- 想了解**数据模型与 API 长什么样** → [`docs/data-model-api.md`](docs/data-model-api.md)
 
 ## ⚖️ 合规提示
 
