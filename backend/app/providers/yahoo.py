@@ -15,7 +15,7 @@ _BASE = "https://query1.finance.yahoo.com/v8/finance/chart/"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; stock-dashboard/0.1)"}
 
 # 统一 interval/range -> Yahoo
-_INTERVAL = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "60m", "1d": "1d", "1wk": "1wk", "1mo": "1mo"}
+_INTERVAL = {"1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "60m", "1d": "1d", "1wk": "1wk", "1mo": "1mo"}
 _RANGE = {"1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo", "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y", "max": "max"}
 
 

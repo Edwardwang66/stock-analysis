@@ -11,6 +11,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .analysis.chan import compute_chan
+from .analysis.chips import compute_chips
+from .analysis.moneyflow import compute_moneyflow
 from .analysis.signals import analyze
 from .models import Symbol
 from .providers import router as data
@@ -68,6 +70,35 @@ async def analysis(symbol: str, interval: str = "1d", range: str = "1y"):
     if not o.bars:
         raise HTTPException(status_code=404, detail="no data")
     return analyze(str(s), o.bars, source=o.source).model_dump(mode="json")
+
+
+@app.get("/api/v1/moneyflow")
+async def moneyflow(symbol: str, interval: str = "5m", range: str = "1d"):
+    """资金流向 / 主力资金(估算):分钟 K 线成交额分档 + 涨跌定方向,主力=特大+大。非 LLM、非真实逐笔。"""
+    s = Symbol.parse(symbol)
+    try:
+        async with httpx.AsyncClient() as client:
+            o = await data.get_ohlcv(client, s, interval, range)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"symbol": str(s), "interval": interval, "source": o.source, **compute_moneyflow(o.bars)}
+
+
+@app.get("/api/v1/chips")
+async def chips(symbol: str, interval: str = "1d", range: str = "1y"):
+    """筹码分布(成本分布 · 估算):获利比例 / 平均成本 / 支撑位 / 压力位。非 LLM、非真实持仓。"""
+    s = Symbol.parse(symbol)
+    try:
+        async with httpx.AsyncClient() as client:
+            o = await data.get_ohlcv(client, s, interval, range)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(e))
+    if not o.bars:
+        raise HTTPException(status_code=404, detail="no data")
+    result = compute_chips(o.bars, o.bars[-1].close)
+    if result is None:
+        raise HTTPException(status_code=404, detail="insufficient data for chips")
+    return {"symbol": str(s), "source": o.source, **result}
 
 
 @app.get("/api/v1/chan")
