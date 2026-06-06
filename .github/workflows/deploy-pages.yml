@@ -33,8 +33,12 @@ jobs:
       - run: npm ci
       - name: Build (static export)
         env:
-          # 项目站点路径 = /<repo>。可选:设 NEXT_PUBLIC_API_BASE 指向已部署的 FastAPI 后端。
+          # 项目站点路径 = /<repo>
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          # 后端地址:在仓库 Settings → Secrets and variables → Actions → Variables
+          # 新增 API_BASE = https://你的后端域名 后,前端即自动改用后端(摆脱公共代理)。
+          # 未设置时为空,前端回退到浏览器直连公开 API。
+          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
