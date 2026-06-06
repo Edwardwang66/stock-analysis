@@ -62,7 +62,8 @@ export default function Home() {
       <div className="disclaimer">
         数据来源:暗号 = Binance(data-api.binance.vision)· 美/港/A股 = Yahoo Finance(经公共 CORS 代理,自动多代理回退)。
         免费源仅供演示/自用,商用对外须更换授权数据源。
-        本页所有分析为<strong>规则化技术指标(非投资建议 / Not financial advice)</strong>。
+        本页所有分析为<strong>规则化技术指标 + 简化缠论(非投资建议 / Not financial advice)</strong>。
+        缠论结构识别灵感来自 <a href="https://guanchaotv.com/" target="_blank" rel="noreferrer">观潮 TideView</a>(独立简化实现,非其代码)。
       </div>
     </div>
   );

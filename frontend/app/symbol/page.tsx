@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
+import { computeChan } from "@/lib/chan";
 import { nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
@@ -104,6 +105,15 @@ function SymbolView() {
                 <span className="muted">当前 {fmt(quote.price)}</span>
                 <span>高 {fmt(ind.high_52w)}</span>
               </div>
+            </div>
+          )}
+
+          {bars.length >= 8 && (
+            <div className="section">
+              <h2>缠论结构(简化版,非 LLM)</h2>
+              <p style={{ color: "var(--muted)", fontSize: 13 }}>{computeChan(bars).note}</p>
+              <p className="src">在上方 K 线点击「缠论结构」可叠加显示 笔 / 分型 / 中枢。算法:包含处理 → 分型 → 笔 → 中枢。
+                灵感来自 <a href="https://guanchaotv.com/" target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>观潮 TideView</a>(独立简化实现)。</p>
             </div>
           )}
 

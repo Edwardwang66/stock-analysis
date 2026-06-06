@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useRef } from "react";
-import { createChart, ColorType, type IChartApi } from "lightweight-charts";
+import { useEffect, useRef, useState } from "react";
+import { createChart, ColorType, LineStyle, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
 import { sma } from "@/lib/indicators";
+import { computeChan } from "@/lib/chan";
 
 const MA = [
   { period: 20, color: "#4c8dff" },
@@ -13,6 +14,7 @@ const MA = [
 export default function Chart({ bars }: { bars: Bar[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const [showChan, setShowChan] = useState(false);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -44,26 +46,69 @@ export default function Chart({ bars }: { bars: Bar[] }) {
 
     // 多均线叠加
     const closes = bars.map((b) => b.close);
-    for (const m of MA) {
-      const s = sma(closes, m.period);
-      const data = bars
-        .map((b, i) => (s[i] != null ? { time: b.time as any, value: s[i] as number } : null))
-        .filter(Boolean) as any[];
-      if (data.length) {
-        const line = chart.addLineSeries({ color: m.color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-        line.setData(data);
+    if (!showChan) {
+      for (const m of MA) {
+        const s = sma(closes, m.period);
+        const data = bars
+          .map((b, i) => (s[i] != null ? { time: b.time as any, value: s[i] as number } : null))
+          .filter(Boolean) as any[];
+        if (data.length) {
+          const line = chart.addLineSeries({ color: m.color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+          line.setData(data);
+        }
       }
+    }
+
+    // 缠论结构:笔(连线)+ 分型(标记)+ 中枢(价格区间线)
+    if (showChan) {
+      const chan = computeChan(bars);
+      // 分型标记(笔端点)
+      const endpoints = new Set<number>();
+      chan.strokes.forEach((s) => { endpoints.add(s.from.time); endpoints.add(s.to.time); });
+      candles.setMarkers(
+        chan.fractals
+          .filter((f) => endpoints.has(f.time))
+          .map((f) => ({
+            time: f.time as any,
+            position: f.type === "top" ? "aboveBar" : "belowBar",
+            color: f.type === "top" ? "#ef5350" : "#26a69a",
+            shape: f.type === "top" ? "arrowDown" : "arrowUp",
+          })) as any
+      );
+      // 笔:连接端点的折线
+      const pts: { time: any; value: number }[] = [];
+      if (chan.strokes.length) {
+        pts.push({ time: chan.strokes[0].from.time, value: chan.strokes[0].from.price });
+        chan.strokes.forEach((s) => pts.push({ time: s.to.time, value: s.to.price }));
+      }
+      if (pts.length) {
+        const stroke = chart.addLineSeries({ color: "#e0e3eb", lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        stroke.setData(pts);
+      }
+      // 中枢:上下沿价格线
+      chan.pivots.forEach((p) => {
+        candles.createPriceLine({ price: p.zg, color: "#f7b500", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "中枢上沿 ZG" });
+        candles.createPriceLine({ price: p.zd, color: "#f7b500", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "中枢下沿 ZD" });
+      });
     }
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars]);
+  }, [bars, showChan]);
 
   return (
     <>
+      <div className="ranges" style={{ justifyContent: "flex-end" }}>
+        <button className={showChan ? "active" : ""} onClick={() => setShowChan((v) => !v)}>
+          {showChan ? "✓ 缠论结构" : "缠论结构"}
+        </button>
+      </div>
       <div ref={ref} style={{ width: "100%" }} />
       <div className="src" style={{ marginTop: 6 }}>
-        均线:<span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量
+        {showChan
+          ? "缠论:白线=笔 · 箭头=分型端点 · 黄色虚线=中枢上下沿(简化版,灵感来自观潮 TideView)"
+          : "均线:"}
+        {!showChan && <><span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量</>}
       </div>
     </>
   );
