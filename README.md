@@ -3,18 +3,39 @@
 > 一个聚合 **美股 / 港股 / A股 / 加密货币** 行情、基本面、新闻舆情与 AI 分析的数据看板平台。
 > 技术栈:**Next.js (前端) + Python / FastAPI (后端 · 数据 · AI)**。
 
-当前阶段:**研究 + 架构设计**(尚未进入正式编码)。
+当前阶段:**P1 MVP 编码中** — 美股 + 加密的实时行情看板 + **非 LLM 技术分析**已可运行,静态前端可部署到 GitHub Pages。
+
+## 🚀 快速开始
+
+```bash
+# 前端(静态站点,零 key,浏览器直连公开 API)
+cd frontend && npm install && npm run dev        # http://localhost:3000
+
+# 后端(可选,更稳定 / 未来部署)
+cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
+```
+
+**GitHub Pages 部署**:仓库 Settings → Pages → Source 选 **GitHub Actions**;推送后 `.github/workflows/deploy-pages.yml` 自动构建发布。站点地址:`https://edwardwang66.github.io/stock-analysis/`。
+
+> 实测可用的数据 API 见 [`docs/working-apis.md`](docs/working-apis.md)。当前分析**全程非 LLM**(纯技术指标规则)。
 
 ## 📁 仓库结构
 
 ```
 .
 ├── README.md                          # 本文件:项目总览
+├── frontend/                          # Next.js 静态前端(GitHub Pages),非LLM分析(TS)
+├── backend/                           # FastAPI 后端:行情适配器 + 非LLM分析(Python)
+├── .github/workflows/deploy-pages.yml # 自动构建并发布前端到 GitHub Pages
 ├── research/
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
     ├── architecture.md                # 平台技术架构设计
-    └── roadmap.md                     # 分阶段路线图与 MVP 范围
+    ├── roadmap.md                     # 分阶段路线图与 MVP 范围
+    ├── positioning.md                 # 差异化定位分析(vs 竞品)
+    ├── cost-estimate.md               # 成本测算(数据源 + Claude API + 基建)
+    ├── compliance.md                  # 合规 / 法律专项
+    └── data-model-api.md              # 数据模型 / REST·WS API 契约
 ```
 
 ## 🎯 项目定位
@@ -40,6 +61,13 @@
 - 想了解**市面上有哪些 AI 股票工具/Agent/Skills** → [`research/ai-agents-skills-market-scan.md`](research/ai-agents-skills-market-scan.md)
 - 想了解**平台怎么搭** → [`docs/architecture.md`](docs/architecture.md)
 - 想了解**先做什么、后做什么** → [`docs/roadmap.md`](docs/roadmap.md)
+- 想了解**我们凭什么赢(竞品差异化)** → [`docs/positioning.md`](docs/positioning.md)
+- 想了解**要花多少钱** → [`docs/cost-estimate.md`](docs/cost-estimate.md)
+- 想了解**合规怎么办** → [`docs/compliance.md`](docs/compliance.md)
+- 想了解**数据模型与 API 长什么样** → [`docs/data-model-api.md`](docs/data-model-api.md)
+- 想了解**哪些数据 API 实测可用** → [`docs/working-apis.md`](docs/working-apis.md)
+- 想跑**后端** → [`backend/README.md`](backend/README.md)
+- 想**部署后端**(摆脱公共代理限流) → [`docs/deploy-backend.md`](docs/deploy-backend.md)
 
 ## ⚖️ 合规提示
 
