@@ -25,7 +25,8 @@ export interface MoneyFlow {
   mainOutflow: number;
   mainNet: number;         // 主力净额 —— 「主力资金在哪里」的核心
   series: FlowPoint[];     // 累计净流入时间序列(整体 / 主力)
-  bars: number;            // 参与计算的 K 线数
+  bars: number;            // 参与计算的样本数(K线 或 逐笔)
+  real: boolean;           // true=真实逐笔(暗号 Binance);false=K线估算
   note: string;
 }
 
@@ -37,8 +38,49 @@ const EMPTY: MoneyFlow = {
     { name: "中单", inflow: 0, outflow: 0, net: 0 },
     { name: "小单", inflow: 0, outflow: 0, net: 0 },
   ],
-  series: [], bars: 0, note: "数据不足,无法估算资金流向。",
+  series: [], bars: 0, real: false, note: "数据不足,无法估算资金流向。",
 };
+
+// 由「逐笔成交」直接计算资金流向(暗号 Binance aggTrades 为真实主动买卖盘)。
+// trades: { amt 成交额, buy 是否主动买入, time 秒 }
+export function flowFromTrades(
+  trades: { amt: number; buy: boolean; time: number }[],
+  real = true,
+): MoneyFlow {
+  if (trades.length < 4) return { ...EMPTY, real };
+  const sorted = trades.map((t) => t.amt).filter((x) => x > 0).sort((a, b) => a - b);
+  const tSmall = quantile(sorted, 0.55), tMed = quantile(sorted, 0.8), tLarge = quantile(sorted, 0.95);
+  const buckets: Record<BucketName, FlowBucket> = {
+    特大单: { name: "特大单", inflow: 0, outflow: 0, net: 0 },
+    大单: { name: "大单", inflow: 0, outflow: 0, net: 0 },
+    中单: { name: "中单", inflow: 0, outflow: 0, net: 0 },
+    小单: { name: "小单", inflow: 0, outflow: 0, net: 0 },
+  };
+  const series: FlowPoint[] = [];
+  let cumAll = 0, cumMain = 0;
+  for (const t of trades) {
+    if (t.amt <= 0) continue;
+    const bk = t.amt > tLarge ? buckets.特大单 : t.amt > tMed ? buckets.大单 : t.amt > tSmall ? buckets.中单 : buckets.小单;
+    if (t.buy) bk.inflow += t.amt; else bk.outflow += t.amt;
+    const signed = (t.buy ? 1 : -1) * t.amt;
+    cumAll += signed;
+    if (bk === buckets.特大单 || bk === buckets.大单) cumMain += signed;
+    series.push({ time: t.time, cumAll, cumMain });
+  }
+  const list = [buckets.特大单, buckets.大单, buckets.中单, buckets.小单];
+  list.forEach((b) => { b.net = b.inflow - b.outflow; });
+  const inflow = list.reduce((s, b) => s + b.inflow, 0);
+  const outflow = list.reduce((s, b) => s + b.outflow, 0);
+  const mainInflow = buckets.特大单.inflow + buckets.大单.inflow;
+  const mainOutflow = buckets.特大单.outflow + buckets.大单.outflow;
+  const mainNet = mainInflow - mainOutflow;
+  const note = mainNet > 0 ? "主力资金净流入,主动买盘(外盘)占优,资金在进场。"
+    : mainNet < 0 ? "主力资金净流出,主动卖盘(内盘)占优,资金在撤离。" : "主力资金基本均衡。";
+  return {
+    inflow, outflow, net: inflow - outflow, buckets: list,
+    mainInflow, mainOutflow, mainNet, series, bars: trades.length, real, note,
+  };
+}
 
 function quantile(sorted: number[], p: number): number {
   if (!sorted.length) return 0;
@@ -102,7 +144,7 @@ export function computeMoneyFlow(bars: Bar[]): MoneyFlow {
 
   return {
     inflow, outflow, net, buckets: list, mainInflow, mainOutflow, mainNet, series,
-    bars: bars.length, note: where,
+    bars: bars.length, real: false, note: where,
   };
 }
 

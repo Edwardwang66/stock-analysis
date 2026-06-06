@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
+import Fundamentals from "@/components/Fundamentals";
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
 import { computeChan } from "@/lib/chan";
@@ -84,9 +85,10 @@ function SymbolView() {
         {loading ? <div className="loading">加载中…</div> : <Chart bars={bars} />}
       </div>
 
-      {/* 富途式看板:主力资金 + 筹码分布 */}
+      {/* 富途式看板:主力资金 + 筹码分布 + 基本面 */}
       <MoneyFlow symbol={symbol} />
       {!loading && bars.length > 10 && <Chips bars={bars} price={quote?.price ?? an?.price ?? null} />}
+      <Fundamentals symbol={symbol} />
 
       {an && (
         <>

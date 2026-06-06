@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { getIntraday, type Bar } from "@/lib/datasource";
+import { getIntraday, parseSymbol, type Bar } from "@/lib/datasource";
+import { getCryptoFlow, getOrderBook, type OrderBook } from "@/lib/crypto";
 import { computeMoneyFlow, fmtAmount, type MoneyFlow } from "@/lib/moneyflow";
 
-// 周期:对标富途「分时 / 日 / 周 / 月」(免费源用分钟K近似)
+// 周期:对标富途「分时 / 日 / 周 / 月」(免费股票源用分钟K近似)
 const PERIODS = [
   { k: "分时", interval: "5m", range: "1d" },
   { k: "5日", interval: "15m", range: "5d" },
@@ -11,7 +12,6 @@ const PERIODS = [
 ];
 
 const UP = "#26a69a", DOWN = "#ef5350";
-// 流入(绿,由深到浅:特大→小)/ 流出(红)
 const IN_C = ["#0f6b5f", "#1f9e8c", "#3fbfa9", "#7fd9c9"];
 const OUT_C = ["#b32d2a", "#e0463f", "#ef6f68", "#f6a39d"];
 
@@ -30,7 +30,6 @@ function arc(cx: number, cy: number, r: number, rIn: number, a0: number, a1: num
 
 function Donut({ mf }: { mf: MoneyFlow }) {
   const segs: { v: number; c: string }[] = [];
-  // 流入侧(特大→小),再流出侧(小→特大),首尾相接成环
   mf.buckets.forEach((b, i) => b.inflow > 0 && segs.push({ v: b.inflow, c: IN_C[i] }));
   [...mf.buckets].reverse().forEach((b, i) => b.outflow > 0 && segs.push({ v: b.outflow, c: OUT_C[3 - i] }));
   const tot = segs.reduce((s, x) => s + x.v, 0) || 1;
@@ -51,7 +50,6 @@ function Donut({ mf }: { mf: MoneyFlow }) {
   );
 }
 
-// 特大/大/中/小:左红(流出)右绿(流入)对称条
 function Bars({ mf }: { mf: MoneyFlow }) {
   const max = Math.max(1, ...mf.buckets.flatMap((b) => [b.inflow, b.outflow]));
   return (
@@ -75,7 +73,6 @@ function Bars({ mf }: { mf: MoneyFlow }) {
   );
 }
 
-// 累计净流入曲线(整体 + 主力)
 function FlowLine({ mf }: { mf: MoneyFlow }) {
   const w = 640, h = 150, pad = 6;
   const pts = mf.series;
@@ -95,50 +92,84 @@ function FlowLine({ mf }: { mf: MoneyFlow }) {
   );
 }
 
+// 买卖盘口(暗号真实 depth,对标富途「买盘/卖盘 %」)
+function OrderBookBar({ ob }: { ob: OrderBook }) {
+  const bid = ob.bidPct * 100;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="block-title" style={{ margin: "0 0 6px" }}>买卖盘(真实盘口)· 买一 {ob.bids[0]?.[0]} / 卖一 {ob.asks[0]?.[0]}</div>
+      <div style={{ display: "flex", height: 16, borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ width: `${bid}%`, background: UP }} />
+        <div style={{ width: `${100 - bid}%`, background: DOWN }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 4 }}>
+        <span style={{ color: UP }}>买盘 {bid.toFixed(2)}%</span>
+        <span style={{ color: DOWN }}>{(100 - bid).toFixed(2)}% 卖盘</span>
+      </div>
+    </div>
+  );
+}
+
 export default function MoneyFlow({ symbol }: { symbol: string }) {
+  const isCrypto = parseSymbol(symbol).market === "CRYPTO";
   const [period, setPeriod] = useState(PERIODS[0]);
   const [bars, setBars] = useState<Bar[]>([]);
+  const [cryptoMf, setCryptoMf] = useState<MoneyFlow | null>(null);
+  const [ob, setOb] = useState<OrderBook | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
     let alive = true;
     setLoading(true); setErr("");
-    getIntraday(symbol, period.interval, period.range)
-      .then((b) => { if (alive) { setBars(b); setLoading(false); } })
+    const { code } = parseSymbol(symbol);
+    const job = isCrypto
+      ? Promise.all([getCryptoFlow(code), getOrderBook(code)]).then(([mf, o]) => { if (alive) { setCryptoMf(mf); setOb(o); } })
+      : getIntraday(symbol, period.interval, period.range).then((b) => { if (alive) setBars(b); });
+    job.then(() => alive && setLoading(false))
       .catch((e) => { if (alive) { setErr(e?.message || "加载失败"); setLoading(false); } });
     return () => { alive = false; };
-  }, [symbol, period]);
+  }, [symbol, period, isCrypto]);
 
-  const mf = useMemo(() => computeMoneyFlow(bars), [bars]);
-  const mainIn = mf.mainNet >= 0;
+  const mf = useMemo(() => (isCrypto ? cryptoMf : computeMoneyFlow(bars)), [isCrypto, cryptoMf, bars]);
+  const mainIn = (mf?.mainNet ?? 0) >= 0;
 
   return (
     <div className="section">
-      <h2>资金流向 · 主力资金（估算）</h2>
-      <div className="ranges">
-        {PERIODS.map((p) => (
-          <button key={p.k} className={p.k === period.k ? "active" : ""} onClick={() => setPeriod(p)}>{p.k}</button>
-        ))}
-      </div>
+      <h2>
+        资金流向 · 主力资金
+        {mf?.real
+          ? <span className="badge" style={{ marginLeft: 8, fontSize: 11, borderColor: UP, color: UP }}>真实逐笔</span>
+          : <span className="badge" style={{ marginLeft: 8, fontSize: 11 }}>K线估算</span>}
+      </h2>
 
-      {/* 主力资金一句话结论 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "4px 0 12px" }}>
-        <span className="badge" style={{ fontSize: 13, borderColor: mainIn ? UP : DOWN, color: mainIn ? UP : DOWN }}>
-          主力{mainIn ? "净流入" : "净流出"} {fmtAmount(Math.abs(mf.mainNet))}
-        </span>
-        <span className="muted" style={{ fontSize: 13 }}>{mf.note}</span>
-      </div>
+      {!isCrypto && (
+        <div className="ranges">
+          {PERIODS.map((p) => (
+            <button key={p.k} className={p.k === period.k ? "active" : ""} onClick={() => setPeriod(p)}>{p.k}</button>
+          ))}
+        </div>
+      )}
 
-      {err && <div className="err">资金数据加载失败:{err}(分钟线经公共代理偶发不稳定,可切换周期或刷新)</div>}
-      {loading ? <div className="loading">资金流向计算中…</div> : mf.bars === 0 ? (
-        <div className="muted">该周期暂无足够分钟数据(休市或免费源限制)。</div>
+      {mf && mf.bars > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "4px 0 12px" }}>
+          <span className="badge" style={{ fontSize: 13, borderColor: mainIn ? UP : DOWN, color: mainIn ? UP : DOWN }}>
+            主力{mainIn ? "净流入" : "净流出"} {fmtAmount(Math.abs(mf.mainNet))}
+          </span>
+          <span className="muted" style={{ fontSize: 13 }}>{mf.note}</span>
+        </div>
+      )}
+
+      {err && <div className="err">资金数据加载失败:{err}(分钟线/代理偶发不稳,可切换周期或刷新)</div>}
+      {loading ? <div className="loading">资金流向计算中…</div> : !mf || mf.bars === 0 ? (
+        <div className="muted">该周期暂无足够数据(休市或免费源限制)。</div>
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <Donut mf={mf} />
             <Bars mf={mf} />
           </div>
+          {ob && <OrderBookBar ob={ob} />}
           <div className="block-title" style={{ margin: "16px 0 4px" }}>
             累计净流入 · <span style={{ color: "#f7b500" }}>主力(特大+大)</span> vs <span style={{ color: "#9aa0aa" }}>整体</span>
           </div>
@@ -147,8 +178,10 @@ export default function MoneyFlow({ symbol }: { symbol: string }) {
       )}
 
       <p className="src" style={{ marginTop: 10 }}>
-        估算口径:分钟 K 线成交额按分位数分档(特大/大/中/小),收盘涨跌定方向,主力=特大+大。
-        富途等的「主力资金」基于 <strong>Level-2 逐笔</strong>,本看板用免费行情近似,仅供趋势参考,非真实逐笔,<strong>不构成投资建议</strong>。
+        {mf?.real
+          ? "暗号:基于 Binance 真实逐笔成交(aggTrades)与盘口(depth),按成交额分档、主动买卖定方向,主力=特大+大 —— 真·主力资金。"
+          : "股票:免费行情无逐笔/盘口,用分钟 K 线成交额分位数分档 + 收盘涨跌定方向做透明估算(主力=特大+大),仅供趋势参考。"}
+        {" "}不构成投资建议。
       </p>
     </div>
   );

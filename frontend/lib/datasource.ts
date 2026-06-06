@@ -16,11 +16,27 @@ export interface Quote {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 // 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
+// 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底。
 const CORS_PROXIES: ((u: string) => string)[] = [
-  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.codetabs.com/v1/proxy/?quest=${u}`,
   (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
 ];
+
+// 通用:经公共 CORS 代理取 JSON(给无 CORS 的源用,如 Yahoo search / SEC ticker 映射)。
+export async function fetchViaProxy(url: string): Promise<any> {
+  let lastErr: any;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url));
+      if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
+      const j = await r.json();
+      if (j) return j;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`代理全部失败:${lastErr?.message || lastErr}`);
+}
 
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
