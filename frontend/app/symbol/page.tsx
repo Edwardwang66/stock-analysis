@@ -5,6 +5,8 @@ import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
+import { nameOf } from "@/lib/markets";
+import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 const RANGES = ["3mo", "6mo", "1y", "2y", "5y"];
 
@@ -21,6 +23,9 @@ function SymbolView() {
   const [an, setAn] = useState<Analysis | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const [starred, setStarred] = useState(false);
+
+  useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
 
   useEffect(() => {
     let alive = true;
@@ -44,7 +49,12 @@ function SymbolView() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <h1>{symbol}</h1>
+        <h1>{nameOf(symbol)}</h1>
+        <span className="muted">{symbol}</span>
+        <button className="btn" style={{ background: starred ? "var(--accent)" : "transparent", border: "1px solid var(--border)" }}
+          onClick={() => { toggleWatchlist(symbol); setStarred(inWatchlist(symbol)); }}>
+          {starred ? "★ 已自选" : "☆ 加入自选"}
+        </button>
         {quote && (
           <>
             <span className={`price ${dir}`} style={{ fontSize: 22 }}>{fmt(quote.price)}</span>
@@ -80,6 +90,22 @@ function SymbolView() {
               ))}
             </div>
           </div>
+
+          {ind.high_52w != null && ind.low_52w != null && quote?.price != null && (
+            <div className="section">
+              <h2>52 周区间位置</h2>
+              <div className="range52">
+                <div className="range52-fill" style={{
+                  width: `${Math.max(0, Math.min(100, ((quote.price - ind.low_52w) / (ind.high_52w - ind.low_52w)) * 100))}%`,
+                }} />
+              </div>
+              <div className="range52-labels">
+                <span>低 {fmt(ind.low_52w)}</span>
+                <span className="muted">当前 {fmt(quote.price)}</span>
+                <span>高 {fmt(ind.high_52w)}</span>
+              </div>
+            </div>
+          )}
 
           <div className="section">
             <h2>关键指标</h2>

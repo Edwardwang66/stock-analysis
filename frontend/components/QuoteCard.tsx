@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getOHLCV, getQuote, type Quote } from "@/lib/datasource";
 import { analyze } from "@/lib/analysis";
+import { nameOf } from "@/lib/markets";
 
 export default function QuoteCard({ symbol }: { symbol: string }) {
   const [q, setQ] = useState<Quote | null>(null);
@@ -28,7 +29,8 @@ export default function QuoteCard({ symbol }: { symbol: string }) {
   return (
     <Link href={`/symbol/?s=${encodeURIComponent(symbol)}`}>
       <div className="card">
-        <div className="sym">{symbol}</div>
+        <div className="sym">{nameOf(symbol)}</div>
+        <div className="src">{symbol}</div>
         {err ? <div className="err" style={{ fontSize: 12 }}>{err}</div> : q ? (
           <>
             <div className={`price ${dir}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>

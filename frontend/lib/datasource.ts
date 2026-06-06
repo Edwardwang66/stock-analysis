@@ -14,7 +14,13 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
-const CORS = "https://corsproxy.io/?url=";
+
+// 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
+const CORS_PROXIES: ((u: string) => string)[] = [
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+];
 
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
@@ -51,9 +57,20 @@ function yahooCode(market: string, code: string): string {
 }
 async function yahooChart(ycode: string, range: string): Promise<any> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ycode}?range=${Y_RANGE[range] ?? "1y"}&interval=1d`;
-  const r = await fetch(`${CORS}${encodeURIComponent(url)}`);
-  if (!r.ok) throw new Error(`Yahoo proxy HTTP ${r.status}`);
-  return (await r.json()).chart.result[0];
+  let lastErr: any;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url));
+      if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
+      const j = await r.json();
+      const res = j?.chart?.result?.[0];
+      if (res) return res;
+      lastErr = new Error("no chart data");
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(`Yahoo 全部代理失败:${lastErr?.message || lastErr}`);
 }
 async function yahooQuote(market: string, code: string): Promise<Quote> {
   const res = await yahooChart(yahooCode(market, code), "5d");

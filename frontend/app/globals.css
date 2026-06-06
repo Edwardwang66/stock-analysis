@@ -40,4 +40,18 @@ th { color: var(--muted); font-weight: 500; }
 .ranges button.active { color: #fff; border-color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.6; }
 .loading { color: var(--muted); padding: 20px 0; }
+.block-title { font-size: 14px; color: var(--muted); margin: 22px 0 10px; font-weight: 500; }
+.tabs { display: flex; gap: 8px; margin: 18px 0 4px; flex-wrap: wrap; }
+.tabs button { background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+  padding: 7px 16px; border-radius: 999px; cursor: pointer; font-size: 13px; }
+.tabs button.active { color: #fff; border-color: var(--accent); background: rgba(76,141,255,.15); }
+.heatmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.tile { border-radius: 8px; padding: 14px 10px; min-height: 64px; display: flex; flex-direction: column;
+  justify-content: center; border: 1px solid var(--border); transition: transform .1s; }
+.tile:hover { transform: scale(1.03); }
+.tile-name { font-size: 13px; font-weight: 600; color: #fff; }
+.tile-pct { font-size: 13px; color: #fff; opacity: .95; margin-top: 2px; }
+.range52 { height: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.range52-fill { height: 100%; background: linear-gradient(90deg, var(--down), #f7b500, var(--up)); }
+.range52-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
 .err { color: var(--down); padding: 12px; background: rgba(239,83,80,.1); border-radius: 8px; }
