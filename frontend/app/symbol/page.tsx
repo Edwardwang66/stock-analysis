@@ -9,7 +9,7 @@ import { computeChan } from "@/lib/chan";
 import { nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
-const RANGES = ["3mo", "6mo", "1y", "2y", "5y"];
+const RANGES = ["6mo", "1y", "2y", "5y"];
 const INTERVALS = [{ k: "1d", label: "日线" }, { k: "1wk", label: "周线" }, { k: "1h", label: "小时" }];
 
 function fmt(n: number | null | undefined, d = 2): string {
@@ -19,7 +19,7 @@ function fmt(n: number | null | undefined, d = 2): string {
 function SymbolView() {
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
-  const [range, setRange] = useState("1y");
+  const [range, setRange] = useState("2y");
   const [interval, setInterval] = useState("1d");
   const [bars, setBars] = useState<Bar[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
