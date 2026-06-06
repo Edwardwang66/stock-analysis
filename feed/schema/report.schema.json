@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/edwardwang66/stock-analysis/feed/schema/report.schema.json",
+  "title": "Market Intelligence Report",
+  "description": "统一情报报告契约。GitHub Actions 例行任务(routine)与 OpenClaw 外部 agent 都产出此格式;静态网页与看板消费此格式。任何写入 feed/ 的报告必须通过本 schema 校验(见 scripts/validate_feed.py)。",
+  "type": "object",
+  "required": ["schema_version", "id", "kind", "produced_at", "producer", "asof_data"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._:-]{6,80}$",
+      "description": "全局唯一报告 ID,亦作幂等键。建议 <kind>-<UTC ISO 到小时>-<短随机>。"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["routine", "openclaw", "manual"],
+      "description": "来源类别:routine=本仓 GitHub Actions;openclaw=外部 agent 投递;manual=人工。"
+    },
+    "produced_at": { "type": "string", "format": "date-time", "description": "UTC ISO8601 生成时间。" },
+    "asof_data": { "type": "string", "format": "date", "description": "本次分析所用的最新市场数据日期(用于看板「是否最新」判定)。" },
+    "producer": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "description": "如 github-actions-routine / openclaw-agent:residual-analyst。" },
+        "model": { "type": "string", "description": "如使用 LLM,锁定的模型版本(§6.7 版本锁定),如 claude-opus-4-8。" },
+        "agent_role": { "type": "string", "description": "委员会角色:innovator/first-principles/red-team/risk/engineer/residual-analyst/crowding-monitor/event-risk。" },
+        "run_url": { "type": "string", "description": "可回溯的运行链接(Actions run / OpenClaw task)。" }
+      }
+    },
+    "market_state": {
+      "type": "object",
+      "description": "市场状态快照(regime / 拥挤 / 广度)。",
+      "additionalProperties": true,
+      "properties": {
+        "regime": { "type": "string", "enum": ["risk_on", "neutral", "risk_off", "unknown"] },
+        "spy_above_200dma": { "type": "boolean" },
+        "spy_vol_20d_annual": { "type": "number" },
+        "breadth_pct_above_50dma": { "type": "number", "minimum": 0, "maximum": 1 },
+        "residual_dispersion": { "type": "number", "description": "横截面残差离散度,均值回归机会的代理。" },
+        "crowding_proxy": { "type": "number", "description": "拥挤代理(残差平均相关性等);越高尾部风险越大(§7.2)。" },
+        "crowding_alert": { "type": "boolean" }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "description": "做多做空引擎(流 B 残差统计套利)净·扣成本绩效摘要。",
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "period": { "type": "object" },
+        "net": { "type": "object", "description": "净口径:sharpe/ann_return/ann_vol/max_drawdown/hit_rate(R4 唯一计价货币)。" },
+        "gross": { "type": "object" },
+        "cost_drag_ann": { "type": "number" },
+        "turnover": { "type": "object" },
+        "deflated_sharpe": { "type": "object", "description": "DSR 过拟合校验(§6.7)。" },
+        "verdict": { "type": "string", "description": "L6 裁决文本。" }
+      }
+    },
+    "book": {
+      "type": "object",
+      "description": "当前目标持仓簿(做多/做空)。",
+      "additionalProperties": true,
+      "properties": {
+        "asof": { "type": "string" },
+        "n_long": { "type": "integer" },
+        "n_short": { "type": "integer" },
+        "gross_leverage": { "type": "number" },
+        "net_exposure": { "type": "number" },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["ticker", "side", "weight"],
+            "additionalProperties": true,
+            "properties": {
+              "ticker": { "type": "string" },
+              "side": { "type": "string", "enum": ["LONG", "SHORT"] },
+              "weight": { "type": "number" },
+              "s_score": { "type": "number" },
+              "halflife_days": { "type": "number" },
+              "kappa": { "type": "number" },
+              "hurst": { "type": "number" },
+              "sector": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "factory_candidates": {
+      "type": "array",
+      "description": "LLM 假设工厂产出的可审计公式因子候选 + 六门控结果(§6.2.3)。LLM 只生成假设,不决策。",
+      "items": {
+        "type": "object",
+        "required": ["expr", "hypothesis"],
+        "additionalProperties": true,
+        "properties": {
+          "expr": { "type": "string", "description": "WorldQuant Alpha101 式可读公式。" },
+          "hypothesis": { "type": "string", "description": "事前经济机制(门控⑤)。" },
+          "incremental_ic": { "type": "number", "description": "对现有组合正交后的增量 IC(门控②)。" },
+          "post_cutoff": { "type": "boolean", "description": "是否在模型训练截止日之后验证(R6,防 Profit Mirage)。" },
+          "pbo": { "type": "number", "description": "PBO(CSCV)概率,需 <5–10%(门控①)。" },
+          "t_stat": { "type": "number", "description": "相依 FDR 后 t,需 ≳3(门控③)。" },
+          "passed_gates": { "type": "boolean", "description": "六门控是否全过;未过则不得纳入。" },
+          "decision": { "type": "string", "enum": ["accept", "reject", "shadow"] }
+        }
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "description": "风险/事件告警(拥挤、协整断裂、回撤治理、SSR、事件风险)。",
+      "items": {
+        "type": "object",
+        "required": ["level", "message"],
+        "additionalProperties": true,
+        "properties": {
+          "level": { "type": "string", "enum": ["info", "warning", "critical"] },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "tickers": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "contribution": {
+      "type": "object",
+      "description": "本报告对系统的边际贡献(看板「怎么帮助到你了」)。",
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string", "enum": ["signal_refresh", "new_factor", "risk_alert", "regime_update", "no_change"] },
+        "summary": { "type": "string" },
+        "candidates_proposed": { "type": "integer" },
+        "candidates_accepted": { "type": "integer" },
+        "net_sharpe_delta": { "type": "number", "description": "相对上一报告的净 Sharpe 变化(若适用)。" }
+      }
+    },
+    "notes": { "type": "string" },
+    "signature": {
+      "type": "object",
+      "description": "可选 HMAC 签名(OpenClaw 投递强制)。CI 用共享密钥校验,防伪造投递。",
+      "required": ["alg", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "alg": { "type": "string", "enum": ["HMAC-SHA256"] },
+        "key_id": { "type": "string" },
+        "value": { "type": "string", "description": "对去除 signature 字段后的紧凑 JSON 的 HMAC-SHA256 十六进制。" }
+      }
+    }
+  }
+}

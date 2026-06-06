@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-residual-analyst-2026-06-06T1013Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-06T10:13:04Z",
+  "asof_data": "2026-06-06",
+  "producer": {
+    "name": "openclaw-agent:residual-analyst",
+    "model": "claude-opus-4-8",
+    "agent_role": "residual-analyst",
+    "run_url": ""
+  },
+  "market_state": {
+    "regime": "neutral",
+    "crowding_proxy": 0.41,
+    "crowding_alert": false
+  },
+  "factory_candidates": [
+    {
+      "expr": "rank(residual_meanrev_zscore(5)) - rank(residual_meanrev_zscore(20))",
+      "hypothesis": "短周期残差反转相对长周期的相对强弱;事前机制=短期过度反应、长期信息扩散。",
+      "incremental_ic": 0.011,
+      "post_cutoff": true,
+      "pbo": 0.18,
+      "t_stat": 2.1,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "OpenClaw 残差分析师候选:截止后 IC 为正但 PBO=0.18>0.10、t=2.1<3 -> 未过门控,拒绝(R6/§6.7)。"
+    }
+  ],
+  "alerts": [
+    {
+      "level": "info",
+      "code": "event-risk",
+      "message": "下周 FOMC + CPI:建议组合层临时收紧毛杠杆 0.2x,空头腿检查 SSR/借券费。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "new_factor",
+    "candidates_proposed": 1,
+    "candidates_accepted": 0,
+    "summary": "OpenClaw 残差分析师投递 1 条候选(被门控拒绝)+ 1 条事件风险提示。"
+  },
+  "notes": "OpenClaw 投递示例。LLM 只生成可审计假设、不决策(R6);一律须过六门控与真 holdout。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "7724f3bb911ff271c959a7e7d4063ea36d8188371dca7f9449743d4d266cebf1"
+  }
+}

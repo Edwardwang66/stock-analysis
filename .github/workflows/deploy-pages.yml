@@ -4,8 +4,8 @@ name: Deploy frontend to GitHub Pages
 # 启用方法:仓库 Settings → Pages → Build and deployment → Source 选 "GitHub Actions"。
 on:
   push:
-    branches: [claude/stock-platform-research-V6KoP, main]
-    paths: ["frontend/**", ".github/workflows/deploy-pages.yml"]
+    branches: [claude/stock-platform-research-V6KoP, claude/upbeat-albattani-taFAm, main]
+    paths: ["frontend/**", "feed/schema/**", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -30,6 +30,12 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: 捆绑最新 feed 快照(首屏兜底;实时数据仍走 GitHub raw)
+        working-directory: ${{ github.workspace }}
+        run: |
+          rm -rf frontend/public/feed
+          mkdir -p frontend/public/feed
+          cp -r feed/index.json feed/schema feed/reports feed/signals feed/market feed/factory frontend/public/feed/ 2>/dev/null || true
       - run: npm ci
       - name: Build (static export)
         env:
@@ -39,6 +45,9 @@ jobs:
           # 新增 API_BASE = https://你的后端域名 后,前端即自动改用后端(摆脱公共代理)。
           # 未设置时为空,前端回退到浏览器直连公开 API。
           NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
+          # 情报馈送实时源:指向当前分支的 feed/(raw GitHub,新 commit 即时可见,无需重建 Pages)。
+          # 远端失败时前端自动回退到捆绑快照 public/feed/。
+          NEXT_PUBLIC_FEED_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/feed
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
