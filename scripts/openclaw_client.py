@@ -27,10 +27,107 @@ import feed_lib as fl  # noqa: E402
 DEFAULT_REPO = "edwardwang66/stock-analysis"
 
 
-def sample_report(agent_role: str = "residual-analyst", model: str = "claude-opus-4-8") -> dict:
-    """一份示例 OpenClaw 分析报告(残差分析师角色)。真实场景由 agent 填充。"""
-    now = datetime.now(timezone.utc)
+ROLES = ["residual-analyst", "crowding-monitor", "event-risk", "factor-factory", "red-team"]
+
+
+def _residual_analyst() -> dict:
+    """残差/协整健康度:κ、半衰期、Hurst 漂移,协整断裂剔除信号。"""
     return {
+        "market_state": {"residual_dispersion": 0.018, "crowding_proxy": 0.39},
+        "alerts": [
+            {"level": "warning", "code": "cointegration_break",
+             "message": "XOM 残差 Hurst 0.61>0.55 且 κ 滚动下降 38%:协整漂向随机游走,建议从套利簿剔除"
+                        "(R2 禁止『会回归』式向下加仓)。", "tickers": ["XOM"]},
+            {"level": "info", "code": "residual_health",
+             "message": "半衰期中位数 9.2 交易日(在 5–25 区间内),残差离散度回升,均值回归机会改善。", "tickers": []},
+        ],
+        "contribution": {"type": "risk_alert", "summary": "1 个协整断裂剔除信号 + 残差健康度回升。"},
+        "notes": "残差=对 [SPY,行业ETF] 滚动回归;κ/半衰期/Hurst 用滚动窗口估计,全程无未来函数。",
+    }
+
+
+def _crowding_monitor() -> dict:
+    """拥挤/同质化:同类持仓重叠、尾部相关、short interest、Amihud 趋势。"""
+    return {
+        "market_state": {"crowding_proxy": 0.58, "crowding_alert": True, "breadth_pct_above_50dma": 0.42},
+        "alerts": [{"level": "warning", "code": "crowding",
+                    "message": "动量/低波因子拥挤度上升(同类基金载荷相关 0.58>0.55、半导体持仓重叠走高):"
+                               "按 R7 应『先于人群』预防性减对应敞口 0.2x,勿做去杠杆级联中的边际持有者。",
+                    "tickers": ["NVDA", "AMD", "AVGO"]}],
+        "contribution": {"type": "risk_alert", "summary": "拥挤告警:建议预防性降动量/低波敞口(尾部风险,非做空信号)。"},
+        "notes": "拥挤代理=持仓重叠+尾部特定收益相关+short interest+Amihud 非流动性趋势(§7.2)。拥挤是尾部风险信号。",
+    }
+
+
+def _event_risk() -> dict:
+    """事件日历:财报、FOMC/CPI、指数重构、SSR。仅标注/回避,不做方向 alpha(D4)。"""
+    return {
+        "alerts": [
+            {"level": "warning", "code": "macro_event",
+             "message": "下周二 CPI、周三 FOMC:组合层临时收紧毛杠杆 0.2x,事件窗口避免大额建仓。", "tickers": []},
+            {"level": "info", "code": "earnings",
+             "message": "NVDA 财报 T+2 盘后:统计套利簿该名敞口建议降至 ≤1% NAV,防跳空。", "tickers": ["NVDA"]},
+            {"level": "info", "code": "ssr",
+             "message": "昨日 RUN 触发 SSR(Reg SHO Rule 201):今日+次日空头腿仅 uptick 成交,下单前 locate 校验。",
+             "tickers": ["RUN"]},
+        ],
+        "contribution": {"type": "risk_alert", "summary": "3 条事件风险标注(CPI/FOMC/财报/SSR);仅回避降敞口,不做方向 alpha。"},
+        "notes": "事件风险只用于回避/降敞口,不作方向性新闻 alpha(延迟-半衰期错配 D4)。日历须 PIT 对齐。",
+    }
+
+
+def _factor_factory() -> dict:
+    """进化式挖掘可审计公式因子(Alpha101 风格),每条自带六门控结果。"""
+    return {
+        "factory_candidates": [
+            {"expr": "rank(ts_zscore(residual_return, 3)) - rank(ts_zscore(residual_return, 15))",
+             "hypothesis": "短残差过度反应 vs 长残差信息扩散的相对强弱(事前机制:有限注意力)。",
+             "incremental_ic": 0.013, "post_cutoff": True, "pbo": 0.07, "t_stat": 3.2,
+             "passed_gates": True, "decision": "shadow",
+             "note": "六门控全过 -> 进 60 日 shadow(R3),绝不直接上线。"},
+            {"expr": "-ts_rank(turnover_20, 60) * sign(residual_meanrev_z(5))",
+             "hypothesis": "低换手名的残差反转更干净(以流动性为门)。",
+             "incremental_ic": 0.006, "post_cutoff": True, "pbo": 0.21, "t_stat": 1.8,
+             "passed_gates": False, "decision": "reject",
+             "note": "PBO 0.21>0.10 且 t 1.8<3 -> 未过门控,拒绝。"},
+        ],
+        "contribution": {"type": "new_factor", "candidates_proposed": 2, "candidates_accepted": 0,
+                         "summary": "2 条可审计公式因子:1 进 shadow、1 被拒;均截止后验证。"},
+        "notes": "所有候选只在模型训练截止日之后的数据上评分(R6 防 Profit Mirage);锁定 producer.model 版本。",
+    }
+
+
+def _red_team() -> dict:
+    """对抗核验:Profit Mirage / 五偏差 / 增量正交 IC 复核;有否决权。"""
+    return {
+        "factory_candidates": [
+            {"expr": "rank(ts_zscore(residual_return, 3)) - rank(ts_zscore(residual_return, 15))",
+             "hypothesis": "(复核 factor-factory 同名候选)",
+             "incremental_ic": 0.012, "post_cutoff": True, "pbo": 0.08, "t_stat": 3.0,
+             "passed_gates": True, "decision": "shadow",
+             "note": "红队复核:风险中性化后增量 IC 仍显著、成员推断未命中记忆性前视;维持 shadow,但要求真 holdout 终检(R5)。"},
+        ],
+        "alerts": [{"level": "info", "code": "red-team",
+                    "message": "五偏差自查:本批未见前视/幸存/叙事/目标/成本明显泄漏;factor-factory 申报试验次数 N=180,已计入 DSR。",
+                    "tickers": []}],
+        "contribution": {"type": "new_factor", "summary": "对 1 条候选做对抗复核,维持 shadow 并要求 holdout 终检。"},
+        "notes": "红队有否决权:可把 accept 打回 reject。任何候选证不出截止后增量 IC 即整条删除(R6)。",
+    }
+
+
+ROLE_BUILDERS = {
+    "residual-analyst": _residual_analyst, "crowding-monitor": _crowding_monitor,
+    "event-risk": _event_risk, "factor-factory": _factor_factory, "red-team": _red_team,
+}
+
+
+def sample_report(agent_role: str = "residual-analyst", model: str = "claude-opus-4-8") -> dict:
+    """按角色生成一份贴近实战的 OpenClaw 报告模板。真实场景由 agent 用真实分析填充这些字段。
+
+    每个角色只填它职责内的字段(见 ROLE_BUILDERS);公共信封(id/kind/producer/asof)统一生成。
+    """
+    now = datetime.now(timezone.utc)
+    report = {
         "schema_version": "1.0",
         "id": f"openclaw-{agent_role}-{now.strftime('%Y-%m-%dT%H%M')}Z",
         "kind": "openclaw",
@@ -38,21 +135,9 @@ def sample_report(agent_role: str = "residual-analyst", model: str = "claude-opu
         "asof_data": now.strftime("%Y-%m-%d"),
         "producer": {"name": f"openclaw-agent:{agent_role}", "model": model,
                      "agent_role": agent_role, "run_url": os.environ.get("OPENCLAW_RUN_URL", "")},
-        "market_state": {"regime": "neutral", "crowding_proxy": 0.41, "crowding_alert": False},
-        "factory_candidates": [{
-            "expr": "rank(residual_meanrev_zscore(5)) - rank(residual_meanrev_zscore(20))",
-            "hypothesis": "短周期残差反转相对长周期的相对强弱;事前机制=短期过度反应、长期信息扩散。",
-            "incremental_ic": 0.011, "post_cutoff": True, "pbo": 0.18, "t_stat": 2.1,
-            "passed_gates": False, "decision": "reject",
-            "note": "OpenClaw 残差分析师候选:截止后 IC 为正但 PBO=0.18>0.10、t=2.1<3 -> 未过门控,拒绝(R6/§6.7)。",
-        }],
-        "alerts": [{"level": "info", "code": "event-risk",
-                    "message": "下周 FOMC + CPI:建议组合层临时收紧毛杠杆 0.2x,空头腿检查 SSR/借券费。",
-                    "tickers": []}],
-        "contribution": {"type": "new_factor", "candidates_proposed": 1, "candidates_accepted": 0,
-                         "summary": "OpenClaw 残差分析师投递 1 条候选(被门控拒绝)+ 1 条事件风险提示。"},
-        "notes": "OpenClaw 投递示例。LLM 只生成可审计假设、不决策(R6);一律须过六门控与真 holdout。",
     }
+    report.update(ROLE_BUILDERS.get(agent_role, _residual_analyst)())
+    return report
 
 
 def post_github_api(report: dict, repo: str, token: str) -> None:
@@ -90,7 +175,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["github-api", "dispatch", "local"], default="local")
     ap.add_argument("--repo", default=os.environ.get("OPENCLAW_REPO", DEFAULT_REPO))
-    ap.add_argument("--role", default="residual-analyst")
+    ap.add_argument("--role", default="residual-analyst", choices=ROLES,
+                    help="OpenClaw agent 角色,决定填充哪些字段")
     ap.add_argument("--report-file", default=None, help="读取自定义报告 JSON;缺省用内置示例")
     args = ap.parse_args()
 

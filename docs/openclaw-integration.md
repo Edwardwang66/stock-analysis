@@ -52,6 +52,10 @@ PUT inbox     event=openclaw-report               改 feed/inbox/**
 | `factor-factory` | 进化式挖掘**可审计公式因子**(Alpha101 风格) | 因子/收益面板 | `factory_candidates[]`(含六门控自检结果) |
 | `red-team` | 对抗核验:记忆性前视、五偏差、增量正交 IC 是否成立 | 上述全部 | 覆写 `decision=reject` + `note` |
 
+> **每个角色的可直接投产 system prompt 骨架**见 [`routines/openclaw-agent-prompts.md`](../routines/openclaw-agent-prompts.md)
+> —— 含通用前置(铁律 + 时序防火墙)、5 个角色 prompt、输出字段清单、Orchestrator 编排。
+> 对应的报告字段模板已写进 `scripts/openclaw_client.py`(按 `--role` 生成);投递:`--report-file <你的输出.json>`。
+
 ### 1.2 调度(Orchestrator)
 
 - **节奏**:盘中每小时跑 `residual-analyst` + `crowding-monitor` + `event-risk`;
