@@ -110,3 +110,119 @@ CORS 列:✅=浏览器可直连;❌=需经 CORS 代理或后端。Key 列:调用
 - **不可用**:东方财富 push2(本环境网络拦截,**境内部署可接 A 股真·资金流**)、corsproxy.io、Stooq、CoinCap。
 
 > 交互版登记表 + 实时演示:前端 **`/sources`** 页(`frontend/app/sources/page.tsx`)。
+
+---
+
+## 四、响应样例(Mock,truncated)
+
+> 截取自真实响应(2026-06,数组/字段已截断),供解析/写测试 mock 用。**数值仅示意。**
+
+### Binance `/api/v3/ticker/24hr`
+```json
+{ "symbol": "BTCUSDT", "priceChange": "-1727.98000000", "priceChangePercent": "-2.758",
+  "lastPrice": "60918.01000000", "highPrice": "63688.00000000", "lowPrice": "59130.91000000",
+  "bidPrice": "60918.00000000", "askPrice": "60918.01000000",
+  "volume": "54326.01399000", "quoteVolume": "3329849333.00180940",
+  "openTime": 1780628441001, "closeTime": 1780714841001, "count": 11456703 }
+```
+
+### Binance `/api/v3/ticker/price`
+```json
+{ "symbol": "BTCUSDT", "price": "60918.00000000" }
+```
+
+### Binance `/api/v3/klines`(数组的数组:`[openTime,open,high,low,close,volume,closeTime,quoteVol,trades,...]`)
+```json
+[[1780617600000,"63885.99000000","63978.00000000","59130.91000000","61056.47000000","55027.28807000",1780703999999,"3379021750.50332800",11658856,"24879.51775000","1529682071.47000020","0"]]
+```
+
+### Binance `/api/v3/aggTrades`(`p`价 `q`量 `T`毫秒 `m`=isBuyerMaker)
+```json
+[ { "a": 3980041750, "p": "60918.01000000", "q": "0.01826000", "f": 6375877524, "l": 6375877524, "T": 1780714842635, "m": false, "M": true } ]
+```
+> `m=false` → 主动买入(流入);`m=true` → 主动卖出(流出)。成交额 = `p*q`。
+
+### Binance `/api/v3/depth`(`bids`/`asks` 为 `[价, 量]`,价优在前)
+```json
+{ "lastUpdateId": 95138443980,
+  "bids": [["60918.00000000","0.40526000"],["60917.99000000","0.00089000"]],
+  "asks": [["60918.01000000","6.43623000"],["60918.02000000","0.00045000"]] }
+```
+
+### Yahoo `/v8/finance/chart/{YCODE}`(已截断 meta 与 indicators)
+```json
+{ "chart": { "result": [ {
+  "meta": { "currency": "USD", "symbol": "AAPL", "regularMarketPrice": 307.34,
+    "chartPreviousClose": 312.06, "regularMarketDayHigh": 315.17, "regularMarketDayLow": 307.15,
+    "regularMarketVolume": 64824174, "regularMarketTime": 1780689601 },
+  "timestamp": [1780320600, 1780407000],
+  "indicators": { "quote": [ {
+    "open": [309.63, 307.46], "high": [310.94, 315.45], "low": [305.02, 306.69],
+    "close": [306.31, 315.20], "volume": [48849900, 44534700] } ] }
+} ], "error": null } }
+```
+> 跳过 `open/high/low/close` 中任一为 `null` 的 bar(停牌/数据缺失)。
+
+### SEC `companyconcept/CIK.../us-gaap/{TAG}.json`(units 已截断为最近两年)
+```json
+{ "cik": 320193, "taxonomy": "us-gaap", "tag": "NetIncomeLoss",
+  "label": "Net Income (Loss) Attributable to Parent",
+  "units": { "USD": [
+    { "end": "2024-09-28", "val": 93736000000, "fy": 2025, "fp": "FY", "form": "10-K", "frame": "CY2024" },
+    { "end": "2025-09-27", "val": 112010000000, "fy": 2025, "fp": "FY", "form": "10-K", "frame": "CY2025" } ] } }
+```
+> 取年度值:流量科目 `frame=CY2025`;资产负债表时点科目 `frame=CY2025Q4I`(`Assets` 等)。
+
+### Frankfurter `/v1/latest`
+```json
+{ "amount": 1.0, "base": "USD", "date": "2026-06-05", "rates": { "CNY": 6.7656, "EUR": 0.85911, "JPY": 159.86 } }
+```
+
+### open.er-api `/v6/latest/{B}`(备用)
+```json
+{ "result": "success", "time_last_update_utc": "Sat, 06 Jun 2026 00:02:32 +0000",
+  "base_code": "USD", "rates": { "CNY": 6.77, "EUR": 0.86, "JPY": 159.9, "...": 0 } }
+```
+
+### OKX `/api/v5/market/ticker`
+```json
+{ "code": "0", "msg": "", "data": [ { "instId": "BTC-USDT", "last": "60917.1",
+  "askPx": "60915.3", "bidPx": "60915.2", "open24h": "62632.8", "high24h": "63692.9",
+  "low24h": "59111.2", "vol24h": "20689.72870986", "ts": "1780714842811" } ] }
+```
+
+### Coinbase `/v2/prices/{BASE}-USD/spot`
+```json
+{ "data": { "amount": "60911.985", "base": "BTC", "currency": "USD" } }
+```
+
+### CoinPaprika `/v1/tickers/{ID}`(quotes 已截断)
+```json
+{ "id": "btc-bitcoin", "name": "Bitcoin", "symbol": "BTC", "rank": 1,
+  "total_supply": 20039250, "max_supply": 21000000, "last_updated": "2026-06-06T02:57:14Z",
+  "quotes": { "USD": { "price": 60997.96, "volume_24h": 70587357108.75, "market_cap": 1222353435770,
+    "percent_change_1h": 0.13, "percent_change_24h": -2.76 } } }
+```
+
+### 本平台后端(示例形状)
+
+`GET /api/v1/quotes?symbols=US:AAPL,CRYPTO:BTCUSDT` →
+```json
+[ { "symbol": "US:AAPL", "price": 307.34, "change": -4.72, "change_pct": -1.51,
+    "high": 315.17, "low": 307.15, "currency": "USD", "source": "Yahoo" },
+  { "symbol": "CRYPTO:BTCUSDT", "price": 60918.0, "change_pct": -2.758, "currency": "USDT", "source": "Binance" } ]
+```
+
+`GET /api/v1/moneyflow?symbol=CRYPTO:BTCUSDT` →
+```json
+{ "symbol": "CRYPTO:BTCUSDT", "interval": "5m", "source": "Binance",
+  "inflow": 4.98e8, "outflow": 2.24e8, "net": 2.73e8,
+  "main_inflow": 3.1e8, "main_outflow": 1.5e8, "main_net": 1.6e8,
+  "buckets": [ { "name": "特大单", "inflow": 1.2e8, "outflow": 0.6e8, "net": 0.6e8 },
+               { "name": "大单", "inflow": 1.9e8, "outflow": 0.9e8, "net": 1.0e8 },
+               { "name": "中单", "inflow": 0.0, "outflow": 0.0, "net": 0.0 },
+               { "name": "小单", "inflow": 0.5e8, "outflow": 0.4e8, "net": 0.1e8 } ],
+  "series": [ { "time": 1780714842, "cum_all": 1.2e6, "cum_main": 0.8e6 } ],
+  "bars": 78, "note": "主力资金净流入,资金在进场。" }
+```
+> ⚠️ 后端 `/moneyflow` 当前对**所有市场**走 K 线估算口径(`bars`=K线数);前端暗号侧走 Binance 真逐笔(字段同形,`real:true`)。其余 `/ohlcv`、`/chips`、`/chan` 形状见 [`data-model-api.md`](data-model-api.md)。
