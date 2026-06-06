@@ -4,7 +4,9 @@ name: Deploy frontend to GitHub Pages
 # 启用方法:仓库 Settings → Pages → Build and deployment → Source 选 "GitHub Actions"。
 on:
   push:
-    branches: [claude/stock-platform-research-V6KoP, claude/upbeat-albattani-taFAm, main]
+    # 只在默认分支触发部署:github-pages 环境的分支保护只放行 main,
+    # 在 feature 分支跑 deploy 必被环境规则拒(build 成功、deploy 红叉),故不再触发。
+    branches: [main]
     paths: ["frontend/**", "feed/schema/**", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
 
