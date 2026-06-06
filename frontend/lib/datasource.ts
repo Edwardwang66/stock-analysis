@@ -30,6 +30,7 @@ export function parseSymbol(s: string): { market: string; code: string } {
 // ---- Binance (crypto) ----
 const BINANCE = "https://data-api.binance.vision";
 const B_INTERVAL: Record<string, string> = { "1d": "1d", "1wk": "1w", "1h": "1h" };
+// 不同周期下取的根数(配合 range 控制时间跨度)
 const B_LIMIT: Record<string, number> = { "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730, "5y": 1000 };
 
 async function binanceQuote(code: string): Promise<Quote> {
@@ -40,9 +41,10 @@ async function binanceQuote(code: string): Promise<Quote> {
     high: +d.highPrice, low: +d.lowPrice, currency: "USDT", source: "Binance",
   };
 }
-async function binanceOHLCV(code: string, range: string): Promise<Bar[]> {
-  const limit = B_LIMIT[range] ?? 365;
-  const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${code}&interval=1d&limit=${limit}`);
+async function binanceOHLCV(code: string, range: string, interval: string): Promise<Bar[]> {
+  const bi = B_INTERVAL[interval] ?? "1d";
+  const limit = interval === "1h" ? 500 : B_LIMIT[range] ?? 365;
+  const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${code}&interval=${bi}&limit=${limit}`);
   const d: any[] = await r.json();
   return d.map((k) => ({ time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
 }
@@ -55,8 +57,11 @@ function yahooCode(market: string, code: string): string {
   if (market === "CN") return code.startsWith("6") ? `${code}.SS` : `${code}.SZ`;
   return code;
 }
-async function yahooChart(ycode: string, range: string): Promise<any> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ycode}?range=${Y_RANGE[range] ?? "1y"}&interval=1d`;
+const Y_INTERVAL: Record<string, string> = { "1d": "1d", "1wk": "1wk", "1h": "60m" };
+async function yahooChart(ycode: string, range: string, interval: string): Promise<any> {
+  // 小时线 Yahoo 限制跨度,range 上限收窄
+  const yr = interval === "1h" ? (["1mo", "3mo"].includes(range) ? range : "3mo") : (Y_RANGE[range] ?? "1y");
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ycode}?range=${yr}&interval=${Y_INTERVAL[interval] ?? "1d"}`;
   let lastErr: any;
   for (const proxy of CORS_PROXIES) {
     try {
@@ -73,7 +78,7 @@ async function yahooChart(ycode: string, range: string): Promise<any> {
   throw new Error(`Yahoo 全部代理失败:${lastErr?.message || lastErr}`);
 }
 async function yahooQuote(market: string, code: string): Promise<Quote> {
-  const res = await yahooChart(yahooCode(market, code), "5d");
+  const res = await yahooChart(yahooCode(market, code), "5d", "1d");
   const m = res.meta;
   const prev = m.chartPreviousClose ?? m.previousClose;
   const change = m.regularMarketPrice != null && prev != null ? m.regularMarketPrice - prev : null;
@@ -84,8 +89,8 @@ async function yahooQuote(market: string, code: string): Promise<Quote> {
     currency: m.currency ?? "", source: "Yahoo",
   };
 }
-async function yahooOHLCV(market: string, code: string, range: string): Promise<Bar[]> {
-  const res = await yahooChart(yahooCode(market, code), range);
+async function yahooOHLCV(market: string, code: string, range: string, interval: string): Promise<Bar[]> {
+  const res = await yahooChart(yahooCode(market, code), range, interval);
   const ts: number[] = res.timestamp ?? [];
   const q = res.indicators.quote[0];
   const bars: Bar[] = [];
@@ -107,12 +112,12 @@ export async function getQuote(symbol: string): Promise<Quote> {
   return market === "CRYPTO" ? binanceQuote(code) : yahooQuote(market, code);
 }
 
-export async function getOHLCV(symbol: string, range = "1y"): Promise<Bar[]> {
+export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {
   if (API_BASE) {
-    const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`);
+    const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
     const d = await r.json();
     return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
   }
   const { market, code } = parseSymbol(symbol);
-  return market === "CRYPTO" ? binanceOHLCV(code, range) : yahooOHLCV(market, code, range);
+  return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
 }

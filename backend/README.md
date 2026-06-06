@@ -21,6 +21,9 @@ uvicorn app.main:app --reload --port 8000
 | `GET /api/v1/quotes?symbols=US:AAPL,CRYPTO:BTCUSDT` | 批量实时报价 |
 | `GET /api/v1/ohlcv?symbol=US:AAPL&interval=1d&range=1y` | K线 |
 | `GET /api/v1/analysis?symbol=US:AAPL&range=1y` | **非 LLM 技术分析**(指标 + 多空信号 + 评分 + 中文摘要) |
+| `GET /api/v1/chan?symbol=US:AAPL&interval=1d&range=2y` | **简化版缠论**(分型/笔/中枢/买卖点 1·2·3 + MACD 背驰) |
+
+`interval` 支持 `1d`(日)/ `1wk`(周)/ `1h`(小时);多周期分析。
 
 Symbol 格式:`US:AAPL` / `CRYPTO:BTCUSDT` / `HK:00700` / `CN:600519`。
 

@@ -62,18 +62,27 @@ export default function Chart({ bars }: { bars: Bar[] }) {
     // 缠论结构:笔(连线)+ 分型(标记)+ 中枢(价格区间线)
     if (showChan) {
       const chan = computeChan(bars);
-      // 分型标记(笔端点)
+      // 分型标记(笔端点)+ 买卖点标签
       const endpoints = new Set<number>();
       chan.strokes.forEach((s) => { endpoints.add(s.from.time); endpoints.add(s.to.time); });
+      const bspTimes = new Set(chan.points.map((p) => p.time));
+      const fractalMarkers = chan.fractals
+        .filter((f) => endpoints.has(f.time) && !bspTimes.has(f.time))
+        .map((f) => ({
+          time: f.time, position: f.type === "top" ? "aboveBar" : "belowBar",
+          color: f.type === "top" ? "#ef5350" : "#26a69a",
+          shape: f.type === "top" ? "arrowDown" : "arrowUp",
+        }));
+      const bspMarkers = chan.points.map((p) => {
+        const buy = p.kind.endsWith("B");
+        return {
+          time: p.time, position: buy ? "belowBar" : "aboveBar",
+          color: buy ? "#26a69a" : "#ef5350",
+          shape: buy ? "arrowUp" : "arrowDown", text: p.kind,
+        };
+      });
       candles.setMarkers(
-        chan.fractals
-          .filter((f) => endpoints.has(f.time))
-          .map((f) => ({
-            time: f.time as any,
-            position: f.type === "top" ? "aboveBar" : "belowBar",
-            color: f.type === "top" ? "#ef5350" : "#26a69a",
-            shape: f.type === "top" ? "arrowDown" : "arrowUp",
-          })) as any
+        [...fractalMarkers, ...bspMarkers].sort((a, b) => (a.time as number) - (b.time as number)) as any
       );
       // 笔:连接端点的折线
       const pts: { time: any; value: number }[] = [];
@@ -106,7 +115,7 @@ export default function Chart({ bars }: { bars: Bar[] }) {
       <div ref={ref} style={{ width: "100%" }} />
       <div className="src" style={{ marginTop: 6 }}>
         {showChan
-          ? "缠论:白线=笔 · 箭头=分型端点 · 黄色虚线=中枢上下沿(简化版,灵感来自观潮 TideView)"
+          ? "缠论:白线=笔 · 黄虚线=中枢 · 标签 1/2/3B=买点 1/2/3S=卖点(含背驰,简化版,灵感来自观潮 TideView)"
           : "均线:"}
         {!showChan && <><span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量</>}
       </div>

@@ -10,6 +10,7 @@ import { nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 const RANGES = ["3mo", "6mo", "1y", "2y", "5y"];
+const INTERVALS = [{ k: "1d", label: "日线" }, { k: "1wk", label: "周线" }, { k: "1h", label: "小时" }];
 
 function fmt(n: number | null | undefined, d = 2): string {
   return n == null ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -19,6 +20,7 @@ function SymbolView() {
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
   const [range, setRange] = useState("1y");
+  const [interval, setInterval] = useState("1d");
   const [bars, setBars] = useState<Bar[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [an, setAn] = useState<Analysis | null>(null);
@@ -33,7 +35,7 @@ function SymbolView() {
     setLoading(true); setErr("");
     (async () => {
       try {
-        const [b, q] = await Promise.all([getOHLCV(symbol, range), getQuote(symbol)]);
+        const [b, q] = await Promise.all([getOHLCV(symbol, range, interval), getQuote(symbol)]);
         if (!alive) return;
         setBars(b); setQuote(q); setAn(analyze(b)); setLoading(false);
       } catch (e: any) {
@@ -41,7 +43,7 @@ function SymbolView() {
       }
     })();
     return () => { alive = false; };
-  }, [symbol, range]);
+  }, [symbol, range, interval]);
 
   const dir = quote && quote.changePct != null ? (quote.changePct >= 0 ? "up" : "down") : "muted";
   const ind = an?.indicators ?? {};
@@ -69,6 +71,10 @@ function SymbolView() {
 
       <div className="section">
         <div className="ranges">
+          {INTERVALS.map((it) => (
+            <button key={it.k} className={it.k === interval ? "active" : ""} onClick={() => setInterval(it.k)}>{it.label}</button>
+          ))}
+          <span style={{ width: 12 }} />
           {RANGES.map((r) => (
             <button key={r} className={r === range ? "active" : ""} onClick={() => setRange(r)}>{r}</button>
           ))}

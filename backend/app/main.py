@@ -10,6 +10,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from .analysis.chan import compute_chan
 from .analysis.signals import analyze
 from .models import Symbol
 from .providers import router as data
@@ -67,3 +68,17 @@ async def analysis(symbol: str, interval: str = "1d", range: str = "1y"):
     if not o.bars:
         raise HTTPException(status_code=404, detail="no data")
     return analyze(str(s), o.bars, source=o.source).model_dump(mode="json")
+
+
+@app.get("/api/v1/chan")
+async def chan(symbol: str, interval: str = "1d", range: str = "1y"):
+    """简化版缠论结构识别(分型/笔/中枢/买卖点,含 MACD 背驰),非 LLM。"""
+    s = Symbol.parse(symbol)
+    try:
+        async with httpx.AsyncClient() as client:
+            o = await data.get_ohlcv(client, s, interval, range)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(e))
+    if not o.bars:
+        raise HTTPException(status_code=404, detail="no data")
+    return {"symbol": str(s), "interval": interval, "source": o.source, **compute_chan(o.bars)}

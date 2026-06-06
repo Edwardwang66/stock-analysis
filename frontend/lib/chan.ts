@@ -2,11 +2,13 @@
 // 灵感来自「观潮 TideView」(guanchaotv.com,闭源商业产品)的缠论自动标注能力;
 // 此处为独立实现的简化版:包含处理 -> 分型 -> 笔 -> 中枢。教学/参考用,非精确缠论。
 import type { Bar } from "./datasource";
+import { macd } from "./indicators";
 
 export interface Fractal { time: number; price: number; type: "top" | "bottom"; idx: number }
-export interface Stroke { from: Fractal; to: Fractal; dir: "up" | "down" }
+export interface Stroke { from: Fractal; to: Fractal; dir: "up" | "down"; area: number }
 export interface Pivot { zg: number; zd: number; startTime: number; endTime: number }
-export interface ChanResult { fractals: Fractal[]; strokes: Stroke[]; pivots: Pivot[]; note: string }
+export interface BSPoint { time: number; price: number; kind: "1B" | "2B" | "3B" | "1S" | "2S" | "3S"; detail: string }
+export interface ChanResult { fractals: Fractal[]; strokes: Stroke[]; pivots: Pivot[]; points: BSPoint[]; note: string }
 
 interface MK { time: number; high: number; low: number; idx: number } // 合并后K线
 
@@ -60,9 +62,61 @@ function strokes(fs: Fractal[], mk: MK[]): Stroke[] {
   }
   const st: Stroke[] = [];
   for (let i = 1; i < valid.length; i++) {
-    st.push({ from: valid[i - 1], to: valid[i], dir: valid[i].price > valid[i - 1].price ? "up" : "down" });
+    st.push({ from: valid[i - 1], to: valid[i], dir: valid[i].price > valid[i - 1].price ? "up" : "down", area: 0 });
   }
   return st;
+}
+
+// 买卖点 + 背驰(简化):基于 MACD 能量(hist 面积)与中枢。
+function buySellPoints(bars: Bar[], st: Stroke[], pivots: Pivot[]): BSPoint[] {
+  const pts: BSPoint[] = [];
+  if (st.length < 3) return pts;
+
+  // 背驰 -> 第一类买卖点:同向相邻两笔,价格创新高/低但能量(面积)减弱
+  const downs = st.filter((s) => s.dir === "down");
+  const ups = st.filter((s) => s.dir === "up");
+  const lastDown = downs[downs.length - 1], prevDown = downs[downs.length - 2];
+  if (lastDown && prevDown && lastDown.to.price < prevDown.to.price && Math.abs(lastDown.area) < Math.abs(prevDown.area)) {
+    pts.push({ time: lastDown.to.time, price: lastDown.to.price, kind: "1B", detail: "底背驰:创新低但 MACD 能量减弱" });
+  }
+  const lastUp = ups[ups.length - 1], prevUp = ups[ups.length - 2];
+  if (lastUp && prevUp && lastUp.to.price > prevUp.to.price && Math.abs(lastUp.area) < Math.abs(prevUp.area)) {
+    pts.push({ time: lastUp.to.time, price: lastUp.to.price, kind: "1S", detail: "顶背驰:创新高但 MACD 能量减弱" });
+  }
+
+  // 第三类买卖点:突破中枢后回踩不破 ZG(买)/反抽不破 ZD(卖)
+  const piv = pivots[pivots.length - 1];
+  if (piv) {
+    for (const s of st) {
+      if (s.to.time <= piv.endTime) continue;
+      if (s.dir === "down" && s.to.type === "bottom" && s.to.price > piv.zg) {
+        pts.push({ time: s.to.time, price: s.to.price, kind: "3B", detail: `回踩不破中枢上沿 ZG ${piv.zg.toFixed(2)}` });
+        break;
+      }
+      if (s.dir === "up" && s.to.type === "top" && s.to.price < piv.zd) {
+        pts.push({ time: s.to.time, price: s.to.price, kind: "3S", detail: `反抽不破中枢下沿 ZD ${piv.zd.toFixed(2)}` });
+        break;
+      }
+    }
+  }
+
+  // 第二类买卖点:1B 后首个更高的底(买)/ 1S 后首个更低的顶(卖)
+  const oneB = pts.find((p) => p.kind === "1B");
+  if (oneB) {
+    const after = st.find((s) => s.dir === "down" && s.to.type === "bottom" && s.to.time > oneB.time && s.to.price > oneB.price);
+    if (after) pts.push({ time: after.to.time, price: after.to.price, kind: "2B", detail: "1B 后回调不破前低" });
+  }
+  const oneS = pts.find((p) => p.kind === "1S");
+  if (oneS) {
+    const after = st.find((s) => s.dir === "up" && s.to.type === "top" && s.to.time > oneS.time && s.to.price < oneS.price);
+    if (after) pts.push({ time: after.to.time, price: after.to.price, kind: "2S", detail: "1S 后反弹不破前高" });
+  }
+
+  // 去重 + 按时间排序
+  const seen = new Set<string>();
+  return pts
+    .filter((p) => { const k = p.time + p.kind; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.time - b.time);
 }
 
 // 4) 中枢:连续 3 笔的重叠区间
@@ -81,11 +135,24 @@ function pivots(st: Stroke[]): Pivot[] {
 }
 
 export function computeChan(bars: Bar[]): ChanResult {
-  if (bars.length < 8) return { fractals: [], strokes: [], pivots: [], note: "数据不足,无法识别缠论结构" };
+  if (bars.length < 8) return { fractals: [], strokes: [], pivots: [], points: [], note: "数据不足,无法识别缠论结构" };
   const mk = mergeInclusion(bars);
   const fs = fractals(mk);
   const st = strokes(fs, mk);
+
+  // 计算每笔的 MACD 能量面积(供背驰判定)
+  const closes = bars.map((b) => b.close);
+  const { hist } = macd(closes);
+  const idxByTime = new Map(bars.map((b, i) => [b.time, i]));
+  for (const s of st) {
+    const a = idxByTime.get(s.from.time) ?? 0, b = idxByTime.get(s.to.time) ?? 0;
+    let sum = 0;
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { const h = hist[i]; if (h != null) sum += h; }
+    s.area = sum;
+  }
+
   const ps = pivots(st);
+  const points = buySellPoints(bars, st, ps);
   const lastStroke = st[st.length - 1];
   const lastPivot = ps[ps.length - 1];
   const price = bars[bars.length - 1].close;
@@ -97,6 +164,10 @@ export function computeChan(bars: Bar[]): ChanResult {
   } else {
     note += "暂未形成有效中枢。";
   }
+  if (points.length) {
+    const last = points[points.length - 1];
+    note += `最近买卖点:${last.kind}(${last.detail})。`;
+  }
   note += " 简化缠论,仅供参考,非投资建议。";
-  return { fractals: fs, strokes: st, pivots: ps, note };
+  return { fractals: fs, strokes: st, pivots: ps, points, note };
 }
