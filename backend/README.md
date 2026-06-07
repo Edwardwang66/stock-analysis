@@ -17,7 +17,8 @@ uvicorn app.main:app --reload --port 8000
 
 | 端点 | 说明 |
 |------|------|
-| `GET /api/v1/health` | 健康检查 |
+| `GET /api/v1/health` | 健康检查(含缓存状态) |
+| `GET /api/v1/search?q=苹果` | 标的联想搜索(Yahoo 搜索 + 加密/中文本地表,SQLite 缓存) |
 | `GET /api/v1/quotes?symbols=US:AAPL,CRYPTO:BTCUSDT` | 批量实时报价 |
 | `GET /api/v1/ohlcv?symbol=US:AAPL&interval=1d&range=1y` | K线 |
 | `GET /api/v1/analysis?symbol=US:AAPL&range=1y` | **非 LLM 技术分析**(指标 + 多空信号 + 评分 + 中文摘要) |
@@ -45,3 +46,9 @@ app/
 ```
 
 技术分析逻辑与前端 `frontend/lib/{indicators,analysis}.ts` 保持一致。
+
+## 缓存(SQLite)
+
+`app/cache.py` 用标准库 `sqlite3` 缓存:行情 30s、日线 K线 10min、小时线 2min、搜索 1 天。
+二次加载显著加速(实测 0.27s → 0.04s),并减少外部 API 调用与代理限流。
+缓存文件默认 `/tmp/stock_cache.db`(可用环境变量 `CACHE_DB` 改);不可写时自动回退进程内存。

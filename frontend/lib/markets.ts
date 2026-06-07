@@ -7,9 +7,10 @@ export const MARKETS = [
   { key: "CRYPTO", label: "加密" },
 ] as const;
 
+// 港股代码用 4 位(Yahoo 用 0700.HK)
 export const DEFAULT_SYMBOLS: Record<string, string[]> = {
   US: ["US:AAPL", "US:MSFT", "US:NVDA", "US:TSLA", "US:GOOGL", "US:AMZN", "US:META"],
-  HK: ["HK:00700", "HK:09988", "HK:03690", "HK:00939", "HK:01810"],
+  HK: ["HK:0700", "HK:9988", "HK:3690", "HK:0939", "HK:1810"],
   CN: ["CN:600519", "CN:000001", "CN:600036", "CN:601318", "CN:300750"],
   CRYPTO: ["CRYPTO:BTCUSDT", "CRYPTO:ETHUSDT", "CRYPTO:SOLUSDT", "CRYPTO:BNBUSDT", "CRYPTO:XRPUSDT"],
 };
@@ -19,14 +20,46 @@ export function symbolsForTab(tab: string): string[] {
   return DEFAULT_SYMBOLS[tab] ?? [];
 }
 
-// 常见标的中文名(展示用,缺省回退代码)
-export const NAMES: Record<string, string> = {
-  "US:AAPL": "苹果", "US:MSFT": "微软", "US:NVDA": "英伟达", "US:TSLA": "特斯拉",
-  "US:GOOGL": "谷歌", "US:AMZN": "亚马逊", "US:META": "Meta",
-  "HK:00700": "腾讯控股", "HK:09988": "阿里巴巴", "HK:03690": "美团", "HK:00939": "建设银行", "HK:01810": "小米集团",
-  "CN:600519": "贵州茅台", "CN:000001": "平安银行", "CN:600036": "招商银行", "CN:601318": "中国平安", "CN:300750": "宁德时代",
-  "CRYPTO:BTCUSDT": "比特币", "CRYPTO:ETHUSDT": "以太坊", "CRYPTO:SOLUSDT": "Solana", "CRYPTO:BNBUSDT": "BNB", "CRYPTO:XRPUSDT": "瑞波",
-};
+// 本地常用标的(含中文名)—— 无后端时的离线联想 + 名称展示
+export interface SymInfo { symbol: string; name: string; market: string }
+export const LOCAL_SYMBOLS: SymInfo[] = [
+  { symbol: "US:AAPL", name: "苹果 Apple", market: "US" },
+  { symbol: "US:MSFT", name: "微软 Microsoft", market: "US" },
+  { symbol: "US:NVDA", name: "英伟达 Nvidia", market: "US" },
+  { symbol: "US:TSLA", name: "特斯拉 Tesla", market: "US" },
+  { symbol: "US:GOOGL", name: "谷歌 Google", market: "US" },
+  { symbol: "US:AMZN", name: "亚马逊 Amazon", market: "US" },
+  { symbol: "US:META", name: "Meta 脸书", market: "US" },
+  { symbol: "US:NFLX", name: "奈飞 Netflix", market: "US" },
+  { symbol: "US:AMD", name: "AMD", market: "US" },
+  { symbol: "US:BABA", name: "阿里巴巴 Alibaba", market: "US" },
+  { symbol: "HK:0700", name: "腾讯控股 Tencent", market: "HK" },
+  { symbol: "HK:9988", name: "阿里巴巴 Alibaba", market: "HK" },
+  { symbol: "HK:3690", name: "美团 Meituan", market: "HK" },
+  { symbol: "HK:0939", name: "建设银行", market: "HK" },
+  { symbol: "HK:1810", name: "小米集团 Xiaomi", market: "HK" },
+  { symbol: "HK:9618", name: "京东 JD", market: "HK" },
+  { symbol: "HK:0941", name: "中国移动", market: "HK" },
+  { symbol: "HK:1299", name: "友邦保险 AIA", market: "HK" },
+  { symbol: "CN:600519", name: "贵州茅台", market: "CN" },
+  { symbol: "CN:000001", name: "平安银行", market: "CN" },
+  { symbol: "CN:600036", name: "招商银行", market: "CN" },
+  { symbol: "CN:601318", name: "中国平安", market: "CN" },
+  { symbol: "CN:300750", name: "宁德时代", market: "CN" },
+  { symbol: "CN:000858", name: "五粮液", market: "CN" },
+  { symbol: "CN:002594", name: "比亚迪", market: "CN" },
+  { symbol: "CN:600276", name: "恒瑞医药", market: "CN" },
+  { symbol: "CRYPTO:BTCUSDT", name: "比特币 Bitcoin", market: "CRYPTO" },
+  { symbol: "CRYPTO:ETHUSDT", name: "以太坊 Ethereum", market: "CRYPTO" },
+  { symbol: "CRYPTO:SOLUSDT", name: "Solana", market: "CRYPTO" },
+  { symbol: "CRYPTO:BNBUSDT", name: "BNB", market: "CRYPTO" },
+  { symbol: "CRYPTO:XRPUSDT", name: "瑞波 XRP", market: "CRYPTO" },
+  { symbol: "CRYPTO:DOGEUSDT", name: "狗狗币 Dogecoin", market: "CRYPTO" },
+];
+
+export const NAMES: Record<string, string> = Object.fromEntries(
+  LOCAL_SYMBOLS.map((s) => [s.symbol, s.name.split(" ")[0]])
+);
 
 export function nameOf(symbol: string): string {
   return NAMES[symbol] || symbol.split(":")[1] || symbol;

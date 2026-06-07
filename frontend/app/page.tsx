@@ -1,17 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
+import SearchBox from "@/components/SearchBox";
 import { MARKETS, symbolsForTab } from "@/lib/markets";
 import { getWatchlist } from "@/lib/watchlist";
 
 export default function Home() {
-  const [q, setQ] = useState("");
   const [tab, setTab] = useState("ALL");
   const [watch, setWatch] = useState<string[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
     const sync = () => setWatch(getWatchlist());
@@ -19,12 +17,6 @@ export default function Home() {
     window.addEventListener("watchlist-changed", sync);
     return () => window.removeEventListener("watchlist-changed", sync);
   }, []);
-
-  function go(e: React.FormEvent) {
-    e.preventDefault();
-    const s = q.trim().toUpperCase();
-    if (s) router.push(`/symbol/?s=${encodeURIComponent(s)}`);
-  }
 
   const symbols = symbolsForTab(tab);
 
@@ -37,11 +29,7 @@ export default function Home() {
         <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🔌 数据源</Link>
       </div>
 
-      <form className="search" onSubmit={go}>
-        <input value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder="输入代码,如 US:AAPL / HK:00700 / CN:600519 / CRYPTO:BTCUSDT" />
-        <button type="submit">查看</button>
-      </form>
+      <div className="search"><SearchBox /></div>
 
       {watch.length > 0 && (
         <>
