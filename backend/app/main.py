@@ -16,6 +16,7 @@ from .analysis.moneyflow import compute_moneyflow
 from .analysis.signals import analyze
 from .models import Symbol
 from .providers import router as data
+from . import cache, store
 
 app = FastAPI(title="Stock Dashboard API", version="0.1.0")
 
@@ -30,7 +31,14 @@ app.add_middleware(
 
 @app.get("/api/v1/health")
 async def health():
-    return {"ok": True}
+    return {"ok": True, "cache": cache.stats()}
+
+
+@app.get("/api/v1/search")
+async def search(q: str = Query(..., description="关键词:代码或名称,如 apple / 茅台 / BTC")):
+    """标的联想搜索(Yahoo 搜索 + 加密常用对),带 SQLite 缓存。"""
+    async with httpx.AsyncClient() as client:
+        return await store.search_symbols(client, q)
 
 
 @app.get("/api/v1/quotes")
@@ -38,7 +46,7 @@ async def quotes(symbols: str = Query(..., description="逗号分隔,如 US:AAPL
     syms = [Symbol.parse(x) for x in symbols.split(",") if x.strip()]
     async with httpx.AsyncClient() as client:
         results = await asyncio.gather(
-            *[data.get_quote(client, s) for s in syms], return_exceptions=True
+            *[store.get_quote_cached(client, s) for s in syms], return_exceptions=True
         )
     out = []
     for s, r in zip(syms, results):
@@ -54,7 +62,7 @@ async def ohlcv(symbol: str, interval: str = "1d", range: str = "1y"):
     s = Symbol.parse(symbol)
     try:
         async with httpx.AsyncClient() as client:
-            return (await data.get_ohlcv(client, s, interval, range)).model_dump(mode="json")
+            return (await store.get_ohlcv_cached(client, s, interval, range)).model_dump(mode="json")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -64,7 +72,7 @@ async def analysis(symbol: str, interval: str = "1d", range: str = "1y"):
     s = Symbol.parse(symbol)
     try:
         async with httpx.AsyncClient() as client:
-            o = await data.get_ohlcv(client, s, interval, range)
+            o = await store.get_ohlcv_cached(client, s, interval, range)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=str(e))
     if not o.bars:
@@ -107,7 +115,7 @@ async def chan(symbol: str, interval: str = "1d", range: str = "1y"):
     s = Symbol.parse(symbol)
     try:
         async with httpx.AsyncClient() as client:
-            o = await data.get_ohlcv(client, s, interval, range)
+            o = await store.get_ohlcv_cached(client, s, interval, range)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=str(e))
     if not o.bars:
