@@ -53,6 +53,9 @@ th { color: var(--muted); font-weight: 500; }
 .disclaimer { color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.6; }
 .loading { color: var(--muted); padding: 20px 0; }
 .block-title { font-size: 14px; color: var(--muted); margin: 22px 0 10px; font-weight: 500; }
+.hint { margin: 12px 0 4px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: var(--text);
+  background: rgba(247,181,0,.08); border: 1px solid rgba(247,181,0,.35); border-radius: 8px; }
+.hint code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 .tabs { display: flex; gap: 8px; margin: 18px 0 4px; flex-wrap: wrap; }
 .tabs button { background: var(--panel); border: 1px solid var(--border); color: var(--muted);
   padding: 7px 16px; border-radius: 999px; cursor: pointer; font-size: 13px; }

@@ -8,7 +8,7 @@ import { MARKETS, symbolsForTab } from "@/lib/markets";
 import { getWatchlist } from "@/lib/watchlist";
 
 export default function Home() {
-  const [tab, setTab] = useState("ALL");
+  const [tab, setTab] = useState("CRYPTO");
   const [watch, setWatch] = useState<string[]>([]);
 
   useEffect(() => {
@@ -29,6 +29,13 @@ export default function Home() {
       </div>
 
       <div className="search"><SearchBox /></div>
+
+      {tab !== "CRYPTO" && (
+        <div className="hint">
+          ⚠️ 美股 / 港股 / A股 当前经<strong>公共代理</strong>获取,代理不稳时可能较慢或失败(稍后刷新重试)。
+          加密为直连,秒开。部署后端并设 <code>API_BASE</code> 后,股票也将免代理秒开。
+        </div>
+      )}
 
       {watch.length > 0 && (
         <>

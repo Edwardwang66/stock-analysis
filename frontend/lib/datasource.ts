@@ -24,12 +24,23 @@ const CORS_PROXIES: ((u: string) => string)[] = [
   (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
 ];
 
+// 带超时的 fetch:公共代理常卡 10-20s,8s 未返回即放弃换下一个,避免整页无限转。
+async function fetchT(url: string, ms = 8000): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 // 通用:经公共 CORS 代理取 JSON(给无 CORS 的源用,如 Yahoo search / SEC ticker 映射)。
 export async function fetchViaProxy(url: string): Promise<any> {
   let lastErr: any;
   for (const proxy of CORS_PROXIES) {
     try {
-      const r = await fetch(proxy(url));
+      const r = await fetchT(proxy(url));
       if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
       const j = await r.json();
       if (j) return j;
@@ -94,7 +105,7 @@ async function yahooChart(ycode: string, range: string, interval: string): Promi
   let lastErr: any;
   for (const proxy of CORS_PROXIES) {
     try {
-      const r = await fetch(proxy(url));
+      const r = await fetchT(proxy(url));
       if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
       const j = await r.json();
       const res = j?.chart?.result?.[0];
@@ -104,7 +115,7 @@ async function yahooChart(ycode: string, range: string, interval: string): Promi
       lastErr = e;
     }
   }
-  throw new Error(`Yahoo 全部代理失败:${lastErr?.message || lastErr}`);
+  throw new Error(`Yahoo 全部代理失败(公共代理不稳,建议部署后端):${lastErr?.message || lastErr}`);
 }
 async function yahooQuote(market: string, code: string): Promise<Quote> {
   const res = await yahooChart(yahooCode(market, code), "5d", "1d");
