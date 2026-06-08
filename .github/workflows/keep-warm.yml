@@ -1,0 +1,20 @@
+name: Keep backend warm
+
+# Render 免费实例闲置 15 分钟会休眠,导致用户打开站点时首批请求冷启动 30-50s。
+# 每 12 分钟 ping 一次 /health,让后端保持唤醒(需在仓库 Variables 设 API_BASE)。
+on:
+  schedule:
+    - cron: "*/12 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend /health
+        run: |
+          if [ -z "${{ vars.API_BASE }}" ]; then
+            echo "API_BASE 未设置,跳过"; exit 0
+          fi
+          echo "ping ${{ vars.API_BASE }}/api/v1/health"
+          curl -fsS --max-time 70 "${{ vars.API_BASE }}/api/v1/health" || echo "ping 失败(可能正在冷启动,下次会唤醒)"
