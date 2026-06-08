@@ -52,6 +52,23 @@ export async function fetchViaProxy(url: string): Promise<any> {
   throw new Error(`代理全部失败:${lastErr?.message || lastErr}`);
 }
 
+// 健壮的后端 JSON 请求:容忍 Render 免费实例冷启动(首请求可能 30-50s,或先回 502 错误页)。
+// 检查 r.ok + JSON 可解析;失败按延迟重试(等后端唤醒);超时给足 60s。
+// 返回 null 表示后端确实拿不到 —— 调用方应回退到浏览器直连路径。
+async function backendJson(path: string, retries = 2): Promise<any | null> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await fetchT(`${API_BASE}${path}`, 60000);
+      if (r.ok) {
+        const text = await r.text();
+        try { return JSON.parse(text); } catch { /* 非 JSON(冷启动错误页),重试 */ }
+      }
+    } catch { /* 网络/超时,重试 */ }
+    if (i < retries) await new Promise((res) => setTimeout(res, 3000)); // 等冷启动唤醒
+  }
+  return null;
+}
+
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
   return { market: (market || "").toUpperCase(), code: (code || "").toUpperCase() };
@@ -147,9 +164,12 @@ async function yahooOHLCV(market: string, code: string, range: string, interval:
 // ---- 统一入口 ----
 async function fetchQuote(symbol: string): Promise<Quote> {
   if (API_BASE) {
-    const r = await fetch(`${API_BASE}/api/v1/quotes?symbols=${encodeURIComponent(symbol)}`);
-    const d = (await r.json())[0];
-    return { symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct, high: d.high, low: d.low, currency: d.currency, source: d.source };
+    const arr = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(symbol)}`);
+    const d = Array.isArray(arr) ? arr[0] : null;
+    if (d && !d.error && d.price != null) {
+      return { symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct, high: d.high, low: d.low, currency: d.currency, source: d.source };
+    }
+    // 后端不可用/无数据 → 落浏览器直连
   }
   const { market, code } = parseSymbol(symbol);
   return market === "CRYPTO" ? binanceQuote(code) : yahooQuote(market, code);
@@ -168,10 +188,9 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
   }
 
   if (API_BASE && missing.length > 1) {
-    const r = await fetch(`${API_BASE}/api/v1/quotes?symbols=${encodeURIComponent(missing.join(","))}`);
-    const rows = await r.json();
-    for (const d of rows) {
-      if (d.error) continue;
+    const rows = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(missing.join(","))}`);
+    for (const d of Array.isArray(rows) ? rows : []) {
+      if (d.error || d.price == null) continue;
       const quote = {
         symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
         high: d.high, low: d.low, currency: d.currency, source: d.source,
@@ -179,10 +198,10 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
       quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
       out[quote.symbol] = quote;
     }
-    return out;
   }
 
-  await Promise.all(missing.map(async (symbol) => {
+  // 批量没拿到的(后端冷启动/出错)逐个回退:加密走直连必成,股票尝试代理
+  await Promise.all(missing.filter((s) => !out[s]).map(async (symbol) => {
     let req = quoteInflight.get(symbol);
     if (!req) {
       req = fetchQuote(symbol).finally(() => quoteInflight.delete(symbol));
@@ -206,11 +225,16 @@ export async function getQuote(symbol: string): Promise<Quote> {
   return quotes[normalized];
 }
 
+function barsFromBackend(d: any): Bar[] | null {
+  if (!d || !Array.isArray(d.bars)) return null;
+  return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
+}
+
 export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {
   if (API_BASE) {
-    const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
-    const d = await r.json();
-    return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
+    const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
+    if (bars) return bars;
+    // 后端不可用 → 落浏览器直连
   }
   const { market, code } = parseSymbol(symbol);
   return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
@@ -219,9 +243,8 @@ export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): P
 // 分钟级 K 线(资金流向 / 主力资金估算用)。interval ∈ 1m/5m/15m/30m/1h。
 export async function getIntraday(symbol: string, interval = "5m", range = "1d"): Promise<Bar[]> {
   if (API_BASE) {
-    const r = await fetch(`${API_BASE}/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
-    const d = await r.json();
-    return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
+    const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
+    if (bars) return bars;
   }
   const { market, code } = parseSymbol(symbol);
   return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
