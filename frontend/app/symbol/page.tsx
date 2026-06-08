@@ -70,7 +70,7 @@ function SymbolView() {
         )}
       </div>
 
-      {err && <div className="err">加载失败:{err}(美股经公共 CORS 代理,偶发不稳定,可刷新重试或配置后端 NEXT_PUBLIC_API_BASE)</div>}
+      {err && <div className="err">加载失败:{err}(后端首次访问可能在唤醒,约 30 秒;请稍候刷新重试)</div>}
 
       <div className="section">
         <div className="ranges">
