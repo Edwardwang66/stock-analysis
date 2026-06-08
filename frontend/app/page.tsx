@@ -11,7 +11,7 @@ import { getWatchlist } from "@/lib/watchlist";
 type SortMode = "default" | "gainers" | "losers";
 
 export default function Home() {
-  const [tab, setTab] = useState("ALL");
+  const [tab, setTab] = useState("CRYPTO");
   const [watch, setWatch] = useState<string[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote | null>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -81,6 +81,13 @@ export default function Home() {
       </div>
 
       <div className="search"><SearchBox /></div>
+
+      {tab !== "CRYPTO" && (
+        <div className="hint">
+          ⚠️ 美股 / 港股 / A股 当前经<strong>公共代理</strong>获取,代理不稳时可能较慢或失败(点「刷新行情」重试)。
+          加密为直连,秒开。部署后端并设 <code>API_BASE</code> 后,股票也将免代理秒开。
+        </div>
+      )}
 
       <div className="toolbar">
         <div className="stat">
