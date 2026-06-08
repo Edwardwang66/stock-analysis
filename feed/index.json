@@ -1,39 +1,54 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-08T20:38:03Z",
+  "updated_at": "2026-06-08T22:53:28Z",
   "freshness": {
-    "last_report_at": "2026-06-08T20:38:03Z",
+    "last_report_at": "2026-06-08T22:53:28Z",
     "market_data_asof": "2026-06-08",
     "report_age_hours": 0.0,
-    "data_age_days": 0.86,
+    "data_age_days": 0.95,
     "stale": false
   },
   "latest": {
-    "report": "reports/routine-2026-06-08T2038Z.json",
+    "report": "reports/routine-2026-06-08T2253Z.json",
     "signals": "signals/latest.json",
     "market": "market/state.json",
     "factory": "factory/candidates.json",
-    "net_sharpe": -0.3245849299327173,
+    "net_sharpe": -0.32458492993271737,
     "verdict": "扣成本后不盈利 —— 按设计应淘汰(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 4,
+    "total_reports": 5,
     "by_kind": {
-      "routine": 3,
+      "routine": 4,
       "openclaw": 1
     },
     "by_producer": {
-      "github-actions-routine": 3,
+      "github-actions-routine": 4,
       "openclaw-agent:residual-analyst": 1
     },
-    "last_24h": 2,
-    "last_7d": 4
+    "last_24h": 3,
+    "last_7d": 5
   },
   "timeline": {
     "2026-06-06": 2,
-    "2026-06-08": 2
+    "2026-06-08": 3
   },
   "reports": [
+    {
+      "id": "routine-2026-06-08T2253Z",
+      "kind": "routine",
+      "produced_at": "2026-06-08T22:53:28Z",
+      "asof_data": "2026-06-08",
+      "producer": "github-actions-routine",
+      "agent_role": "engine",
+      "net_sharpe": -0.32458492993271737,
+      "verdict": "扣成本后不盈利 —— 按设计应淘汰(净成本是唯一货币 R4)",
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "signal_refresh",
+      "contribution_summary": "刷新做多做空簿(多 31/空 22),净 Sharpe -0.32;市场 risk_on、广度 0.539、拥挤 0.118。",
+      "path": "reports/routine-2026-06-08T2253Z.json"
+    },
     {
       "id": "routine-2026-06-08T2038Z",
       "kind": "routine",
@@ -96,6 +111,16 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-08T22:53:28Z",
+      "producer": "github-actions-routine",
+      "id": "routine-2026-06-08T2253Z",
+      "type": "signal_refresh",
+      "summary": "刷新做多做空簿(多 31/空 22),净 Sharpe -0.32;市场 risk_on、广度 0.539、拥挤 0.118。",
+      "candidates_proposed": 0,
+      "candidates_accepted": 0,
+      "net_sharpe_delta": -0.0
+    },
     {
       "at": "2026-06-08T20:38:03Z",
       "producer": "github-actions-routine",
