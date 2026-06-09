@@ -1,0 +1,53 @@
+name: Daily screener (技术评分≥50)
+
+# 每个交易日美股收盘后扫描 标普500+纳指100,把评分≥50的清单:
+#   1) 提交到 feed/screener/(供 /screener 页面实时读取)
+#   2) 开一个 GitHub Issue 并指派给仓库所有者(GitHub 会邮件通知你)
+on:
+  schedule:
+    # 美股收盘 16:00 ET ≈ 20:00/21:00 UTC;留富余在 22:30 UTC 周一到周五跑
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "技术评分阈值"
+        default: "50"
+
+permissions:
+  contents: write   # 提交 feed/screener
+  issues: write     # 创建 Issue
+
+concurrency:
+  group: daily-screener
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements.txt
+      - name: 扫描并生成清单
+        run: python scripts/daily_screener.py --threshold ${{ github.event.inputs.threshold || '50' }} --concurrency 10
+
+      - name: 提交清单到 feed/screener
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/screener
+          git diff --cached --quiet || git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
+          git push || echo "push skipped"
+
+      - name: 创建 Issue 推送给我
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(date -u +%F)
+          COUNT=$(python -c "import json;print(json.load(open('feed/screener/latest.json'))['count'])")
+          gh issue create \
+            --title "📈 每日选股 技术评分≥50 · $DATE($COUNT 只)" \
+            --body-file feed/screener/issue.md \
+            --assignee "${{ github.repository_owner }}" || echo "issue create failed"

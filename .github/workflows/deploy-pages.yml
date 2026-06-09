@@ -37,7 +37,7 @@ jobs:
         run: |
           rm -rf frontend/public/feed
           mkdir -p frontend/public/feed
-          cp -r feed/index.json feed/schema feed/reports feed/signals feed/market feed/factory frontend/public/feed/ 2>/dev/null || true
+          cp -r feed/index.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener frontend/public/feed/ 2>/dev/null || true
       - run: npm ci
       - name: Build (static export)
         env:
