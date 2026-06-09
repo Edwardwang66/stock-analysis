@@ -20,6 +20,15 @@ export function symbolsForTab(tab: string): string[] {
   return DEFAULT_SYMBOLS[tab] ?? [];
 }
 
+export const MARKET_LABEL: Record<string, string> = {
+  US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密",
+};
+
+/** 从 "US:AAPL" 取市场前缀。 */
+export function marketOf(symbol: string): string {
+  return (symbol.split(":")[0] || "").toUpperCase();
+}
+
 // 本地常用标的(含中文名)—— 无后端时的离线联想 + 名称展示
 export interface SymInfo { symbol: string; name: string; market: string }
 export const LOCAL_SYMBOLS: SymInfo[] = [

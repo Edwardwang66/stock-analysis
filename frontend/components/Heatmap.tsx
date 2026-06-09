@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getQuotes, type Quote } from "@/lib/datasource";
-import { nameOf } from "@/lib/markets";
+import { useMemo } from "react";
+import { type Quote } from "@/lib/datasource";
+import { marketOf, nameOf } from "@/lib/markets";
 
+// 纯展示组件:与行情卡片共用同一份 quotes(父级单一数据源),保证看板各区数值一致。
 interface Tile { symbol: string; pct: number | null; price: number | null }
 
 // 涨跌幅 -> 颜色(绿涨红跌,强度随幅度)
@@ -20,30 +21,17 @@ export default function Heatmap({
   loading = false,
 }: {
   symbols: string[];
-  quotes?: Record<string, Quote | null>;
+  quotes: Record<string, Quote | null>;
   loading?: boolean;
 }) {
-  const controlled = quotes !== undefined;
-  const [tiles, setTiles] = useState<Tile[]>([]);
-
-  useEffect(() => {
-    if (controlled) {
-      setTiles(symbols.map((s) => ({
-        symbol: s,
-        pct: quotes?.[s]?.changePct ?? null,
-        price: quotes?.[s]?.price ?? null,
-      })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)));
-      return;
-    }
-    let alive = true;
-    setTiles([]);
-    (async () => {
-      const quoteMap = await getQuotes(symbols);
-      const out = symbols.map((s) => ({ symbol: s, pct: quoteMap[s]?.changePct ?? null, price: quoteMap[s]?.price ?? null }));
-      if (alive) setTiles(out.sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)));
-    })();
-    return () => { alive = false; };
-  }, [controlled, quotes, symbols]);
+  const tiles = useMemo<Tile[]>(
+    () => symbols.map((s) => ({
+      symbol: s,
+      pct: quotes[s]?.changePct ?? null,
+      price: quotes[s]?.price ?? null,
+    })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)),
+    [quotes, symbols],
+  );
 
   if (!tiles.length || loading) return <div className="loading">热力图加载中…</div>;
 
@@ -51,7 +39,11 @@ export default function Heatmap({
     <div className="heatmap">
       {tiles.map((t) => (
         <Link key={t.symbol} href={`/symbol/?s=${encodeURIComponent(t.symbol)}`}>
-          <div className="tile" style={{ background: color(t.pct) }}>
+          <div
+            className="tile"
+            style={{ background: color(t.pct) }}
+            title={`${nameOf(t.symbol)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
+          >
             <div className="tile-name">{nameOf(t.symbol)}</div>
             <div className="tile-pct">{t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}</div>
           </div>

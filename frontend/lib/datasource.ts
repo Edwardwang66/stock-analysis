@@ -14,6 +14,8 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+/** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
+export const HAS_BACKEND = Boolean(API_BASE);
 const QUOTE_CACHE_MS = 30_000;
 const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
@@ -251,7 +253,14 @@ async function fetchQuote(symbol: string): Promise<Quote> {
   return market === "CRYPTO" ? binanceQuote(code) : yahooQuote(market, code);
 }
 
-export async function getQuotes(symbols: string[]): Promise<Record<string, Quote>> {
+/**
+ * 批量取报价。onPartial:每拿到一个报价立刻回调(渐进式渲染,快源先上屏,
+ * 不必等最慢的公共代理),最终仍 resolve 完整 map。
+ */
+export async function getQuotes(
+  symbols: string[],
+  onPartial?: (quote: Quote) => void,
+): Promise<Record<string, Quote>> {
   const unique = Array.from(new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)));
   const now = Date.now();
   const out: Record<string, Quote> = {};
@@ -260,18 +269,19 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
   const persisted = getStoredQuotes();
   for (const symbol of unique) {
     const cached = quoteCache.get(symbol);
-    if (cached && cached.expires > now) { out[symbol] = cached.quote; continue; }
+    if (cached && cached.expires > now) { out[symbol] = cached.quote; onPartial?.(cached.quote); continue; }
     // L2:上次会话 30s 内的报价同样视为新鲜(硬刷新后不重复拉)
     const p = persisted[symbol];
     if (p && now - p.at <= QUOTE_CACHE_MS) {
       out[symbol] = p.q;
       quoteCache.set(symbol, { quote: p.q, expires: p.at + QUOTE_CACHE_MS });
+      onPartial?.(p.q);
       continue;
     }
     missing.push(symbol);
   }
 
-  if (API_BASE && missing.length > 1) {
+  if (API_BASE && missing.length >= 1) {
     const rows = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(missing.join(","))}`);
     for (const d of Array.isArray(rows) ? rows : []) {
       if (d.error || d.price == null) continue;
@@ -281,6 +291,7 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
       };
       quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
       out[quote.symbol] = quote;
+      onPartial?.(quote);
     }
   }
 
@@ -295,10 +306,11 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
       const quote = await req;
       quoteCache.set(symbol, { quote, expires: Date.now() + QUOTE_CACHE_MS });
       out[symbol] = quote;
+      onPartial?.(quote);
     } catch {
       // 网络全挂:有 10 分钟内的旧值就降级展示,好过空白
       const p = persisted[symbol];
-      if (p && Date.now() - p.at <= QUOTE_STALE_MAX_MS) out[symbol] = p.q;
+      if (p && Date.now() - p.at <= QUOTE_STALE_MAX_MS) { out[symbol] = p.q; onPartial?.(p.q); }
     }
   }));
   persistQuotes(Object.values(out));

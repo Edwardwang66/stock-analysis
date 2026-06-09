@@ -1,14 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getQuote, type Quote } from "@/lib/datasource";
-import { nameOf } from "@/lib/markets";
+import { type Quote } from "@/lib/datasource";
+import { marketOf, nameOf } from "@/lib/markets";
 
-// 卡片只取报价(轻量),避免每张卡都抓历史 K线 把公共代理打到限流。
-// 技术分析/缠论放在个股详情页。
+// 纯展示组件:报价一律由父级统一拉取下发(单一数据源,卡片间/看板间不会出现
+// 各自拉取导致的数值漂移)。技术分析/缠论放在个股详情页。
 export default function QuoteCard({
   symbol,
-  quote,
+  quote = null,
   error = "",
   loading = false,
 }: {
@@ -17,26 +16,8 @@ export default function QuoteCard({
   error?: string;
   loading?: boolean;
 }) {
-  const controlled = quote !== undefined || Boolean(error) || loading;
-  const [localQuote, setLocalQuote] = useState<Quote | null>(null);
-  const [localErr, setLocalErr] = useState<string>("");
-
-  useEffect(() => {
-    if (controlled) return;
-    let alive = true;
-    (async () => {
-      try {
-        const next = await getQuote(symbol);
-        if (alive) setLocalQuote(next);
-      } catch (e: any) {
-        if (alive) setLocalErr(e?.message || "加载失败");
-      }
-    })();
-    return () => { alive = false; };
-  }, [controlled, symbol]);
-
-  const q = controlled ? quote : localQuote;
-  const err = controlled ? error : localErr;
+  const q = quote;
+  const isCrypto = marketOf(symbol) === "CRYPTO";
   const dir = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
   return (
     <Link href={`/symbol/?s=${encodeURIComponent(symbol)}`}>
@@ -48,18 +29,21 @@ export default function QuoteCard({
             <div className={`price ${dir}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
             <div className={dir}>
               {q.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : "—"}
+              {q.changePct != null && <span className="muted" style={{ fontSize: 11 }}>{isCrypto ? " 24h" : " 当日"}</span>}
               <span className="muted"> {q.currency}</span>
             </div>
             <div className="src" style={{ marginTop: 8 }}>来源 {q.source} · 点击看分析 →</div>
           </>
-        ) : err ? (
-          <div className="err" style={{ fontSize: 12 }}>{err}</div>
-        ) : (
+        ) : error ? (
+          <div className="err" style={{ fontSize: 12 }}>{error}</div>
+        ) : loading ? (
           <div aria-busy="true">
             <div className="skeleton" style={{ width: "60%", height: 26, marginTop: 6 }} />
             <div className="skeleton" style={{ width: "40%", height: 14, marginTop: 8 }} />
             <div className="skeleton" style={{ width: "75%", height: 10, marginTop: 12 }} />
           </div>
+        ) : (
+          <div className="src" style={{ marginTop: 8 }}>等待数据…</div>
         )}
       </div>
     </Link>
