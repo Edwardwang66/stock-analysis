@@ -82,6 +82,15 @@ async function fetchJson<T>(rel: string): Promise<T | null> {
   return null;
 }
 
+export interface StockNote {
+  symbol: string; date: string; model?: string; producer?: string;
+  stance: string; thesis: string; earnings?: string; news?: string;
+  risks?: string; view: string; sources?: { title: string; url: string }[];
+  _placeholder?: boolean;
+}
+export const getStockNote = (symbol: string) =>
+  fetchJson<StockNote>(`stock-notes/${symbol.replace(":", "-")}.json`);
+
 export interface ScreenerItem {
   symbol: string; name: string; indices: string[];
   score: number; verdict: string; price: number; change_pct: number;

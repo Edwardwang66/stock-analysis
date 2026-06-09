@@ -140,6 +140,49 @@ def sample_report(agent_role: str = "residual-analyst", model: str = "claude-opu
     return report
 
 
+# ---- 每日个股 AI 解读(stock-analyst 角色)——解耦的 stock-notes 投递 ----
+def stock_note_template(symbol: str) -> dict:
+    """个股解读模板。真实场景由 OpenClaw 的 stock-analyst 角色用真实数据填充。"""
+    return {
+        "symbol": symbol.upper(),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "model": "claude-opus-4-8 (via OpenClaw)",
+        "producer": "openclaw-agent:stock-analyst",
+        "stance": "中性",
+        "thesis": "<多空逻辑:多头/空头各自核心论点>",
+        "earnings": "<最近一季营收/EPS/指引要点>",
+        "news": "<近一周关键新闻与多空含义>",
+        "risks": "<监管/供应链/事件窗口等风险点>",
+        "view": "<一句话综合看法>",
+        "sources": [],
+    }
+
+
+def stock_note_relpath(symbol: str) -> str:
+    return f"feed/stock-notes/{symbol.upper().replace(':', '-')}.json"
+
+
+def put_github_path(obj: dict, repo: str, token: str, relpath: str, msg: str) -> None:
+    """用 GitHub Contents API 把任意 JSON PUT 到指定路径(创建或更新)。"""
+    url = f"https://api.github.com/repos/{repo}/contents/{relpath}"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json"}
+    sha = None
+    try:  # 已存在则取 sha 以更新
+        g = urllib.request.Request(url + f"?ref={os.environ.get('OPENCLAW_BRANCH', 'main')}", headers=headers)
+        with urllib.request.urlopen(g, timeout=30) as r:
+            sha = json.loads(r.read()).get("sha")
+    except Exception:  # noqa: BLE001
+        pass
+    content = base64.b64encode(json.dumps(obj, ensure_ascii=False, indent=2).encode()).decode()
+    payload = {"message": msg, "content": content, "branch": os.environ.get("OPENCLAW_BRANCH", "main")}
+    if sha:
+        payload["sha"] = sha
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="PUT", headers=headers)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        print(f"[openclaw] stock-note {r.status}: {relpath}")
+
+
 def post_github_api(report: dict, repo: str, token: str) -> None:
     """用 GitHub Contents API 把报告 PUT 到 feed/inbox/<id>.json。"""
     path = f"feed/inbox/{report['id']}.json"
@@ -178,7 +221,24 @@ def main():
     ap.add_argument("--role", default="residual-analyst", choices=ROLES,
                     help="OpenClaw agent 角色,决定填充哪些字段")
     ap.add_argument("--report-file", default=None, help="读取自定义报告 JSON;缺省用内置示例")
+    ap.add_argument("--stock-note", default=None, metavar="SYMBOL",
+                    help="个股解读模式(stock-analyst):如 US:AAPL。投递到 feed/stock-notes/,供个股页展示")
     args = ap.parse_args()
+
+    # ---- 个股解读分支(与量化报告解耦)----
+    if args.stock_note:
+        note = fl.load_json(args.report_file) if args.report_file else stock_note_template(args.stock_note)
+        rel = stock_note_relpath(note["symbol"])
+        if args.mode == "local":
+            fl.save_json(os.path.join(fl.REPO_ROOT, rel), note)
+            print(f"[openclaw] 本地写入 {rel}")
+        else:
+            token = os.environ.get("GITHUB_TOKEN") or os.environ.get("OPENCLAW_TOKEN")
+            if not token:
+                print("[openclaw] 缺少 GITHUB_TOKEN/OPENCLAW_TOKEN"); sys.exit(2)
+            put_github_path(note, args.repo, token, rel, f"openclaw: 个股解读 {note['symbol']} {note['date']}")
+        print(f"[openclaw] 完成: {note['symbol']}")
+        return
 
     report = fl.load_json(args.report_file) if args.report_file else sample_report(args.role)
     secret = os.environ.get("FEED_HMAC_SECRET")
