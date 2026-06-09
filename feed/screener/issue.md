@@ -77,5 +77,5 @@
 | 71 | `MRVL` | MRVL | **50** | 强烈看多 | 266.88 | -7.61 | 62.3 | 纳指100 |
 
 > 评分为**规则化技术指标**(均线/RSI/MACD/布林,-100..100),**非 LLM、非投资建议**(Not financial advice)。
-> 数据源 Yahoo Finance · 生成 2026-06-09T20:05:41.200574+00:00
+> 数据源 Yahoo Finance · 生成 2026-06-09T20:08:07.737486+00:00
 > 在线看板:https://edwardwang66.github.io/stock-analysis/screener/
