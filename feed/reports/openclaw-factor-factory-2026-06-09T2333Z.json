@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-factor-factory-2026-06-09T2333Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-09T23:33:57Z",
+  "asof_data": "2026-06-09",
+  "producer": {
+    "name": "openclaw-agent:factor-factory",
+    "model": "gpt-5.5",
+    "agent_role": "factor-factory",
+    "run_url": "local-openclaw-daily"
+  },
+  "factory_candidates": [
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。"
+    }
+  ],
+  "contribution": {
+    "type": "new_factor",
+    "candidates_proposed": 1,
+    "candidates_accepted": 0,
+    "summary": "提出 1 个可读公式候选，但因六门控证据不足直接 reject，没有上线或 shadow。"
+  },
+  "notes": "LLM 只生成假设；证不出截止后净·扣成本增量，结论必须 reject。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "577397c19153d7e22fd9e9938ef52b4d87f90f47deb5e0fd4ce7a1d8447e8d4e"
+  }
+}

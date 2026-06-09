@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-event-risk-2026-06-09T2333Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-09T23:33:45Z",
+  "asof_data": "2026-06-09",
+  "producer": {
+    "name": "openclaw-agent:event-risk",
+    "model": "gpt-5.5",
+    "agent_role": "event-risk",
+    "run_url": "local-openclaw-daily"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "earnings",
+      "message": "本地公开源未接入完整 PIT 财报日历；对前15只看多标的建议在财报 T±1 暂降单名敞口并复核 SEC/IR 新闻。",
+      "tickers": [
+        "APH",
+        "LUV",
+        "RL",
+        "MAS",
+        "PKG",
+        "BIIB",
+        "PLD",
+        "TPR",
+        "TJX",
+        "PPG",
+        "LIN",
+        "JCI",
+        "REG",
+        "DECK",
+        "TT"
+      ]
+    }
+  ],
+  "contribution": {
+    "type": "risk_alert",
+    "summary": "事件风险采用保守标注: 未验证日历不编造日期，只给财报窗口降敞口规则。"
+  },
+  "notes": "大盘综述: 当前看多清单广度约 100%，拥挤代理约 0.30；事件风险只做回避/降敞口，不做方向 alpha。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "af96b0f64ad3634a0031505cde0684cbddd55c5ea19c77bcd82218efd87c9441"
+  }
+}
