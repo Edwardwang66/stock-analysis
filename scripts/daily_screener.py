@@ -51,11 +51,11 @@ async def load_universe(client: httpx.AsyncClient) -> dict[str, dict]:
         print(f"[universe] S&P500 CSV 拉取失败({e}),仅用 NDX100")
     # Nasdaq 100
     try:
-        ndx = json.loads((ROOT / "scripts" / "ndx100.json").read_text())
-        for sym in ndx:
-            s = sym.strip().upper()
+        ndx = sorted(set(s.strip().upper() for s in json.loads((ROOT / "scripts" / "ndx100.json").read_text())))
+        for s in ndx:
             if s in uni:
-                uni[s]["indices"].append("NDX100")
+                if "NDX100" not in uni[s]["indices"]:
+                    uni[s]["indices"].append("NDX100")
             else:
                 uni[s] = {"name": s, "indices": ["NDX100"]}
         print(f"[universe] NDX100 合并后共 {len(uni)} 只")
