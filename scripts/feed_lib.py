@@ -200,6 +200,7 @@ def rebuild_index() -> dict:
     contributions = contributions[:MAX_CONTRIB]
 
     latest = reports[0] if reports else None
+    latest_engine = next((r for r in reports if r.get("engine")), latest)
     age_hours = (_days_since(latest["produced_at"]) * 24) if latest else None
     data_age_days = _days_since((latest or {}).get("asof_data")) if latest else None
     index = {
@@ -213,12 +214,12 @@ def rebuild_index() -> dict:
             "stale": (age_hours is not None and age_hours > STALE_HOURS),
         },
         "latest": {
-            "report": summaries[0]["path"] if summaries else None,
+            "report": f"reports/{os.path.basename(report_path(latest_engine['id']))}" if latest_engine else None,
             "signals": "signals/latest.json",
             "market": "market/state.json",
             "factory": "factory/candidates.json",
-            "net_sharpe": summaries[0]["net_sharpe"] if summaries else None,
-            "verdict": summaries[0]["verdict"] if summaries else None,
+            "net_sharpe": ((latest_engine.get("engine", {}) or {}).get("net", {}) or {}).get("sharpe") if latest_engine else None,
+            "verdict": (latest_engine.get("engine", {}) or {}).get("verdict") if latest_engine else None,
         },
         "stats": {
             "total_reports": len(reports),

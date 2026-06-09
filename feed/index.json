@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-09T22:01:11Z",
+  "updated_at": "2026-06-09T23:25:52Z",
   "freshness": {
-    "last_report_at": "2026-06-09T22:01:11Z",
-    "market_data_asof": "2026-06-08",
-    "report_age_hours": 0.0,
-    "data_age_days": 1.92,
+    "last_report_at": "2026-06-09T23:23:50Z",
+    "market_data_asof": "2026-06-09",
+    "report_age_hours": 0.03,
+    "data_age_days": 0.98,
     "stale": false
   },
   "latest": {
@@ -17,24 +17,103 @@
     "verdict": "扣成本后不盈利 —— 按设计应淘汰(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 9,
+    "total_reports": 14,
     "by_kind": {
-      "routine": 8,
-      "openclaw": 1
+      "openclaw": 6,
+      "routine": 8
     },
     "by_producer": {
-      "github-actions-routine": 8,
-      "openclaw-agent:residual-analyst": 1
+      "openclaw-agent:red-team": 1,
+      "openclaw-agent:factor-factory": 1,
+      "openclaw-agent:event-risk": 1,
+      "openclaw-agent:crowding-monitor": 1,
+      "openclaw-agent:residual-analyst": 2,
+      "github-actions-routine": 8
     },
-    "last_24h": 5,
-    "last_7d": 9
+    "last_24h": 9,
+    "last_7d": 14
   },
   "timeline": {
     "2026-06-06": 2,
     "2026-06-08": 4,
-    "2026-06-09": 3
+    "2026-06-09": 8
   },
   "reports": [
+    {
+      "id": "openclaw-red-team-2026-06-09T2323Z",
+      "kind": "openclaw",
+      "produced_at": "2026-06-09T23:23:50Z",
+      "asof_data": "2026-06-09",
+      "producer": "openclaw-agent:red-team",
+      "agent_role": "red-team",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 1,
+      "contribution_type": "new_factor",
+      "contribution_summary": "红队复核并否决本轮唯一候选，避免把技术筛选误当新增 alpha。",
+      "path": "reports/openclaw-red-team-2026-06-09T2323Z.json"
+    },
+    {
+      "id": "openclaw-factor-factory-2026-06-09T2323Z",
+      "kind": "openclaw",
+      "produced_at": "2026-06-09T23:23:40Z",
+      "asof_data": "2026-06-09",
+      "producer": "openclaw-agent:factor-factory",
+      "agent_role": "factor-factory",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 0,
+      "n_candidates": 1,
+      "contribution_type": "new_factor",
+      "contribution_summary": "提出 1 个可读公式候选，但因六门控证据不足直接 reject，没有上线或 shadow。",
+      "path": "reports/openclaw-factor-factory-2026-06-09T2323Z.json"
+    },
+    {
+      "id": "openclaw-event-risk-2026-06-09T2323Z",
+      "kind": "openclaw",
+      "produced_at": "2026-06-09T23:23:31Z",
+      "asof_data": "2026-06-09",
+      "producer": "openclaw-agent:event-risk",
+      "agent_role": "event-risk",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "risk_alert",
+      "contribution_summary": "事件风险采用保守标注: 未验证日历不编造日期，只给财报窗口降敞口规则。",
+      "path": "reports/openclaw-event-risk-2026-06-09T2323Z.json"
+    },
+    {
+      "id": "openclaw-crowding-monitor-2026-06-09T2323Z",
+      "kind": "openclaw",
+      "produced_at": "2026-06-09T23:23:22Z",
+      "asof_data": "2026-06-09",
+      "producer": "openclaw-agent:crowding-monitor",
+      "agent_role": "crowding-monitor",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "risk_alert",
+      "contribution_summary": "更新看多清单同质化/拥挤代理，供仓位层做预防性降杠杆参考。",
+      "path": "reports/openclaw-crowding-monitor-2026-06-09T2323Z.json"
+    },
+    {
+      "id": "openclaw-residual-analyst-2026-06-09T2323Z",
+      "kind": "openclaw",
+      "produced_at": "2026-06-09T23:23:13Z",
+      "asof_data": "2026-06-09",
+      "producer": "openclaw-agent:residual-analyst",
+      "agent_role": "residual-analyst",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 3,
+      "n_candidates": 0,
+      "contribution_type": "risk_alert",
+      "contribution_summary": "用看多清单前 30 只与 SPY 日线重算残差偏离，标出 3 个最大偏离。",
+      "path": "reports/openclaw-residual-analyst-2026-06-09T2323Z.json"
+    },
     {
       "id": "routine-2026-06-09T2201Z",
       "kind": "routine",
@@ -172,6 +251,43 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-09T23:23:50Z",
+      "producer": "openclaw-agent:red-team",
+      "id": "openclaw-red-team-2026-06-09T2323Z",
+      "type": "new_factor",
+      "summary": "红队复核并否决本轮唯一候选，避免把技术筛选误当新增 alpha。"
+    },
+    {
+      "at": "2026-06-09T23:23:40Z",
+      "producer": "openclaw-agent:factor-factory",
+      "id": "openclaw-factor-factory-2026-06-09T2323Z",
+      "type": "new_factor",
+      "candidates_proposed": 1,
+      "candidates_accepted": 0,
+      "summary": "提出 1 个可读公式候选，但因六门控证据不足直接 reject，没有上线或 shadow。"
+    },
+    {
+      "at": "2026-06-09T23:23:31Z",
+      "producer": "openclaw-agent:event-risk",
+      "id": "openclaw-event-risk-2026-06-09T2323Z",
+      "type": "risk_alert",
+      "summary": "事件风险采用保守标注: 未验证日历不编造日期，只给财报窗口降敞口规则。"
+    },
+    {
+      "at": "2026-06-09T23:23:22Z",
+      "producer": "openclaw-agent:crowding-monitor",
+      "id": "openclaw-crowding-monitor-2026-06-09T2323Z",
+      "type": "risk_alert",
+      "summary": "更新看多清单同质化/拥挤代理，供仓位层做预防性降杠杆参考。"
+    },
+    {
+      "at": "2026-06-09T23:23:13Z",
+      "producer": "openclaw-agent:residual-analyst",
+      "id": "openclaw-residual-analyst-2026-06-09T2323Z",
+      "type": "risk_alert",
+      "summary": "用看多清单前 30 只与 SPY 日线重算残差偏离，标出 3 个最大偏离。"
+    },
     {
       "at": "2026-06-09T22:01:11Z",
       "producer": "github-actions-routine",

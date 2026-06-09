@@ -16,9 +16,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
+import statistics
 import sys
+import time
 import urllib.request
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from xml.etree import ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -26,24 +32,325 @@ import feed_lib as fl  # noqa: E402
 import openclaw_client as oc  # noqa: E402
 
 SCREENER_URL = "https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json"
+UA = {"User-Agent": "Mozilla/5.0 (compatible; OpenClaw stock-analysis/1.0)"}
+SEC_UA = {"User-Agent": "OpenClaw stock-analysis edwardwang66/stock-analysis"}
 
 
 # ======================================================================
-# 把下面两个函数接到你的 OpenClaw / Claude —— 这是「真分析」发生的地方。
-# 现在是占位实现:返回模板,便于先把投递链路跑通。
+# OpenClaw 本地分析实现。只使用可回溯的公开源:Yahoo chart/search/RSS + SEC companyfacts。
 # ======================================================================
+
+def _url_json(url: str, headers: dict | None = None, timeout: int = 20):
+    req = urllib.request.Request(url, headers=headers or UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def _fmt(n, digits: int = 2, suffix: str = "") -> str:
+    if n is None:
+        return "n/a"
+    if abs(n) >= 1_000_000_000:
+        return f"{n / 1_000_000_000:.{digits}f}B{suffix}"
+    if abs(n) >= 1_000_000:
+        return f"{n / 1_000_000:.{digits}f}M{suffix}"
+    return f"{n:.{digits}f}{suffix}"
+
+
+def _closes(symbol: str, range_: str = "1y") -> tuple[list[float], dict]:
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range_}&interval=1d"
+    data = _url_json(url)
+    res = (data.get("chart", {}).get("result") or [{}])[0]
+    quote = ((res.get("indicators", {}) or {}).get("quote") or [{}])[0]
+    closes = [float(x) for x in (quote.get("close") or []) if x is not None]
+    return closes, res.get("meta", {}) or {}
+
+
+def _returns(xs: list[float]) -> list[float]:
+    return [(xs[i] / xs[i - 1] - 1.0) for i in range(1, len(xs)) if xs[i - 1]]
+
+
+def _sma(xs: list[float], n: int) -> float | None:
+    return (sum(xs[-n:]) / n) if len(xs) >= n else None
+
+
+def _corr(a: list[float], b: list[float]) -> float | None:
+    n = min(len(a), len(b))
+    if n < 20:
+        return None
+    a, b = a[-n:], b[-n:]
+    ma, mb = statistics.mean(a), statistics.mean(b)
+    va = sum((x - ma) ** 2 for x in a)
+    vb = sum((x - mb) ** 2 for x in b)
+    if va <= 0 or vb <= 0:
+        return None
+    return sum((x - ma) * (y - mb) for x, y in zip(a, b)) / math.sqrt(va * vb)
+
+
+def _linreg_residuals(y: list[float], x: list[float]) -> list[float]:
+    n = min(len(y), len(x))
+    if n < 40:
+        return []
+    y, x = y[-n:], x[-n:]
+    mx, my = statistics.mean(x), statistics.mean(y)
+    vx = sum((v - mx) ** 2 for v in x)
+    beta = (sum((xi - mx) * (yi - my) for xi, yi in zip(x, y)) / vx) if vx else 0.0
+    alpha = my - beta * mx
+    return [yi - (alpha + beta * xi) for xi, yi in zip(x, y)]
+
+
+def _zscore(xs: list[float], n: int = 60) -> float | None:
+    if len(xs) < max(20, n // 2):
+        return None
+    win = xs[-n:]
+    sd = statistics.stdev(win) if len(win) > 1 else 0
+    return ((win[-1] - statistics.mean(win)) / sd) if sd else None
+
+
+def _yahoo_search(symbol: str) -> dict:
+    url = f"https://query1.finance.yahoo.com/v1/finance/search?q={symbol}&quotesCount=1&newsCount=4"
+    try:
+        return _url_json(url)
+    except Exception:
+        return {"quotes": [], "news": []}
+
+
+def _rss_news(symbol: str) -> list[dict]:
+    url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US"
+    try:
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            root = ET.fromstring(r.read())
+        out = []
+        for item in root.findall("./channel/item")[:4]:
+            dt = item.findtext("pubDate") or ""
+            try:
+                iso = parsedate_to_datetime(dt).date().isoformat()
+            except Exception:
+                iso = ""
+            out.append({"title": item.findtext("title") or "", "link": item.findtext("link") or "", "date": iso})
+        return out
+    except Exception:
+        return []
+
+
+_CIK_MAP = None
+
+
+def _cik_for(symbol: str) -> str | None:
+    global _CIK_MAP
+    if _CIK_MAP is None:
+        try:
+            data = _url_json("https://www.sec.gov/files/company_tickers.json", headers=SEC_UA)
+            _CIK_MAP = {v["ticker"].upper(): f"{int(v['cik_str']):010d}" for v in data.values()}
+        except Exception:
+            _CIK_MAP = {}
+    return _CIK_MAP.get(symbol.upper())
+
+
+def _latest_sec_fact(symbol: str) -> dict | None:
+    cik = _cik_for(symbol)
+    if not cik:
+        return None
+    try:
+        facts = _url_json(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json", headers=SEC_UA)
+    except Exception:
+        return None
+    gaap = ((facts.get("facts") or {}).get("us-gaap") or {})
+
+    def latest(concepts: list[str], unit: str):
+        rows = []
+        for c in concepts:
+            rows += (((gaap.get(c) or {}).get("units") or {}).get(unit) or [])
+        rows = [r for r in rows if r.get("form") in ("10-Q", "10-K") and r.get("end") and r.get("val") is not None]
+        return max(rows, key=lambda r: (r.get("filed", ""), r.get("end", ""))) if rows else None
+
+    revenue = latest(["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet"], "USD")
+    net_income = latest(["NetIncomeLoss"], "USD")
+    eps = latest(["EarningsPerShareDiluted", "EarningsPerShareBasic"], "USD/shares")
+    if not any([revenue, net_income, eps]):
+        return None
+    return {"revenue": revenue, "net_income": net_income, "eps": eps}
+
+
+def _stock_metrics(symbol: str) -> dict:
+    closes, meta = _closes(symbol, "1y")
+    price = meta.get("regularMarketPrice") or (closes[-1] if closes else None)
+    sma20, sma50, sma200 = _sma(closes, 20), _sma(closes, 50), _sma(closes, 200)
+    ret20 = (price / closes[-21] - 1) if price and len(closes) > 21 else None
+    ret60 = (price / closes[-61] - 1) if price and len(closes) > 61 else None
+    return {"price": price, "sma20": sma20, "sma50": sma50, "sma200": sma200, "ret20": ret20,
+            "ret60": ret60, "meta": meta, "closes": closes}
+
+
 def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
-    """TODO: 调你的 OpenClaw,用 docs/openclaw-stock-notes.md 的 stock-analyst prompt,
-    基于真实行情/财报/新闻产出 {stance,thesis,earnings,news,risks,view,sources}。"""
+    """基于公开行情、SEC companyfacts 与 Yahoo 新闻生成每日个股解读。"""
+    code = symbol.split(":", 1)[1]
+    metrics = _stock_metrics(code)
+    search = _yahoo_search(code)
+    quote = (search.get("quotes") or [{}])[0]
+    sec = _latest_sec_fact(code)
+    news = (search.get("news") or [])[:3] or _rss_news(code)[:3]
+
     note = oc.stock_note_template(symbol)
-    note["view"] = f"[占位] {name} 待 OpenClaw 真分析。把 analyze_stock() 接到你的 Claude 即可。"
+    score = (screener_item or {}).get("score")
+    rsi = (screener_item or {}).get("rsi14")
+    price = metrics["price"] or (screener_item or {}).get("price")
+    above50 = bool(price and metrics["sma50"] and price > metrics["sma50"])
+    above200 = bool(price and metrics["sma200"] and price > metrics["sma200"])
+    extended = bool(rsi and rsi >= 68)
+    note["stance"] = "看多" if (score or 0) >= 50 and above50 and not extended else ("中性" if (score or 0) >= 50 else "看空")
+
+    sector = quote.get("sectorDisp") or quote.get("sector") or "unknown sector"
+    industry = quote.get("industryDisp") or quote.get("industry") or "unknown industry"
+    trend_bits = [
+        f"技术评分 {score if score is not None else 'n/a'}、RSI14 {rsi if rsi is not None else 'n/a'}",
+        f"最新价约 {_fmt(price)}，20/50/200日均线约 {_fmt(metrics['sma20'])}/{_fmt(metrics['sma50'])}/{_fmt(metrics['sma200'])}",
+    ]
+    if metrics["ret20"] is not None or metrics["ret60"] is not None:
+        trend_bits.append(f"近20/60交易日收益约 {_fmt((metrics['ret20'] or 0) * 100, 1, '%')}/{_fmt((metrics['ret60'] or 0) * 100, 1, '%')}")
+    note["thesis"] = (
+        f"多头: {name} 属于 {sector}/{industry}，当前进入看多清单，" + "；".join(trend_bits) +
+        "。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。"
+    )
+    if sec:
+        rev, ni, eps = sec.get("revenue"), sec.get("net_income"), sec.get("eps")
+        parts = []
+        if rev:
+            parts.append(f"最近 SEC {rev.get('form')}({rev.get('end')}) revenue={_fmt(float(rev.get('val')))}")
+        if ni:
+            parts.append(f"net income={_fmt(float(ni.get('val')))}")
+        if eps:
+            parts.append(f"diluted/basic EPS={_fmt(float(eps.get('val')))}")
+        note["earnings"] = "；".join(parts) + "。SEC companyfacts 口径可能混合 10-Q/10-K，作为事实摘录而非盈利预测。"
+    else:
+        note["earnings"] = "本轮未从 SEC companyfacts 可靠取得最近 10-Q/10-K 核心字段；不编造财报数字。"
+    if news:
+        items = []
+        for n in news:
+            title = n.get("title") or ""
+            pub = n.get("publisher") or n.get("date") or ""
+            items.append(f"{title}" + (f"({pub})" if pub else ""))
+        note["news"] = "近端公开新闻标题: " + "；".join(items[:3]) + "。标题只作事件线索，未把新闻当方向性 alpha。"
+    else:
+        note["news"] = "本轮未抓到可用的 Yahoo Finance 近端新闻；新闻项留空，不补写。"
+    note["risks"] = "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。"
+    note["view"] = f"{note['stance']}: 规则化技术面偏强，但只适合作为观察清单；需要结合后续财报与事件风险复核。"
+    note["sources"] = [
+        {"title": f"Yahoo Finance chart: {code}", "url": f"https://finance.yahoo.com/quote/{code}/chart/"},
+        {"title": f"Yahoo Finance search/news: {code}", "url": f"https://finance.yahoo.com/quote/{code}/news/"},
+    ]
+    if sec:
+        cik = _cik_for(code)
+        note["sources"].append({"title": f"SEC companyfacts CIK{cik}", "url": f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"})
+    for n in news[:2]:
+        if n.get("link"):
+            note["sources"].append({"title": n.get("title", "Yahoo Finance news"), "url": n["link"]})
     return note
 
 
 def analyze_role(role: str, context: dict) -> dict:
-    """TODO: 调你的 OpenClaw,用 routines/openclaw-agent-prompts.md 对应角色 prompt,
-    基于真实数据产出符合 feed/schema/report.schema.json 的报告(含信封)。"""
-    return oc.sample_report(role)  # 占位:示例报告
+    """用 screener + Yahoo 日线构造 5 个角色的可审计日报。"""
+    scr = fl.load_json(os.path.join(fl.REPO_ROOT, "feed", "screener", "latest.json"), {"items": []})
+    items = (scr.get("items") or [])[:30]
+    symbols = [it["symbol"] for it in items]
+    close_map, ret_map = {}, {}
+    for s in symbols + ["SPY"]:
+        try:
+            closes, _ = _closes(s, "6mo")
+            close_map[s] = closes
+            ret_map[s] = _returns(closes)
+            time.sleep(0.05)
+        except Exception:
+            pass
+    spy_ret = ret_map.get("SPY", [])
+    residual_rows = []
+    for s in symbols:
+        res = _linreg_residuals(ret_map.get(s, []), spy_ret)
+        z = _zscore(res, 60) if res else None
+        if z is not None:
+            residual_rows.append((s, z, statistics.stdev(res[-60:]) if len(res) >= 20 else 0.0))
+    residual_rows.sort(key=lambda x: abs(x[1]), reverse=True)
+    residual_disp = statistics.mean([r[2] for r in residual_rows]) if residual_rows else None
+    pair_corrs = []
+    for i, a in enumerate(symbols[:15]):
+        for b in symbols[i + 1:15]:
+            c = _corr(ret_map.get(a, []), ret_map.get(b, []))
+            if c is not None:
+                pair_corrs.append(c)
+    crowding = statistics.mean(pair_corrs) if pair_corrs else None
+    above50 = [1 for s in symbols if close_map.get(s) and _sma(close_map[s], 50) and close_map[s][-1] > _sma(close_map[s], 50)]
+    breadth = len(above50) / len(symbols) if symbols else None
+    now = datetime.now(timezone.utc)
+    report = {
+        "schema_version": "1.0",
+        "id": f"openclaw-{role}-{now.strftime('%Y-%m-%dT%H%M')}Z",
+        "kind": "openclaw",
+        "produced_at": fl.now_iso(),
+        "asof_data": scr.get("date") or now.strftime("%Y-%m-%d"),
+        "producer": {"name": f"openclaw-agent:{role}", "model": os.environ.get("OPENCLAW_MODEL", "OpenClaw"),
+                     "agent_role": role, "run_url": os.environ.get("OPENCLAW_RUN_URL", "local-openclaw-daily")},
+    }
+    top_z = residual_rows[:3]
+    if role == "residual-analyst":
+        report.update({
+            "market_state": {"residual_dispersion": residual_disp or 0, "crowding_proxy": crowding or 0,
+                             "breadth_pct_above_50dma": breadth or 0},
+            "alerts": [
+                {"level": "warning" if abs(z) >= 2 else "info", "code": "residual_health",
+                 "message": f"{s} 对 SPY 日收益残差 60日 z-score={z:.2f}; 仅提示残差偏离，不作方向预测。",
+                 "tickers": [s]} for s, z, _ in top_z
+            ],
+            "contribution": {"type": "risk_alert", "summary": f"用看多清单前 {len(symbols)} 只与 SPY 日线重算残差偏离，标出 {len(top_z)} 个最大偏离。"},
+            "notes": "残差=个股日收益对 SPY 日收益的一元滚动回归残差；免费日线近似，不等同完整行业中性协整检验。",
+        })
+    elif role == "crowding-monitor":
+        alert = bool(crowding is not None and crowding > 0.45)
+        report.update({
+            "market_state": {"crowding_proxy": crowding or 0, "crowding_alert": alert, "breadth_pct_above_50dma": breadth or 0},
+            "alerts": [{"level": "warning" if alert else "info", "code": "crowding",
+                        "message": f"看多清单前15只 6个月日收益平均相关约 {crowding or 0:.2f}，50日均线上方占比约 {(breadth or 0):.0%}；拥挤只代表尾部同向风险，不是做空信号。",
+                        "tickers": symbols[:5]}],
+            "contribution": {"type": "risk_alert", "summary": "更新看多清单同质化/拥挤代理，供仓位层做预防性降杠杆参考。"},
+            "notes": "拥挤代理=前15只看多标的两两日收益相关均值；免费公开日线口径。",
+        })
+    elif role == "event-risk":
+        report.update({
+            "alerts": [{"level": "info", "code": "earnings",
+                        "message": "本地公开源未接入完整 PIT 财报日历；对前15只看多标的建议在财报 T±1 暂降单名敞口并复核 SEC/IR 新闻。",
+                        "tickers": symbols[:15]}],
+            "contribution": {"type": "risk_alert", "summary": "事件风险采用保守标注: 未验证日历不编造日期，只给财报窗口降敞口规则。"},
+            "notes": "大盘综述: 当前看多清单广度约 %.0f%%，拥挤代理约 %.2f；事件风险只做回避/降敞口，不做方向 alpha。"
+                     % ((breadth or 0) * 100, crowding or 0),
+        })
+    elif role == "factor-factory":
+        report.update({
+            "factory_candidates": [
+                {"expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+                 "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
+                 "incremental_ic": 0.0, "post_cutoff": True, "pbo": 1.0, "t_stat": 0.0,
+                 "passed_gates": False, "decision": "reject",
+                 "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。"}
+            ],
+            "contribution": {"type": "new_factor", "candidates_proposed": 1, "candidates_accepted": 0,
+                             "summary": "提出 1 个可读公式候选，但因六门控证据不足直接 reject，没有上线或 shadow。"},
+            "notes": "LLM 只生成假设；证不出截止后净·扣成本增量，结论必须 reject。",
+        })
+    else:
+        report.update({
+            "factory_candidates": [
+                {"expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+                 "hypothesis": "复核 factor-factory 同名趋势延续候选。",
+                 "incremental_ic": 0.0, "post_cutoff": True, "pbo": 1.0, "t_stat": 0.0,
+                 "passed_gates": False, "decision": "reject",
+                 "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。"}
+            ],
+            "alerts": [{"level": "info", "code": "red-team",
+                        "message": "五偏差自查: 当前数据通路不足以排除幸存者/叙事/目标/成本偏差；全部候选维持 reject。",
+                        "tickers": []}],
+            "contribution": {"type": "new_factor", "summary": "红队复核并否决本轮唯一候选，避免把技术筛选误当新增 alpha。"},
+            "notes": "无真 holdout 时不把 CPCV/DSR 写成确定结论；保守拒绝。",
+        })
+    return report
 
 
 # ======================================================================
@@ -82,6 +389,24 @@ def dispatch_stock(note: dict, mode: str, repo: str, token: str | None):
         print(f"[daily] 本地写入 {rel}")
     else:
         oc.put_github_path(note, repo, token, rel, f"openclaw: 个股解读 {note['symbol']} {note['date']}")
+
+
+def rebuild_stock_note_index() -> None:
+    """维护 feed/stock-notes/index.json,方便人工浏览与后续批量消费。"""
+    root = os.path.join(fl.FEED, "stock-notes")
+    symbols = []
+    for fn in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        if not fn.endswith(".json") or fn == "index.json":
+            continue
+        note = fl.load_json(os.path.join(root, fn), {})
+        if note.get("symbol"):
+            symbols.append({"symbol": note.get("symbol"), "date": note.get("date"),
+                            "stance": note.get("stance"), "view": note.get("view", "")[:160]})
+    fl.save_json(os.path.join(root, "index.json"), {
+        "updated_at": fl.now_iso(),
+        "note": "每日个股 AI 解读索引。由外部 OpenClaw(stock-analyst 角色)产出,经 feed/stock-notes/<MARKET-CODE>.json 投递。",
+        "symbols": symbols,
+    })
 
 
 def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret: str | None):
@@ -123,6 +448,8 @@ def main():
                 dispatch_stock(note, args.mode, args.repo, token)
             except Exception as e:  # noqa: BLE001
                 print(f"[daily] {sym} 失败: {e}")
+        if args.mode == "local":
+            rebuild_stock_note_index()
 
     # 任务 B:量化 5 角色
     if not args.stocks_only:
