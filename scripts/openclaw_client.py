@@ -121,7 +121,9 @@ ROLE_BUILDERS = {
 }
 
 
-def sample_report(agent_role: str = "residual-analyst", model: str = "claude-opus-4-8") -> dict:
+def sample_report(agent_role: str = "residual-analyst", model: str | None = None) -> dict:
+    # 与模型无关:OpenClaw 用任意 LLM(如 GPT-5.5)均可;OPENCLAW_MODEL 覆盖
+    model = model or os.environ.get("OPENCLAW_MODEL", "OpenClaw")
     """按角色生成一份贴近实战的 OpenClaw 报告模板。真实场景由 agent 用真实分析填充这些字段。
 
     每个角色只填它职责内的字段(见 ROLE_BUILDERS);公共信封(id/kind/producer/asof)统一生成。
@@ -146,7 +148,7 @@ def stock_note_template(symbol: str) -> dict:
     return {
         "symbol": symbol.upper(),
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "model": "claude-opus-4-8 (via OpenClaw)",
+        "model": os.environ.get("OPENCLAW_MODEL", "OpenClaw"),
         "producer": "openclaw-agent:stock-analyst",
         "stance": "中性",
         "thesis": "<多空逻辑:多头/空头各自核心论点>",

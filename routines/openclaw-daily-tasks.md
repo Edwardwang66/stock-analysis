@@ -14,11 +14,15 @@
   - `GITHUB_TOKEN` = 有本仓 `contents:write` 的 PAT(个股解读 PUT 用)
   - `FEED_HMAC_SECRET` = 与仓库 Secret 同值(量化报告签名用)
   - `OPENCLAW_REPO=edwardwang66/stock-analysis`、`OPENCLAW_BRANCH=main`
+  - `OPENCLAW_MODEL=gpt-5.5`(你的 OpenClaw 模型;会写进报告/解读的 `model` 字段)
 - [ ] 维护一个自选清单 `watchlist.txt`(每行一个,如 `US:AAPL`),没有就先用选股清单前 N 只
 
-## 1. 拉取当日输入
-- [ ] 选股清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
-- [ ] 取要分析的标的集合 = 选股清单前 **15** 只 ∪ 自选 `watchlist.txt`(去重)
+> **本清单只分析「看多列表」**:`feed/screener/latest.json` 里全是评分 ≥ 50 的**强烈看多**标的——就是你的看多列表。
+> 模型无关:你的 OpenClaw 用 **GPT-5.5** 即可(设 `OPENCLAW_MODEL=gpt-5.5`)。
+
+## 1. 拉取当日输入(看多清单)
+- [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
+- [ ] 要分析的标的集合 = **看多清单**(前 15 只,或全部)∪ 自选 `watchlist.txt`(去重)
 - [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`
 
 ---
