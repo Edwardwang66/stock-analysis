@@ -82,6 +82,18 @@ async function fetchJson<T>(rel: string): Promise<T | null> {
   return null;
 }
 
+export interface ScreenerItem {
+  symbol: string; name: string; indices: string[];
+  score: number; verdict: string; price: number; change_pct: number;
+  rsi14: number; bullish_signals: number;
+}
+export interface ScreenerList {
+  date: string; generated_at: string; threshold: number;
+  universe_size: number; scanned: number; count: number;
+  items: ScreenerItem[]; note: string;
+}
+export const getScreener = () => fetchJson<ScreenerList>("screener/latest.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");
