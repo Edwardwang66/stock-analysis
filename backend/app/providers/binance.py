@@ -17,6 +17,31 @@ class BinanceProvider:
     markets = {"CRYPTO"}
     commercial_redistribution = True  # 公开行情;遵守 Binance API 条款
 
+    async def get_quotes_batch(self, client: httpx.AsyncClient, syms: list[Symbol]) -> dict[str, Quote]:
+        """一次请求批量 24hr 行情(symbols=["BTCUSDT",...])。"""
+        import json as _json
+        if not syms:
+            return {}
+        codes = _json.dumps([s.code for s in syms], separators=(",", ":"))
+        r = await client.get(f"{_BASE}/api/v3/ticker/24hr", params={"symbols": codes}, timeout=15)
+        r.raise_for_status()
+        by_code = {d.get("symbol"): d for d in r.json() if isinstance(d, dict)}
+        out: dict[str, Quote] = {}
+        for s in syms:
+            d = by_code.get(s.code)
+            if d:
+                out[str(s)] = self._to_quote(s, d)
+        return out
+
+    def _to_quote(self, s: Symbol, d: dict) -> Quote:
+        return Quote(
+            symbol=str(s), price=float(d["lastPrice"]), change=float(d["priceChange"]),
+            change_pct=float(d["priceChangePercent"]), open=float(d["openPrice"]),
+            high=float(d["highPrice"]), low=float(d["lowPrice"]), prev_close=float(d["prevClosePrice"]),
+            volume=float(d["volume"]), currency="USDT",
+            ts=datetime.now(tz=timezone.utc), source=self.name,
+        )
+
     async def get_quote(self, client: httpx.AsyncClient, s: Symbol) -> Quote:
         r = await client.get(f"{_BASE}/api/v3/ticker/24hr", params={"symbol": s.code}, timeout=15)
         r.raise_for_status()

@@ -18,6 +18,82 @@ const QUOTE_CACHE_MS = 30_000;
 const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
 
+// ---- localStorage 持久缓存:刷新/重开页面先用上次数据渲染(秒开),再后台更新 ----
+const LS_QUOTES = "ds:q:v2";
+const LS_BARS_PREFIX = "ds:b:v2:";
+const LS_BARS_INDEX = "ds:bidx:v2";
+const QUOTE_STALE_MAX_MS = 10 * 60_000;   // 超过 10 分钟的旧报价不再用于首屏
+const BARS_STALE_MAX_MS = 24 * 3600_000;  // K线断网降级上限
+const MAX_BAR_SERIES = 30;
+
+function lsRead<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try { const s = localStorage.getItem(key); return s ? (JSON.parse(s) as T) : null; } catch { return null; }
+}
+function lsWrite(key: string, v: unknown): void {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 配额满等忽略 */ }
+}
+
+type StoredQuotes = Record<string, { q: Quote; at: number }>;
+let storedQuotes: StoredQuotes | null = null;
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getStoredQuotes(): StoredQuotes {
+  if (storedQuotes === null) storedQuotes = lsRead<StoredQuotes>(LS_QUOTES) ?? {};
+  return storedQuotes;
+}
+function persistQuotes(quotes: Quote[]): void {
+  if (!quotes.length) return;
+  const store = getStoredQuotes();
+  const now = Date.now();
+  for (const q of quotes) store[q.symbol] = { q, at: now };
+  // 清掉太老的,防 localStorage 膨胀
+  for (const k of Object.keys(store)) if (now - store[k].at > BARS_STALE_MAX_MS) delete store[k];
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = setTimeout(() => lsWrite(LS_QUOTES, store), 300);
+}
+
+/** 同步取"上次会话留下的报价"用于首屏即时渲染;不发网络请求。 */
+export function getCachedQuotesSync(symbols: string[]): Record<string, Quote> {
+  const out: Record<string, Quote> = {};
+  const now = Date.now();
+  const store = getStoredQuotes();
+  for (const raw of symbols) {
+    const s = raw.trim().toUpperCase();
+    const mem = quoteCache.get(s);
+    if (mem && mem.expires > now) { out[s] = mem.quote; continue; }
+    const item = store[s];
+    if (item && now - item.at <= QUOTE_STALE_MAX_MS) out[s] = item.q;
+  }
+  return out;
+}
+
+// K线 localStorage:新鲜期内直接复用(切 range/interval 来回、刷新页面都秒回)
+function barsFreshMs(interval: string): number {
+  return ["1m", "5m", "15m", "30m", "1h"].includes(interval) ? 60_000 : 300_000;
+}
+function barsKey(symbol: string, range: string, interval: string): string {
+  return `${LS_BARS_PREFIX}${symbol}:${range}:${interval}`;
+}
+function readBarsCache(key: string): { bars: Bar[]; at: number } | null {
+  return lsRead<{ bars: Bar[]; at: number }>(key);
+}
+function writeBarsCache(key: string, bars: Bar[]): void {
+  lsWrite(key, { bars, at: Date.now() });
+  const idx = lsRead<Record<string, number>>(LS_BARS_INDEX) ?? {};
+  idx[key] = Date.now();
+  const keys = Object.keys(idx);
+  if (keys.length > MAX_BAR_SERIES) {
+    keys.sort((a, b) => idx[a] - idx[b]);
+    for (const k of keys.slice(0, keys.length - MAX_BAR_SERIES)) {
+      try { localStorage.removeItem(k); } catch { /* ignore */ }
+      delete idx[k];
+    }
+  }
+  lsWrite(LS_BARS_INDEX, idx);
+}
+
 // 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
 // 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底。
 const CORS_PROXIES: ((u: string) => string)[] = [
@@ -181,10 +257,18 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
   const out: Record<string, Quote> = {};
   const missing: string[] = [];
 
+  const persisted = getStoredQuotes();
   for (const symbol of unique) {
     const cached = quoteCache.get(symbol);
-    if (cached && cached.expires > now) out[symbol] = cached.quote;
-    else missing.push(symbol);
+    if (cached && cached.expires > now) { out[symbol] = cached.quote; continue; }
+    // L2:上次会话 30s 内的报价同样视为新鲜(硬刷新后不重复拉)
+    const p = persisted[symbol];
+    if (p && now - p.at <= QUOTE_CACHE_MS) {
+      out[symbol] = p.q;
+      quoteCache.set(symbol, { quote: p.q, expires: p.at + QUOTE_CACHE_MS });
+      continue;
+    }
+    missing.push(symbol);
   }
 
   if (API_BASE && missing.length > 1) {
@@ -212,9 +296,12 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
       quoteCache.set(symbol, { quote, expires: Date.now() + QUOTE_CACHE_MS });
       out[symbol] = quote;
     } catch {
-      // Keep partial results usable; callers can decide how to show missing symbols.
+      // 网络全挂:有 10 分钟内的旧值就降级展示,好过空白
+      const p = persisted[symbol];
+      if (p && Date.now() - p.at <= QUOTE_STALE_MAX_MS) out[symbol] = p.q;
     }
   }));
+  persistQuotes(Object.values(out));
   return out;
 }
 
@@ -230,7 +317,7 @@ function barsFromBackend(d: any): Bar[] | null {
   return d.bars.map((b: any) => ({ time: Math.floor(new Date(b.ts).getTime() / 1000), open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume }));
 }
 
-export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {
+async function fetchBars(symbol: string, range: string, interval: string): Promise<Bar[]> {
   if (API_BASE) {
     const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
     if (bars) return bars;
@@ -240,12 +327,28 @@ export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): P
   return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
 }
 
+// K线统一入口:新鲜期内 localStorage 直出(切周期/刷新秒回);
+// 网络全挂时 24h 内旧数据降级,好过空图。
+async function cachedBars(symbol: string, range: string, interval: string): Promise<Bar[]> {
+  const key = barsKey(symbol, range, interval);
+  const hit = readBarsCache(key);
+  const now = Date.now();
+  if (hit && now - hit.at <= barsFreshMs(interval) && hit.bars.length) return hit.bars;
+  try {
+    const bars = await fetchBars(symbol, range, interval);
+    if (bars.length) writeBarsCache(key, bars);
+    return bars;
+  } catch (e) {
+    if (hit && now - hit.at <= BARS_STALE_MAX_MS && hit.bars.length) return hit.bars;
+    throw e;
+  }
+}
+
+export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): Promise<Bar[]> {
+  return cachedBars(symbol.trim().toUpperCase(), range, interval);
+}
+
 // 分钟级 K 线(资金流向 / 主力资金估算用)。interval ∈ 1m/5m/15m/30m/1h。
 export async function getIntraday(symbol: string, interval = "5m", range = "1d"): Promise<Bar[]> {
-  if (API_BASE) {
-    const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
-    if (bars) return bars;
-  }
-  const { market, code } = parseSymbol(symbol);
-  return market === "CRYPTO" ? binanceOHLCV(code, range, interval) : yahooOHLCV(market, code, range, interval);
+  return cachedBars(symbol.trim().toUpperCase(), range, interval);
 }

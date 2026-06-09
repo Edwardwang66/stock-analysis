@@ -43,7 +43,7 @@ export default function QuoteCard({
       <div className="card">
         <div className="sym">{nameOf(symbol)}</div>
         <div className="src">{symbol}</div>
-        {err ? <div className="err" style={{ fontSize: 12 }}>{err}</div> : q ? (
+        {q ? (
           <>
             <div className={`price ${dir}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
             <div className={dir}>
@@ -52,7 +52,15 @@ export default function QuoteCard({
             </div>
             <div className="src" style={{ marginTop: 8 }}>来源 {q.source} · 点击看分析 →</div>
           </>
-        ) : <div className="loading">{loading ? "加载中…" : "等待刷新"}</div>}
+        ) : err ? (
+          <div className="err" style={{ fontSize: 12 }}>{err}</div>
+        ) : (
+          <div aria-busy="true">
+            <div className="skeleton" style={{ width: "60%", height: 26, marginTop: 6 }} />
+            <div className="skeleton" style={{ width: "40%", height: 14, marginTop: 8 }} />
+            <div className="skeleton" style={{ width: "75%", height: 10, marginTop: 12 }} />
+          </div>
+        )}
       </div>
     </Link>
   );

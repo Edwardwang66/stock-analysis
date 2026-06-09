@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
-import { getQuotes, type Quote } from "@/lib/datasource";
+import { getCachedQuotesSync, getQuotes, type Quote } from "@/lib/datasource";
 import { MARKETS, symbolsForTab } from "@/lib/markets";
 import { getWatchlist } from "@/lib/watchlist";
 
@@ -36,6 +36,9 @@ export default function Home() {
   useEffect(() => {
     if (!allVisibleSymbols.length) return;
     let alive = true;
+    // 先用上次会话的缓存即时渲染(秒开),再后台拉新
+    const cached = getCachedQuotesSync(allVisibleSymbols);
+    if (Object.keys(cached).length) setQuotes((prev) => ({ ...cached, ...prev }));
     setLoadingQuotes(true);
     setErrors({});
     (async () => {
@@ -43,7 +46,9 @@ export default function Home() {
         const next = await getQuotes(allVisibleSymbols);
         if (!alive) return;
         setQuotes((prev) => ({ ...prev, ...next }));
-        setErrors(Object.fromEntries(allVisibleSymbols.filter((s) => !next[s]).map((s) => [s, "暂时无数据"])));
+        setErrors(Object.fromEntries(
+          allVisibleSymbols.filter((s) => !next[s] && !cached[s]).map((s) => [s, "暂时无数据"]),
+        ));
         setLastUpdated(new Date());
       } finally {
         if (alive) setLoadingQuotes(false);
@@ -51,6 +56,16 @@ export default function Home() {
     })();
     return () => { alive = false; };
   }, [allVisibleSymbols, refreshId]);
+
+  // 30s 自动刷新;页面隐藏时暂停,回到前台立即补一次
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (!document.hidden) setRefreshId((x) => x + 1);
+    }, 30_000);
+    const onVis = () => { if (!document.hidden) setRefreshId((x) => x + 1); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
 
   const symbols = useMemo(() => {
     const arr = [...baseSymbols];
