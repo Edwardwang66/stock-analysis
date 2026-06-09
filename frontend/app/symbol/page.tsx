@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
+import AINote from "@/components/AINote";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
@@ -84,6 +85,9 @@ function SymbolView() {
         </div>
         {loading ? <div className="loading">加载中…</div> : <Chart bars={bars} />}
       </div>
+
+      {/* 每日 AI 解读(外部 OpenClaw 投递) */}
+      <AINote symbol={symbol} />
 
       {/* 富途式看板:主力资金 + 筹码分布 + 基本面 */}
       <MoneyFlow symbol={symbol} />
