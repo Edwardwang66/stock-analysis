@@ -59,8 +59,10 @@ def fetch_json(url: str):
 
 
 def load_universe(top: int, watchlist: str | None, screener_file: str | None) -> list[tuple[str, str, dict | None]]:
+    # 看多清单 = 选股清单 items(全是评分≥50「强烈看多」)。top<=0 取全部。
     scr = fl.load_json(screener_file) if screener_file else fetch_json(SCREENER_URL)
-    items = (scr or {}).get("items", [])[:top]
+    all_items = (scr or {}).get("items", [])
+    items = all_items if top <= 0 else all_items[:top]
     uni: dict[str, tuple[str, dict | None]] = {}
     for it in items:
         sym = f"US:{it['symbol']}"
@@ -98,7 +100,7 @@ def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["local", "github-api", "dispatch"], default="local")
-    ap.add_argument("--top", type=int, default=15, help="选股清单取前 N 只")
+    ap.add_argument("--top", type=int, default=15, help="看多清单取前 N 只(0=全部看多清单)")
     ap.add_argument("--watchlist", default=os.environ.get("OPENCLAW_WATCHLIST"))
     ap.add_argument("--screener-file", default=None)
     ap.add_argument("--repo", default=os.environ.get("OPENCLAW_REPO", oc.DEFAULT_REPO))

@@ -10,7 +10,7 @@
 {
   "symbol": "US:AAPL",
   "date": "2026-06-09",
-  "model": "claude-opus-4-8 (via OpenClaw)",
+  "model": "gpt-5.5 (via OpenClaw)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多 | 看空 | 中性",
   "thesis": "多空逻辑(多头/空头各自核心论点)",
@@ -23,9 +23,12 @@
 ```
 个股页只在该文件存在时显示卡片;`stance` 决定徽章颜色。
 
+> **与模型无关**:你的 OpenClaw 用 **GPT-5.5**(或任意 LLM)都行——契约和 prompt 不绑定模型。
+> 设环境变量 `OPENCLAW_MODEL=gpt-5.5`,投递时会自动写进 `model` 字段。
+
 ## OpenClaw 端怎么跑(每日)
-**输入**:① 当日选股清单 `feed/screener/latest.json`(评分≥50 的 71 只);② 你的自选(可在 OpenClaw 侧维护一个 watchlist)。
-**对每只股票**,用下面的 prompt 让 Claude 产出一份 stock-note,再投递。
+**输入(只分析"看多清单")**:① 当日选股清单 `feed/screener/latest.json` —— 全是评分 ≥ 50 的**强烈看多**标的(就是你的看多列表);② 你的自选 watchlist。
+**对清单里每只股票**,用下面的 prompt 让你的 OpenClaw(GPT-5.5)产出一份 stock-note,再投递。
 
 ### stock-analyst 角色 prompt(交给你的 OpenClaw)
 ```
