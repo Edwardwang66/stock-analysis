@@ -1,18 +1,30 @@
 {
   "symbol": "US:AAPL",
-  "date": "2026-06-09",
-  "model": "claude-fable-5",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: 服务业务与回购仍是底仓逻辑;盘后已企稳(+0.19%),且英伟达确认苹果成为其重要 AI 客户,算力补强路径清晰。空头: WWDC 2026 公布的 AI 能力多排期到 2026 年末-2027 年,市场嫌'增量不够、兑现太慢';叠加新专利诉讼与大盘 risk-off(纳指当日 -2%+),股价跌破 300 整数关至 290.55(-3.64%)。",
-  "earnings": "公开报道口径:最近季度营收约 1112 亿美元(TradingKey 标题口径);本轮未读 10-Q 原文,不引用更细分项。",
-  "news": "WWDC 2026 收官(Tim Cook 最后一届主持,John Ternus 接棒预期升温);新 Siri 全量推送排期偏晚引发失望;新增专利诉讼;大摩观点'新 Siri 将引发换机潮,市场低估了苹果'(多空分歧明显)。",
-  "risks": "AI 功能兑现节奏不及预期、管理层换届过渡期、专利诉讼、消费电子需求与大盘 beta;事件窗口密集期波动放大。",
-  "view": "中性: 当日下跌主要是'预期差 + 大盘'双杀,基本面未恶化;短线看 287.8(今日最低)支撑与 300 整数关压力,方向交给后续换机数据。",
+  "date": "2026-06-10",
+  "model": "gpt-5.5 (via OpenClaw)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "看多",
+  "thesis": "多头: AAPL 属于 Technology/Consumer Electronics，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 290.55，20/50/200日均线约 304.56/283.05/265.90；TD9 下行2；52周位置 78% 分位、距高点 -8.5%；SuperTrend(10,3) 空头，约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -0.7%/16.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
+  "news": "近端公开新闻标题: Bank of America sends clear message on Apple stock after key event(TheStreet)；Why Apple (AAPL) Shares Are Sliding Today(StockStory)；Apple Will Run Advanced AI Model on Nvidia GPUs via Google Cloud, Ditching Private Infrastructure(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
+  "view": "看多: TD9 下行2；52周位置 78% 分位、距高点 -8.5%；SuperTrend(10,3) 空头，约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
-    { "title": "Why Apple Stock Is Sinking Today (Motley Fool)", "url": "https://www.fool.com/investing/2026/06/09/why-apple-stock-is-sinking-today/" },
-    { "title": "AAPL Drops Below $300 as WWDC Disappointment and Patent Lawsuit Hit Sentiment (FXLeaders)", "url": "https://www.fxleaders.com/news/2026/06/09/apple-stock-aapl-drops-below-300-as-wwdc-disappointment-and-patent-lawsuit-hit-sentiment/" },
-    { "title": "Apple's Siri AI Was Finally Announced, So Why Is the Stock Tanking? (MarketBeat)", "url": "https://www.marketbeat.com/originals/apples-siri-ai-was-finally-announced-so-why-is-the-stock-tanking/" },
-    { "title": "Apple Posted $111.2B Revenue, So Why Did AAPL Fall After WWDC? (TradingKey)", "url": "https://www.tradingkey.com/analysis/stocks/us-stocks/261955127-apple-stock-forecast-apple-posted-111-2b-revenue-so-why-did-aapl-fall-after-wwdc-tradingkey" }
+    {
+      "title": "Yahoo Finance chart: AAPL",
+      "url": "https://finance.yahoo.com/quote/AAPL/chart/"
+    },
+    {
+      "title": "Yahoo Finance search/news: AAPL",
+      "url": "https://finance.yahoo.com/quote/AAPL/news/"
+    },
+    {
+      "title": "Bank of America sends clear message on Apple stock after key event",
+      "url": "https://finance.yahoo.com/m/439fb266-4aac-36a0-ae2a-e040c1dd98da/bank-of-america-sends-clear.html"
+    },
+    {
+      "title": "Why Apple (AAPL) Shares Are Sliding Today",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/why-apple-aapl-shares-sliding-022214895.html"
+    }
   ]
 }

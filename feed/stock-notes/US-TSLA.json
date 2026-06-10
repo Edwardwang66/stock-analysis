@@ -1,17 +1,30 @@
 {
   "symbol": "US:TSLA",
-  "date": "2026-06-09",
-  "model": "claude-fable-5",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "看多",
-  "thesis": "多头: 奥斯汀无人监管 Robotaxi 服务落地 + 中国 5 月零售同比 +22%、出口 +68%,双催化推动当日逆市 +4.96% 收 408.87;J.P. Morgan 罕见大幅上调(Underweight→Neutral,目标价 145→475)。空头: 分析师共识仍只是 Hold,估值对 FSD/Robotaxi 兑现高度敏感;SpaceX IPO 临近对'马斯克系'资金有分流叙事。",
-  "earnings": "本轮未读 10-Q 原文;不引用财报数字,待季报窗口复核交付与毛利。",
-  "news": "Austin 无人监管 robotaxi 上线;中国 5 月销售强劲(零售 +22%/出口 +68%);JPM 上调评级与目标价;当日量能 5033 万股高于均量(4440 万)。",
-  "risks": "Robotaxi 监管与安全事件、FSD 进度不及预期、价格战对毛利的侵蚀、Musk 精力分散叙事、高 beta 回撤。",
-  "view": "看多: 催化密集且当日强势是放量逆市,短线动能占优;但本质是事件驱动,跟踪 robotaxi 运营数据与 394.7(今日最低)支撑有效性。",
+  "date": "2026-06-10",
+  "model": "gpt-5.5 (via OpenClaw)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "中性",
+  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 396.68，20/50/200日均线约 422.49/396.72/414.95；TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 51% 分位、距高点 -20.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -10.9%/1.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
+  "news": "近端公开新闻标题: TSLA Stock Hits 1-Month Low Amid SpaceX Merger Jitters — But Analyst Sees Tesla Holders Getting 66% Of Deal Within A Year(Stocktwits)；Elon Musk, after DOGE and politics, bets on SpaceX IPO(AFP)；GM Follows Tesla’s Playbook — Expands Into Energy Storage With Peak Partnership(Stocktwits)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
+  "view": "中性: TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 51% 分位、距高点 -20.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
-    { "title": "Tesla Stock Forecast: SpaceX Listing, Q1 Results (Capital.com, 2026-06-09)", "url": "https://capital.com/en-int/market-updates/tesla-stock-forecast-09-06-2026" },
-    { "title": "Tesla (TSLA) Forecast & Analyst Ratings (Public)", "url": "https://public.com/stocks/tsla/forecast-price-target" },
-    { "title": "TSLA Quote (CNBC)", "url": "https://www.cnbc.com/quotes/TSLA" }
+    {
+      "title": "Yahoo Finance chart: TSLA",
+      "url": "https://finance.yahoo.com/quote/TSLA/chart/"
+    },
+    {
+      "title": "Yahoo Finance search/news: TSLA",
+      "url": "https://finance.yahoo.com/quote/TSLA/news/"
+    },
+    {
+      "title": "TSLA Stock Hits 1-Month Low Amid SpaceX Merger Jitters — But Analyst Sees Tesla Holders Getting 66% Of Deal Within A Year",
+      "url": "https://finance.yahoo.com/m/8e18203a-056d-3b6a-80b4-c343b479038b/tsla-stock-hits-1-month-low.html"
+    },
+    {
+      "title": "Elon Musk, after DOGE and politics, bets on SpaceX IPO",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/elon-musk-doge-politics-bets-013142887.html"
+    }
   ]
 }

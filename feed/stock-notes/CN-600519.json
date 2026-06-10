@@ -1,16 +1,30 @@
 {
   "symbol": "CN:600519",
-  "date": "2026-06-09",
-  "model": "claude-fable-5",
-  "producer": "claude-cowork:stock-analyst",
+  "date": "2026-06-10",
+  "model": "gpt-5.5 (via OpenClaw)",
+  "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: 高股息+确定性现金流的防御属性在 risk-off 环境里相对抗跌(全球科技股大跌日 A股盘中仅 -0.95% 至 1256 附近);批价企稳与旺季备货是潜在催化。空头: 白酒终端动销与库存周期仍未给出明确拐点信号;板块缺少增量资金,市值话语权已被宁德时代超越(2025-09),反映资金审美迁移。",
-  "earnings": "本轮未读最新季报原文;不引用营收/净利数字,待季报窗口补充。",
-  "news": "近端公开报道未见公司层面重大新事件(本轮检索范围内);情绪面更多受大盘与消费板块 beta 驱动。信息有限,如实标注。",
-  "risks": "终端动销不及预期、批价波动、消费税政策预期、外资流向;防御属性在系统性下跌后期也可能补跌。",
-  "view": "中性: 抗跌但缺催化,适合作为组合稳定器观察;跟踪批价数据与 1250 一线支撑。",
+  "thesis": "多头: 600519 属于 Consumer Defensive/Beverages—Wineries & Distilleries，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 1279.67，20/50/200日均线约 1297.05/1370.74/1423.30；TD9 上行1；52周位置 9% 分位、距高点 -18.4%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -4.8%/-8.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "earnings": "本轮未从 CN 交易所/公司公告源 可靠取得最近一季核心字段；不编造财报数字。",
+  "news": "近端公开新闻标题: Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings(StockStory)；Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap(Investor's Business Daily)；HKC, ANTGAMER, KOORUI Make Strong Debut at COMPUTEX 2026 with World-First Display Innovations(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
+  "view": "中性: TD9 上行1；52周位置 9% 分位、距高点 -18.4%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
-    { "title": "贵州茅台(600519)行情(Investing.com)", "url": "https://www.investing.com/equities/moutai" },
-    { "title": "贵州茅台 公司公告(上交所)", "url": "http://www.sse.com.cn/assortment/stock/list/info/announcement/index.shtml?productId=600519" }
+    {
+      "title": "Yahoo Finance chart: 600519.SS",
+      "url": "https://finance.yahoo.com/quote/600519.SS/chart/"
+    },
+    {
+      "title": "Yahoo Finance search/news: 600519.SS",
+      "url": "https://finance.yahoo.com/quote/600519.SS/news/"
+    },
+    {
+      "title": "Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/lovesac-love-reports-q1-everything-031652229.html"
+    },
+    {
+      "title": "Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap",
+      "url": "https://finance.yahoo.com/m/25a6a429-345e-3138-9f10-7360fba3d0d1/dow-jones-futures-fall-on.html"
+    }
   ]
 }

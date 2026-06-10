@@ -1,18 +1,30 @@
 {
   "symbol": "US:NVDA",
-  "date": "2026-06-09",
-  "model": "claude-fable-5",
-  "producer": "claude-cowork:stock-analyst",
+  "date": "2026-06-10",
+  "model": "gpt-5.5 (via OpenClaw)",
+  "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: 最新季度营收约 820 亿美元、同比 +85%(Blackwell 史上最快产品爬坡);新增 Apple 成为重要 AI 客户;与 SK hynix 多年期存储合作、NAVER/SKT 等韩系 AI 基建扩单,需求侧证据链密集。空头: 市值 5 万亿美元级别,'AI 交易拥挤'情绪反复(6/5 单日 -6.2%),beta 极高;当日大盘 risk-off 环境下回撤会被放大。",
-  "earnings": "公开报道口径:最近季度总营收约 820 亿美元、同比 +85%;未读 10-Q 原文,不引用毛利率等细项。",
-  "news": "确认 Apple 为其 AI 客户(盘前一度 +0.7% 至 210 上方);SK hynix 多年技术合作;NAVER/SK Telecom AI 基建合作;分析师共识仍为 Strong Buy(38 家,目标价约 299)。",
-  "risks": "AI 资本开支周期性、出口管制与地缘、超高市值下的拥挤交易回撤(参考 6/5 -6.2%)、供应链(HBM/先进封装)瓶颈。",
-  "view": "看多: 基本面动能仍是全市场最强一档,但仓位层面要为高波动留缓冲;回撤日跟踪 200 日均线与 AI 板块整体资金流。",
+  "thesis": "多头: NVDA 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 208.19，20/50/200日均线约 218.21/205.01/188.91；TD9 下行3；52周位置 70% 分位、距高点 -12.0%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -5.1%/15.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
+  "news": "近端公开新闻标题: Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap(Investor's Business Daily)；OpenAI weighs leasing Ohio data center with Nvidia backing, The Information reports(Reuters)；SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
+  "view": "看多: TD9 下行3；52周位置 70% 分位、距高点 -12.0%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
-    { "title": "NVIDIA (NVDA) Stock Price & Overview (StockAnalysis)", "url": "https://stockanalysis.com/stocks/nvda/" },
-    { "title": "Massive News for Nvidia Stock Investors! (Motley Fool)", "url": "https://www.fool.com/investing/2026/06/02/massive-news-for-nvidia-stock-investors/" },
-    { "title": "Is Your NVIDIA Stock Built to Survive a Crash? (Trefis)", "url": "https://www.trefis.com/stock/nvda/articles/601814/is-your-nvidia-stock-built-to-survive-a-crash/2026-06-06" },
-    { "title": "NVIDIA (NVDA) Forecast & Price Target (Public)", "url": "https://public.com/stocks/nvda/forecast-price-target" }
+    {
+      "title": "Yahoo Finance chart: NVDA",
+      "url": "https://finance.yahoo.com/quote/NVDA/chart/"
+    },
+    {
+      "title": "Yahoo Finance search/news: NVDA",
+      "url": "https://finance.yahoo.com/quote/NVDA/news/"
+    },
+    {
+      "title": "Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap",
+      "url": "https://finance.yahoo.com/m/25a6a429-345e-3138-9f10-7360fba3d0d1/dow-jones-futures-fall-on.html"
+    },
+    {
+      "title": "OpenAI weighs leasing Ohio data center with Nvidia backing, The Information reports",
+      "url": "https://finance.yahoo.com/sectors/technology/articles/openai-weighs-leasing-ohio-data-021828649.html"
+    }
   ]
 }
