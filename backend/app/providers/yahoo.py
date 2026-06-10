@@ -33,12 +33,14 @@ def _yahoo_code(s: Symbol) -> str:
         return f"{s.code}.KS"    # KOSPI(KOSDAQ 可直接传 KR:xxxxxx.KQ)
     if s.market == "DE":
         return f"{s.code}.DE"    # XETRA
+    if s.market == "GB":
+        return f"{s.code}.L"     # 伦交所
     raise ValueError(f"yahoo 不支持市场 {s.market}")
 
 
 class YahooProvider:
     name = "Yahoo"
-    markets = {"US", "HK", "CN", "IDX", "JP", "KR", "DE"}
+    markets = {"US", "HK", "CN", "IDX", "JP", "KR", "DE", "GB"}
     commercial_redistribution = False
 
     async def _chart(self, client, s, interval, range_):

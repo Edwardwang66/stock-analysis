@@ -1,12 +1,12 @@
 name: Intraday report (盘中5分钟机器报告)
 
-# 覆盖:美股 盘前最后30分钟(13:00 UTC 起)→ 收盘(20:00 UTC),每 5 分钟。
+# 覆盖:全球时段(亚→欧→美接力,00:00-20:00 UTC 工作日),每 5 分钟;备胎守卫仍生效。
 # ⚠️ GitHub Actions cron 为尽力而为,高频任务实际抖动 ±1-3 分钟;
 #    需要硬实时请迁移 Cloudflare Worker Cron 或常驻 worker(见 docs/realtime-reports.md)。
 # 产物提交到 live 分支(避免 78 次/日心跳污染 main 历史)。
 on:
   schedule:
-    - cron: "*/5 13-20 * * 1-5"
+    - cron: "*/5 0-20 * * 1-5"
   workflow_dispatch:
 
 permissions:

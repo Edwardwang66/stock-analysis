@@ -37,6 +37,8 @@ export const SECTORS: Record<string, string> = {
   // 金融
   "US:BRK-B": "金融", "US:FUTU": "金融科技", "US:APCX": "金融科技",
   // 能源/材料/其他
+  "GB:SHEL": "能源", "GB:BP": "能源", "GB:HSBA": "金融", "GB:ULVR": "必需消费",
+  "GB:AZN": "医疗/制药", "GB:RR": "航空制造", "IDX:^FTSE": "ETF/指数",
   "US:MARPS": "能源", "US:IMPP": "能源/油运", "US:NESR": "能源/油服", "US:USAU": "黄金矿业",
   "US:SVRN": "航运", "US:MMATQ": "材料", "US:BSIN": "工业", "US:EQT": "电力/能源",
   "US:TSEM": "半导体", "US:COHR": "光模块", "US:KRC": "地产", "US:SEI": "电力/能源",

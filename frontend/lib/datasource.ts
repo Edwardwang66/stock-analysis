@@ -26,7 +26,7 @@ function quoteTtl(symbol: string): number {
   if (symbol.startsWith("CRYPTO:")) return CRYPTO_CACHE_MS;
   const market = symbol.split(":")[0];
   if (market === "IDX") {
-    return ["US", "HK", "CN", "JP", "KR", "DE"].some((m) => marketStatus(m).open)
+    return ["US", "HK", "CN", "JP", "KR", "DE", "GB"].some((m) => marketStatus(m).open)
       ? 30_000 : CLOSED_CACHE_MS;
   }
   try {
@@ -259,6 +259,7 @@ function yahooCode(market: string, code: string): string {
   if (market === "JP") return `${code}.T`;    // 东证
   if (market === "KR") return `${code}.KS`;   // KOSPI(KOSDAQ 标的可直接写 KR:xxxxxx.KQ)
   if (market === "DE") return `${code}.DE`;   // XETRA
+  if (market === "GB") return `${code}.L`;    // 伦交所
   return code;
 }
 const Y_INTERVAL: Record<string, string> = {

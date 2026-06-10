@@ -46,6 +46,8 @@ def yahoo_code(symbol: str) -> str:
         return f"{code}.KS"
     if market == "DE":
         return f"{code}.DE"
+    if market == "GB":
+        return f"{code}.L"
     return code
 
 

@@ -6,7 +6,7 @@ import type { SymInfo } from "@/lib/markets";
 
 const MK: Record<string, string> = {
   US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密", IDX: "指数",
-  JP: "日股", KR: "韩股", DE: "德股",
+  JP: "日股", KR: "韩股", DE: "德股", GB: "英股",
 };
 
 export default function SearchBox() {

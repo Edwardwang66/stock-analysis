@@ -13,6 +13,7 @@ function rssCode(symbol: string): string | null {
   if (market === "JP") return `${code}.T`;
   if (market === "KR") return `${code}.KS`;
   if (market === "DE") return `${code}.DE`;
+  if (market === "GB") return `${code}.L`;
   if (market === "CRYPTO") {
     // BTCUSDT → BTC-USD(Yahoo 加密代码)
     const base = code.replace(/(USDT|USD|BUSD)$/, "");

@@ -30,10 +30,11 @@ def sh(*cmd: str, check: bool = True) -> subprocess.CompletedProcess:
 
 
 def in_session(now: datetime) -> bool:
+    """全球任一覆盖市场开市即跑(亚→欧→美接力,约 UTC 00:00-20:00 工作日)。"""
     if now.weekday() >= 5:
         return False
     minutes = now.hour * 60 + now.minute
-    return 13 * 60 <= minutes < 20 * 60  # 13:00-20:00 UTC
+    return 0 <= minutes < 20 * 60 + 5
 
 
 def tick() -> None:
@@ -68,7 +69,7 @@ def tick() -> None:
 
 
 def main() -> None:
-    print("winter-intraday-loop 启动(5 分钟节拍,美股 13:00-20:00 UTC)")
+    print("winter-intraday-loop 启动(5 分钟节拍,全球时段 00:00-20:00 UTC 工作日)")
     while True:
         now = datetime.now(timezone.utc)
         if in_session(now):
