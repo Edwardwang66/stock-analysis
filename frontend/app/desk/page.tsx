@@ -119,6 +119,16 @@ export default function DeskPage() {
         out.push({ icon: "📈", text: `≥80 名单:新进 ${added.length} 只${added.length ? `(${added.slice(0, 3).map((x) => nameOf(x, lang)).join("/")}${added.length > 3 ? "…" : ""})` : ""} · 掉出 ${dropped.length} 只`, href: "/screener/" });
       }
     }
+    // 4.5) 领涨且动量加速(RS≥85 且 r63-r126≥25pp)
+    if (rs?.ranks) {
+      const acc = Object.entries(rs.ranks)
+        .filter(([, v]) => (v.rs ?? 0) >= 85 && v.r63 != null && v.r126 != null && v.r63 - v.r126 >= 25)
+        .sort((a, b) => (b[1].r63! - b[1].r126!) - (a[1].r63! - a[1].r126!))
+        .slice(0, 4);
+      if (acc.length) {
+        out.push({ icon: "🚀", text: `领涨且加速:${acc.map(([k, v]) => `${nameOf(`US:${k}`, lang)}(RS${v.rs}·+${(v.r63! - v.r126!).toFixed(0)}pp)`).join(" · ")}` });
+      }
+    }
     // 5) 高波动 top
     const h0 = heat?.items?.[0];
     if (h0) out.push({ icon: "🔥", text: `本周最躁动:${nameOf(h0.symbol, lang)}(${h0.total} 次事件${h0.lows > h0.highs ? ",偏新低" : h0.highs > h0.lows ? ",偏新高" : ""})` });
@@ -131,7 +141,7 @@ export default function DeskPage() {
     // 7) OpenClaw 节拍
     out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
     return out;
-  }, [ovn, wl, chanA, scrHist, heat, mdPre, mdIntra, mdClose, lang]);
+  }, [ovn, wl, chanA, scrHist, heat, rs, mdPre, mdIntra, mdClose, lang]);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
