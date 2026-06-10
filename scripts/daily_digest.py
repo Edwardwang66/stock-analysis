@@ -29,7 +29,7 @@ WATCHLIST = ROOT / "feed" / "watchlist.json"
 MARKET_HIST = ROOT / "feed" / "market" / "history.json"
 NOTES_DIR = ROOT / "feed" / "stock-notes"
 
-TRACK_TOP = 20          # 每天最多追踪前 N 只(防止清单暴涨拖慢报价)
+PERF_TOP = 25           # 日报中「昨日表现」最多逐只拉报价的数量(防 Actions 超时);入库不设上限
 KEEP_DAYS = 60
 UA = {"User-Agent": "Mozilla/5.0 (compatible; stock-dashboard-digest/0.1)"}
 
@@ -95,7 +95,8 @@ def main() -> int:
     hist: list = jload(HISTORY, [])
     todays_items = []
     if latest and latest.get("items"):
-        todays_items = sorted(latest["items"], key=lambda x: -x.get("score", 0))[:TRACK_TOP]
+        # 全量入库:当天 ≥阈值 的每一只都是「当日持仓」,一只不落(Edward 要求)
+        todays_items = sorted(latest["items"], key=lambda x: -x.get("score", 0))
         entry = {
             "date": latest.get("date") or today,
             "generated_at": latest.get("generated_at"),
@@ -122,7 +123,7 @@ def main() -> int:
     if prev_entries:
         prev = prev_entries[-1]
         rows, wins, rets = [], 0, []
-        for it in prev["items"]:
+        for it in prev["items"][:PERF_TOP]:
             q = quote(it["symbol"])
             time.sleep(0.35)
             if not q or q["price"] is None or not it.get("pick_price"):

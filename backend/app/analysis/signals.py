@@ -37,7 +37,11 @@ def analyze(symbol: str, bars: list[Bar], source: str = "") -> AnalysisResult:
     signals: list[dict] = []
     score = 0
 
-    # 趋势:价格 vs 均线
+    # ===== 评分 v2(2026-06-09,与 frontend/lib/analysis.ts 与 routines/methodology.md 严格同口径)=====
+    # v1 缺陷:正分只有 趋势20+排列15+MACD15=50,RSI/布林加分项与上升趋势互斥 → 全部卡在 50。
+    # v2:10 因子,强趋势+强动能+接近新高可拉开 50~90 区分度。
+
+    # 1) 趋势:价格 vs MA50(±20)
     if price is not None and sma50 is not None:
         if price > sma50:
             signals.append({"name": "趋势(MA50)", "verdict": "看多", "detail": f"价格 {price:.2f} 在 50 日均线 {sma50:.2f} 上方"})
@@ -46,7 +50,7 @@ def analyze(symbol: str, bars: list[Bar], source: str = "") -> AnalysisResult:
             signals.append({"name": "趋势(MA50)", "verdict": "看空", "detail": f"价格 {price:.2f} 在 50 日均线 {sma50:.2f} 下方"})
             score -= 20
 
-    # 金叉/死叉
+    # 2) 长期排列:MA50 vs MA200(±15)
     if sma50 is not None and sma200 is not None:
         if sma50 > sma200:
             signals.append({"name": "MA50/MA200", "verdict": "看多", "detail": "50 日均线在 200 日均线上方(多头排列)"})
@@ -55,27 +59,51 @@ def analyze(symbol: str, bars: list[Bar], source: str = "") -> AnalysisResult:
             signals.append({"name": "MA50/MA200", "verdict": "看空", "detail": "50 日均线在 200 日均线下方(空头排列)"})
             score -= 15
 
-    # RSI
-    if rsi14 is not None:
-        if rsi14 >= 70:
-            signals.append({"name": "RSI(14)", "verdict": "超买", "detail": f"RSI {rsi14:.1f} ≥ 70,短期或回调"})
-            score -= 10
-        elif rsi14 <= 30:
-            signals.append({"name": "RSI(14)", "verdict": "超卖", "detail": f"RSI {rsi14:.1f} ≤ 30,短期或反弹"})
+    # 3) 短期动能:MA20 vs MA50(±10)
+    if sma20 is not None and sma50 is not None:
+        if sma20 > sma50:
+            signals.append({"name": "MA20/MA50", "verdict": "看多", "detail": "短期均线在中期均线上方(动能向上)"})
             score += 10
         else:
-            signals.append({"name": "RSI(14)", "verdict": "中性", "detail": f"RSI {rsi14:.1f}"})
+            signals.append({"name": "MA20/MA50", "verdict": "看空", "detail": "短期均线在中期均线下方(动能转弱)"})
+            score -= 10
 
-    # MACD
+    # 4) RSI 分段(强势区加分,过热减分)
+    if rsi14 is not None:
+        if rsi14 >= 80:
+            signals.append({"name": "RSI(14)", "verdict": "超买", "detail": f"RSI {rsi14:.1f} ≥ 80,显著过热"})
+            score -= 15
+        elif rsi14 >= 70:
+            signals.append({"name": "RSI(14)", "verdict": "超买", "detail": f"RSI {rsi14:.1f} ≥ 70,短期或回调"})
+            score -= 5
+        elif rsi14 >= 55:
+            signals.append({"name": "RSI(14)", "verdict": "看多", "detail": f"RSI {rsi14:.1f} 处 55-70 强势区"})
+            score += 10
+        elif rsi14 > 45:
+            signals.append({"name": "RSI(14)", "verdict": "中性", "detail": f"RSI {rsi14:.1f}"})
+        elif rsi14 > 30:
+            signals.append({"name": "RSI(14)", "verdict": "看空", "detail": f"RSI {rsi14:.1f} 处 30-45 弱势区"})
+            score -= 5
+        else:
+            signals.append({"name": "RSI(14)", "verdict": "超卖", "detail": f"RSI {rsi14:.1f} ≤ 30,短期或反弹"})
+            score += 10
+
+    # 5) MACD 线 vs 信号线(±10) + 6) 零轴(±5)
     if macd_v is not None and macd_s is not None:
         if macd_v > macd_s:
             signals.append({"name": "MACD", "verdict": "看多", "detail": "MACD 在信号线上方"})
-            score += 15
+            score += 10
         else:
             signals.append({"name": "MACD", "verdict": "看空", "detail": "MACD 在信号线下方"})
-            score -= 15
+            score -= 10
+        if macd_v > 0:
+            signals.append({"name": "MACD零轴", "verdict": "看多", "detail": "DIF 在零轴上方(多头市场)"})
+            score += 5
+        else:
+            signals.append({"name": "MACD零轴", "verdict": "看空", "detail": "DIF 在零轴下方"})
+            score -= 5
 
-    # 布林带位置
+    # 7) 布林带位置(±5)
     if price is not None and bb_up_v is not None and bb_low_v is not None:
         if price >= bb_up_v:
             signals.append({"name": "布林带", "verdict": "超买", "detail": "触及上轨"})
@@ -85,6 +113,44 @@ def analyze(symbol: str, bars: list[Bar], source: str = "") -> AnalysisResult:
             score += 5
         else:
             signals.append({"name": "布林带", "verdict": "中性", "detail": "在通道内"})
+
+    # 8) 52周接近度(George-Hwang;需 ≥200 根)
+    if price is not None and hi52 is not None and len(closes) >= 200 and hi52 > 0:
+        near = price / hi52
+        if near >= 0.95:
+            signals.append({"name": "52周位置", "verdict": "看多", "detail": f"距 52 周高 {((near - 1) * 100):.1f}%,接近新高(动量偏强)"})
+            score += 10
+        elif near >= 0.80:
+            signals.append({"name": "52周位置", "verdict": "看多", "detail": f"价格处 52 周区间上沿(距高点 {((near - 1) * 100):.1f}%)"})
+            score += 5
+        elif near <= 0.60:
+            signals.append({"name": "52周位置", "verdict": "看空", "detail": f"距 52 周高回撤 {((1 - near) * 100):.0f}%,深度回撤区"})
+            score -= 5
+        else:
+            signals.append({"name": "52周位置", "verdict": "中性", "detail": f"距 52 周高 {((near - 1) * 100):.1f}%"})
+
+    # 9) 近1月动量(±5)
+    if ret_1m is not None:
+        if ret_1m >= 8:
+            signals.append({"name": "1月动量", "verdict": "看多", "detail": f"近 21 交易日 +{ret_1m:.1f}%"})
+            score += 5
+        elif ret_1m <= -8:
+            signals.append({"name": "1月动量", "verdict": "看空", "detail": f"近 21 交易日 {ret_1m:.1f}%"})
+            score -= 5
+
+    # 10) 量价配合:量比≥1.5 时,放量上涨加分、放量下跌减分(±5)
+    vols = [b.volume for b in bars]
+    if len(vols) >= 21 and len(closes) >= 2:
+        base_vol = sum(vols[-21:-1]) / 20
+        if base_vol > 0:
+            vr = vols[-1] / base_vol
+            if vr >= 1.5:
+                if closes[-1] >= closes[-2]:
+                    signals.append({"name": "量价", "verdict": "看多", "detail": f"量比 {vr:.1f} 放量上涨"})
+                    score += 5
+                else:
+                    signals.append({"name": "量价", "verdict": "看空", "detail": f"量比 {vr:.1f} 放量下跌"})
+                    score -= 5
 
     score = max(-100, min(100, score))
     if score >= 50:
