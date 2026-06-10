@@ -2,7 +2,7 @@ name: Intraday report (盘中5分钟机器报告)
 
 # 覆盖:全球时段(亚→欧→美接力,00:00-20:00 UTC 工作日)。
 # ⚠️ GitHub 对 */5 高频 cron 会静默丢弃(2026-06-10 实测 Winter 睡后备胎 4 小时没接上)。
-# 对策:*/15 调度(成功率高)+ 每次 run 内部三轮循环(轮间 sleep ≈4.5 分钟),
+# 对策:*/15 调度(成功率高)+ 每次 run 内部三轮循环(轮间 sleep 310s>守卫290s,避免第二轮被自己第一轮触发退位),
 #      维持 5 分钟节拍;public 仓库 Actions 分钟免费,sleep 不构成成本问题。
 # 备胎守卫仍生效:每轮先查 live 新鲜度,Winter 循环在岗(<290s)即跳过该轮。
 # 产物经 git worktree 直接提交 live 分支(不切换主工作区,避免 stash 竞态)。
@@ -61,7 +61,7 @@ jobs:
             fi
             # 顺手保活 Render(替代 keep-warm 高频 schedule)
             curl -fsS --max-time 20 "${{ vars.API_BASE }}/api/v1/health" >/dev/null 2>&1 || true
-            [ "$i" -lt 2 ] && sleep 265 || true
+            [ "$i" -lt 2 ] && sleep 310 || true
           done
       - name: 自续链:调起下一棒(GITHUB_TOKEN 实验;失败则靠 cron/watchdog 重新点火)
         if: always()
