@@ -35,7 +35,7 @@ jobs:
           git worktree add /tmp/live live 2>/dev/null || true
           mkdir -p /tmp/live/feed/intraday
           cp /tmp/live_latest.json /tmp/live/feed/intraday/latest.json 2>/dev/null || true
-          INTRADAY_OUT=/tmp/live/feed/intraday/latest.json python3 scripts/intraday_report.py || exit 0
+          INTRADAY_OUT=/tmp/live/feed/intraday/latest.json INTRADAY_PRODUCER=watchdog python3 scripts/intraday_report.py || exit 0
           cd /tmp/live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

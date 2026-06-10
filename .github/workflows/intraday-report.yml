@@ -48,7 +48,7 @@ jobs:
             echo "第 ${i} 轮:live 数据年龄 ${AGE}s"
             if [ "$AGE" -ge 290 ]; then
               mkdir -p /tmp/live/feed/intraday
-              INTRADAY_OUT=/tmp/live/feed/intraday/latest.json python scripts/intraday_report.py || true
+              INTRADAY_OUT=/tmp/live/feed/intraday/latest.json INTRADAY_PRODUCER=actions-backup python scripts/intraday_report.py || true
               cd /tmp/live
               # -f:live 分支基点的 .gitignore 拦 feed/intraday/,文件未跟踪时裸 add 退出码 1(首跑实测)
               git add -f feed/intraday/latest.json

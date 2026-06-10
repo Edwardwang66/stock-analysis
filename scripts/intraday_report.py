@@ -110,6 +110,7 @@ def main() -> int:
     ups = sum(1 for _, p in rows if p > 0)
     doc = {
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "producer": os.environ.get("INTRADAY_PRODUCER", "winter-loop"),
         "pool_size": len(pool), "quoted": len(snap),
         "summary": {
             "up": ups, "down": sum(1 for _, p in rows if p < 0),

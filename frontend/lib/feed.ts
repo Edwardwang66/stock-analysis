@@ -147,7 +147,7 @@ export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/histor
 // 盘中机器报告(live 分支,Winter 循环每5分钟推;Actions 备胎)
 const LIVE_REMOTE = REMOTE.replace("/main/feed", "/live/feed");
 export interface IntradayDoc {
-  at: string; pool_size: number; quoted: number;
+  at: string; producer?: string; pool_size: number; quoted: number;
   summary: { up: number; down: number; median_pct: number | null;
              top: { symbol: string; pct: number }[]; bottom: { symbol: string; pct: number }[] };
   events: { symbol: string; type: string; detail: string; price: number }[];

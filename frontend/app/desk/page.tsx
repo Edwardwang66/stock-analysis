@@ -325,6 +325,13 @@ export default function DeskPage() {
           {live && (
             <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
               <h2>⚡ 盘中流(机器报告 · {fmtTime(live.at, tzKey)}({agoShort(live.at, nowTick)}) · 池 {live.quoted}/{live.pool_size})
+                {live.producer && (
+                  <span className="badge" style={{ marginLeft: 8, fontSize: 11,
+                    color: live.producer === "winter-loop" ? "#26c6da" : "#f7b500",
+                    borderColor: live.producer === "winter-loop" ? "#26c6da" : "#f7b500" }}>
+                    {live.producer === "winter-loop" ? "Winter 在岗" : live.producer === "watchdog" ? "三级兜底" : "备胎顶班"}
+                  </span>
+                )}
                 <span className="src" style={{ marginLeft: 10 }}>
                   涨 <span className="up">{live.summary.up}</span> / 跌 <span className="down">{live.summary.down}</span>
                   {live.summary.median_pct != null && <> · 中位 {live.summary.median_pct >= 0 ? "+" : ""}{live.summary.median_pct.toFixed(2)}%</>}
