@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "id": "study-overnight-2026-06-10T0640Z",
+  "kind": "manual",
+  "produced_at": "2026-06-10T06:40:14Z",
+  "asof_data": "2026-06-08",
+  "producer": {
+    "name": "study-overnight-gap",
+    "agent_role": "engine"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "overnight-gap-study",
+      "message": "HIP-3 盘后代理质量 corr=+0.96(6 资产对);盘后走势→开盘后盘中 corr=-0.025(t≈-0.6,n=584)。详见 docs/study-overnight-gap-2026-06-10.md",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "隔夜缺口研究:代理质量 +0.96,信号价值 t≈-0.6。"
+  },
+  "notes": "信息质量测量,非策略回测;样本短,1 次试验已登记。"
+}
