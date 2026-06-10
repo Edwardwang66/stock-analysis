@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
-import { getRsRanks, type RsTable } from "@/lib/feed";
+import { getRsHistory, getRsRanks, type RsHistoryDay, type RsTable } from "@/lib/feed";
 import { fmtDateTime, fmtTime, useTz } from "@/lib/timefmt";
 import LangSelect from "@/components/LangSelect";
 
@@ -14,6 +14,8 @@ const LIVE_MAX = 60; // 控制公共代理压力上限
 export default function ScreenerPage() {
   const [rsT, setRsT] = useState<RsTable | null>(null);
   useEffect(() => { getRsRanks().then(setRsT).catch(() => {}); }, []);
+  const [rsH, setRsH] = useState<RsHistoryDay[]>([]);
+  useEffect(() => { getRsHistory().then((h) => setRsH(h ?? [])).catch(() => {}); }, []);
   const near52 = (() => {
     if (!rsT?.ranks) return [] as { sym: string; dd: number; rs: number | null }[];
     return Object.entries(rsT.ranks)
@@ -75,6 +77,34 @@ export default function ScreenerPage() {
         <LangSelect />
         <span className="tag">标普500 + 纳指100 · 非 LLM 规则化评分</span>
       </div>
+
+      {rsH.length >= 3 && (() => {
+        const a0 = rsH[Math.max(0, rsH.length - 8)].rs, b0 = rsH[rsH.length - 1].rs;
+        const moves = Object.keys(b0)
+          .flatMap((k) => (a0[k] != null ? [{ sym: k, d: b0[k] - a0[k], rs: b0[k] }] : []))
+          .filter((x) => Math.abs(x.d) >= 8)
+          .sort((x, y) => y.d - x.d);
+        if (!moves.length) return null;
+        return (
+          <div className="section" style={{ marginTop: 8 }}>
+            <h2>🧲 RS 迁移榜<span className="src" style={{ marginLeft: 10 }}>{rsH.length} 天窗口 · 分位变化 ≥8(↗变强 ↘变弱)</span></h2>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {moves.slice(0, 10).map((x) => (
+                <Link key={x.sym} href={`/symbol/?s=US:${x.sym}`} className="badge"
+                  style={{ fontSize: 12, padding: "5px 10px", color: x.d > 0 ? "#26a69a" : "#ef5350" }}>
+                  {x.sym} {x.d > 0 ? "↗" : "↘"}{Math.abs(x.d)} → RS{x.rs}
+                </Link>
+              ))}
+              {moves.length > 10 && moves.slice(-4).map((x) => (
+                <Link key={x.sym} href={`/symbol/?s=US:${x.sym}`} className="badge"
+                  style={{ fontSize: 12, padding: "5px 10px", color: "#ef5350" }}>
+                  {x.sym} ↘{Math.abs(x.d)} → RS{x.rs}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {near52.length > 0 && (
         <div className="section" style={{ marginTop: 8 }}>
