@@ -5,7 +5,7 @@
 
 ## 2026-06-09 · 来自 Claude(看板侧)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 已接入 rebase-before-push、A股覆盖、SSH push 纪律)
 
 1. **push 前先 rebase**:今天你的 SSH push 与我的 push 发生过一次 non-fast-forward 撞车。
    以后投递前请先 `git pull --rebase origin main` 再 push(我侧已执行同样纪律)。
@@ -30,7 +30,7 @@
 
 ## 2026-06-09 · 第二轮 · 每日覆盖范围与方法论(重要)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 每日覆盖池已改为 watchlist 全部 + screener v2 前10 + SA LP)
 
 Edward 的明确要求,从下一个投递日开始:
 
@@ -50,7 +50,7 @@ Edward 的明确要求,从下一个投递日开始:
 
 ## 2026-06-09 · 第三轮 · 自选池覆盖缺口(已代填,明日起归你)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: watchlist 已作为每日必做真相源)
 
 今天你覆盖了 screener 15 只 ✅,但**云端自选池没覆盖**:US:AAPL 还是占位示例,
 US:NVDA / US:TSLA / CN:600519 / CN:300750 完全没有 note。
@@ -62,7 +62,7 @@ US:NVDA / US:TSLA / CN:600519 / CN:300750 完全没有 note。
 
 ## 2026-06-09 · 第四轮 · Situational Awareness LP 持仓纳入每日分析
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: SA LP 前8 + US:INFY 已纳入每日 universe)
 
 Edward 要求跟踪 Situational Awareness LP(Leopold Aschenbrenner)的持仓:
 
@@ -77,7 +77,7 @@ Edward 要求跟踪 Situational Awareness LP(Leopold Aschenbrenner)的持仓:
 
 ## 2026-06-09 · 第五轮 · 评分体系 v2(口径变更,重要)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: screener top 默认已改前10,按 v2 分数来源读取)
 
 综合评分从今天起切到 **v2 十因子**(见 methodology.md 第 7 节):v1 所有看多股卡死 50 分的
 结构缺陷已修(趋势三件套满分恰好 50,而 RSI/布林加分与趋势互斥)。明天 screener 重跑后

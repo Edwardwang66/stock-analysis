@@ -10,7 +10,7 @@
   python scripts/openclaw_daily.py --mode local
   # 真投递(需 GITHUB_TOKEN;量化报告另需 FEED_HMAC_SECRET)
   GITHUB_TOKEN=... FEED_HMAC_SECRET=... python scripts/openclaw_daily.py --mode github-api
-  python scripts/openclaw_daily.py --stocks-only --top 10 --watchlist watchlist.txt
+  python scripts/openclaw_daily.py --stocks-only --top 10
 """
 from __future__ import annotations
 
@@ -41,6 +41,8 @@ DEFAULT_DAILY_STOCK_NOTES = [
     ("CN:601318", "中国平安"),
     ("CN:300750", "宁德时代"),
 ]
+WATCHLIST_FILE = os.path.join(fl.REPO_ROOT, "feed", "watchlist.json")
+SA_LP_FILE = os.path.join(fl.REPO_ROOT, "feed", "funds", "situational-awareness.json")
 
 
 # ======================================================================
@@ -232,6 +234,8 @@ def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
         f"技术评分 {score if score is not None else 'n/a'}、RSI14 {rsi if rsi is not None else 'n/a'}",
         f"最新价约 {_fmt(price)}，20/50/200日均线约 {_fmt(metrics['sma20'])}/{_fmt(metrics['sma50'])}/{_fmt(metrics['sma200'])}",
     ]
+    if screener_item and screener_item.get("source_context"):
+        trend_bits.append(str(screener_item["source_context"]))
     if metrics["ret20"] is not None or metrics["ret60"] is not None:
         trend_bits.append(f"近20/60交易日收益约 {_fmt((metrics['ret20'] or 0) * 100, 1, '%')}/{_fmt((metrics['ret60'] or 0) * 100, 1, '%')}")
     note["thesis"] = (
@@ -392,22 +396,63 @@ def fetch_json(url: str):
         return None
 
 
+def _add_symbol(uni: dict[str, tuple[str, dict | None]], symbol: str, name: str | None,
+                item: dict | None = None) -> None:
+    sym = symbol.strip().upper()
+    if not sym or ":" not in sym:
+        return
+    prev_name, prev_item = uni.get(sym, (name or sym.split(":", 1)[1], None))
+    merged = dict(prev_item or {})
+    if item:
+        merged.update(item)
+    uni[sym] = (name or prev_name, merged or None)
+
+
+def _load_watchlist_symbols() -> list[str]:
+    data = fl.load_json(WATCHLIST_FILE, {}) if os.path.exists(WATCHLIST_FILE) else {}
+    return [str(s).upper() for s in (data.get("symbols") or []) if isinstance(s, str)]
+
+
+def _load_sa_lp_symbols(limit: int = 8) -> list[tuple[str, str, dict]]:
+    data = fl.load_json(SA_LP_FILE, {}) if os.path.exists(SA_LP_FILE) else {}
+    positions = data.get("positions") or []
+    longs = [p for p in positions if "PUT" not in str(p.get("type", "")).upper()]
+    shorts = [p for p in positions if p.get("ticker") == "US:INFY"]
+    out = []
+    for p in longs[:limit] + shorts[:1]:
+        ticker = str(p.get("ticker", "")).upper()
+        if not ticker:
+            continue
+        context = (
+            f"SA LP 持仓背景: {p.get('type', 'position')}，主题 {p.get('theme', 'n/a')}，"
+            f"13F asof {data.get('asof', 'n/a')}。"
+        )
+        out.append((ticker, p.get("name") or ticker.split(":", 1)[1], {"source_context": context}))
+    return out
+
+
 def load_universe(top: int, watchlist: str | None, screener_file: str | None) -> list[tuple[str, str, dict | None]]:
-    # 看多清单 = 选股清单 items(全是评分≥50「强烈看多」)。top<=0 取全部。
+    # 每日覆盖范围: 云端自选池全部 + v2 看多清单前 N + SA LP 前 8 持仓 + US:INFY Put。
     scr = fl.load_json(screener_file) if screener_file else fetch_json(SCREENER_URL)
     all_items = (scr or {}).get("items", [])
     items = all_items if top <= 0 else all_items[:top]
     uni: dict[str, tuple[str, dict | None]] = {}
+    for sym in _load_watchlist_symbols():
+        _add_symbol(uni, sym, None, {"source_context": "云端自选池 feed/watchlist.json，Edward/Claude 维护。"})
     for it in items:
         sym = f"US:{it['symbol']}"
-        uni[sym] = (it.get("name", it["symbol"]), it)
-    for sym, name in DEFAULT_DAILY_STOCK_NOTES:
-        uni.setdefault(sym, (name, None))
+        _add_symbol(uni, sym, it.get("name", it["symbol"]), it)
+    for sym, name, item in _load_sa_lp_symbols():
+        _add_symbol(uni, sym, name, item)
+    # 兼容旧环境: 如果仓库尚无 feed/watchlist.json,仍保留最初的 A 股默认池。
+    if not _load_watchlist_symbols():
+        for sym, name in DEFAULT_DAILY_STOCK_NOTES:
+            _add_symbol(uni, sym, name, {"source_context": "默认 A 股覆盖池。"})
     if watchlist and os.path.exists(watchlist):
         for line in open(watchlist):
             s = line.strip().upper()
             if s and ":" in s:
-                uni.setdefault(s, (s.split(":")[1], None))
+                _add_symbol(uni, s, s.split(":")[1], {"source_context": f"兼容本地 watchlist 文件 {watchlist}。"})
     return [(s, n, i) for s, (n, i) in uni.items()]
 
 
@@ -454,7 +499,7 @@ def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["local", "github-api", "dispatch"], default="local")
-    ap.add_argument("--top", type=int, default=15, help="看多清单取前 N 只(0=全部看多清单)")
+    ap.add_argument("--top", type=int, default=10, help="看多清单取前 N 只(0=全部看多清单)")
     ap.add_argument("--watchlist", default=os.environ.get("OPENCLAW_WATCHLIST"))
     ap.add_argument("--screener-file", default=None)
     ap.add_argument("--repo", default=os.environ.get("OPENCLAW_REPO", oc.DEFAULT_REPO))
