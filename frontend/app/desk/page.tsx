@@ -362,6 +362,28 @@ export default function DeskPage() {
             </div>
           )}
 
+          {/* 评分结构(70-100 五桶) */}
+          {(() => {
+            const scoresArr = rows.map((r) => r.score).filter((x): x is number => x != null && x >= 70);
+            if (scoresArr.length < 10) return null;
+            const b = [0, 0, 0, 0, 0]; // 70-75/75-80/80-85/85-90/90+
+            for (const v of scoresArr) b[v >= 90 ? 4 : v >= 85 ? 3 : v >= 80 ? 2 : v >= 75 ? 1 : 0]++;
+            const mx = Math.max(...b);
+            const lbl = ["70+", "75+", "80+", "85+", "90+"];
+            return (
+              <div className="src" style={{ display: "flex", gap: 10, alignItems: "flex-end", margin: "0 2px 6px", fontSize: 11 }}>
+                <span>评分结构:</span>
+                {b.map((c, i) => (
+                  <span key={i} style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <span style={{ display: "block", width: 22, height: 4 + (c / (mx || 1)) * 22,
+                      background: i >= 2 ? "#26a69a" : "#787b86", borderRadius: 2, opacity: 0.5 + (i * 0.12) }} />
+                    <span>{lbl[i]}·{c}</span>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* 池内宽度分布条(全部行情就位后显示) */}
           {(() => {
             const pcs = rows.map((r) => quotes[r.symbol]?.changePct).filter((x): x is number => x != null);
