@@ -43,6 +43,8 @@
 - [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`、`feed/market/history.json`
 - [ ] **每周五收盘后**:运行 `python scripts/winter_pg/winrate.py` 产出
       `feed/screener/winrate.json`(≥80 picks 的 d1/d5/d20 胜率、平均收益、最佳/最差、80-84/85-89/90+ 分段)。
+- [ ] **每日收盘后**:跑事件热度榜(PG `intraday_events` 近 7 天聚合 top20)→
+      `feed/signals/event-heat.json`(第十五轮 schema);与 winrate 同样幂等。
 
 ---
 

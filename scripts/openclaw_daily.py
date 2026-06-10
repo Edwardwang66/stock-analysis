@@ -44,6 +44,8 @@ DEFAULT_DAILY_STOCK_NOTES = [
 ]
 WATCHLIST_FILE = os.path.join(fl.REPO_ROOT, "feed", "watchlist.json")
 SA_LP_FILE = os.path.join(fl.REPO_ROOT, "feed", "funds", "situational-awareness.json")
+RS_RANKS_FILE = os.path.join(fl.REPO_ROOT, "feed", "signals", "rs-ranks.json")
+_RS_CACHE: dict | None = None
 
 
 # ======================================================================
@@ -303,7 +305,25 @@ def _chan_macd_summary(closes: list[float]) -> str:
     return f"缠论近似: 当前{pen}，{boundary}，{divergence}"
 
 
-def _methodology_summary(metrics: dict) -> str:
+def _rs_for_symbol(symbol: str) -> int | None:
+    global _RS_CACHE
+    if _RS_CACHE is None:
+        _RS_CACHE = fl.load_json(RS_RANKS_FILE, {"ranks": {}}) if os.path.exists(RS_RANKS_FILE) else {"ranks": {}}
+    market, code = symbol.split(":", 1)
+    keys = [symbol.upper(), code.upper()]
+    if market.upper() == "US":
+        keys.append(f"US:{code}".upper())
+    ranks = _RS_CACHE.get("ranks") or {}
+    for key in keys:
+        val = ranks.get(key)
+        if isinstance(val, dict) and val.get("rs") is not None:
+            return int(val["rs"])
+        if isinstance(val, (int, float)):
+            return int(val)
+    return None
+
+
+def _methodology_fields(metrics: dict, rs: int | None = None) -> dict:
     closes = metrics.get("closes") or []
     highs = metrics.get("highs") or []
     lows = metrics.get("lows") or []
@@ -315,9 +335,25 @@ def _methodology_summary(metrics: dict) -> str:
     pos52 = ((price - lo52) / (hi52 - lo52) * 100) if price and hi52 and lo52 and hi52 > lo52 else None
     st_dir, st_flip = _supertrend(highs, lows, closes)
     chan = _chan_macd_summary(closes)
-    td_text = f"TD9 {td_dir}{td_count}" + ("，7/8/9 高阶计数需防短线衰竭" if td_count >= 7 else "")
-    pos_text = f"52周位置 {pos52:.0f}% 分位、距高点 {drawdown:.1f}%" if pos52 is not None and drawdown is not None else "52周位置样本不足"
-    return f"{td_text}；{pos_text}；SuperTrend(10,3) {st_dir}，{st_flip}；{chan}。"
+    td_text = f"{td_dir}{td_count}" + ("(防衰竭)" if td_count >= 7 else "")
+    pos_text = f"距高 {drawdown:.1f}% · {pos52:.0f}分位" if pos52 is not None and drawdown is not None else "样本不足"
+    chan_text = chan.replace("缠论近似: 当前", "")
+    return {
+        "td9": td_text,
+        "week52": pos_text,
+        "supertrend": f"{st_dir}·{st_flip}",
+        "chan": chan_text,
+        **({"rs": rs} if rs is not None else {}),
+    }
+
+
+def _methodology_summary(fields: dict) -> str:
+    td = fields.get("td9", "样本不足").replace("(防衰竭)", "，7/8/9 高阶计数需防短线衰竭")
+    week52 = fields.get("week52", "样本不足").replace(" · ", "、")
+    return (
+        f"TD9 {td}；52周位置 {week52}；SuperTrend(10,3) {fields.get('supertrend', '样本不足')}；"
+        f"缠论近似: 当前{fields.get('chan', '样本不足')}。"
+    )
 
 
 def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
@@ -325,13 +361,15 @@ def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
     market = symbol.split(":", 1)[0].upper()
     code = _market_data_symbol(symbol)
     metrics = _stock_metrics(code)
-    method = _methodology_summary(metrics)
+    methodology = _methodology_fields(metrics, _rs_for_symbol(symbol))
+    method = _methodology_summary(methodology)
     search = _yahoo_search(code)
     quote = (search.get("quotes") or [{}])[0]
     sec = _latest_sec_fact(code) if market == "US" else None
     news = (search.get("news") or [])[:3] or _rss_news(code)[:3]
 
     note = oc.stock_note_template(symbol)
+    note["methodology"] = methodology
     score = (screener_item or {}).get("score")
     rsi = (screener_item or {}).get("rsi14")
     price = metrics["price"] or (screener_item or {}).get("price")
@@ -739,6 +777,11 @@ def archive_pg() -> None:
     msg = (r.stdout or r.stderr).strip()
     if msg and "not due" not in msg:
         print(f"[daily] winrate {msg}")
+    r = subprocess.run([sys.executable, "scripts/winter_pg/event_heat.py"], cwd=fl.REPO_ROOT,
+                       capture_output=True, text=True)
+    msg = (r.stdout or r.stderr).strip()
+    if msg:
+        print(f"[daily] event-heat {msg}")
 
 
 def main():

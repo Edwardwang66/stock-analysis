@@ -63,7 +63,7 @@ jobs:
             git commit -m "openclaw: 并入 push 投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
             for i in 1 2 3 4; do
               git pull --rebase origin main
-              git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+              git pull --rebase origin main && git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
             done
           fi
 
@@ -92,6 +92,6 @@ jobs:
           else
             git commit -m "openclaw: 并入投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
             for i in 1 2 3 4; do
-              git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+              git pull --rebase origin main && git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
             done
           fi

@@ -1,33 +1,60 @@
-name: Feed watchdog (陈旧告警)
+name: Feed watchdog (实效性+连贯性审计)
 
-# 每日检查 feed/index.json 的 freshness.stale;陈旧则开 Issue 提醒(有未关闭的同类 Issue 时不重复开)。
+# 每日两次跑完整审计(scripts/audit_feed.py):实效性 SLA + 跨文件连贯性
+# (持仓簿滞后/悬空引用/未来 asof/screener 系日期不一致/notes 覆盖率等)。
+# 把 feed/health.json 写回仓库(看板①区消费);有 critical 问题时开 Issue 告警(去重)。
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 9,21 * * *"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
+concurrency:
+  group: feed-watchdog
+  cancel-in-progress: false
+
 jobs:
-  check:
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: 检查新鲜度并按需开 Issue
+      - name: 运行审计并写 health.json
+        id: audit
+        run: |
+          set +e
+          python3 scripts/audit_feed.py --write | tee /tmp/audit.txt
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          {
+            echo "report<<AUDIT_EOF"
+            cat /tmp/audit.txt
+            echo "AUDIT_EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: 提交 health.json
+        run: |
+          git config user.name  "feed-watchdog[bot]"
+          git config user.email "actions@github.com"
+          git add feed/health.json
+          if git diff --cached --quiet; then
+            echo "health 无变化"
+          else
+            git commit -m "watchdog: 更新 feed/health.json"
+            git pull --rebase origin main || true
+            git push || echo "push 失败(可能与其它任务竞争),下轮重试"
+          fi
+      - name: critical 时开 Issue(去重)
+        if: steps.audit.outputs.exit_code != '0'
         env:
           GH_TOKEN: ${{ github.token }}
+          REPORT: ${{ steps.audit.outputs.report }}
         run: |
-          STALE=$(python3 -c "import json;d=json.load(open('feed/index.json'));print(str(d.get('freshness',{}).get('stale',False)).lower())")
-          AGE=$(python3 -c "import json;d=json.load(open('feed/index.json'));print(d.get('freshness',{}).get('data_age_days'))")
-          echo "stale=$STALE data_age_days=$AGE"
-          if [ "$STALE" != "true" ]; then echo "新鲜 ✓"; exit 0; fi
           EXISTING=$(gh issue list --label feed-stale --state open --json number --jq 'length')
           if [ "$EXISTING" != "0" ]; then echo "已有未关闭告警,跳过"; exit 0; fi
-          gh label create feed-stale --color D93F0B --description "feed 数据陈旧" 2>/dev/null || true
+          gh label create feed-stale --color D93F0B --description "feed 数据陈旧/不连贯" 2>/dev/null || true
           gh issue create \
-            --title "⚠️ feed 数据陈旧(滞后 ${AGE} 天)" \
+            --title "⚠️ feed 审计发现 critical 问题" \
             --label feed-stale \
             --assignee "${{ github.repository_owner }}" \
-            --body "feed/index.json 的 freshness.stale=true,数据滞后 ${AGE} 天。请检查 alpha-routine / OpenClaw 投递是否中断。情报看板:https://edwardwang66.github.io/stock-analysis/intel/"
+            --body "$(printf '审计输出:\n```\n%s\n```\n看板: https://edwardwang66.github.io/stock-analysis/intel/' "$REPORT")"

@@ -3,41 +3,217 @@
   "manager": "Leopold Aschenbrenner",
   "cik": "0002045724",
   "source": "SEC 13F-HR",
-  "accession": "0002045724-26-000002",
-  "asof": "2025-12-31",
-  "filed": "2026-02-11",
-  "note": "13F 为季度披露+最多45天延迟,仅含美股多头与期权,不含空头/现金/非美仓位 —— 这是免费数据的合规上限。下一期(2026Q1)按规通常 5 月中旬应已披露,截至 2026-06-09 EDGAR 尚未出现,工作流每周自动检查。",
+  "accession": "0002045724-26-000008",
+  "asof": "2026-03-31",
+  "filed": "2026-05-18",
+  "note": "13F 为季度披露+最多45天延迟,仅含美股多头与期权,不含空头/现金/非美仓位。",
   "positions": [
-    { "ticker": "US:BE",   "name": "Bloom Energy",            "type": "股票+Call", "value": 911000117, "shares": 10484522, "theme": "燃料电池/数据中心供电" },
-    { "ticker": "US:CRWV", "name": "CoreWeave",               "type": "股票+Call", "value": 1211162272, "shares": 16913312, "theme": "AI 云算力" },
-    { "ticker": "US:INTC", "name": "Intel",                   "type": "Call(+1股)", "value": 746760097, "shares": 20237401, "theme": "美国晶圆制造" },
-    { "ticker": "US:LITE", "name": "Lumentum",                "type": "股票", "value": 478577256, "shares": 1298400, "theme": "光模块/光互联" },
-    { "ticker": "US:CORZ", "name": "Core Scientific",         "type": "股票", "value": 418694320, "shares": 28756478, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:IREN", "name": "IREN",                    "type": "股票", "value": 328622455, "shares": 8700621, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:APLD", "name": "Applied Digital",         "type": "股票", "value": 278033751, "shares": 11339060, "theme": "AI 数据中心" },
-    { "ticker": "US:SNDK", "name": "SanDisk",                 "type": "股票", "value": 250245996, "shares": 1054200, "theme": "存储(NAND)" },
-    { "ticker": "US:EQT",  "name": "EQT",                     "type": "股票+Call", "value": 170567260, "shares": 3182225, "theme": "天然气(电力上游)" },
-    { "ticker": "US:CIFR", "name": "Cipher Mining",           "type": "股票", "value": 154523813, "shares": 10469093, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:COHR", "name": "Coherent",                "type": "股票", "value": 88648971, "shares": 480300, "theme": "光模块/激光" },
-    { "ticker": "US:SEI",  "name": "Solaris Energy Infra",    "type": "股票", "value": 85803005, "shares": 1866500, "theme": "分布式发电" },
-    { "ticker": "US:TSEM", "name": "Tower Semiconductor",     "type": "股票", "value": 84895130, "shares": 723004, "theme": "特种晶圆代工" },
-    { "ticker": "US:RIOT", "name": "Riot Platforms",          "type": "股票", "value": 78144759, "shares": 6167700, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:KRC",  "name": "Kilroy Realty",           "type": "股票", "value": 49616149, "shares": 1327700, "theme": "地产(数据中心相邻)" },
-    { "ticker": "US:HUT",  "name": "Hut 8",                   "type": "股票", "value": 39517588, "shares": 860200, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:WYFI", "name": "WhiteFiber",              "type": "股票", "value": 27770080, "shares": 1757600, "theme": "AI 数据中心" },
-    { "ticker": "US:PSIX", "name": "Power Solutions Intl",    "type": "股票", "value": 24701622, "shares": 432300, "theme": "发电机组" },
-    { "ticker": "US:BTDR", "name": "Bitdeer",                 "type": "股票", "value": 20043480, "shares": 1788000, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:CLSK", "name": "CleanSpark",              "type": "股票", "value": 16600848, "shares": 1640400, "theme": "比特币矿企" },
-    { "ticker": "US:BITF", "name": "Bitfarms",                "type": "股票", "value": 16208185, "shares": 6897100, "theme": "矿场转 AI 数据中心" },
-    { "ticker": "US:LBRT", "name": "Liberty Energy",          "type": "股票", "value": 10470512, "shares": 567200, "theme": "压裂/电力服务" },
-    { "ticker": "US:INFY", "name": "Infosys ADR",             "type": "Put(看空)", "value": 8910000, "shares": 500000, "theme": "做空印度IT外包(AI替代叙事)" },
-    { "ticker": "US:PUMP", "name": "ProPetro",                "type": "股票", "value": 8656953, "shares": 910300, "theme": "压裂服务" },
-    { "ticker": "US:BW",   "name": "Babcock & Wilcox",        "type": "股票", "value": 8583726, "shares": 1353900, "theme": "能源装备" }
+    {
+      "ticker": "92189F676",
+      "name": "VANECK ETF TRUST",
+      "value": 2053049490,
+      "shares": 5354850,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "67066G104",
+      "name": "NVIDIA CORPORATION",
+      "value": 1568755032,
+      "shares": 8995155,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "US:SNDK",
+      "name": "SANDISK CORP",
+      "value": 1113127751,
+      "shares": 1752019,
+      "type": "Call+股票"
+    },
+    {
+      "ticker": "68389X105",
+      "name": "ORACLE CORP",
+      "value": 1072873230,
+      "shares": 7293000,
+      "type": "Put(看空)"
+    },
+    {
+      "ticker": "595112103",
+      "name": "MICRON TECHNOLOGY INC",
+      "value": 1011851746,
+      "shares": 2995062,
+      "type": "Call+Put(看空)+股票"
+    },
+    {
+      "ticker": "11135F101",
+      "name": "BROADCOM INC",
+      "value": 1006247961,
+      "shares": 3251100,
+      "type": "Put(看空)"
+    },
+    {
+      "ticker": "007903107",
+      "name": "ADVANCED MICRO DEVICES INC",
+      "value": 989328506,
+      "shares": 4863238,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "US:BE",
+      "name": "BLOOM ENERGY CORP",
+      "value": 934055595,
+      "shares": 6893908,
+      "type": "Call+股票"
+    },
+    {
+      "ticker": "874039100",
+      "name": "TAIWAN SEMICONDUCTOR MANUFAC",
+      "value": 897535383,
+      "shares": 2655823,
+      "type": "Call+Put(看空)+股票"
+    },
+    {
+      "ticker": "US:CRWV",
+      "name": "COREWEAVE INC",
+      "value": 696642700,
+      "shares": 8992419,
+      "type": "Call+股票"
+    },
+    {
+      "ticker": "N07059210",
+      "name": "ASML HLDG NV N Y REGISTRY",
+      "value": 500241908,
+      "shares": 378733,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "US:IREN",
+      "name": "IREN LIMITED",
+      "value": 401036064,
+      "shares": 11698835,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:CORZ",
+      "name": "CORE SCIENTIFIC INC NEW",
+      "value": 389086756,
+      "shares": 26008473,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:APLD",
+      "name": "APPLIED DIGITAL CORP",
+      "value": 319978118,
+      "shares": 13478438,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:INTC",
+      "name": "INTEL CORP",
+      "value": 168035743,
+      "shares": 3807744,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "US:RIOT",
+      "name": "RIOT PLATFORMS INC",
+      "value": 142166413,
+      "shares": 11502137,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:CLSK",
+      "name": "CLEANSPARK INC",
+      "value": 104469943,
+      "shares": 12276139,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:SEI",
+      "name": "SOLARIS ENERGY INFRAS INC",
+      "value": 62474687,
+      "shares": 1105551,
+      "type": "股票"
+    },
+    {
+      "ticker": "35834F104",
+      "name": "T1 ENERGY INC",
+      "value": 43900000,
+      "shares": 10000000,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:BITF",
+      "name": "BITFARMS LTD",
+      "value": 38757888,
+      "shares": 19875840,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:BTDR",
+      "name": "BITDEER TECHNOLOGIES GROUP",
+      "value": 29751243,
+      "shares": 3439450,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:PSIX",
+      "name": "POWER SOLUTIONS INTL INC",
+      "value": 26318424,
+      "shares": 432300,
+      "type": "股票"
+    },
+    {
+      "ticker": "219350105",
+      "name": "CORNING INC",
+      "value": 21739292,
+      "shares": 159883,
+      "type": "Put(看空)+股票"
+    },
+    {
+      "ticker": "US:WYFI",
+      "name": "WHITEFIBER INC",
+      "value": 20933016,
+      "shares": 1757600,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:BW",
+      "name": "BABCOCK & WILCOX ENTERPRISES",
+      "value": 19888791,
+      "shares": 1353900,
+      "type": "股票"
+    },
+    {
+      "ticker": "778920306",
+      "name": "SHARONAI HOLDINGS INC",
+      "value": 18095535,
+      "shares": 796108,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:PUMP",
+      "name": "PROPETRO HLDG CORP",
+      "value": 13117423,
+      "shares": 910300,
+      "type": "股票"
+    },
+    {
+      "ticker": "US:INFY",
+      "name": "INFOSYS LTD",
+      "value": 6755000,
+      "shares": 500000,
+      "type": "Put(看空)"
+    },
+    {
+      "ticker": "433921103",
+      "name": "HIVE DIGITAL TECHNOLOGIES LT",
+      "value": 6443939,
+      "shares": 3391547,
+      "type": "股票"
+    }
   ],
   "summary": {
-    "total_value": 5517758345,
-    "n_positions": 25,
-    "themes": "AI 数据中心算力(CoreWeave/CORZ/IREN/APLD/CIFR)+ 供电链(Bloom/EQT/SEI/PSIX)+ 光互联(LITE/COHR)+ 存储(SNDK)+ 美国制造期权(INTC Call),唯一空头表达 = Infosys Put(AI 替代外包叙事)",
-    "schedule_13d": "2025-08/10 对外提交过 SCHEDULE 13D/A(>5% 主动持股,标的见 EDGAR)"
+    "total_value": 13676657577,
+    "n_positions": 29
   }
 }

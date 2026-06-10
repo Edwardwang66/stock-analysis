@@ -41,8 +41,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add feed/screener feed/watchlist.json feed/signals/rs-ranks.json
-          git diff --cached --quiet || git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
-          git push || echo "push skipped"
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep $((5*i))
+          done
+          echo "::error::push 失败(3次重试后)"; exit 1
 
       - name: 创建 Issue 推送给我
         env:

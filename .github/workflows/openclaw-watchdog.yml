@@ -1,0 +1,53 @@
+name: OpenClaw delivery watchdog (盘中节拍 SLA)
+
+# 三个硬性时点的及时性守卫(playbook §7):
+#   盘前 report  deadline 13:30 UTC → 13:40 检查
+#   收盘前 report deadline 19:30 UTC → 19:45 检查
+# 缺投 → 开 Issue(label: openclaw-miss)提醒;当日同类只提醒一次。
+# 收盘后全量覆盖率由 daily-digest 审计,这里不重复。
+on:
+  schedule:
+    - cron: "40 13 * * 1-5"
+    - cron: "45 19 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 检查投递并提醒
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(date -u +%F)
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" -lt 16 ]; then KIND=premarket; LABEL="盘前"; DDL="13:30 UTC(美东 09:30 开盘前)"; else KIND=close; LABEL="收盘前"; DDL="19:30 UTC(美东 15:30)"; fi
+          F="feed/screener/analysis-$KIND-$DATE.md"
+          if [ -f "$F" ]; then echo "✅ $F 已按时投递"; exit 0; fi
+          echo "❌ $F 缺投"
+          gh label create openclaw-miss --color D93F0B --description "OpenClaw 盘中节拍缺投" 2>/dev/null || true
+          EXIST=$(gh issue list --label openclaw-miss --state open --search "in:title $DATE $LABEL" --json number --jq length)
+          if [ "${EXIST:-0}" -gt 0 ]; then echo "当日已提醒过,跳过"; exit 0; fi
+          {
+            echo "**${LABEL} report 未在 deadline(${DDL})前投递。**"
+            echo
+            echo "期望文件:\`$F\`(playbook §7 硬性时点)。"
+            echo
+            echo "排查顺序:"
+            echo "1. Winter 的常驻循环还活着吗?(ps aux | grep winter_intraday_loop,挂了重启)"
+            echo "2. 她的 LLM 侧当天跑了吗?(检查 openclaw_daily / 盘前例程日志)"
+            echo "3. push 撞车?(git pull --rebase origin main 后重投)"
+            echo
+            echo "补投后本 Issue 手动关闭即可;明天同一时点会再次自动检查。"
+            echo "_由 openclaw-watchdog.yml 自动生成。_"
+          } > /tmp/body.md
+          gh issue create \
+            --title "⏰ OpenClaw ${LABEL}报告缺投 $DATE" \
+            --label openclaw-miss \
+            --assignee "${{ github.repository_owner }}" \
+            --body-file /tmp/body.md || echo "issue create failed"

@@ -1,0 +1,82 @@
+name: Dependabot auto-merge
+
+# 自动合并 dependabot PR,与 .github/dependabot.yml 政策对齐:
+#   - npm/pip 的 major 已在 dependabot.yml 里 ignore(防一锅端式破坏,#24 教训),
+#     所以到达的 npm/pip PR 只会是 minor/patch → 自动合并;
+#   - github-actions 的 major 有手动合并先例(#19-22) → 同样自动合并;
+#   - 双保险:事件层仍显式拦截 npm/pip 的 semver-major(若未来有人放开 ignore)。
+# 两层:
+#   1) pull_request 事件:dependabot 开 PR 时即尝试 auto-merge(等 CI 绿后合并);
+#   2) 定时清扫(每 6h):合并存量/事件层失败漏掉的 PR(检查 mergeable + checks 全绿)。
+on:
+  pull_request:
+  schedule:
+    - cron: "45 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  on-pr:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 取 dependabot 元数据
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 自动合并(npm/pip major 拦截)
+        if: |
+          steps.meta.outputs.update-type != 'version-update:semver-major'
+          || steps.meta.outputs.package-ecosystem == 'github_actions'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 优先 auto-merge(等必需检查);仓库未开 auto-merge 设置则直接合并
+          gh pr merge --auto --merge "$PR_URL" \
+            || gh pr merge --merge "$PR_URL" \
+            || echo "暂不可合并(可能在等检查),交给定时清扫"
+
+  sweep:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 清扫存量 dependabot PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr list --repo "$REPO" --author 'app/dependabot' --state open \
+            --json number,title,labels,mergeable,statusCheckRollup > /tmp/prs.json
+          python3 - <<'PY'
+          import json, re, subprocess, os
+          prs = json.load(open('/tmp/prs.json'))
+          repo = os.environ['REPO']
+          print(f"开放的 dependabot PR: {len(prs)}")
+          for pr in prs:
+              n, title = pr['number'], pr['title']
+              labels = {l['name'] for l in pr.get('labels', [])}
+              # npm/pip 的 major 拦截(actions major 放行,见仓库先例)
+              m = re.search(r'from (\d+)[\w.\-]* to (\d+)', title)
+              is_major = bool(m and m.group(1) != m.group(2))
+              if is_major and not labels & {'github_actions'}:
+                  print(f"  #{n} 跳过(npm/pip major): {title}")
+                  continue
+              if pr.get('mergeable') == 'CONFLICTING':
+                  print(f"  #{n} 跳过(冲突): {title}")
+                  continue
+              checks = pr.get('statusCheckRollup') or []
+              bad = [c for c in checks
+                     if c.get('conclusion') not in (None, '', 'SUCCESS', 'NEUTRAL', 'SKIPPED')
+                     and c.get('status') == 'COMPLETED']
+              if bad:
+                  print(f"  #{n} 跳过(检查失败 {len(bad)}): {title}")
+                  continue
+              r = subprocess.run(['gh', 'pr', 'merge', str(n), '--repo', repo, '--merge'],
+                                 capture_output=True, text=True)
+              print(f"  #{n} {'✓ 已合并' if r.returncode == 0 else '✗ ' + r.stderr.strip()[:120]}: {title}")
+          PY

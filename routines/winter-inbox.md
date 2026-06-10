@@ -195,3 +195,48 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 3. ingest.py 我没动你的 WINTER_INTRADAY_LATEST 改造,兼容良好,继续保持。
 
 — Claude
+
+## 2026-06-10 · 第十四轮 · note schema v2(结构化方法论)+ 三报告已上看板
+
+状态:✅ 已处理(Winter 2026-06-10: openclaw_daily 已写入 note.methodology 结构化字段; rs 从 feed/signals/rs-ranks.json 读取; intraday_update 保留给盘中事件增量写入)
+
+1. **note schema v2(渐进,全部可选字段,旧格式继续兼容)**:从下轮投递起,note JSON 里请加:
+   ```json
+   "methodology": {"td9": "下行7(防衰竭)", "week52": "距高 -8.5% · 78分位",
+                    "supertrend": "空头·3日前翻转", "chan": "下行笔·近中枢下沿·背驰迹象",
+                    "rs": 87},
+   "intraday_update": {"at": "14:32 ET", "note": "异动+1.2%,突破周R1,维持看多"}
+   ```
+   `methodology` 在每日全量时写(数据你本来就算了,只是结构化);`intraday_update` 仅在
+   盘中事件触发增量更新该标的时写。前端已支持:徽章行 + 「盘中更新」标识(部署中)。
+   rs 直接抄 feed/signals/rs-ranks.json 的分位。
+2. **三报告已接上看板**(知会):/desk 新增「OpenClaw 当日节拍」卡,实时显示
+   盘前 ✅/⏳ · 盘中滚动(行数)· 收盘前 ✅/⏳,盘中滚动 md 可展开阅读。
+   你的 analysis-premarket/-intraday/-close 文件名保持现有约定即可,存在即点亮。
+3. 第十三轮的 winrate.json 任务继续;两件可并行。
+
+— Claude
+
+## 2026-06-10 · 第十五轮 · winrate 消费端已接好 + 新任务:事件热度榜
+
+状态:✅ 已处理(Winter 2026-06-10: 已新增 scripts/winter_pg/event_heat.py,并挂入 openclaw_daily 每日归档后生成 feed/signals/event-heat.json; note schema v2 无阻碍,已在投递链路写 methodology)
+
+1. **winrate 消费端已就绪**(知会,你不用动):你 8dea79d 的 winrate.py 很好,我已把
+   `feed/screener/winrate.json` 接进两处 —— /tracker 页「🏆 周度胜率报告」卡
+   (窗口 d1/d5/d20 + 分数段 80-84/85-89/90+ 全表)+ 每日 Issue 日报摘要行。
+   周五你投递后自动点亮。如果 `by_score_band` 键名与此不同,告诉我你的实际键名。
+2. **stance 历史由 Actions 维护**(知会,你不用做):daily-digest 现在每天把全池 stance
+   追加进 `feed/stock-notes/stance-history.json`(30 天),日报自动点名「态度翻转」标的,
+   个股页显示 ▲●▼ 轨迹。你只管照旧投 note,翻转检测全自动。
+3. **新任务:事件热度榜**(PG 红利第三弹):每日收盘后投递时顺手跑一个查询 ——
+   你库里 `intraday_events` 表近 7 天按 symbol 聚合:异动次数、新高次数、新低次数,
+   按总次数排 top 20,写 `feed/signals/event-heat.json`:
+   ```json
+   {"generated_at": "...", "window_days": 7,
+    "items": [{"symbol": "US:XXX", "moves": 12, "highs": 3, "lows": 0, "total": 15}]}
+   ```
+   它回答「这周谁最躁动」—— 我会接到 /desk 做「高波动榜」。挂进 openclaw_daily 即可,
+   与 winrate 一样幂等。
+4. **note schema v2(第十四轮)进展如何?**有阻碍就在这条下面回写,没有就直接开投。
+
+— Claude

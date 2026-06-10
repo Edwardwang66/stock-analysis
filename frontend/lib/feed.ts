@@ -86,7 +86,31 @@ export interface StockNote {
   symbol: string; date: string; model?: string; producer?: string;
   stance: string; thesis: string; earnings?: string; news?: string;
   risks?: string; view: string; sources?: { title: string; url: string }[];
+  // schema v2(2026-06-10 起,OpenClaw 渐进投递;全部可选,向后兼容)
+  methodology?: {
+    td9?: string;          // 如 "下行7(防衰竭)"
+    week52?: string;       // 如 "距高 -8.5% · 78分位"
+    supertrend?: string;   // 如 "空头·3日前翻转"
+    chan?: string;         // 如 "下行笔·近中枢下沿·背驰迹象"
+    rs?: number | null;    // RS 1-99
+  };
+  intraday_update?: { at: string; note: string };  // 盘中事件触发的增量更新
   _placeholder?: boolean;
+}
+
+// OpenClaw 盘中三报告(markdown 文本;存在性=投递状态)
+export async function getAnalysisMd(kind: "premarket" | "intraday" | "close" | "", date: string): Promise<string | null> {
+  const name = kind ? `analysis-${kind}-${date}.md` : `analysis-${date}.md`;
+  for (const base of [REMOTE, LOCAL]) {
+    try {
+      const r = await fetch(`${base}/screener/${name}?t=${Date.now()}`, { cache: "no-store" });
+      if (r.ok) {
+        const t = await r.text();
+        if (t && !t.startsWith("<!DOCTYPE") && !t.startsWith("404")) return t;
+      }
+    } catch { /* next */ }
+  }
+  return null;
 }
 export const getStockNote = (symbol: string) =>
   fetchJson<StockNote>(`stock-notes/${symbol.replace(":", "-")}.json`);
@@ -171,8 +195,36 @@ export interface TrackedPick { symbol: string; name?: string; score?: number; pi
 export interface TrackedDay { date: string; generated_at?: string; threshold?: number; items: TrackedPick[] }
 export const getScreenerHistory = () => fetchJson<TrackedDay[]>("screener/history.json");
 
+// 周度胜率(Winter 本地 Postgres winrate.py,每周五收盘后投递)
+export interface WinratePick { symbol: string; date: string; score?: number; pick_price?: number; current_price?: number; ret?: number }
+export interface WinrateCell { n: number; win_rate: number | null; avg_ret: number | null; best?: WinratePick | null; worst?: WinratePick | null }
+export interface WinrateDoc {
+  generated_at?: string; total_picks?: number;
+  windows?: Record<string, WinrateCell>;
+  by_score_band?: Record<string, WinrateCell>;
+}
+export const getWinrate = () => fetchJson<WinrateDoc>("screener/winrate.json");
+
+// 事件热度榜(Winter PG intraday_events 近7天聚合,每日收盘后投递)
+export interface EventHeatItem { symbol: string; moves: number; highs: number; lows: number; total: number }
+export interface EventHeatDoc { generated_at?: string; window_days?: number; items?: EventHeatItem[] }
+export const getEventHeat = () => fetchJson<EventHeatDoc>("signals/event-heat.json");
+
+// stance 历史(daily-digest 追加维护 30 天;翻转检测与个股轨迹同源)
+export interface StanceDay { date: string; stances: Record<string, string> }
+export const getStanceHistory = () => fetchJson<StanceDay[]>("stock-notes/stance-history.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");
 export const getFactory = () => fetchJson<FactoryStore>("factory/candidates.json");
 export const getReport = (path: string) => fetchJson<FullReport>(path);
+
+// feed 健康审计(scripts/audit_feed.py 产出;watchdog 每日两次刷新)
+export interface HealthIssue { level: string; code: string; message: string }
+export interface SourceFreshness { exists: boolean; asof?: string | null; age_days?: number | null }
+export interface FeedHealth {
+  checked_at: string; ok: boolean; critical: number; warn: number;
+  issues: HealthIssue[]; sources: Record<string, SourceFreshness>;
+}
+export const getHealth = () => fetchJson<FeedHealth>("health.json");
