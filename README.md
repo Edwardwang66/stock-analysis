@@ -28,7 +28,8 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
 **`/desk` 工作台**:盘前隔夜要素行(premarket pack)+ 🔥 高波动榜(近 7 天事件聚合)+ 选股 winrate 上墙;
 **`/screener`**:全宇宙 **RS 1-99 排名榜**(方法论六法落地)+ 每日技术评分≥80 清单;`/tracker` 选股表现追踪看板;
 个股页 **☯ 缠论结构面板**(原文 24 课口径:背驰度量化 + 确认三件套 + 一二三类买卖点历史表与事后表现自检),
-配套 Python 缠论引擎每周跑**全宇宙买卖点胜率统计**(`chan-stats.yml` → `/tracker` 看板)。
+配套 Python 缠论引擎每周跑**全宇宙买卖点胜率统计**(`chan-stats.yml` → `/tracker` 看板);
+K线再叠加**自动斐波回撤 / Ichimoku 简版 / VSA 量价异动标记**(方法论二期 5 项全落地)。
 
 ---
 
@@ -50,14 +51,18 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
 - **引擎迭代(Cycle 1-6,2026-06-10)**:真 holdout 终检 + 净值曲线/SR 趋势上看板(C1);数据**实效性/连贯性审计**体系
   + CSCV-PBO 过拟合研究([`docs/study-pbo-2026-06-10.md`](docs/study-pbo-2026-06-10.md))+ 公式因子工厂(C2-4);
   **回撤治理阶梯 + SSR 做空约束**进引擎,审计全绿(C5);**D5 下沉实验首次实证** + 月度研究定时(`monthly-studies.yml`)
-  + 幸存者偏差数据源调研(C6,迭代日志见 [`docs/iteration-log.md`](docs/iteration-log.md))。
+  + 幸存者偏差数据源调研(C6);**Hyperliquid 全接口接入**——HIP-3 24/7 美股代理 + 持仓面拥挤 + 跨所错位,
+  配 2h 衍生品情报定时(C7);隔夜缺口研究——代理 corr 0.965 但信号无预测力,**诚实否定**(C8,
+  迭代日志见 [`docs/iteration-log.md`](docs/iteration-log.md))。
 - **OpenClaw 专项(持续多轮,至第 9 轮)**:三报告上看板 + note schema v2;winrate 上墙 + stance 翻转检测 + 事件热度任务;
   高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`);
   Codex public-equity-investing 插件接入。
 
-**🔧 自动化运维**:15 个 GitHub Actions 工作流无人值守 —— 11 个定时任务(screener/digest/intraday/市场快照/13F/缠论周报/
-盘前要素包/月度研究/双看门狗/keep-warm)+ Pages 部署 + 投递校验闸门 + **Dependabot 自动合并**(`dependabot-automerge.yml`:
-月度 minor/patch 自动合,major 拦截留人工;npm/pip major 已在 `dependabot.yml` 层 ignore)。
+**🔧 自动化运维**:17 个 GitHub Actions 工作流无人值守 —— 13 个定时任务(screener/digest/intraday/市场快照/13F/
+缠论周报/盘前要素包/月度研究/Hyperliquid 2h 情报/双看门狗/keep-warm/alpha-routine)+ Pages 部署 + 投递校验闸门
++ **单元测试闸门**(`tests.yml`:后端冒烟 + 缠论引擎/投递闸门单测,push 与 PR 都跑)
++ **Dependabot 自动合并**(`dependabot-automerge.yml`:月度 minor/patch 自动合,major 拦截留人工)。
+已知问题与技术债持续记录在 [`docs/need-to-fix.md`](docs/need-to-fix.md)。
 
 **主力资金的数据真实性(重要)**:
 - **暗号**:接入 Binance **真实逐笔(aggTrades)+ 真实盘口(depth)**,按成交额分档 + 主动买卖方向算 → **真·主力资金 / 真·买卖盘**(免费源里少数能拿到逐笔的市场)。
@@ -93,7 +98,7 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ├── scripts/                           # 定时任务执行端:screener/digest/intraday/快照/13F/盘前包/审计/投递
 ├── routines/                          # Claude 可执行 routine playbook
 ├── state/                             # 跨 session 持久状态(winter 轮询位点等)
-├── .github/workflows/                 # 15 个工作流:11 定时任务 + Pages 部署 + 投递闸门 + dependabot 自动合并
+├── .github/workflows/                 # 17 个工作流:13 定时任务 + Pages 部署 + 投递/测试闸门 + dependabot 自动合并
 ├── research/
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
