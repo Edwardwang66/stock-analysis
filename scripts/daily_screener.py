@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""每日技术评分选股:扫描 标普500 + 纳指100,输出评分≥阈值的清单。
+"""每日技术评分选股:扫描 标普500 + 纳指100,输出评分≥阈值的清单(并产出 RS 1-99 全宇宙榜)。
 
 复用后端的同一套非 LLM 技术评分(backend/app/analysis/signals.analyze)。
 数据源:Yahoo Finance chart(服务端直连,免代理)。
