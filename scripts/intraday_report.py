@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 import urllib.parse
@@ -20,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "feed" / "intraday" / "latest.json"
+OUT = Path(os.environ.get("INTRADAY_OUT", ROOT / "feed" / "intraday" / "latest.json"))
 MOVE_THRESHOLD = 0.8   # 两轮之间 |Δ%| ≥ 0.8 记为异动事件
 UA = {"User-Agent": "Mozilla/5.0 (compatible; stock-dashboard-intraday/0.1)"}
 

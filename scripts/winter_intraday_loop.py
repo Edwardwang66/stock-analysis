@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import subprocess
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LIVE_DIR = Path.home() / ".cache/stock-analysis/live-worktree"
+INTRADAY_OUT = Path.home() / ".cache/stock-analysis/intraday-latest.json"
 PERIOD = 300  # 5 分钟
 
 
@@ -64,6 +66,7 @@ def archive_pg() -> None:
     r = subprocess.run(
         [sys.executable, "scripts/winter_pg/ingest.py"],
         cwd=ROOT,
+        env={**os.environ, "WINTER_INTRADAY_LATEST": str(INTRADAY_OUT)},
         capture_output=True,
         text=True,
     )
@@ -84,6 +87,7 @@ def tick() -> None:
     r = subprocess.run(
         [sys.executable, "scripts/intraday_report.py"],
         cwd=ROOT,
+        env={**os.environ, "INTRADAY_OUT": str(INTRADAY_OUT)},
         capture_output=True,
         text=True,
     )
@@ -95,7 +99,7 @@ def tick() -> None:
     try:
         if not ensure_live_checkout():
             return
-        src = ROOT / "feed" / "intraday" / "latest.json"
+        src = INTRADAY_OUT
         dst = LIVE_DIR / "feed" / "intraday" / "latest.json"
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(src.read_bytes())
@@ -122,7 +126,7 @@ def tick() -> None:
         # 事件触发信号:latest.json 里有 events 则落 flag
         import json
 
-        doc = json.loads((ROOT / "feed" / "intraday" / "latest.json").read_text())
+        doc = json.loads(INTRADAY_OUT.read_text())
         flag = ROOT / "INTRADAY_EVENTS.flag"
         if doc.get("events"):
             flag.write_text(json.dumps(doc["events"], ensure_ascii=False))

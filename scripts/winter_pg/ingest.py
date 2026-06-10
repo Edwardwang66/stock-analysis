@@ -61,7 +61,8 @@ def main() -> int:
 
     n = {"snap": 0, "ev": 0, "score": 0, "pick": 0, "note": 0, "fund": 0}
 
-    intr = jload(ROOT / "feed/intraday/latest.json", None)
+    intraday_path = os.environ.get("WINTER_INTRADAY_LATEST") or ROOT / "feed/intraday/latest.json"
+    intr = jload(intraday_path, None)
     if intr and intr.get("at"):
         at = intr["at"]
         rows = [(at, s, v.get("price"), v.get("pct"), v.get("high"), v.get("low"))
