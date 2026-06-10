@@ -42,6 +42,11 @@
     `feed/intraday/latest.json` 的消费端(前端 /desk、/intel 等)拿到的都是过期副本,需逐一确认
     实际读取分支。
 
+16. **夜盘报价 UI 未暴露数据时点(时效性)** — 全站夜盘层(`nightquotes.ts`/QuoteCard)的 mark 来自
+    hyperliquid-monitor 2h 定时,最多滞后 ~2 小时;卡片上的「隐含高开/低开」用陈旧 mark 对比正股最新价,
+    隔夜剧烈波动时可能严重失真。`useNightQuotes` 已返回 `updatedAt`,建议:卡片标注快照时间,
+    超 3h 灰显或隐藏隐含跳空。
+
 ## 👀 需确认
 
 14. **screener Issue 评分口径漂移** — 06-09 的 Issue 里同一批股票评分全是 50,06-10 变成 80-90,
