@@ -40,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/screener feed/watchlist.json feed/signals/rs-ranks.json
+          git add feed/screener feed/watchlist.json feed/signals/rs-ranks.json feed/signals/rs-history.json
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
           for i in 1 2 3; do

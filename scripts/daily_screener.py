@@ -172,6 +172,18 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
         "note": "RS=全宇宙(标普500∪纳指100)加权动量百分位 1-99;raw=0.4*63d+0.2*126d+0.2*189d+0.2*252d",
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"[rs] 排名 {n_rs} 只 → feed/signals/rs-ranks.json")
+    # RS 历史追加(40 个交易日;看 RS 分位逐日迁移,desk hover 趋势用)
+    rsh_path = ROOT / "feed" / "signals" / "rs-history.json"
+    try:
+        rsh = json.loads(rsh_path.read_text())
+    except Exception:  # noqa: BLE001
+        rsh = []
+    rsh = [d for d in rsh if d.get("date") != payload["date"]]
+    rsh.append({"date": payload["date"], "rs": {k: v["rs"] for k, v in ranks.items() if v.get("rs") is not None}})
+    rsh.sort(key=lambda d: d["date"])
+    rsh = rsh[-40:]
+    rsh_path.write_text(json.dumps(rsh, ensure_ascii=False, separators=(",", ":")) + "\n")
+    print(f"[rs] 历史 {len(rsh)} 天 → rs-history.json")
 
     # 当日 ≥阈值 自动并入云端分析池(tier=screener,每日整体轮换;Edward 2026-06-10 要求)
     wl_path = ROOT / "feed" / "watchlist.json"

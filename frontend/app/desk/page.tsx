@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener, getScreenerHistory,
+  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsHistory, getRsRanks, getScores, getScreener, getScreenerHistory,
   type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
@@ -83,6 +83,8 @@ export default function DeskPage() {
   }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
   useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
+  const [rsHist, setRsHist] = useState<{ date: string; rs: Record<string, number> }[]>([]);
+  useEffect(() => { getRsHistory().then((h) => setRsHist(h ?? [])).catch(() => {}); }, []);
   const [scrHist, setScrHist] = useState<{ date: string; items: { symbol: string }[] }[]>([]);
   useEffect(() => { getScreenerHistory().then((h) => setScrHist((h ?? []) as any)).catch(() => {}); }, []);
 
@@ -556,10 +558,20 @@ export default function DeskPage() {
                       <td className="src">{r.sector}</td>
                       <td>{r.score != null ? <strong>{r.score}</strong> : "—"}</td>
                       <td>{(() => {
-                        const v = rs?.ranks?.[r.symbol.replace(/^US:/, "")]?.rs;
+                        const code = r.symbol.replace(/^US:/, "");
+                        const v = rs?.ranks?.[code]?.rs;
                         if (v == null) return <span className="muted">—</span>;
                         const c = v >= 80 ? UP : v >= 50 ? "var(--text)" : DOWN;
-                        return <strong style={{ color: c }}>{v}</strong>;
+                        const old7 = rsHist.length > 1 ? rsHist[Math.max(0, rsHist.length - 8)]?.rs?.[code] : undefined;
+                        const delta = old7 != null ? v - old7 : null;
+                        return (
+                          <strong style={{ color: c }} title={delta != null ? `7日前 RS ${old7} → 今 ${v}` : undefined}>
+                            {v}
+                            {delta != null && Math.abs(delta) >= 5 && (
+                              <span style={{ fontSize: 10, color: delta > 0 ? UP : DOWN }}>{delta > 0 ? "↗" : "↘"}</span>
+                            )}
+                          </strong>
+                        );
                       })()}</td>
                       <td>{fmt(q?.price)}</td>
                       <td className={pc == null ? "muted" : pc >= 0 ? "up" : "down"}>

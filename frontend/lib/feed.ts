@@ -176,6 +176,10 @@ export interface RsTable {
 }
 export const getRsRanks = () => fetchJson<RsTable>("signals/rs-ranks.json");
 
+// RS 历史(daily_screener 每日追加 40 天;分位迁移趋势)
+export interface RsHistoryDay { date: string; rs: Record<string, number> }
+export const getRsHistory = () => fetchJson<RsHistoryDay[]>("signals/rs-history.json");
+
 // 个股 AI 解读索引(OpenClaw 投递;updated_at 用于判断当日覆盖)
 export interface NotesIndex {
   updated_at: string;
