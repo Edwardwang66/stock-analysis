@@ -8,11 +8,13 @@ import { addHolding, getHoldings, removeHolding, type Holding } from "@/lib/port
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 import LiveClock from "@/components/LiveClock";
 import LangSelect from "@/components/LangSelect";
+import { useLang } from "@/lib/names";
 
 const fmt = (n: number | null | undefined, d = 2) =>
   n == null || !isFinite(n) ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
 
 export default function PortfolioPage() {
+  const lang = useLang();
   const [list, setList] = useState<Holding[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [sym, setSym] = useState("");
@@ -121,7 +123,7 @@ export default function PortfolioPage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id}>
-                    <td><Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol)}</Link> <span className="src">{r.symbol}</span></td>
+                    <td><Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol, lang)}</Link> <span className="src">{r.symbol}</span></td>
                     <td>{fmt(r.qty, 6)}</td>
                     <td>{fmt(r.cost)}</td>
                     <td>{fmt(r.price)}</td>

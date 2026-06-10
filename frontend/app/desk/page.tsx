@@ -307,7 +307,7 @@ export default function DeskPage() {
                     title={`异动${h.moves} · 新高${h.highs} · 新低${h.lows}`}
                     style={{ fontSize: 12, padding: "5px 10px",
                              color: h.lows > h.highs ? DOWN : h.highs > h.lows ? UP : "var(--text)" }}>
-                    {h.symbol.replace(/^US:/, "")} ×{h.total}
+                    {nameOf(h.symbol, lang)} ×{h.total}
                     {h.highs > 0 && <span style={{ color: UP }}> ↑{h.highs}</span>}
                     {h.lows > 0 && <span style={{ color: DOWN }}> ↓{h.lows}</span>}
                   </Link>
