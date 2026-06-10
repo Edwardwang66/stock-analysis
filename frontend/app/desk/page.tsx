@@ -338,7 +338,7 @@ export default function DeskPage() {
                   <tbody>
                     {hl.equity_perps.stocks.slice(0, 10).map((x) => {
                       const local = x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`;
-                      const label = x.symbol === "SKHX" ? nameOf("KR:000660", lang) : x.symbol === "SPCX" ? "SpaceX(pre-IPO)" : nameOf(`US:${x.symbol}`, lang);
+                      const label = x.symbol === "SKHX" ? nameOf("KR:000660", lang) : x.symbol === "SPCX" ? "SPCX合成" : x.symbol === "DRAM" ? "DRAM指数" : x.symbol === "EWY" ? "韩国ETF EWY" : nameOf(`US:${x.symbol}`, lang);
                       return (
                         <tr key={x.symbol}>
                           <td>{x.symbol === "SPCX" ? <span>{label}</span> :

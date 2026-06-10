@@ -78,9 +78,23 @@ def main() -> int:
             movers.append({"symbol": s, "pct": v["pct"], "price": v.get("price")})
     movers.sort(key=lambda x: -abs(x["pct"]))
 
+    # 24/7 永续夜盘异动(Hyperliquid equity_perps,|24h|≥4%;盘前重要预警)
+    perp_movers = []
+    hl = jload(ROOT / "feed" / "crypto" / "state.json", {})
+    ep = hl.get("equity_perps") or {}
+    for grp in ("stocks", "indices", "private"):
+        for x in ep.get(grp) or []:
+            c = x.get("chg24h")
+            if c is not None and abs(c) >= 0.04:
+                perp_movers.append({"symbol": x.get("symbol"), "kind": x.get("kind"),
+                                    "mark": x.get("mark"), "chg24h": round(c * 100, 2),
+                                    "funding_apr": x.get("funding_apr")})
+    perp_movers.sort(key=lambda x: -abs(x["chg24h"]))
+
     doc = {
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "perp_movers": perp_movers[:15],
         "futures": block(FUTURES),
         "asia": block(ASIA),
         "europe": block(EUROPE),

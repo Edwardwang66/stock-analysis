@@ -116,7 +116,8 @@
       `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥80)盘前异动、
       隔夜新闻、今日事件窗口、按方法论给出当日关注位(Pivot/九转/SuperTrend 状态)。
       **行情原料直接读 `feed/intraday/overnight.json`**(12:40 UTC 自动生成:美股期货
-      ES/NQ/YM、亚洲收盘、欧洲盘中、隔夜加密、昨日异动 top20),不用自己抓。
+      ES/NQ/YM、亚洲收盘、欧洲盘中、隔夜加密、昨日异动 top20、**perp_movers=24/7 永续
+      夜盘异动 |24h|≥4%**——存储链等池内重仓的隔夜预警优先点名),不用自己抓。
 - [ ] **盘中事件驱动(每5分钟轮询,只写增量)**:轮询 live 分支 `feed/intraday/latest.json` 的
       `events[]`(本机直接看 `INTRADAY_EVENTS.flag` 更快);对触发标的生成一句话解读后用
       **一条命令落两处**:`python scripts/openclaw_intraday_update.py --symbol <SYM> --note "<一句话>" --push`
