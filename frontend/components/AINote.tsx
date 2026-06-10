@@ -86,6 +86,24 @@ export default function AINote({ symbol }: { symbol: string }) {
           {note.risks && <tr><th>风险点</th><td>{note.risks}</td></tr>}
         </tbody>
       </table>
+      {note.fundamentals && Object.values(note.fundamentals).some(Boolean) && (
+        <>
+          <h3 style={{ fontSize: 13, margin: "12px 0 6px", color: "var(--muted)" }}>
+            📊 基本面层(Codex · public equity investing)
+            {note.fundamentals.verdict && (
+              <span className="badge" style={{ marginLeft: 8, fontSize: 11 }}>{note.fundamentals.verdict}</span>
+            )}
+          </h3>
+          <table>
+            <tbody>
+              {note.fundamentals.valuation && <tr><th style={{ width: 80 }}>估值</th><td>{note.fundamentals.valuation}</td></tr>}
+              {note.fundamentals.quality && <tr><th>质地</th><td>{note.fundamentals.quality}</td></tr>}
+              {note.fundamentals.catalysts && <tr><th>催化剂</th><td>{note.fundamentals.catalysts}</td></tr>}
+              {note.fundamentals.peers && <tr><th>同行对比</th><td>{note.fundamentals.peers}</td></tr>}
+            </tbody>
+          </table>
+        </>
+      )}
       {note.sources && note.sources.length > 0 && (
         <p className="src" style={{ marginTop: 8 }}>
           来源:{note.sources.map((s, i) => (

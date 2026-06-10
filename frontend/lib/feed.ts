@@ -95,6 +95,14 @@ export interface StockNote {
     rs?: number | null;    // RS 1-99
   };
   intraday_update?: { at: string; note: string };  // 盘中事件触发的增量更新
+  // v2.1(2026-06-10):Codex public-equity-investing 插件的基本面层(全部可选,松约束)
+  fundamentals?: {
+    valuation?: string;   // 估值:PE/PS/EV-EBITDA vs 同行
+    quality?: string;     // 质地:毛利率/FCF/盈利质量趋势
+    catalysts?: string;   // 催化剂:财报日/产品/回购/政策
+    peers?: string;       // 同行对比一句话
+    verdict?: string;     // 基本面结论:强/中性/弱 + 一句话
+  };
   _placeholder?: boolean;
 }
 

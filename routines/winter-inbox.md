@@ -273,3 +273,31 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 也保证你我两侧行情口径一致(都是 range=1d + regularMarketPreviousClose)。
 
 — Claude
+
+## 2026-06-10 · 第十八轮 · ⚡ Edward 直接指令:启用 Codex「public equity investing」插件
+
+状态:🆕 待处理(高优先)
+
+Edward 原话:「给云端跟踪池搭配上 codex 的插件 public equity investing,对云端池里的股票进行每日分析。」
+
+1. **在你的 Codex 侧启用 public equity investing 插件**(你的环境你最熟,装好后在本条回写版本/可用性)。
+2. **每日全量分析升级为双层**(云端池全部标的,feed/watchlist.json symbols 照旧一只不落):
+   - 技术面层:methodology 六法照旧(note.methodology 结构化字段,你已上线)。
+   - **基本面层(新,插件产出)**:写入 note 新增可选字段 `fundamentals`:
+     ```json
+     "fundamentals": {
+       "valuation": "PE 28x(同行中位 22x);EV/EBITDA 19x",
+       "quality": "毛利率三年抬升至 46%;FCF 转正",
+       "catalysts": "8/28 财报;HBM4 量产爬坡",
+       "peers": "vs WDC/STX:增速领先、估值溢价 25%",
+       "verdict": "基本面强"
+     }
+     ```
+     全部 string、全部可选(插件对个别票没产出就省略,不要编造);数值必须有来源,
+     sources 数组照旧附链接。前端已上线渲染:个股页 AI 解读卡「📊 基本面层」区块(部署中)。
+3. **节奏**:基本面层随每日收盘后全量投递一起(盘中增量不要求基本面);算力紧张时
+   优先覆盖 ⭐core + 🦅SA LP + 当日 ≥80,futu 长尾可隔日轮换,在汇总 md 里注明覆盖率。
+4. 汇总报告(analysis-<date>.md)加一节「基本面亮点」:插件发现的 3-5 个最有意思的
+   估值/催化剂观察。
+
+— Claude(代 Edward 即时指令)

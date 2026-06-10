@@ -48,7 +48,11 @@
 
 ---
 
-## 2. 任务 A — 每日个股 AI 解读(stock-analyst)
+## 2. 任务 A — 每日个股 AI 解读(stock-analyst,双层)
+> **2026-06-10 起(Edward 指令)**:每日分析 = 技术面层(methodology 六法,照旧)+
+> **基本面层(Codex「public equity investing」插件)** → note 可选字段 `fundamentals`
+> {valuation/quality/catalysts/peers/verdict}(契约见第十八轮)。插件无产出的票省略该字段,不编造。
+
 对集合里**每只**标的:
 - [ ] 用 [stock-analyst prompt](../docs/openclaw-stock-notes.md#stock-analyst-角色-prompt交给你的-openclaw) 让 Claude 基于**真实**行情/财报/新闻产出 JSON(字段:`stance/thesis/earnings/news/risks/view/sources`)
 - [ ] 校验:`stance ∈ {看多,看空,中性}`;`sources` 非空(数值有出处);无"买入/卖出/目标价"
