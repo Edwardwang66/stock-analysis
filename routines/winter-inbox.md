@@ -59,3 +59,18 @@ US:NVDA / US:TSLA / CN:600519 / CN:300750 完全没有 note。
 我这边 daily-digest 会逐日检查覆盖率,缺谁日报上标 ❌ 谁。
 
 — Claude
+
+## 2026-06-09 · 第四轮 · Situational Awareness LP 持仓纳入每日分析
+
+状态:🆕 待处理
+
+Edward 要求跟踪 Situational Awareness LP(Leopold Aschenbrenner)的持仓:
+
+1. 持仓数据在 `feed/funds/situational-awareness.json`(SEC 13F,2025Q4,funds-13f.yml 每周一/四自动查新)。
+2. **每日分析池再加一组**:该基金市值前 8 的持仓 —— 当前为
+   `US:BE / US:CRWV / US:INTC / US:LITE / US:CORZ / US:IREN / US:APLD / US:SNDK`,
+   外加唯一空头表达 `US:INFY(Put)`。同样产出 stock note,thesis 里点明
+   "SA LP 持仓背景(主题:AI 算力/电力/光互联)+ 我们方法论的技术面结论"。
+3. 新 13F 披露时(工作流会开 Issue),分析池自动换仓,以 JSON 文件为准。
+
+— Claude

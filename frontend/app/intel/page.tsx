@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
-  type FeedIndex, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
+  getFundHoldings, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
+  type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
@@ -22,6 +22,7 @@ export default function IntelDashboard() {
   const [fac, setFac] = useState<FactoryStore | null>(null);
   const [rep, setRep] = useState<FullReport | null>(null);
   const [hist, setHist] = useState<MarketSnapshot[]>([]);
+  const [fund, setFund] = useState<FundHoldings | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   async function load() {
@@ -30,6 +31,7 @@ export default function IntelDashboard() {
     setIdx(i); setErr(null);
     setSig(await getSignals()); setMkt(await getMarket()); setFac(await getFactory());
     setHist((await getMarketHistory()) ?? []);
+    setFund(await getFundHoldings("situational-awareness"));
     if (i.latest.report) setRep(await getReport(i.latest.report));
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
@@ -158,6 +160,44 @@ export default function IntelDashboard() {
           </div>
         )}
       </div>
+
+      {/* 跟踪基金 13F 持仓 */}
+      {fund && (
+        <div className="section">
+          <h2>🦅 {fund.fund} 持仓(SEC 13F)
+            <span className="src" style={{ marginLeft: 10 }}>
+              截至 {fund.asof} · 披露 {fund.filed} · 总市值 ${((fund.summary?.total_value ?? 0) / 1e9).toFixed(2)}B · {fund.positions.length} 仓位
+            </span>
+          </h2>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>#</th><th>标的</th><th>类型</th><th>市值($M)</th><th>占比</th><th>主题</th></tr></thead>
+              <tbody>
+                {fund.positions.slice(0, 15).map((p, i) => {
+                  const tot = fund.summary?.total_value || 1;
+                  const isPut = p.type.includes("Put");
+                  return (
+                    <tr key={p.ticker + i}>
+                      <td className="muted">{i + 1}</td>
+                      <td>
+                        {p.ticker.includes(":") ? (
+                          <Link href={`/symbol/?s=${encodeURIComponent(p.ticker)}`} style={{ color: "var(--accent)" }}>{p.ticker.replace(/^US:/, "")}</Link>
+                        ) : p.ticker}
+                        <span className="src" style={{ marginLeft: 6 }}>{p.name}</span>
+                      </td>
+                      <td><span className="badge" style={isPut ? { borderColor: DOWN, color: DOWN } : undefined}>{p.type}</span></td>
+                      <td>{(p.value / 1e6).toFixed(1)}</td>
+                      <td>{((p.value / tot) * 100).toFixed(1)}%</td>
+                      <td className="src">{p.theme ?? ""}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {fund.note && <p className="src" style={{ marginTop: 8 }}>{fund.note}</p>}
+        </div>
+      )}
 
       {/* LLM 假设工厂候选 */}
       <div className="section">

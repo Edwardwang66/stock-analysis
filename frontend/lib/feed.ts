@@ -112,6 +112,17 @@ export interface MarketSnapshot {
 }
 export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
 
+// 跟踪基金 13F 持仓(funds-13f.yml 周检自动更新)
+export interface FundPosition {
+  ticker: string; name: string; type: string; value: number; shares: number; theme?: string;
+}
+export interface FundHoldings {
+  fund: string; manager?: string; asof: string; filed: string; note?: string;
+  positions: FundPosition[];
+  summary?: { total_value: number; n_positions: number; themes?: string };
+}
+export const getFundHoldings = (slug: string) => fetchJson<FundHoldings>(`funds/${slug}.json`);
+
 // 云端自选池(Edward 重点跟踪 = OpenClaw 每日必须全覆盖)
 export interface RepoWatchlist { version: number; updated_at: string; symbols: string[] }
 export const getRepoWatchlist = () => fetchJson<RepoWatchlist>("watchlist.json");
