@@ -30,12 +30,19 @@ def _cache_path(ticker: str) -> str:
 
 
 def fetch_one(ticker: str, range_: str = "10y", interval: str = "1d",
-              retries: int = 3, force: bool = False) -> int:
-    """下载单只标的并写缓存,返回 bar 数;失败返回 0。"""
+              retries: int = 3, force: bool = False, max_age_hours: float = 12.0) -> int:
+    """下载单只标的并写缓存,返回 bar 数;失败返回 0。
+
+    max_age_hours: 缓存文件超过此时长视为陈旧,自动重新下载(修复 CI 恢复昨日缓存后
+    引擎一直跑在旧数据上的问题;设 0/负值 = 永不过期,沿用旧行为)。
+    """
     path = _cache_path(ticker)
     if not force and os.path.exists(path) and os.path.getsize(path) > 100:
-        with open(path) as f:
-            return sum(1 for _ in f) - 1
+        fresh = (max_age_hours <= 0
+                 or (time.time() - os.path.getmtime(path)) < max_age_hours * 3600)
+        if fresh:
+            with open(path) as f:
+                return sum(1 for _ in f) - 1
     url = f"{BASE}{_yahoo_symbol(ticker)}?interval={interval}&range={range_}"
     last_err = None
     for attempt in range(retries):

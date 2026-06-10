@@ -156,6 +156,8 @@ def main():
             "name": rep["engine"], "period": rep["period"], "net": rep["net"], "gross": rep["gross"],
             "cost_drag_ann": rep["cost_drag_ann"], "turnover": rep["turnover"],
             "deflated_sharpe": rep["deflated_sharpe"], "verdict": rep["verdict"],
+            "train": rep.get("train"), "holdout": rep.get("holdout"),
+            "equity_curve": rep.get("equity_curve", []),
         },
         "book": rep["latest_book"],
         "factory_candidates": cands,

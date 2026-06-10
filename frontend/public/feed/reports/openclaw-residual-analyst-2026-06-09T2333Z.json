@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-residual-analyst-2026-06-09T2333Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-09T23:33:27Z",
+  "asof_data": "2026-06-09",
+  "producer": {
+    "name": "openclaw-agent:residual-analyst",
+    "model": "gpt-5.5",
+    "agent_role": "residual-analyst",
+    "run_url": "local-openclaw-daily"
+  },
+  "market_state": {
+    "residual_dispersion": 0.018339189127784147,
+    "crowding_proxy": 0.29587943021885793,
+    "breadth_pct_above_50dma": 1.0
+  },
+  "alerts": [
+    {
+      "level": "warning",
+      "code": "residual_health",
+      "message": "APH 对 SPY 日收益残差 60日 z-score=2.90; 仅提示残差偏离，不作方向预测。",
+      "tickers": [
+        "APH"
+      ]
+    },
+    {
+      "level": "warning",
+      "code": "residual_health",
+      "message": "PLD 对 SPY 日收益残差 60日 z-score=2.89; 仅提示残差偏离，不作方向预测。",
+      "tickers": [
+        "PLD"
+      ]
+    },
+    {
+      "level": "warning",
+      "code": "residual_health",
+      "message": "REG 对 SPY 日收益残差 60日 z-score=2.61; 仅提示残差偏离，不作方向预测。",
+      "tickers": [
+        "REG"
+      ]
+    }
+  ],
+  "contribution": {
+    "type": "risk_alert",
+    "summary": "用看多清单前 30 只与 SPY 日线重算残差偏离，标出 3 个最大偏离。"
+  },
+  "notes": "残差=个股日收益对 SPY 日收益的一元滚动回归残差；免费日线近似，不等同完整行业中性协整检验。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "03c5e4a3204b18b5bc28a2dce40ffd930431546a21a48b5f146236475673adcc"
+  }
+}

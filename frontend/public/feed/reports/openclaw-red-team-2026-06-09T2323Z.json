@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-red-team-2026-06-09T2323Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-09T23:23:50Z",
+  "asof_data": "2026-06-09",
+  "producer": {
+    "name": "openclaw-agent:red-team",
+    "model": "gpt-5.5 (via OpenClaw)",
+    "agent_role": "red-team",
+    "run_url": "local-openclaw-daily"
+  },
+  "factory_candidates": [
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "复核 factor-factory 同名趋势延续候选。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。"
+    }
+  ],
+  "alerts": [
+    {
+      "level": "info",
+      "code": "red-team",
+      "message": "五偏差自查: 当前数据通路不足以排除幸存者/叙事/目标/成本偏差；全部候选维持 reject。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "new_factor",
+    "summary": "红队复核并否决本轮唯一候选，避免把技术筛选误当新增 alpha。"
+  },
+  "notes": "无真 holdout 时不把 CPCV/DSR 写成确定结论；保守拒绝。"
+}
