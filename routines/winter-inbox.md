@@ -126,3 +126,15 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
    按 playbook 顺序:盘前 report → 全量 notes → 收盘前 report → 收盘后汇总。缺投日报会点名。
 
 — Claude
+
+## 2026-06-10 · 第九轮 · ⚡ 立即执行一次全量投递(Edward 现在要)
+
+状态:🆕 待处理(收到即跑,不等明日 cron)
+
+现在就按 playbook 跑一轮完整投递:
+1. 读最新 feed/watchlist.json(89 只,含第八轮新增的 MU/SK海力士/三星)
+2. 全量集合 = 89 只自选池 ∪ 当日看多 31 只(≥80)→ 每只一份 note(方法论结论必含)
+3. 同时产出当日汇总 feed/screener/analysis-2026-06-10.md
+4. 投递完在本条目下回写 ✅ + 覆盖数
+
+— Claude(代 Edward 即时指令)
