@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getScores, getScreener,
-  type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type ScoreTable, type ScreenerList,
+  getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorOf } from "@/lib/sectors";
@@ -19,7 +19,7 @@ const fmt = (n: number | null | undefined, d = 2) =>
 const today = () => new Date().toISOString().slice(0, 10);
 
 type PoolKey = "watch" | "salp" | "s90" | "s80" | "s70";
-type SortKey = "pctDesc" | "pctAsc" | "scoreDesc" | "tag";
+type SortKey = "pctDesc" | "pctAsc" | "scoreDesc" | "rsDesc" | "tag";
 
 interface Row {
   symbol: string;
@@ -50,6 +50,7 @@ export default function DeskPage() {
   const [wl, setWl] = useState<string[]>([]);
   const [scr, setScr] = useState<ScreenerList | null>(null);
   const [scores, setScores] = useState<ScoreTable | null>(null);
+  const [rs, setRs] = useState<RsTable | null>(null);
   const [fund, setFund] = useState<FundHoldings | null>(null);
   const [notes, setNotes] = useState<NotesIndex | null>(null);
   const [idx, setIdx] = useState<FeedIndex | null>(null);
@@ -75,12 +76,12 @@ export default function DeskPage() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [w, s, sc, f, n, i, m] = await Promise.all([
+      const [w, s, sc, f, n, i, m, rsT] = await Promise.all([
         getRepoWatchlist(), getScreener(), getScores(), getFundHoldings("situational-awareness"),
-        getNotesIndex(), getIndex(), getMarketHistory(),
+        getNotesIndex(), getIndex(), getMarketHistory(), getRsRanks(),
       ]);
       if (!alive) return;
-      setWl(w?.symbols ?? []); setScr(s); setScores(sc); setFund(f); setNotes(n); setIdx(i); setMh(m ?? []);
+      setWl(w?.symbols ?? []); setScr(s); setScores(sc); setFund(f); setNotes(n); setIdx(i); setMh(m ?? []); setRs(rsT);
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -160,12 +161,16 @@ export default function DeskPage() {
     if (sort === "pctDesc") arr.sort((a, b) => (pct(b) ?? -999) - (pct(a) ?? -999));
     else if (sort === "pctAsc") arr.sort((a, b) => (pct(a) ?? 999) - (pct(b) ?? 999));
     else if (sort === "scoreDesc") arr.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    else if (sort === "rsDesc") {
+      const rsOf = (r: Row) => rs?.ranks?.[r.symbol.replace(/^US:/, "")]?.rs ?? -1;
+      arr.sort((a, b) => rsOf(b) - rsOf(a));
+    }
     else arr.sort((a, b) => {
       const w = (r: Row) => (r.tags.includes("watch") ? 0 : r.tags.includes("salp") ? 1 : 2);
       return w(a) - w(b) || (b.score ?? -1) - (a.score ?? -1) || a.symbol.localeCompare(b.symbol);
     });
     return arr;
-  }, [rows, pools, sector, sort, quotes]);
+  }, [rows, pools, sector, sort, quotes, rs]);
 
   const togglePool = (k: PoolKey) => setPools((prev) => {
     const n = new Set(prev);
@@ -243,13 +248,14 @@ export default function DeskPage() {
               <button className={sort === "pctDesc" ? "active" : ""} onClick={() => setSort("pctDesc")}>涨幅↓</button>
               <button className={sort === "pctAsc" ? "active" : ""} onClick={() => setSort("pctAsc")}>跌幅↑</button>
               <button className={sort === "scoreDesc" ? "active" : ""} onClick={() => setSort("scoreDesc")}>评分↓</button>
+              <button className={sort === "rsDesc" ? "active" : ""} onClick={() => setSort("rsDesc")}>RS↓</button>
             </div>
             <span className="src">{view.length} 只</span>
           </div>
 
           <div className="section" style={{ overflowX: "auto", marginTop: 8 }}>
             <table>
-              <thead><tr><th>标的</th><th>标签</th><th>行业</th><th>评分</th><th>现价</th><th>当日</th><th>AI</th></tr></thead>
+              <thead><tr><th>标的</th><th>标签</th><th>行业</th><th>评分</th><th>RS</th><th>现价</th><th>当日</th><th>AI</th></tr></thead>
               <tbody>
                 {view.map((r) => {
                   const q = quotes[r.symbol];
@@ -270,6 +276,12 @@ export default function DeskPage() {
                       </td>
                       <td className="src">{r.sector}</td>
                       <td>{r.score != null ? <strong>{r.score}</strong> : "—"}</td>
+                      <td>{(() => {
+                        const v = rs?.ranks?.[r.symbol.replace(/^US:/, "")]?.rs;
+                        if (v == null) return <span className="muted">—</span>;
+                        const c = v >= 80 ? UP : v >= 50 ? "var(--text)" : DOWN;
+                        return <strong style={{ color: c }}>{v}</strong>;
+                      })()}</td>
                       <td>{fmt(q?.price)}</td>
                       <td className={pc == null ? "muted" : pc >= 0 ? "up" : "down"}>
                         {pc == null ? "…" : `${pc >= 0 ? "+" : ""}${pc.toFixed(2)}%`}
@@ -278,7 +290,7 @@ export default function DeskPage() {
                     </tr>
                   );
                 })}
-                {!view.length && <tr><td colSpan={7} className="src">当前过滤条件下没有标的。</td></tr>}
+                {!view.length && <tr><td colSpan={8} className="src">当前过滤条件下没有标的。</td></tr>}
               </tbody>
             </table>
           </div>

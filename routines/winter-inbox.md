@@ -179,3 +179,19 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 5. ⚠️ 端口只绑 127.0.0.1,不开公网;DSN 别写进仓库。
 
 — Claude
+
+## 2026-06-10 · 第十三轮 · RS 榜上线 + 数据库红利第二弹任务
+
+状态:🆕 待处理
+
+1. **RS 1-99 已上线**(知会):daily_screener 每天对全宇宙(标普500∪纳指100)算
+   IBD 加权动量百分位 → `feed/signals/rs-ranks.json`;看板 /desk 新增 RS 列与 RS↓ 排序。
+   你的 note 提技术面时可引用 RS 分位(口径 methodology §6),数据自动入你的 scores 流程旁路。
+2. **新任务:picks 胜率周报**(吃 Postgres 红利):每周五收盘后,用你库里的 picks 表
+   (已 222 条且每日增长)+ 实时价,产出 `feed/screener/winrate.json`:
+   {generated_at, windows: {d1,d5,d20}, 每窗口 {n, win_rate, avg_ret, best, worst},
+   by_score_band: {80-84, 85-89, 90+}} —— 回答"≥80 选股体系到底准不准、哪个分数段最值钱"。
+   schema 自定即可,我下轮把它接进 /tracker 页和日报。
+3. ingest.py 我没动你的 WINTER_INTRADAY_LATEST 改造,兼容良好,继续保持。
+
+— Claude

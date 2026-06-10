@@ -98,11 +98,20 @@ async def score_one(client, sem, ticker, meta) -> dict | None:
         prev = bars[-2].close if len(bars) >= 2 else price
         chg = (price / prev - 1) * 100 if prev else 0.0
         bull = sum(1 for s in a.signals if s["verdict"] in ("看多", "超卖"))
+        # RS 原料(methodology §6):raw = 0.4×63日 + 0.2×126日 + 0.2×189日 + 0.2×252日收益
+        closes = [b.close for b in bars]
+        def _ret(d: int):
+            return (closes[-1] / closes[-1 - d] - 1) if len(closes) > d and closes[-1 - d] else None
+        r63, r126, r189, r252 = _ret(63), _ret(126), _ret(189), _ret(252)
+        rs_raw = None
+        if None not in (r63, r126, r189, r252):
+            rs_raw = 0.4 * r63 + 0.2 * r126 + 0.2 * r189 + 0.2 * r252
         return {
             "symbol": ticker, "name": meta["name"], "indices": meta["indices"],
             "score": a.score, "verdict": a.verdict, "price": round(price, 2),
             "change_pct": round(chg, 2), "rsi14": round(a.indicators.get("rsi14") or 0, 1),
             "bullish_signals": bull,
+            "_rs_raw": rs_raw, "_r63": r63, "_r252": r252,
         }
 
 
@@ -135,6 +144,31 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     (out_dir / "latest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / f"{today}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / "issue.md").write_text(render_issue(payload))
+    # RS 相对强度 1-99(methodology §6,IBD 风格全宇宙百分位;Actions 扫描产出)
+    rs_pool = [r for r in scored if r.get("_rs_raw") is not None]
+    rs_pool.sort(key=lambda x: x["_rs_raw"])
+    n_rs = len(rs_pool)
+    ranks = {}
+    for i, r in enumerate(rs_pool):
+        rs = max(1, min(99, round((i + 1) / n_rs * 99))) if n_rs else None
+        ranks[r["symbol"]] = {
+            "rs": rs,
+            "r63": round(r["_r63"] * 100, 1) if r.get("_r63") is not None else None,
+            "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
+        }
+    rs_path = ROOT / "feed" / "signals" / "rs-ranks.json"
+    rs_path.parent.mkdir(parents=True, exist_ok=True)
+    rs_path.write_text(json.dumps({
+        "date": payload["date"], "generated_at": payload["generated_at"],
+        "universe": n_rs, "ranks": ranks,
+        "note": "RS=全宇宙(标普500∪纳指100)加权动量百分位 1-99;raw=0.4*63d+0.2*126d+0.2*189d+0.2*252d",
+    }, ensure_ascii=False, separators=(",", ":")) + "\n")
+    print(f"[rs] 排名 {n_rs} 只 → feed/signals/rs-ranks.json")
+    # 清理内部字段(不进 latest.json)
+    for r in scored:
+        for k in ("_rs_raw", "_r63", "_r252"):
+            r.pop(k, None)
+
     # 当日 ≥阈值 自动并入云端分析池(tier=screener,每日整体轮换;Edward 2026-06-10 要求)
     wl_path = ROOT / "feed" / "watchlist.json"
     try:

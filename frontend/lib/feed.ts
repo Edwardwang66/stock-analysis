@@ -137,6 +137,13 @@ export interface ScoreTable {
 }
 export const getScores = () => fetchJson<ScoreTable>("screener/scores.json");
 
+// RS 相对强度排名(daily_screener 全宇宙百分位 1-99;methodology §6)
+export interface RsTable {
+  date: string; generated_at: string; universe: number;
+  ranks: Record<string, { rs: number | null; r63: number | null; r252: number | null }>;
+}
+export const getRsRanks = () => fetchJson<RsTable>("signals/rs-ranks.json");
+
 // 个股 AI 解读索引(OpenClaw 投递;updated_at 用于判断当日覆盖)
 export interface NotesIndex {
   updated_at: string;

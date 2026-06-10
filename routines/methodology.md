@@ -40,7 +40,7 @@
 - [x] SuperTrend 叠加(开关,绿/红双线)
 - [ ] 背驰度徽章 + 买卖点历史表
 - [x] 周 Pivot 水平线组(图上「支撑压力」开关;月线版待加)
-- [ ] RS 榜(Actions 扫描)
+- [x] RS 榜(daily_screener 全宇宙百分位 → feed/signals/rs-ranks.json;desk RS 列+排序)
 
 ## 7. 综合评分 v2(2026-06-09 重构,前后端同口径)
 > v1 缺陷:正分只有 趋势20+排列15+MACD15=50,RSI/布林加分与上升趋势互斥 → 看多股全部卡在 50。
