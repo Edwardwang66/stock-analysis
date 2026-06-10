@@ -122,7 +122,13 @@ export default function DeskPage() {
     // 5) 高波动 top
     const h0 = heat?.items?.[0];
     if (h0) out.push({ icon: "🔥", text: `本周最躁动:${nameOf(h0.symbol, lang)}(${h0.total} 次事件${h0.lows > h0.highs ? ",偏新低" : h0.highs > h0.lows ? ",偏新高" : ""})` });
-    // 6) OpenClaw 节拍
+    // 6) Winter 盘前观点(报告已投时抽首两行)
+    if (mdPre) {
+      const lines = mdPre.split("\n").map((x) => x.replace(/^#+\s*/, "").trim()).filter((x) => x && !x.startsWith("---"));
+      const gist = lines.slice(0, 2).join(" / ").slice(0, 120);
+      if (gist) out.push({ icon: "🌅", text: `Winter 盘前:${gist}…`, href: "/reports/" });
+    }
+    // 7) OpenClaw 节拍
     out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
     return out;
   }, [ovn, wl, chanA, scrHist, heat, mdPre, mdIntra, mdClose, lang]);
