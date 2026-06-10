@@ -128,6 +128,69 @@ def find_pivots(st: list[dict]) -> list[dict]:
     return ps[-2:]
 
 
+def find_pivots_hist(st: list[dict]) -> list[dict]:
+    """全历史中枢(贪心不重叠:成枢即跳到枢后继续)。"""
+    ps = []
+    i = 0
+    while i + 2 < len(st):
+        segs = [{"hi": max(s["frm"]["price"], s["to"]["price"]), "lo": min(s["frm"]["price"], s["to"]["price"])}
+                for s in st[i:i + 3]]
+        zd = max(s["lo"] for s in segs)
+        zg = min(s["hi"] for s in segs)
+        if zg > zd:
+            ps.append({"zg": zg, "zd": zd, "startTime": st[i]["frm"]["time"], "endTime": st[i + 2]["to"]["time"]})
+            i += 3
+        else:
+            i += 1
+    return ps
+
+
+def buy_sell_points_hist(st: list[dict], pivots_all: list[dict]) -> list[dict]:
+    """全历史买卖点(真回测口径):每个同向笔对/每个中枢/每个1B后都检查,不止最后一组。"""
+    pts: list[dict] = []
+    # 1B/1S:所有相邻同向笔对(隔一笔反向)
+    for i in range(2, len(st)):
+        c, a = st[i], st[i - 2]
+        if c["dir"] != a["dir"]:
+            continue
+        if c["dir"] == "down" and c["to"]["price"] < a["to"]["price"] and abs(c["area"]) < abs(a["area"]):
+            pts.append({"time": c["to"]["time"], "price": c["to"]["price"], "kind": "1B"})
+        elif c["dir"] == "up" and c["to"]["price"] > a["to"]["price"] and abs(c["area"]) < abs(a["area"]):
+            pts.append({"time": c["to"]["time"], "price": c["to"]["price"], "kind": "1S"})
+    # 3B/3S:每个中枢结束后的第一个回踩/反抽(跌回/涨回中枢则该枢作废)
+    for piv in pivots_all:
+        for s in st:
+            if s["to"]["time"] <= piv["endTime"]:
+                continue
+            if s["dir"] == "down" and s["to"]["type"] == "bottom":
+                if s["to"]["price"] > piv["zg"]:
+                    pts.append({"time": s["to"]["time"], "price": s["to"]["price"], "kind": "3B"})
+                break
+            if s["dir"] == "up" and s["to"]["type"] == "top":
+                if s["to"]["price"] < piv["zd"]:
+                    pts.append({"time": s["to"]["time"], "price": s["to"]["price"], "kind": "3S"})
+                break
+    # 2B/2S:每个 1B/1S 之后第一个不破前低的底 / 不破前高的顶
+    for p in [x for x in pts if x["kind"] == "1B"]:
+        after = next((s for s in st if s["dir"] == "down" and s["to"]["type"] == "bottom"
+                      and s["to"]["time"] > p["time"] and s["to"]["price"] > p["price"]), None)
+        if after:
+            pts.append({"time": after["to"]["time"], "price": after["to"]["price"], "kind": "2B"})
+    for p in [x for x in pts if x["kind"] == "1S"]:
+        after = next((s for s in st if s["dir"] == "up" and s["to"]["type"] == "top"
+                      and s["to"]["time"] > p["time"] and s["to"]["price"] < p["price"]), None)
+        if after:
+            pts.append({"time": after["to"]["time"], "price": after["to"]["price"], "kind": "2S"})
+    seen = set()
+    out = []
+    for p in sorted(pts, key=lambda x: x["time"]):
+        k = (p["time"], p["kind"])
+        if k not in seen:
+            seen.add(k)
+            out.append(p)
+    return out
+
+
 def buy_sell_points(st: list[dict], pivots: list[dict]) -> list[dict]:
     pts: list[dict] = []
     if len(st) < 3:
@@ -200,8 +263,8 @@ def analyze_symbol(bars) -> list[dict]:
             elif s["dir"] == "down" and h < 0:
                 total += h
         s["area"] = total
-    ps = find_pivots(st)
-    pts = buy_sell_points(st, ps)
+    ps = find_pivots_hist(st)
+    pts = buy_sell_points_hist(st, ps)
     # 事后表现
     out = []
     for p in pts:
