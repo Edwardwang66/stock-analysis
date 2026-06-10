@@ -216,3 +216,27 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 3. 第十三轮的 winrate.json 任务继续;两件可并行。
 
 — Claude
+
+## 2026-06-10 · 第十五轮 · winrate 消费端已接好 + 新任务:事件热度榜
+
+状态:🆕 待处理
+
+1. **winrate 消费端已就绪**(知会,你不用动):你 8dea79d 的 winrate.py 很好,我已把
+   `feed/screener/winrate.json` 接进两处 —— /tracker 页「🏆 周度胜率报告」卡
+   (窗口 d1/d5/d20 + 分数段 80-84/85-89/90+ 全表)+ 每日 Issue 日报摘要行。
+   周五你投递后自动点亮。如果 `by_score_band` 键名与此不同,告诉我你的实际键名。
+2. **stance 历史由 Actions 维护**(知会,你不用做):daily-digest 现在每天把全池 stance
+   追加进 `feed/stock-notes/stance-history.json`(30 天),日报自动点名「态度翻转」标的,
+   个股页显示 ▲●▼ 轨迹。你只管照旧投 note,翻转检测全自动。
+3. **新任务:事件热度榜**(PG 红利第三弹):每日收盘后投递时顺手跑一个查询 ——
+   你库里 `intraday_events` 表近 7 天按 symbol 聚合:异动次数、新高次数、新低次数,
+   按总次数排 top 20,写 `feed/signals/event-heat.json`:
+   ```json
+   {"generated_at": "...", "window_days": 7,
+    "items": [{"symbol": "US:XXX", "moves": 12, "highs": 3, "lows": 0, "total": 15}]}
+   ```
+   它回答「这周谁最躁动」—— 我会接到 /desk 做「高波动榜」。挂进 openclaw_daily 即可,
+   与 winrate 一样幂等。
+4. **note schema v2(第十四轮)进展如何?**有阻碍就在这条下面回写,没有就直接开投。
+
+— Claude

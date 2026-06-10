@@ -185,6 +185,45 @@ def main() -> int:
     if missing:
         lines.append(f"❌ 缺:{', '.join(missing[:40])}{' …' if len(missing) > 40 else ''}\n")
 
+    # 3.6) stance 历史(追加式 30 天,/symbol 页轨迹同源)+ 翻转检测
+    sh_path = NOTES_DIR / "stance-history.json"
+    sh: list = jload(sh_path, [])
+    nidx = jload(NOTES_DIR / "index.json", {})
+    today_st = {x.get("symbol"): x.get("stance") for x in nidx.get("symbols", [])
+                if x.get("stance") and x.get("date") in (today, (latest or {}).get("date"))}
+    if today_st:
+        sh = [d for d in sh if d.get("date") != today]
+        sh.append({"date": today, "stances": today_st})
+        sh.sort(key=lambda d: d.get("date", ""))
+        sh = sh[-30:]
+        sh_path.write_text(json.dumps(sh, ensure_ascii=False, separators=(",", ":")) + "\n")
+    if len(sh) >= 2:
+        prev_st, cur_st = sh[-2].get("stances", {}), sh[-1].get("stances", {})
+        flips = [(s, prev_st[s], v) for s, v in cur_st.items() if s in prev_st and prev_st[s] != v]
+        if flips:
+            lines.append(f"## 🔄 OpenClaw 态度翻转({sh[-2]['date']} → {sh[-1]['date']},{len(flips)} 只)\n")
+            order = {"看空": 0, "中性": 1, "看多": 2}
+            for s, a, b in sorted(flips, key=lambda f: order.get(f[2], 1))[:20]:
+                emo = "🔻" if b == "看空" else ("🔺" if b == "看多" else "➖")
+                lines.append(f"- {emo} **{s}**:{a} → {b}")
+            lines.append("")
+
+    # 3.7) 盘中节拍投递状态 + 周度胜率(Winter·PG)
+    sd = ROOT / "feed" / "screener"
+    def _st(k):
+        return "✅" if (sd / f"analysis-{k}-{today}.md").exists() else "❌"
+    lines.append(f"## 📡 盘中节拍投递:盘前 {_st('premarket')} · 盘中滚动 {_st('intraday')} · 收盘前 {_st('close')}\n")
+    wr = jload(sd / "winrate.json", None)
+    if wr and wr.get("windows"):
+        def _wv(k):
+            d = wr["windows"].get(k) or {}
+            if not d.get("n"):
+                return f"{k} 样本不足"
+            return (f"{k}:n={d['n']} 胜率 {round((d.get('win_rate') or 0)*100)}% "
+                    f"平均 {round((d.get('avg_ret') or 0)*100, 2)}%")
+        lines.append(f"## 🏆 ≥80 选股胜率(Winter·PG,{str(wr.get('generated_at', ''))[:10]})\n")
+        lines.append(" · ".join(_wv(k) for k in ("d1", "d5", "d20")) + "\n")
+
     # 4) 市场快照
     mh = jload(MARKET_HIST, [])
     if mh:

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getRepoWatchlist, getStockNote, type StockNote } from "@/lib/feed";
+import { getRepoWatchlist, getStanceHistory, getStockNote, type StockNote } from "@/lib/feed";
 
 const STANCE: Record<string, string> = { "看多": "#26a69a", "看空": "#ef5350", "中性": "#f7b500" };
+const TRAIL_GLYPH: Record<string, string> = { "看多": "▲", "看空": "▼", "中性": "●" };
 
 // 每日个股 AI 解读 —— 由外部 OpenClaw(stock-analyst 角色)产出,投递到 feed/stock-notes/。
 // 没有解读时静默(只在有数据时显示),避免占位噪音;但本仓自带 AAPL 占位示例演示形态。
@@ -10,12 +11,17 @@ export default function AINote({ symbol }: { symbol: string }) {
   const [note, setNote] = useState<StockNote | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [inPool, setInPool] = useState(false);
+  const [trail, setTrail] = useState<{ date: string; stance: string }[]>([]);
 
   useEffect(() => {
     let alive = true;
-    setLoaded(false); setNote(null); setInPool(false);
+    setLoaded(false); setNote(null); setInPool(false); setTrail([]);
     getStockNote(symbol).then((n) => { if (alive) { setNote(n); setLoaded(true); } });
     getRepoWatchlist().then((w) => { if (alive) setInPool((w?.symbols ?? []).includes(symbol)); }).catch(() => {});
+    getStanceHistory().then((h) => {
+      if (!alive || !h) return;
+      setTrail(h.slice(-14).flatMap((d) => (d.stances?.[symbol] ? [{ date: d.date, stance: d.stances[symbol] }] : [])));
+    }).catch(() => {});
     return () => { alive = false; };
   }, [symbol]);
 
@@ -55,6 +61,21 @@ export default function AINote({ symbol }: { symbol: string }) {
       )}
       {note.intraday_update && (
         <p className="src" style={{ color: "#f7b500", marginTop: 0 }}>⚡ {note.intraday_update.at}:{note.intraday_update.note}</p>
+      )}
+      {trail.length >= 2 && (
+        <p className="src" style={{ margin: "0 0 8px", letterSpacing: 2 }}>
+          态度轨迹(近 {trail.length} 个投递日):
+          {trail.map((t, i) => (
+            <span key={i} title={`${t.date} ${t.stance}`} style={{ color: STANCE[t.stance] || "var(--muted)" }}>
+              {TRAIL_GLYPH[t.stance] || "·"}
+            </span>
+          ))}
+          {trail.length >= 2 && trail[trail.length - 2].stance !== trail[trail.length - 1].stance && (
+            <span style={{ marginLeft: 8, color: "#f7b500", letterSpacing: 0 }}>
+              ← 昨日{trail[trail.length - 2].stance}→今日{trail[trail.length - 1].stance}
+            </span>
+          )}
+        </p>
       )}
       <p style={{ fontSize: 14, lineHeight: 1.7 }}>{note.view}</p>
       <table>

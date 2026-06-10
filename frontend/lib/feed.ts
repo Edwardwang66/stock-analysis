@@ -195,6 +195,20 @@ export interface TrackedPick { symbol: string; name?: string; score?: number; pi
 export interface TrackedDay { date: string; generated_at?: string; threshold?: number; items: TrackedPick[] }
 export const getScreenerHistory = () => fetchJson<TrackedDay[]>("screener/history.json");
 
+// 周度胜率(Winter 本地 Postgres winrate.py,每周五收盘后投递)
+export interface WinratePick { symbol: string; date: string; score?: number; pick_price?: number; current_price?: number; ret?: number }
+export interface WinrateCell { n: number; win_rate: number | null; avg_ret: number | null; best?: WinratePick | null; worst?: WinratePick | null }
+export interface WinrateDoc {
+  generated_at?: string; total_picks?: number;
+  windows?: Record<string, WinrateCell>;
+  by_score_band?: Record<string, WinrateCell>;
+}
+export const getWinrate = () => fetchJson<WinrateDoc>("screener/winrate.json");
+
+// stance 历史(daily-digest 追加维护 30 天;翻转检测与个股轨迹同源)
+export interface StanceDay { date: string; stances: Record<string, string> }
+export const getStanceHistory = () => fetchJson<StanceDay[]>("stock-notes/stance-history.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");
