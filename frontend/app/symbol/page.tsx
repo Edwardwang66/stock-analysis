@@ -178,13 +178,17 @@ function SymbolView() {
         )}
       </div>
 
-      {/* 每日 AI 解读(外部 OpenClaw 投递) */}
+      {/* 每日 AI 解读(外部 OpenClaw 投递,无数据自隐藏) */}
       <AINote symbol={symbol} />
 
-      {/* 富途式看板:主力资金 + 筹码分布 + 基本面 */}
-      <MoneyFlow symbol={symbol} />
-      {!loading && bars.length > 10 && <Chips bars={bars} price={quote?.price ?? an?.price ?? null} />}
-      <Fundamentals symbol={symbol} />
+      {/* 富途式看板:主力资金 + 筹码分布 + 基本面(指数无个股微观结构,不展示) */}
+      {!symbol.startsWith("IDX:") && (
+        <>
+          <MoneyFlow symbol={symbol} />
+          {!loading && bars.length > 10 && <Chips bars={bars} price={quote?.price ?? an?.price ?? null} />}
+          <Fundamentals symbol={symbol} />
+        </>
+      )}
 
       {an && (
         <>

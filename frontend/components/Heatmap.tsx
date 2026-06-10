@@ -15,15 +15,7 @@ function color(pct: number | null): string {
   return `rgba(239,83,80,${0.25 + 0.6 * -x})`;
 }
 
-export default function Heatmap({
-  symbols,
-  quotes,
-  loading = false,
-}: {
-  symbols: string[];
-  quotes: Record<string, Quote | null>;
-  loading?: boolean;
-}) {
+function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, Quote | null> }) {
   const tiles = useMemo<Tile[]>(
     () => symbols.map((s) => ({
       symbol: s,
@@ -32,9 +24,6 @@ export default function Heatmap({
     })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)),
     [quotes, symbols],
   );
-
-  if (!tiles.length || loading) return <div className="loading">热力图加载中…</div>;
-
   return (
     <div className="heatmap">
       {tiles.map((t) => (
@@ -51,4 +40,33 @@ export default function Heatmap({
       ))}
     </div>
   );
+}
+
+export default function Heatmap({
+  symbols,
+  quotes,
+  loading = false,
+  sections = null,
+}: {
+  symbols: string[];
+  quotes: Record<string, Quote | null>;
+  loading?: boolean;
+  /** 分区渲染(如「全部」视图按市场拆分,避免 24h 与当日涨跌混排) */
+  sections?: { label: string; symbols: string[] }[] | null;
+}) {
+  if (loading || (!symbols.length && !sections?.length)) return <div className="loading">热力图加载中…</div>;
+
+  if (sections?.length) {
+    return (
+      <div>
+        {sections.map((sec) => (
+          <div key={sec.label} style={{ marginBottom: 10 }}>
+            <div className="src" style={{ margin: "0 0 5px" }}>{sec.label}</div>
+            <Tiles symbols={sec.symbols} quotes={quotes} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return <Tiles symbols={symbols} quotes={quotes} />;
 }

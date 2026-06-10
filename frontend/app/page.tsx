@@ -304,7 +304,12 @@ export default function Home() {
       </div>
 
       <h2 className="block-title">涨跌热力图</h2>
-      <Heatmap symbols={symbols} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
+      <Heatmap
+        symbols={symbols}
+        quotes={quotes}
+        loading={loadingQuotes && marketStats.loaded === 0}
+        sections={groups?.map((g) => ({ label: `${g.label}${g.mkt === "CRYPTO" ? "(24h)" : ""}`, symbols: g.symbols }))}
+      />
 
       <h2 className="block-title">行情卡片</h2>
       {groups ? groups.map((g) => {
