@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """盘前隔夜要素包(premarket-pack.yml 每个交易日 12:40 UTC 自动生成)。
 
-给 OpenClaw 盘前 report 供数,免得她自己抓:
+给 OpenClaw 盘前 report 供数(首跑实测 2026-06-10),免得她自己抓:
   - 美股期货:ES=F(标普)/ NQ=F(纳指)/ YM=F(道指)实时
   - 亚洲收盘:上证 / 恒指 / 日经 / KOSPI;欧洲盘中:DAX / FTSE
   - 隔夜加密:BTC / ETH 24h
