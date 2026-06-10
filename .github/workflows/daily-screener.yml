@@ -14,7 +14,7 @@ on:
     inputs:
       threshold:
         description: "技术评分阈值"
-        default: "50"
+        default: "80"
 
 permissions:
   contents: write   # 提交 feed/screener
@@ -34,7 +34,7 @@ jobs:
           python-version: "3.11"
       - run: pip install -r backend/requirements.txt
       - name: 扫描并生成清单
-        run: python scripts/daily_screener.py --threshold ${{ github.event.inputs.threshold || '50' }} --concurrency 10
+        run: python scripts/daily_screener.py --threshold ${{ github.event.inputs.threshold || '80' }} --concurrency 10
 
       - name: 提交清单到 feed/screener
         run: |

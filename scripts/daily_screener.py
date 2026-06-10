@@ -9,7 +9,7 @@
   feed/screener/issue.md        —— GitHub Issue 正文(Markdown)
 
 用法:
-  python scripts/daily_screener.py --threshold 50 [--limit N] [--concurrency 8]
+  python scripts/daily_screener.py --threshold 80 [--limit N] [--concurrency 8]
 """
 from __future__ import annotations
 
@@ -166,7 +166,7 @@ def render_issue(p: dict) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--threshold", type=int, default=50)
+    ap.add_argument("--threshold", type=int, default=80)
     ap.add_argument("--limit", type=int, default=0, help="0=全部;调试时可限量")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--out", default=str(ROOT / "feed" / "screener"))

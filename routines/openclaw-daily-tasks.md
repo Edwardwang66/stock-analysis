@@ -32,7 +32,7 @@
 - [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
 - [ ] 云端自选池:`feed/watchlist.json` 的 `symbols`(**全部必做**,一只不落)
 - [ ] 要分析的标的集合(2026-06-09 Edward 定版)=
-      **云端自选池全部** ∪ **看多清单全部(≥50 一只不落;v2 评分后清单已变精)** ∪
+      **云端自选池全部** ∪ **看多清单全部(≥80 一只不落;v2+高阈值 = 多因子共振精选)** ∪
       **SA LP 基金前 8 持仓 + US:INFY**(`feed/funds/situational-awareness.json`,13F 换仓时自动跟随)
 - [ ] **额外产出一份当日汇总报告**(给 Edward 的 report,日报 Issue 会自动嵌入):
       写入 `feed/screener/analysis-<YYYY-MM-DD>.md`,结构:
@@ -105,7 +105,7 @@
 分层架构:**5 分钟机器报告**(Actions/worker 自动跑 `feed/intraday/latest.json`,非 LLM)+ **你的 LLM 深读按事件触发**。
 
 - [ ] **盘前 report(硬性)**:美东 09:00 前(13:00-13:30 UTC 窗口)投递
-      `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥50)盘前异动、
+      `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥80)盘前异动、
       隔夜新闻、今日事件窗口、按方法论给出当日关注位(Pivot/九转/SuperTrend 状态)。
 - [ ] **盘中事件驱动(每5分钟轮询,只写增量)**:轮询 live 分支 `feed/intraday/latest.json` 的
       `events[]`;对触发 异动/新高/新低 的标的,更新该标的 stock-note 并把一句话追加到

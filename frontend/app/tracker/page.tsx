@@ -68,7 +68,7 @@ export default function TrackerPage() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>🎯 选股追踪</h1>
-        <span className="tag">每日 ≥50 分全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
+        <span className="tag">每日达标选股全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
         {updatedAt && <span className="src" style={{ marginLeft: "auto" }}>估值 {updatedAt.toLocaleTimeString()}</span>}
       </div>
 
@@ -85,7 +85,7 @@ export default function TrackerPage() {
 
       {loading ? <div className="loading">加载中…</div> : !dayStats.length ? (
         <div className="hint">
-          还没有追踪数据。daily-digest 工作流每个交易日美股收盘后把当日 ≥50 分选股全量入库,
+          还没有追踪数据。daily-digest 工作流每个交易日美股收盘后把当日达标(现行 ≥80 分)选股全量入库,
           次日起这里按「当日持仓」逐日显示表现。也可在 GitHub Actions 手动触发 <code>Daily digest</code>。
         </div>
       ) : dayStats.map((d, di) => (
