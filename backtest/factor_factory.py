@@ -69,8 +69,22 @@ BASE_FACTORS = ["mom_12_1", "reversal", "hi52", "lowvol"]   # 增量正交的基
 
 # ----------------------------- 面板构建 -----------------------------
 
-def build_panel(start_year=2021):
-    """月度重平衡面板:dates(rebal 时间戳)、每期 {terminal: 矩阵列}、未来 H 日收益、基因子。"""
+def load_pit():
+    """时点成分库(Cycle 9 pit_membership);缺文件返回 None(过滤自动跳过)。"""
+    import json
+    try:
+        import pit_membership as pm
+        return json.load(open(pm.CACHE)) if os.path.exists(pm.CACHE) else None
+    except (ImportError, OSError, ValueError):   # 不吞 NameError 之类的真 bug
+        return None
+
+
+def build_panel(start_year=2021, pit_filter: bool = True):
+    """月度重平衡面板:dates(rebal 时间戳)、每期 {terminal: 矩阵列}、未来 H 日收益、基因子。
+
+    pit_filter=True:每个 rebal 日只保留**当日确实在 S&P500 里**的票(membership_asof),
+    消除「用今天的成分回测过去」的指数成员前视(未来赢家泄漏);被剔比例入返回值。
+    """
     spy = datamod.load("SPY")
     sts = np.asarray(spy["ts"], dtype=np.int64)
     import datetime as _dt
@@ -87,13 +101,27 @@ def build_panel(start_year=2021):
         m = {int(t): i for i, t in enumerate(np.asarray(d["ts"], dtype=np.int64))}
         panel[tk] = (d, m)
 
+    pit = load_pit() if pit_filter else None
+    if pit_filter and pit is None:
+        print("[pit] 警告:pit_sp500.json 缺失,跳过时点成分过滤(存在指数成员前视)")
+    import datetime as _dtm
+    import pit_membership as pm
+
     out_dates, cross = [], []
+    n_excluded = n_total = 0
     for ri in rebal_idx:
         ts = int(cal[ri])
+        members = (pm.membership_asof(_dtm.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d"), pit)
+                   if pit else None)
         cols = {k: [] for k in TERMINALS}
         base = {k: [] for k in BASE_FACTORS}
         fwd, tks = [], []
         for tk, (d, m) in panel.items():
+            if members is not None:
+                n_total += 1
+                if tk not in members:        # 当日不在指数 → 剔除(消未来赢家泄漏)
+                    n_excluded += 1
+                    continue
             i = m.get(ts)
             adj = d["adjclose"]
             if i is None or i < 300 or i + H >= len(adj):
@@ -131,6 +159,9 @@ def build_panel(start_year=2021):
             cross.append({"t": {k: np.asarray(cols[k]) for k in TERMINALS},
                           "b": {k: np.asarray(base[k]) for k in BASE_FACTORS},
                           "fwd": np.asarray(fwd), "tks": tks})
+    if n_total:
+        print(f"[pit] 时点成分过滤:剔除 {n_excluded}/{n_total} 名·期 "
+              f"({n_excluded/n_total*100:.1f}%,当日不在 S&P500 的「未来赢家」)")
     return out_dates, cross
 
 

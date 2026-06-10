@@ -1,57 +1,57 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-10T07:11:05Z",
+  "updated_at": "2026-06-10T07:39:06Z",
   "freshness": {
-    "last_report_at": "2026-06-10T07:11:05Z",
+    "last_report_at": "2026-06-10T07:39:06Z",
     "market_data_asof": "2026-06-08",
     "report_age_hours": 0.0,
-    "data_age_days": 2.3,
+    "data_age_days": 2.32,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.3
+        "age_days": 2.32
       },
       "market_state": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.3
+        "age_days": 2.32
       },
       "screener": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.3
+        "age_days": 0.32
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.3
+        "age_days": 0.32
       },
       "stock_notes": {
         "exists": true,
         "asof": "2026-06-10T03:29:13Z",
-        "age_days": 0.15
+        "age_days": 0.17
       },
       "intraday": {
         "exists": true,
         "asof": "2026-06-10T04:16:19+00:00",
-        "age_days": 0.12
+        "age_days": 0.14
       },
       "market_history": {
         "exists": true,
         "asof": "2026-06-10T04:49:05+00:00",
-        "age_days": 0.1
+        "age_days": 0.12
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 23.3
+        "age_days": 23.32
       },
       "crypto_state": {
         "exists": true,
         "asof": "2026-06-10T06:30:42Z",
-        "age_days": 0.03
+        "age_days": 0.05
       }
     }
   },
@@ -64,36 +64,66 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.56≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 29,
+    "total_reports": 31,
     "by_kind": {
-      "manual": 5,
+      "manual": 7,
       "routine": 13,
       "openclaw": 11
     },
     "by_producer": {
+      "factor-factory-local": 3,
       "study-pit-membership": 1,
       "study-overnight-gap": 1,
       "hyperliquid-monitor": 2,
       "study-downshift": 1,
       "github-actions-routine": 11,
       "study-pbo": 1,
-      "factor-factory-local": 1,
       "openclaw-agent:red-team": 2,
       "openclaw-agent:factor-factory": 2,
       "openclaw-agent:event-risk": 2,
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 23,
-    "last_7d": 29
+    "last_24h": 25,
+    "last_7d": 31
   },
   "timeline": {
     "2026-06-06": 2,
     "2026-06-08": 4,
     "2026-06-09": 13,
-    "2026-06-10": 10
+    "2026-06-10": 12
   },
   "reports": [
+    {
+      "id": "factory-local-2026-06-10T0739Z",
+      "kind": "manual",
+      "produced_at": "2026-06-10T07:39:06Z",
+      "asof_data": "2026-06-08",
+      "producer": "factor-factory-local",
+      "agent_role": "factor-factory",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 0,
+      "n_candidates": 8,
+      "contribution_type": "new_factor",
+      "contribution_summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。",
+      "path": "reports/factory-local-2026-06-10T0739Z.json"
+    },
+    {
+      "id": "factory-local-2026-06-10T0737Z",
+      "kind": "manual",
+      "produced_at": "2026-06-10T07:37:41Z",
+      "asof_data": "2026-06-08",
+      "producer": "factor-factory-local",
+      "agent_role": "factor-factory",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 0,
+      "n_candidates": 8,
+      "contribution_type": "new_factor",
+      "contribution_summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。",
+      "path": "reports/factory-local-2026-06-10T0737Z.json"
+    },
     {
       "id": "study-pit-2026-06-10T0711Z",
       "kind": "manual",
@@ -531,6 +561,24 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-10T07:39:06Z",
+      "producer": "factor-factory-local",
+      "id": "factory-local-2026-06-10T0739Z",
+      "type": "new_factor",
+      "candidates_proposed": 304,
+      "candidates_accepted": 0,
+      "summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。"
+    },
+    {
+      "at": "2026-06-10T07:37:41Z",
+      "producer": "factor-factory-local",
+      "id": "factory-local-2026-06-10T0737Z",
+      "type": "new_factor",
+      "candidates_proposed": 304,
+      "candidates_accepted": 0,
+      "summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。"
+    },
     {
       "at": "2026-06-10T07:11:05Z",
       "producer": "study-pit-membership",
