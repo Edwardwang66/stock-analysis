@@ -26,12 +26,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: 取 live 分支的盘中快照(main 上的 latest.json 是陈旧副本,真数据在 live)
+        run: |
+          git fetch origin live --depth 1 2>/dev/null \
+            && git checkout origin/live -- feed/intraday/latest.json 2>/dev/null \
+            || echo "live 分支不可用,回退 main 副本"
       - name: 生成要素包
         run: python scripts/premarket_pack.py
       - name: 提交(rebase 防撞车)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 还原从 live 取来的快照,避免脏工作区卡 rebase
+          git checkout -- feed/intraday/latest.json 2>/dev/null || true
           git add feed/intraday/overnight.json
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "premarket: 盘前要素包 $(date -u +%F)"

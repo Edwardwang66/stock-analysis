@@ -135,6 +135,7 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 - 想了解**数据模型与 API 长什么样** → [`docs/data-model-api.md`](docs/data-model-api.md)
 - 想了解**哪些数据 API 实测可用** → [`docs/working-apis.md`](docs/working-apis.md)
 - 想速查**所有接入的端点(上游源 + 本平台 API)** → [`docs/endpoints.md`](docs/endpoints.md)
+- 想看**已知问题 / 技术债清单(持续审查)** → [`docs/need-to-fix.md`](docs/need-to-fix.md)
 - 想跑**后端** → [`backend/README.md`](backend/README.md)
 - 想**部署后端**(摆脱公共代理限流) → [`docs/deploy-backend.md`](docs/deploy-backend.md)
 

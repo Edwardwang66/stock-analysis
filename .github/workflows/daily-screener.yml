@@ -49,13 +49,21 @@ jobs:
           done
           echo "::error::push 失败(3次重试后)"; exit 1
 
-      - name: 创建 Issue 推送给我
+      - name: 创建/更新当日 Issue(同日去重防刷屏)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           DATE=$(date -u +%F)
+          THRESH="${{ github.event.inputs.threshold || '80' }}"
           COUNT=$(python -c "import json;print(json.load(open('feed/screener/latest.json'))['count'])")
-          gh issue create \
-            --title "📈 每日选股 技术评分≥80 · $DATE($COUNT 只)" \
-            --body-file feed/screener/issue.md \
-            --assignee "${{ github.repository_owner }}" || echo "issue create failed"
+          TITLE="📈 每日选股 技术评分≥$THRESH · $DATE($COUNT 只)"
+          # push 路径触发/手动 dispatch 会让本工作流一天跑多次:已有当日 Issue 则更新,不再新开
+          EXIST=$(gh issue list --state open --search "in:title 每日选股 $DATE" \
+                    --json number --jq '.[0].number // empty')
+          if [ -n "$EXIST" ]; then
+            gh issue edit "$EXIST" --title "$TITLE" --body-file feed/screener/issue.md
+            echo "已更新当日 Issue #$EXIST"
+          else
+            gh issue create --title "$TITLE" --body-file feed/screener/issue.md \
+              --assignee "${{ github.repository_owner }}" || echo "issue create failed"
+          fi

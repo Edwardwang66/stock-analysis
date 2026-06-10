@@ -157,19 +157,20 @@ def buy_sell_points_hist(st: list[dict], pivots_all: list[dict]) -> list[dict]:
             pts.append({"time": c["to"]["time"], "price": c["to"]["price"], "kind": "1B"})
         elif c["dir"] == "up" and c["to"]["price"] > a["to"]["price"] and abs(c["area"]) < abs(a["area"]):
             pts.append({"time": c["to"]["time"], "price": c["to"]["price"], "kind": "1S"})
-    # 3B/3S:每个中枢结束后的第一个回踩/反抽(跌回/涨回中枢则该枢作废)
+    # 3B/3S:离开方向决定买卖——向上离开后第一个回踩不破 zg → 3B;向下离开后第一个反抽不上 zd → 3S。
+    # (原实现只看枢后第一笔,「离开笔在前、回踩笔在后」的标准形态会漏检)
     for piv in pivots_all:
-        for s in st:
-            if s["to"]["time"] <= piv["endTime"]:
-                continue
-            if s["dir"] == "down" and s["to"]["type"] == "bottom":
-                if s["to"]["price"] > piv["zg"]:
-                    pts.append({"time": s["to"]["time"], "price": s["to"]["price"], "kind": "3B"})
-                break
-            if s["dir"] == "up" and s["to"]["type"] == "top":
-                if s["to"]["price"] < piv["zd"]:
-                    pts.append({"time": s["to"]["time"], "price": s["to"]["price"], "kind": "3S"})
-                break
+        after = [s for s in st if s["to"]["time"] > piv["endTime"]]
+        if not after:
+            continue
+        if after[0]["dir"] == "up":
+            pb = next((s for s in after if s["dir"] == "down" and s["to"]["type"] == "bottom"), None)
+            if pb and pb["to"]["price"] > piv["zg"]:
+                pts.append({"time": pb["to"]["time"], "price": pb["to"]["price"], "kind": "3B"})
+        else:
+            bo = next((s for s in after if s["dir"] == "up" and s["to"]["type"] == "top"), None)
+            if bo and bo["to"]["price"] < piv["zd"]:
+                pts.append({"time": bo["to"]["time"], "price": bo["to"]["price"], "kind": "3S"})
     # 2B/2S:每个 1B/1S 之后第一个不破前低的底 / 不破前高的顶
     for p in [x for x in pts if x["kind"] == "1B"]:
         after = next((s for s in st if s["dir"] == "down" and s["to"]["type"] == "bottom"
@@ -337,6 +338,10 @@ async def run(limit: int) -> int:
         "active": sorted(active, key=lambda x: x["kind"])[:40],
         "note": "全宇宙缠论买卖点统计(简化口径=chan.ts 同源);买点胜=之后上涨,卖点胜=之后下跌;active=最近3根内出现的买卖点。非投资建议。",
     }
+    # 空结果保护:数据源整体故障时不要用空统计覆盖旧数据(保留旧文件并以失败退出,让 CI 暴露问题)
+    if not table and OUT.exists():
+        print("[chan] 全宇宙 0 个买卖点——疑似数据源故障,保留旧统计不覆盖", file=sys.stderr)
+        return 1
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n")
     npts = sum(v["d5"]["n"] for v in table.values()) if table else 0
