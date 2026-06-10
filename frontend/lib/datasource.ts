@@ -16,10 +16,24 @@ export interface Quote {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 /** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
 export const HAS_BACKEND = Boolean(API_BASE);
-const QUOTE_CACHE_MS = 30_000;          // 股票:盘中报价新鲜期
-const CRYPTO_CACHE_MS = 8_000;          // 加密:直连免费,可以更"实时"
+// 开市感知分级新鲜期(2026-06-10):加密 8s;开市中的市场 15s;休市 5min(价格不动,
+// 省下的请求预算让开市标的更"实时")。指数按全球任一关联市场开市即视为活跃。
+import { marketStatus } from "./marketstatus";
+const CRYPTO_CACHE_MS = 8_000;
+const OPEN_CACHE_MS = 15_000;
+const CLOSED_CACHE_MS = 300_000;
 function quoteTtl(symbol: string): number {
-  return symbol.startsWith("CRYPTO:") ? CRYPTO_CACHE_MS : QUOTE_CACHE_MS;
+  if (symbol.startsWith("CRYPTO:")) return CRYPTO_CACHE_MS;
+  const market = symbol.split(":")[0];
+  if (market === "IDX") {
+    return ["US", "HK", "CN", "JP", "KR", "DE"].some((m) => marketStatus(m).open)
+      ? 30_000 : CLOSED_CACHE_MS;
+  }
+  try {
+    return marketStatus(market).open ? OPEN_CACHE_MS : CLOSED_CACHE_MS;
+  } catch {
+    return OPEN_CACHE_MS;
+  }
 }
 const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
