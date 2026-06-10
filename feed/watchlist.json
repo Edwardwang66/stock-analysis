@@ -1,12 +1,36 @@
 {
-  "version": 1,
-  "updated_at": "2026-06-09T00:00:00Z",
-  "note": "Edward 的云端跟踪池 = OpenClaw 每日必须全覆盖分析的标的。改这个文件即可增删(Claude/Edward 均可改)。",
+  "version": 2,
+  "updated_at": "2026-06-10T00:00:00Z",
+  "note": "Edward 云端跟踪池 v2 = OpenClaw 必析全集。tiers.salp 随 13F 自动换仓;tiers.futu 为 Edward 富途自选全量导入(2026-06-10)。symbols = 全部去重平铺,消费方只读它即可。",
+  "tiers": {
+    "core": ["US:AAPL", "US:NVDA", "US:TSLA", "CN:600519", "CN:300750"],
+    "salp": ["US:BE", "US:CRWV", "US:INTC", "US:LITE", "US:CORZ", "US:IREN", "US:APLD", "US:SNDK", "US:INFY"],
+    "futu": [
+      "US:CRCL", "US:SNDK", "CN:688795", "US:QQQ", "US:SQQQ", "US:BRK-B", "US:TEM", "US:TSLA",
+      "US:APP", "US:ILMN", "US:RR", "US:SBUX", "US:QUBT", "US:AMD", "HK:3690", "HK:7226",
+      "US:SMCI", "US:PDD", "US:COIN", "US:MSTR", "US:RKLB", "US:RGTI", "US:LILMF", "US:PDYN",
+      "US:EVTL", "US:RCAT", "US:RVSN", "US:HOLOW", "US:EBS", "US:CTKB", "US:MVST", "US:TSLL",
+      "US:IONQ", "US:DJD", "US:NVDA", "US:PLTR", "US:SPY", "IDX:^DJI", "US:AVGO", "US:NOW",
+      "US:LLY", "US:CSCO", "US:AZN", "US:BA", "US:MSFT", "US:BILI", "HK:2359", "CN:603259",
+      "US:GOOG", "US:GOOGL", "US:MARPS", "US:IMPP", "US:SVRN", "US:MMATQ", "US:NESR", "US:USAU",
+      "US:APCX", "US:BSIN", "HK:2269", "HK:0700", "HK:9988", "US:DIS", "US:NIO", "US:AMZN",
+      "US:AAPL", "US:NFLX", "US:META", "US:BABA", "US:ROKU", "US:UBER", "US:FUTU", "IDX:^HSI",
+      "IDX:000001.SS", "CN:600519", "US:OSCR", "US:CI", "US:HUM"
+    ],
+    "unsupported": ["S68(新加坡交易所,需 .SI 市场支持,待接入)", "CNmain/NQmain/YMmain(期货主连,免费源无主连合约)"]
+  },
   "symbols": [
-    "US:AAPL",
-    "US:NVDA",
-    "US:TSLA",
-    "CN:600519",
-    "CN:300750"
+    "US:AAPL", "US:NVDA", "US:TSLA", "CN:600519", "CN:300750",
+    "US:BE", "US:CRWV", "US:INTC", "US:LITE", "US:CORZ", "US:IREN", "US:APLD", "US:SNDK", "US:INFY",
+    "US:CRCL", "CN:688795", "US:QQQ", "US:SQQQ", "US:BRK-B", "US:TEM",
+    "US:APP", "US:ILMN", "US:RR", "US:SBUX", "US:QUBT", "US:AMD", "HK:3690", "HK:7226",
+    "US:SMCI", "US:PDD", "US:COIN", "US:MSTR", "US:RKLB", "US:RGTI", "US:LILMF", "US:PDYN",
+    "US:EVTL", "US:RCAT", "US:RVSN", "US:HOLOW", "US:EBS", "US:CTKB", "US:MVST", "US:TSLL",
+    "US:IONQ", "US:DJD", "US:PLTR", "US:SPY", "IDX:^DJI", "US:AVGO", "US:NOW",
+    "US:LLY", "US:CSCO", "US:AZN", "US:BA", "US:MSFT", "US:BILI", "HK:2359", "CN:603259",
+    "US:GOOG", "US:GOOGL", "US:MARPS", "US:IMPP", "US:SVRN", "US:MMATQ", "US:NESR", "US:USAU",
+    "US:APCX", "US:BSIN", "HK:2269", "HK:0700", "HK:9988", "US:DIS", "US:NIO", "US:AMZN",
+    "US:NFLX", "US:META", "US:BABA", "US:ROKU", "US:UBER", "US:FUTU", "IDX:^HSI",
+    "IDX:000001.SS", "US:OSCR", "US:CI", "US:HUM"
   ]
 }

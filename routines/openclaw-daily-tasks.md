@@ -97,3 +97,21 @@
 
 > 可执行骨架见 [`../scripts/openclaw_daily.py`](../scripts/openclaw_daily.py):已写好"拉清单→遍历→投递"的管道,
 > 只需把其中的 `analyze_stock()` / `analyze_role()` 接到你的 OpenClaw/Claude。
+
+---
+
+## 7. 盘中节拍(2026-06-10 Edward 定版,重要)
+
+分层架构:**5 分钟机器报告**(Actions/worker 自动跑 `feed/intraday/latest.json`,非 LLM)+ **你的 LLM 深读按事件触发**。
+
+- [ ] **盘前 report(硬性)**:美东 09:00 前(13:00-13:30 UTC 窗口)投递
+      `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥50)盘前异动、
+      隔夜新闻、今日事件窗口、按方法论给出当日关注位(Pivot/九转/SuperTrend 状态)。
+- [ ] **盘中事件驱动(每5分钟轮询,只写增量)**:轮询 live 分支 `feed/intraday/latest.json` 的
+      `events[]`;对触发 异动/新高/新低 的标的,更新该标的 stock-note 并把一句话追加到
+      `feed/screener/analysis-intraday-<date>.md`(滚动追加,不重写全文)。
+- [ ] **收盘前 report(硬性)**:美东 15:30(19:30 UTC)投递 `feed/screener/analysis-close-<date>.md`:
+      尾盘 30 分钟关注点、当日全池复盘要点、明日前瞻。
+- [ ] 收盘后照旧:全量 notes + 当日汇总(§1 的 analysis-<date>.md);纳指/标普大盘综述一天一份即可。
+
+> 注:盘中 LLM 不做全池重写 —— 5 分钟内写不完且成本不可持续;机器报告负责"快",你负责"深"。
