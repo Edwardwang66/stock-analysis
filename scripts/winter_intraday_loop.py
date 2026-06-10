@@ -29,6 +29,16 @@ def sh(*cmd: str, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, cwd=ROOT, check=check, capture_output=True, text=True)
 
 
+def stash_local_changes() -> bool:
+    r = sh("git", "stash", "push", "-u", "-m", "winter-loop-autostash", check=False)
+    return r.returncode == 0 and "No local changes to save" not in (r.stdout + r.stderr)
+
+
+def pop_loop_stash(did_stash: bool) -> None:
+    if did_stash:
+        sh("git", "stash", "pop", check=False)
+
+
 def archive_pg() -> None:
     """Best-effort local warehouse ingest; never break the live snapshot loop."""
     r = subprocess.run([sys.executable, "scripts/winter_pg/ingest.py"], cwd=ROOT,
@@ -56,7 +66,7 @@ def tick() -> None:
     # 提交 live 分支(单写者;失败不致命,下轮重试)
     try:
         fetch = sh("git", "fetch", "origin", "live", check=False)
-        sh("git", "stash", "-u", check=False)
+        did_stash = stash_local_changes()
         if fetch.returncode == 0:
             checkout = sh("git", "checkout", "-B", "live", "origin/live", check=False)
         else:
@@ -64,8 +74,10 @@ def tick() -> None:
         if checkout.returncode != 0:
             print(f"git checkout live failed: {checkout.stderr.strip()}", file=sys.stderr)
             sh("git", "checkout", "main", check=False)
+            pop_loop_stash(did_stash)
             return
-        sh("git", "stash", "pop", check=False)
+        pop_loop_stash(did_stash)
+        did_stash = False
         sh("git", "add", "feed/intraday/latest.json")
         diff = sh("git", "diff", "--cached", "--quiet", check=False)
         if diff.returncode != 0:
@@ -79,7 +91,7 @@ def tick() -> None:
         if doc.get("events"):
             flag.write_text(json.dumps(doc["events"], ensure_ascii=False))
         sh("git", "checkout", "main", check=False)
-        sh("git", "stash", "pop", check=False)
+        pop_loop_stash(did_stash)
     except Exception as e:  # noqa: BLE001
         print(f"git: {e}", file=sys.stderr)
         sh("git", "checkout", "main", check=False)
