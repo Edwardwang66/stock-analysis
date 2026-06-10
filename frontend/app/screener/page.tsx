@@ -1,19 +1,33 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
 
 const IDX_LABEL: Record<string, string> = { SP500: "标普500", NDX100: "纳指100" };
 type Filter = "ALL" | "SP500" | "NDX100";
+const LIVE_MAX = 60; // 控制公共代理压力上限
 
 export default function ScreenerPage() {
   const [data, setData] = useState<ScreenerList | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("ALL");
+  // 与首页同一数据层取实时报价,覆盖清单生成时的冻结价(跨页一致)
+  const [live, setLive] = useState<Record<string, Quote>>({});
+  const [liveAt, setLiveAt] = useState<Date | null>(null);
 
   useEffect(() => {
     let alive = true;
-    getScreener().then((d) => { if (alive) { setData(d); setLoading(false); } });
+    getScreener().then((d) => {
+      if (!alive) return;
+      setData(d); setLoading(false);
+      const syms = (d?.items ?? []).slice(0, LIVE_MAX).map((x) => `US:${x.symbol}`);
+      if (syms.length) {
+        getQuotes(syms, (q) => {
+          if (alive) setLive((prev) => ({ ...prev, [q.symbol.replace(/^US:/, "")]: q }));
+        }).then(() => { if (alive) setLiveAt(new Date()); }).catch(() => {});
+      }
+    });
     return () => { alive = false; };
   }, []);
 
@@ -39,6 +53,7 @@ export default function ScreenerPage() {
               <span>日期 {data.date}</span>
               <span>扫描 {data.scanned}/{data.universe_size}</span>
               <span className="up">命中 {data.count} 只(≥{data.threshold})</span>
+              <span>{liveAt ? `实时价 ${liveAt.toLocaleTimeString()}` : Object.keys(live).length ? "实时价更新中…" : "价格为生成时数据"}</span>
             </div>
             <div className="segmented">
               {(["ALL", "SP500", "NDX100"] as Filter[]).map((f) => (
@@ -55,19 +70,24 @@ export default function ScreenerPage() {
                 <tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>结论</th><th>价格</th><th>涨跌%</th><th>RSI</th><th>指数</th></tr>
               </thead>
               <tbody>
-                {items.map((r, i) => (
-                  <tr key={r.symbol}>
-                    <td className="muted">{i + 1}</td>
-                    <td><Link href={`/symbol/?s=US:${r.symbol}`} style={{ color: "var(--accent)" }}>{r.symbol}</Link></td>
-                    <td>{r.name}</td>
-                    <td><strong>{r.score}</strong></td>
-                    <td><span className="badge">{r.verdict}</span></td>
-                    <td>{r.price}</td>
-                    <td className={r.change_pct >= 0 ? "up" : "down"}>{r.change_pct >= 0 ? "+" : ""}{r.change_pct.toFixed(2)}</td>
-                    <td>{r.rsi14}</td>
-                    <td className="muted" style={{ fontSize: 12 }}>{r.indices.map((x) => IDX_LABEL[x] || x).join("·")}</td>
-                  </tr>
-                ))}
+                {items.map((r, i) => {
+                  const lq = live[r.symbol];
+                  const price = lq?.price ?? r.price;
+                  const pct = lq?.changePct ?? r.change_pct;
+                  return (
+                    <tr key={r.symbol}>
+                      <td className="muted">{i + 1}</td>
+                      <td><Link href={`/symbol/?s=US:${r.symbol}`} style={{ color: "var(--accent)" }}>{r.symbol}</Link></td>
+                      <td>{r.name}</td>
+                      <td><strong>{r.score}</strong></td>
+                      <td><span className="badge">{r.verdict}</span></td>
+                      <td>{typeof price === "number" ? price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : price}{lq ? <span className="muted" style={{ fontSize: 10 }}> 实时</span> : null}</td>
+                      <td className={pct >= 0 ? "up" : "down"}>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}</td>
+                      <td>{r.rsi14}</td>
+                      <td className="muted" style={{ fontSize: 12 }}>{r.indices.map((x) => IDX_LABEL[x] || x).join("·")}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

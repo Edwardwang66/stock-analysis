@@ -182,7 +182,7 @@ const Y_RANGE: Record<string, string> = {
   "1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo", "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y",
 };
 function yahooCode(market: string, code: string): string {
-  if (market === "US") return code;
+  if (market === "US" || market === "IDX") return code; // IDX: Yahoo 代码原样直传(^GSPC / 000001.SS)
   if (market === "HK") return `${code.padStart(4, "0")}.HK`;
   if (market === "CN") return code.startsWith("6") ? `${code}.SS` : `${code}.SZ`;
   return code;
@@ -241,7 +241,8 @@ async function yahooOHLCV(market: string, code: string, range: string, interval:
 
 // ---- 统一入口 ----
 async function fetchQuote(symbol: string): Promise<Quote> {
-  if (API_BASE) {
+  // IDX(指数)后端 router 不识别,直接走浏览器 Yahoo 路径
+  if (API_BASE && !symbol.startsWith("IDX:")) {
     const arr = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(symbol)}`);
     const d = Array.isArray(arr) ? arr[0] : null;
     if (d && !d.error && d.price != null) {
@@ -281,8 +282,9 @@ export async function getQuotes(
     missing.push(symbol);
   }
 
-  if (API_BASE && missing.length >= 1) {
-    const rows = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(missing.join(","))}`);
+  const backendable = missing.filter((s) => !s.startsWith("IDX:")); // 指数不发后端,避免整批 422
+  if (API_BASE && backendable.length >= 1) {
+    const rows = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(backendable.join(","))}`);
     for (const d of Array.isArray(rows) ? rows : []) {
       if (d.error || d.price == null) continue;
       const quote = {
@@ -330,7 +332,7 @@ function barsFromBackend(d: any): Bar[] | null {
 }
 
 async function fetchBars(symbol: string, range: string, interval: string): Promise<Bar[]> {
-  if (API_BASE) {
+  if (API_BASE && !symbol.startsWith("IDX:")) {
     const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
     if (bars) return bars;
     // 后端不可用 → 落浏览器直连

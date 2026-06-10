@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { searchSymbols } from "@/lib/search";
 import type { SymInfo } from "@/lib/markets";
 
-const MK: Record<string, string> = { US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密" };
+const MK: Record<string, string> = { US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密", IDX: "指数" };
 
 export default function SearchBox() {
   const [q, setQ] = useState("");

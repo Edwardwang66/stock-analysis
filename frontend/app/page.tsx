@@ -5,10 +5,12 @@ import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
-import { MARKETS, MARKET_LABEL, marketOf, symbolsForTab } from "@/lib/markets";
+import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { getWatchlist } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
+const LS_TAB = "ui:tab:v1";
+const LS_SORT = "ui:sort:v1";
 
 export default function Home() {
   // 默认「全部」:打开即并行加载所有市场(加密直连最快先上屏,股票渐进补齐)
@@ -26,6 +28,32 @@ export default function Home() {
     sync();
     window.addEventListener("watchlist-changed", sync);
     return () => window.removeEventListener("watchlist-changed", sync);
+  }, []);
+
+  // 记住上次的 tab / 排序(挂载后恢复,避免 SSR 水合不一致)
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem(LS_TAB);
+      if (t && MARKETS.some((m) => m.key === t)) setTab(t);
+      const s = localStorage.getItem(LS_SORT);
+      if (s === "default" || s === "gainers" || s === "losers") setSortMode(s);
+    } catch { /* ignore */ }
+  }, []);
+  const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
+  const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 指数概览:独立加载(不计入看板涨跌统计),60s 自刷新
+  const [idxQuotes, setIdxQuotes] = useState<Record<string, Quote | null>>({});
+  useEffect(() => {
+    let alive = true;
+    const cached = getCachedQuotesSync(INDEX_SYMBOLS);
+    if (Object.keys(cached).length) setIdxQuotes((prev) => ({ ...cached, ...prev }));
+    const load = () => getQuotes(INDEX_SYMBOLS, (q) => {
+      if (alive) setIdxQuotes((prev) => ({ ...prev, [q.symbol]: q }));
+    }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 60_000);
+    return () => { alive = false; window.clearInterval(id); };
   }, []);
 
   const baseSymbols = useMemo(() => symbolsForTab(tab), [tab]);
@@ -124,6 +152,20 @@ export default function Home() {
 
       <div className="search"><SearchBox /></div>
 
+      <div className="indices">
+        {INDEX_SYMBOLS.map((s) => {
+          const q = idxQuotes[s];
+          const d = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
+          return (
+            <Link key={s} href={`/symbol/?s=${encodeURIComponent(s)}`} className="index-pill">
+              <span className="muted">{nameOf(s)}</span>
+              <strong>{q?.price != null ? q.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</strong>
+              <span className={d}>{q?.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : ""}</span>
+            </Link>
+          );
+        })}
+      </div>
+
       {!HAS_BACKEND && tab !== "CRYPTO" && (
         <div className="hint">
           ⚠️ 美股 / 港股 / A股 当前经<strong>公共代理</strong>获取,代理不稳时可能较慢或失败(已渐进加载:先到先显示)。
@@ -139,9 +181,9 @@ export default function Home() {
           <span>均值 {marketStats.avg == null ? "—" : `${marketStats.avg >= 0 ? "+" : ""}${marketStats.avg.toFixed(2)}%`}</span>
         </div>
         <div className="segmented">
-          <button className={sortMode === "default" ? "active" : ""} onClick={() => setSortMode("default")}>默认</button>
-          <button className={sortMode === "gainers" ? "active" : ""} onClick={() => setSortMode("gainers")}>强势</button>
-          <button className={sortMode === "losers" ? "active" : ""} onClick={() => setSortMode("losers")}>弱势</button>
+          <button className={sortMode === "default" ? "active" : ""} onClick={() => pickSort("default")}>默认</button>
+          <button className={sortMode === "gainers" ? "active" : ""} onClick={() => pickSort("gainers")}>强势</button>
+          <button className={sortMode === "losers" ? "active" : ""} onClick={() => pickSort("losers")}>弱势</button>
         </div>
         <button className="btn subtle" onClick={() => setRefreshId((x) => x + 1)} disabled={loadingQuotes}>
           {loadingQuotes ? "刷新中" : "刷新行情"}
@@ -158,7 +200,7 @@ export default function Home() {
 
       <div className="tabs">
         {MARKETS.map((m) => (
-          <button key={m.key} className={m.key === tab ? "active" : ""} onClick={() => setTab(m.key)}>{m.label}</button>
+          <button key={m.key} className={m.key === tab ? "active" : ""} onClick={() => pickTab(m.key)}>{m.label}</button>
         ))}
       </div>
 

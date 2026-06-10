@@ -21,8 +21,13 @@ export function symbolsForTab(tab: string): string[] {
 }
 
 export const MARKET_LABEL: Record<string, string> = {
-  US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密",
+  US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密", IDX: "指数",
 };
+
+// 指数概览(IDX: 前缀 → Yahoo 代码原样直传,如 ^GSPC / 000001.SS)
+export const INDEX_SYMBOLS: string[] = [
+  "IDX:^GSPC", "IDX:^IXIC", "IDX:^DJI", "IDX:^HSI", "IDX:000001.SS",
+];
 
 /** 从 "US:AAPL" 取市场前缀。 */
 export function marketOf(symbol: string): string {
@@ -64,6 +69,11 @@ export const LOCAL_SYMBOLS: SymInfo[] = [
   { symbol: "CRYPTO:BNBUSDT", name: "BNB", market: "CRYPTO" },
   { symbol: "CRYPTO:XRPUSDT", name: "瑞波 XRP", market: "CRYPTO" },
   { symbol: "CRYPTO:DOGEUSDT", name: "狗狗币 Dogecoin", market: "CRYPTO" },
+  { symbol: "IDX:^GSPC", name: "标普500 S&P500", market: "IDX" },
+  { symbol: "IDX:^IXIC", name: "纳斯达克 NASDAQ", market: "IDX" },
+  { symbol: "IDX:^DJI", name: "道琼斯 DowJones", market: "IDX" },
+  { symbol: "IDX:^HSI", name: "恒生指数 HSI", market: "IDX" },
+  { symbol: "IDX:000001.SS", name: "上证指数 SSE", market: "IDX" },
 ];
 
 export const NAMES: Record<string, string> = Object.fromEntries(

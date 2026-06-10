@@ -66,6 +66,10 @@ th { color: var(--muted); font-weight: 500; }
 .block-title { font-size: 14px; color: var(--muted); margin: 22px 0 10px; font-weight: 500; }
 .group-title { font-size: 13px; color: var(--muted); margin: 16px 0 8px; font-weight: 600;
   display: flex; align-items: baseline; gap: 8px; }
+.indices { display: flex; gap: 8px; flex-wrap: wrap; margin: -10px 0 16px; }
+.index-pill { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 12px; font-size: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }
+.index-pill strong { font-size: 13px; }
 .hint { margin: 12px 0 4px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: var(--text);
   background: rgba(247,181,0,.08); border: 1px solid rgba(247,181,0,.35); border-radius: 8px; }
 .hint code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
