@@ -10,6 +10,7 @@ import LiveClock from "@/components/LiveClock";
 import LangSelect from "@/components/LangSelect";
 import { useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
+import { NAME_DB } from "@/lib/names";
 import { marketStatus } from "@/lib/marketstatus";
 
 const fmt = (n: number | null | undefined, d = 2) =>
@@ -105,7 +106,9 @@ export default function PortfolioPage() {
             onChange={(e) => setSym(e.target.value.trim().toUpperCase())}
             style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 8, padding: "9px 12px", width: 200 }} />
           <datalist id="pf-syms">
-            {LOCAL_SYMBOLS.map((s) => <option key={s.symbol} value={s.symbol}>{s.name}</option>)}
+            {Object.entries(NAME_DB).map(([sym2, [zh, en]]) => (
+              <option key={sym2} value={sym2}>{zh === en ? zh : `${zh} ${en}`}</option>
+            ))}
           </datalist>
           <input type="number" inputMode="decimal" placeholder="数量" value={qty} onChange={(e) => setQty(e.target.value)}
             style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 8, padding: "9px 12px", width: 120 }} />
