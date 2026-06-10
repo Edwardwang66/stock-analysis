@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { createChart, ColorType, LineStyle, CrosshairMode, type IChartApi } from "lightweight-charts";
+import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
 import { sma } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
@@ -18,7 +18,14 @@ function fmtDate(t: number): string {
   return d.getUTCHours() || d.getUTCMinutes() ? `${base} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}` : base;
 }
 
-export default function Chart({ bars }: { bars: Bar[] }) {
+export default function Chart({
+  bars,
+  compare = null,
+}: {
+  bars: Bar[];
+  /** 对比叠加:右轴切百分比模式,两边都按首值归一(TradingView 同款体验) */
+  compare?: { name: string; bars: Bar[] } | null;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -50,8 +57,15 @@ export default function Chart({ bars }: { bars: Bar[] }) {
       color: b.close >= b.open ? "rgba(38,166,154,.5)" : "rgba(239,83,80,.5)",
     })));
 
+    // 对比模式:右轴切百分比(各序列按首个可见值归一),叠加对比线
+    if (compare && compare.bars.length) {
+      chart.priceScale("right").applyOptions({ mode: PriceScaleMode.Percentage });
+      chart.addLineSeries({ color: "#26c6da", lineWidth: 2, priceLineVisible: false })
+        .setData(compare.bars.map((b) => ({ time: b.time as any, value: b.close })));
+    }
+
     const closes = bars.map((b) => b.close);
-    if (!showChan) {
+    if (!showChan && !compare) {
       for (const m of MA) {
         const s = sma(closes, m.period);
         const data = bars.map((b, i) => (s[i] != null ? { time: b.time as any, value: s[i] as number } : null)).filter(Boolean) as any[];
@@ -107,7 +121,7 @@ export default function Chart({ bars }: { bars: Bar[] }) {
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan]);
+  }, [bars, showChan, compare]);
 
   return (
     <>
@@ -121,7 +135,9 @@ export default function Chart({ bars }: { bars: Bar[] }) {
         <div ref={ref} style={{ width: "100%" }} />
       </div>
       <div className="src" style={{ marginTop: 6 }}>
-        {showChan
+        {compare
+          ? <>对比模式:右轴为<strong>百分比</strong>(两者均按区间首值归一)· <span style={{ color: "#26c6da" }}>青线 = {compare.name}</span> · K线 = 本标的</>
+          : showChan
           ? "缠论:白线=笔 · 黄虚线=中枢 · 标签 1/2/3B=买点 1/2/3S=卖点(含背驰,简化版,灵感来自观潮 TideView)"
           : <>均线:<span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量 · 鼠标移到图上看每日明细</>}
       </div>

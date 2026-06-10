@@ -11,7 +11,7 @@ import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts"
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
 import { computeChan } from "@/lib/chan";
-import { nameOf } from "@/lib/markets";
+import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 const RANGES = ["6mo", "1y", "2y", "5y"];
@@ -46,6 +46,20 @@ function SymbolView() {
   const [starred, setStarred] = useState(false);
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [alertInput, setAlertInput] = useState("");
+  const [compareSym, setCompareSym] = useState("");
+  const [compareBars, setCompareBars] = useState<Bar[]>([]);
+  const [compareErr, setCompareErr] = useState("");
+
+  // 对比标的 K线:同 range/interval 拉取(走统一缓存层)
+  useEffect(() => {
+    if (!compareSym) { setCompareBars([]); setCompareErr(""); return; }
+    let alive = true;
+    setCompareErr("");
+    getOHLCV(compareSym, range, interval)
+      .then((b) => { if (alive) setCompareBars(b); })
+      .catch((e: any) => { if (alive) { setCompareBars([]); setCompareErr(e?.message || "对比标的加载失败"); } });
+    return () => { alive = false; };
+  }, [compareSym, range, interval]);
 
   useEffect(() => {
     const sync = () => setAlerts(getAlerts(symbol));
@@ -142,10 +156,26 @@ function SymbolView() {
           {RANGES.map((r) => (
             <button key={r} className={r === range ? "active" : ""} onClick={() => setRange(r)}>{r}</button>
           ))}
+          <span style={{ width: 12 }} />
+          <input
+            list="compare-list" placeholder="对比标的(如 US:MSFT)" value={compareSym}
+            onChange={(e) => setCompareSym(e.target.value.trim().toUpperCase())}
+            style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)",
+                     borderRadius: 6, padding: "4px 10px", fontSize: 12, width: 180 }}
+          />
+          <datalist id="compare-list">
+            {LOCAL_SYMBOLS.filter((s) => s.symbol !== symbol).map((s) => (
+              <option key={s.symbol} value={s.symbol}>{s.name}</option>
+            ))}
+          </datalist>
+          {compareSym && <button onClick={() => setCompareSym("")}>✕ 取消对比</button>}
           <button style={{ marginLeft: "auto" }} disabled={!bars.length}
             onClick={() => exportCSV(symbol, range, interval, bars)} title="导出当前K线为 CSV">⬇ CSV</button>
         </div>
-        {loading ? <div className="loading">加载中…</div> : <Chart bars={bars} />}
+        {compareErr && <p className="src" style={{ color: "var(--down)" }}>{compareErr}</p>}
+        {loading ? <div className="loading">加载中…</div> : (
+          <Chart bars={bars} compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
+        )}
       </div>
 
       {/* 每日 AI 解读(外部 OpenClaw 投递) */}
