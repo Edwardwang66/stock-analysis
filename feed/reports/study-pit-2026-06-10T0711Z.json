@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "id": "study-pit-2026-06-10T0711Z",
+  "kind": "manual",
+  "produced_at": "2026-06-10T07:11:05Z",
+  "asof_data": "2026-06-10",
+  "producer": {
+    "name": "study-pit-membership",
+    "agent_role": "engine"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "survivorship-quantified",
+      "message": "幸存者偏差量化:2021 年初成分估计数据缺失率 10.0%;流失者 Yahoo 不可得率 60%。现有净 alpha 结论消偏差后只会更差(方向稳健)。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "PIT 成分重建(399 变更事件,覆盖至 1976-07-01);逐年缺失率已量化,偏差从免责声明变成数字。"
+  },
+  "notes": "Wikipedia 变更表重建;抽样可得性 seed 预注册;退市者价格仍缺(真解=Norgate)。"
+}
