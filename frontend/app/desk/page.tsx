@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getChanStats, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
-  type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
+  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorLabel, useLang } from "@/lib/names";
@@ -71,6 +71,14 @@ export default function DeskPage() {
   useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
   const [chanA, setChanA] = useState<{ symbol: string; kind: string; price: number }[]>([]);
   useEffect(() => { getChanStats().then((d) => setChanA(d?.active ?? [])).catch(() => {}); }, []);
+  const [hl, setHl] = useState<CryptoState | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => getCryptoState().then((d) => { if (alive) setHl(d); }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 120_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
   useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
   useEffect(() => {
@@ -307,6 +315,61 @@ export default function DeskPage() {
               </details>
             )}
           </div>
+
+          {/* 24/7 夜盘代理 + 加密情绪(Hyperliquid,Cycle7/8) */}
+          {hl?.equity_perps?.stocks && hl.equity_perps.stocks.length > 0 && (
+            <div className="section" style={{ marginTop: 4 }}>
+              <h2>🌙 24/7 夜盘代理
+                <span className="src" style={{ marginLeft: 10 }}>
+                  Hyperliquid 永续 · 全天候定价 · 实证 corr 0.965/方向命中 96%(Cycle8)· {agoShort(hl.updated_at ?? "", nowTick)}
+                </span>
+              </h2>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                {(hl.equity_perps.indices ?? []).filter((x) => ["SP500", "USTECH", "MAG7"].includes(x.symbol)).map((x) => (
+                  <span key={x.symbol} className="badge" style={{ fontSize: 12, padding: "5px 10px",
+                    color: (x.chg24h ?? 0) >= 0 ? UP : DOWN }}>
+                    {x.symbol === "SP500" ? "标普永续" : x.symbol === "USTECH" ? "纳指永续" : "MAG7"} {fmt(x.mark)} {x.chg24h != null ? `${(x.chg24h * 100).toFixed(2)}%` : ""}
+                  </span>
+                ))}
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead><tr><th>美股永续</th><th>24/7 价</th><th>24h</th><th>资金费率(年化)</th><th>24h 量</th></tr></thead>
+                  <tbody>
+                    {hl.equity_perps.stocks.slice(0, 10).map((x) => {
+                      const local = x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`;
+                      const label = x.symbol === "SKHX" ? nameOf("KR:000660", lang) : x.symbol === "SPCX" ? "SpaceX(pre-IPO)" : nameOf(`US:${x.symbol}`, lang);
+                      return (
+                        <tr key={x.symbol}>
+                          <td>{x.symbol === "SPCX" ? <span>{label}</span> :
+                            <Link href={`/symbol/?s=${encodeURIComponent(local)}`} style={{ color: "var(--accent)" }}>{label}</Link>}
+                            <span className="src" style={{ marginLeft: 6 }}>{x.symbol}</span></td>
+                          <td>{fmt(x.mark)}</td>
+                          <td className={(x.chg24h ?? 0) >= 0 ? "up" : "down"}>{x.chg24h != null ? `${(x.chg24h * 100).toFixed(2)}%` : "—"}</td>
+                          <td className={(x.funding_apr ?? 0) >= 0 ? "up" : "down"}>{x.funding_apr != null ? `${(x.funding_apr * 100).toFixed(1)}%` : "—"}</td>
+                          <td className="src">{x.vol24h_usd ? `$${(x.vol24h_usd / 1e6).toFixed(0)}M` : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {hl.crypto && (
+                <p className="src" style={{ marginTop: 8 }}>
+                  ₿ 加密情绪:BTC 费率 {((hl.crypto.btc?.funding_apr ?? 0) * 100).toFixed(1)}% · ETH {((hl.crypto.eth?.funding_apr ?? 0) * 100).toFixed(1)}%
+                  · 正费率占比 {((hl.crypto.pct_positive_funding ?? 0) * 100).toFixed(0)}% · 总持仓 ${((hl.crypto.total_oi_usd ?? 0) / 1e9).toFixed(1)}B
+                  {hl.crypto.crowding_flag && <span style={{ color: "#f7b500" }}> · ⚠ 拥挤</span>}
+                  {!!hl.crypto.funding_extremes?.length && (
+                    <> · 极端费率:{hl.crypto.funding_extremes.slice(0, 3).map((c) => `${c.coin} ${((c.funding_apr ?? 0) * 100).toFixed(0)}%`).join(" / ")}</>
+                  )}
+                  {hl.venues?.n_dislocated != null && <> · 跨所错位 {hl.venues.n_dislocated} 个</>}
+                </p>
+              )}
+              <p className="src" style={{ marginTop: 4 }}>
+                美股闭市时这里仍在跳动(链上永续 24/7);开盘后以正股实价为准。资金费率正=多头付费(看多拥挤),负=空头付费。非投资建议。
+              </p>
+            </div>
+          )}
 
           {/* 事件热度榜(Winter PG 近7天聚合;未投递时隐藏) */}
           {!!heat?.items?.length && (
