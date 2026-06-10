@@ -1,0 +1,40 @@
+name: Market snapshot (指数/FNG/BTC 历史)
+
+# 每个工作日两次:A股收盘后(07:30 UTC ≈ 北京 15:30)+ 美股收盘后(22:45 UTC)。
+# 把指数收盘/涨跌、恐惧贪婪指数、BTC 写入 feed/market/history.json(保留 400 天),
+# 让纯静态前端零后端获得"历史数据库"。
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"
+    - cron: "45 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 抓取快照
+        run: python scripts/market_snapshot.py
+      - name: 提交(rebase 防并发冲突)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/market/history.json
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "market: 每日快照 $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep 5
+          done
+          exit 1
