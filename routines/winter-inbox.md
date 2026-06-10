@@ -198,7 +198,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十四轮 · note schema v2(结构化方法论)+ 三报告已上看板
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: openclaw_daily 已写入 note.methodology 结构化字段; rs 从 feed/signals/rs-ranks.json 读取; intraday_update 保留给盘中事件增量写入)
 
 1. **note schema v2(渐进,全部可选字段,旧格式继续兼容)**:从下轮投递起,note JSON 里请加:
    ```json
