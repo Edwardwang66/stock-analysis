@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
+import { useNightQuotes } from "@/lib/nightquotes";
+import { marketStatus } from "@/lib/marketstatus";
 
 // 纯展示组件:与行情卡片共用同一份 quotes(父级单一数据源),保证看板各区数值一致。
 interface Tile { symbol: string; pct: number | null; price: number | null }
@@ -18,13 +20,17 @@ function color(pct: number | null): string {
 
 function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, Quote | null> }) {
   const lang = useLang();
-  const tiles = useMemo<Tile[]>(
-    () => symbols.map((s) => ({
-      symbol: s,
-      pct: quotes[s]?.changePct ?? null,
-      price: quotes[s]?.price ?? null,
-    })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)),
-    [quotes, symbols],
+  const night = useNightQuotes();
+  const tiles = useMemo<(Tile & { night?: boolean })[]>(
+    () => symbols.map((s) => {
+      // 🌙 闭市 + 有 HIP-3 映射 → 用永续 24h 上色(瓦片角标区分口径)
+      const nq = night.map[s];
+      if (nq && nq.chg24h != null && !marketStatus(marketOf(s)).open) {
+        return { symbol: s, pct: nq.chg24h * 100, price: nq.mark, night: true };
+      }
+      return { symbol: s, pct: quotes[s]?.changePct ?? null, price: quotes[s]?.price ?? null };
+    }).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99)),
+    [quotes, symbols, night],
   );
   return (
     <div className="heatmap">
@@ -33,9 +39,9 @@ function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, 
           <div
             className="tile"
             style={{ background: color(t.pct) }}
-            title={`${nameOf(t.symbol, lang)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
+            title={`${nameOf(t.symbol, lang)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${t.night ? "(🌙夜盘24h)" : marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
           >
-            <div className="tile-name">{nameOf(t.symbol, lang)}</div>
+            <div className="tile-name">{t.night ? "🌙" : ""}{nameOf(t.symbol, lang)}</div>
             <div className="tile-pct">{t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}</div>
           </div>
         </Link>
