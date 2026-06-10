@@ -45,9 +45,16 @@ def tick() -> None:
         return
     # 提交 live 分支(单写者;失败不致命,下轮重试)
     try:
-        sh("git", "fetch", "origin", "live", check=False)
+        fetch = sh("git", "fetch", "origin", "live", check=False)
         sh("git", "stash", "-u", check=False)
-        sh("git", "checkout", "-B", "live", "origin/live", check=False)
+        if fetch.returncode == 0:
+            checkout = sh("git", "checkout", "-B", "live", "origin/live", check=False)
+        else:
+            checkout = sh("git", "checkout", "-B", "live", "main", check=False)
+        if checkout.returncode != 0:
+            print(f"git checkout live failed: {checkout.stderr.strip()}", file=sys.stderr)
+            sh("git", "checkout", "main", check=False)
+            return
         sh("git", "stash", "pop", check=False)
         sh("git", "add", "feed/intraday/latest.json")
         diff = sh("git", "diff", "--cached", "--quiet", check=False)
