@@ -135,6 +135,12 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     (out_dir / "latest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / f"{today}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / "issue.md").write_text(render_issue(payload))
+    # 全宇宙分数表(看板分档标签用:90+/80+/70+ 等任意档位)
+    scores_path = out_dir / "scores.json"
+    scores_path.write_text(json.dumps({
+        "date": payload["date"], "generated_at": payload["generated_at"],
+        "scores": {r["symbol"]: r["score"] for r in scored},
+    }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"[done] 扫描 {len(scored)} / 命中 ≥{threshold}: {len(picks)} 只 -> {out_dir}/latest.json")
 
 
