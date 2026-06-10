@@ -43,10 +43,29 @@ export default function ScreenerPage() {
     return () => { alive = false; };
   }, []);
 
+  type SK = "score" | "rs" | "w52" | "pct" | "rsi";
+  const [sortK, setSortK] = useState<SK>("score");
+  const [sortAsc, setSortAsc] = useState(false);
+  const clickSort = (k: SK) => {
+    if (sortK === k) setSortAsc((v) => !v);
+    else { setSortK(k); setSortAsc(false); }
+  };
   const items = useMemo(() => {
     const all = data?.items ?? [];
-    return filter === "ALL" ? all : all.filter((x) => x.indices.includes(filter));
-  }, [data, filter]);
+    const base = filter === "ALL" ? all : all.filter((x) => x.indices.includes(filter));
+    const val = (x: typeof all[number]): number => {
+      const k = rsT?.ranks?.[x.symbol];
+      switch (sortK) {
+        case "rs": return k?.rs ?? -1;
+        case "w52": return k?.w52dd ?? -999;
+        case "pct": return x.change_pct;
+        case "rsi": return x.rsi14;
+        default: return x.score;
+      }
+    };
+    return [...base].sort((a, b) => (sortAsc ? val(a) - val(b) : val(b) - val(a)));
+  }, [data, filter, sortK, sortAsc, rsT]);
+  const arrow = (k: SK) => (sortK === k ? (sortAsc ? " ↑" : " ↓") : "");
 
   return (
     <div className="container">
@@ -107,7 +126,14 @@ export default function ScreenerPage() {
           <div className="section" style={{ overflowX: "auto" }}>
             <table>
               <thead>
-                <tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>RS</th><th>距52周高</th><th>结论</th><th>价格</th><th>涨跌%</th><th>RSI</th><th>指数</th></tr>
+                <tr><th>#</th><th>代码</th><th>名称</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("score")}>评分{arrow("score")}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("rs")}>RS{arrow("rs")}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("w52")}>距52周高{arrow("w52")}</th>
+                  <th>结论</th><th>价格</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("pct")}>涨跌%{arrow("pct")}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("rsi")}>RSI{arrow("rsi")}</th>
+                  <th>指数</th></tr>
               </thead>
               <tbody>
                 {items.map((r, i) => {

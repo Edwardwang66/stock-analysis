@@ -607,6 +607,24 @@ export default function DeskPage() {
               <button className={sort === "rsDesc" ? "active" : ""} onClick={() => setSort("rsDesc")}>RS↓</button>
             </div>
             <span className="src">{view.length} 只</span>
+            <button className="btn subtle" style={{ padding: "6px 12px", fontSize: 12 }}
+              onClick={() => {
+                const head = ["symbol", "name", "tags", "sector", "score", "rs", "price", "change_pct", "ai"];
+                const lines = [head.join(",")];
+                for (const r of view) {
+                  const q = quotes[r.symbol];
+                  const k = rs?.ranks?.[r.symbol.replace(/^US:/, "")];
+                  const n = noteMap.get(r.symbol);
+                  lines.push([r.symbol, JSON.stringify(nameOf(r.symbol, lang)), r.tags.join("|"), JSON.stringify(r.sector),
+                    r.score ?? "", k?.rs ?? "", q?.price ?? "", q?.changePct?.toFixed(2) ?? "", n?.stance ?? ""].join(","));
+                }
+                const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `desk-${today()}.csv`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+              }}>⬇ CSV</button>
           </div>
 
           <div className="section" style={{ overflowX: "auto", marginTop: 8 }}>
