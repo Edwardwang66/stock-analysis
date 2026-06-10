@@ -405,3 +405,53 @@ export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): P
 export async function getIntraday(symbol: string, interval = "5m", range = "1d"): Promise<Bar[]> {
   return cachedBars(symbol.trim().toUpperCase(), range, interval);
 }
+
+// ---- 美股盘前/盘后(扩展时段)----
+// Yahoo chart includePrePost=true:用扩展时段最后一根 1m bar 当前价。
+// 盘前涨跌基准 = 昨收;盘后基准 = 当日常规收盘。免费源无「夜盘」(Blue Ocean 为付费通道)。
+export interface ExtendedQuote {
+  session: "盘前" | "盘后";
+  price: number;
+  change: number;
+  changePct: number;
+  at: number; // 秒级时间戳
+}
+
+export async function getExtendedQuote(symbol: string): Promise<ExtendedQuote | null> {
+  const { market, code } = parseSymbol(symbol.trim().toUpperCase());
+  if (market !== "US") return null; // 免费源仅美股有可靠扩展时段
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${code}?range=1d&interval=1m&includePrePost=true`;
+  let res: any = null;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetchT(proxy(url));
+      if (!r.ok) continue;
+      const j = await r.json();
+      res = j?.chart?.result?.[0];
+      if (res) break;
+    } catch { /* 换下一个代理 */ }
+  }
+  if (!res) return null;
+  const m = res.meta ?? {};
+  const ctp = m.currentTradingPeriod;
+  const ts: number[] = res.timestamp ?? [];
+  const closes: (number | null)[] = res.indicators?.quote?.[0]?.close ?? [];
+  let i = ts.length - 1;
+  while (i >= 0 && closes[i] == null) i--;
+  if (i < 0 || !ctp?.regular) return null;
+  const t = ts[i], price = closes[i] as number;
+  let session: "盘前" | "盘后";
+  let base: number | null;
+  if (ctp.post && t >= ctp.post.start) {
+    session = "盘后";
+    base = m.regularMarketPrice ?? null;
+  } else if (ctp.pre && t < ctp.regular.start) {
+    session = "盘前";
+    base = m.regularMarketPreviousClose ?? m.chartPreviousClose ?? m.previousClose ?? null;
+  } else {
+    return null; // 常规时段内无需扩展报价
+  }
+  if (base == null || !isFinite(base) || base === 0) return null;
+  const change = price - base;
+  return { session, price, change, changePct: (change / base) * 100, at: t };
+}

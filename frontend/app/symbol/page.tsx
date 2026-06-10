@@ -10,7 +10,7 @@ import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
 import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
 import { subscribeCryptoLive } from "@/lib/livePrice";
-import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
+import { getExtendedQuote, getOHLCV, getQuote, type Bar, type ExtendedQuote, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
@@ -71,6 +71,19 @@ function SymbolView() {
   }, [symbol]);
 
   useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
+
+  // 美股盘前/盘后报价(扩展时段才显示;30s 一刷,常规时段自动隐藏)
+  const [ext, setExt] = useState<ExtendedQuote | null>(null);
+  useEffect(() => {
+    if (!symbol.startsWith("US:")) { setExt(null); return; }
+    let alive = true;
+    const load = () => getExtendedQuote(symbol)
+      .then((e) => { if (alive) setExt(e); })
+      .catch(() => { if (alive) setExt(null); });
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 30_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [symbol]);
 
   // 末根 bar 跟价(日/周线):价格、K线、指标保持同源
   const patchLastBar = (price: number) => {
@@ -168,6 +181,21 @@ function SymbolView() {
           </>
         )}
       </div>
+
+      {ext && (
+        <div className="ext-quote">
+          <span className="badge">{ext.session}</span>
+          <strong className={ext.change >= 0 ? "up" : "down"}>
+            {ext.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {" "}{ext.change >= 0 ? "+" : ""}{ext.change.toFixed(2)}
+            {" "}{ext.changePct >= 0 ? "+" : ""}{ext.changePct.toFixed(2)}%
+          </strong>
+          <span className="src">
+            {new Date(ext.at * 1000).toLocaleTimeString("zh-CN", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}(美东)
+            · {ext.session === "盘后" ? "较今日收盘" : "较昨收"} · 免费源无夜盘
+          </span>
+        </div>
+      )}
 
       {err && <div className="err">加载失败:{err}(后端首次访问可能在唤醒,约 30 秒;请稍候刷新重试)</div>}
 
