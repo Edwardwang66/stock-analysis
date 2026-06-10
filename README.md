@@ -27,7 +27,8 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
 **6-10 新增**:**中英双语**切换挂全站 + 搜索双语联想(中文名可搜美股);首页大分组折叠(默认 12 卡,可展开);
 **`/desk` 工作台**:盘前隔夜要素行(premarket pack)+ 🔥 高波动榜(近 7 天事件聚合)+ 选股 winrate 上墙;
 **`/screener`**:全宇宙 **RS 1-99 排名榜**(方法论六法落地)+ 每日技术评分≥80 清单;`/tracker` 选股表现追踪看板;
-个股页 **☯ 缠论结构面板**(原文 24 课口径:背驰度量化 + 确认三件套 + 一二三类买卖点历史表与事后表现自检)。
+个股页 **☯ 缠论结构面板**(原文 24 课口径:背驰度量化 + 确认三件套 + 一二三类买卖点历史表与事后表现自检),
+配套 Python 缠论引擎每周跑**全宇宙买卖点胜率统计**(`chan-stats.yml` → `/tracker` 看板)。
 
 ---
 
@@ -54,7 +55,7 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
   高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`);
   Codex public-equity-investing 插件接入。
 
-**🔧 自动化运维**:14 个 GitHub Actions 工作流无人值守 —— 10 个定时任务(screener/digest/intraday/市场快照/13F/
+**🔧 自动化运维**:15 个 GitHub Actions 工作流无人值守 —— 11 个定时任务(screener/digest/intraday/市场快照/13F/缠论周报/
 盘前要素包/月度研究/双看门狗/keep-warm)+ Pages 部署 + 投递校验闸门 + **Dependabot 自动合并**(`dependabot-automerge.yml`:
 月度 minor/patch 自动合,major 拦截留人工;npm/pip major 已在 `dependabot.yml` 层 ignore)。
 
@@ -92,7 +93,7 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ├── scripts/                           # 定时任务执行端:screener/digest/intraday/快照/13F/盘前包/审计/投递
 ├── routines/                          # Claude 可执行 routine playbook
 ├── state/                             # 跨 session 持久状态(winter 轮询位点等)
-├── .github/workflows/                 # 14 个工作流:10 定时任务 + Pages 部署 + 投递闸门 + dependabot 自动合并
+├── .github/workflows/                 # 15 个工作流:11 定时任务 + Pages 部署 + 投递闸门 + dependabot 自动合并
 ├── research/
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
