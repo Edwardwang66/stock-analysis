@@ -285,3 +285,30 @@ export function ttmSqueeze(
   const mom: Maybe[] = macd(closes).line;
   return { on, fired, mom };
 }
+
+/** VSA 量价分析(简版四信号):
+ *  churn=高量窄幅(派发嫌疑) noSupply=缩量回调(健康) stopping=高量长下影(承接) breakout=放量新高 */
+export interface VsaMark { idx: number; kind: "churn" | "noSupply" | "stopping" | "breakout" }
+export function vsaSignals(
+  opens: number[], highs: number[], lows: number[], closes: number[], volumes: number[],
+): VsaMark[] {
+  const n = closes.length;
+  const v20 = sma(volumes, 20);
+  const tr: number[] = closes.map((c, i) =>
+    i === 0 ? highs[0] - lows[0] : Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+  const atr20 = sma(tr, 20);
+  const out: VsaMark[] = [];
+  for (let i = 20; i < n; i++) {
+    const vm = v20[i], am = atr20[i];
+    if (vm == null || am == null || !volumes[i]) continue;
+    const spread = highs[i] - lows[i];
+    const body = Math.abs(closes[i] - opens[i]);
+    const lowerWick = Math.min(opens[i], closes[i]) - lows[i];
+    const hh20 = Math.max(...highs.slice(i - 20, i));
+    if (volumes[i] > 2 * vm && spread < 0.5 * am) out.push({ idx: i, kind: "churn" });
+    else if (closes[i] < opens[i] && volumes[i] < 0.6 * vm && closes[i] > closes[i - 5]) out.push({ idx: i, kind: "noSupply" });
+    else if (lowerWick > 2 * body && volumes[i] > 1.5 * vm && closes[i] < closes[Math.max(0, i - 10)]) out.push({ idx: i, kind: "stopping" });
+    else if (closes[i] > hh20 && volumes[i] > 1.5 * vm) out.push({ idx: i, kind: "breakout" });
+  }
+  return out;
+}

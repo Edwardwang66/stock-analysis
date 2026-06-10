@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
-import { anchoredVwap, sma, superTrend, tdSetup, ttmSqueeze } from "@/lib/indicators";
+import { anchoredVwap, sma, superTrend, tdSetup, ttmSqueeze, vsaSignals } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 
 const MA = [
@@ -40,6 +40,7 @@ export default function Chart({
   const [showSq, setShowSq] = useState(false); // TTM Squeeze(挤压=蓄势,释放=变盘)
   const [showFib, setShowFib] = useState(false); // 自动斐波回撤(252根高低点)
   const [showIchi, setShowIchi] = useState(false); // Ichimoku 简版(转换/基准/云)
+  const [showVsa, setShowVsa] = useState(false); // VSA 量价信号(四类)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -135,6 +136,28 @@ export default function Chart({
       mk(kijun, "#ab47bc", 1, "基准26");
       mk(spanA, "rgba(38,166,154,0.5)", 1, "云A");
       mk(spanB, "rgba(239,83,80,0.5)", 1, "云B");
+    }
+
+    // VSA 量价四信号:高量滞涨⊗ / 无供应◦ / 承接▲ / 放量突破★
+    if (showVsa && !compare && bars.length >= 30) {
+      const marks = vsaSignals(bars.map((b) => b.open), bars.map((b) => b.high),
+                               bars.map((b) => b.low), bars.map((b) => b.close), bars.map((b) => b.volume));
+      const KIND: Record<string, { pos: string; color: string; shape: string; text: string }> = {
+        churn: { pos: "aboveBar", color: "#f7b500", shape: "circle", text: "高量滞涨" },
+        noSupply: { pos: "belowBar", color: "#4c8dff", shape: "circle", text: "无供应" },
+        stopping: { pos: "belowBar", color: "#26a69a", shape: "arrowUp", text: "承接" },
+        breakout: { pos: "aboveBar", color: "#69f0ae", shape: "arrowUp", text: "放量突破" },
+      };
+      const markers = marks.slice(-60).map((m) => {
+        const k = KIND[m.kind];
+        return { time: bars[m.idx].time as any, position: k.pos as any, color: k.color, shape: k.shape as any, text: k.text };
+      });
+      if (markers.length) {
+        const host = chart.addLineSeries({ color: "rgba(0,0,0,0)", priceLineVisible: false,
+          lastValueVisible: false, crosshairMarkerVisible: false });
+        host.setData(bars.map((b) => ({ time: b.time as any, value: b.close })));
+        host.setMarkers(markers);
+      }
     }
 
     // TTM Squeeze:挤压期黄点(蓄势),释放根▲/▼(按动量方向)
@@ -252,7 +275,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, levels, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, showVsa, levels, compare]);
 
   return (
     <>
@@ -274,6 +297,9 @@ export default function Chart({
         </button>
         <button className={showIchi ? "active" : ""} onClick={() => setShowIchi((v) => !v)}>
           {showIchi ? "✓ 一目" : "一目"}
+        </button>
+        <button className={showVsa ? "active" : ""} onClick={() => setShowVsa((v) => !v)}>
+          {showVsa ? "✓ VSA" : "VSA"}
         </button>
         {levels && levels.length > 0 && (
           <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
