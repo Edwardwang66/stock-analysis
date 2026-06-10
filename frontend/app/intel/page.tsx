@@ -27,6 +27,7 @@ export default function IntelDashboard() {
   const [fund, setFund] = useState<FundHoldings | null>(null);
   const [health, setHealth] = useState<FeedHealth | null>(null);
   const [hl, setHl] = useState<CryptoState | null>(null);
+  const [openRep, setOpenRep] = useState<{ id: string; data: FullReport | null } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const tzKey = useTz();
 
@@ -374,6 +375,26 @@ export default function IntelDashboard() {
         </div>
       )}
 
+      {/* 报告浏览:点击任意报告看全文要点 */}
+      <div className="section">
+        <h2>🗂 报告浏览(近 {idx?.reports.length ?? 0} 份,点行展开)</h2>
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead><tr><th>时间</th><th>类别</th><th>来源</th><th>净SR</th><th>告警</th><th>候选</th><th>摘要</th></tr></thead>
+            <tbody>
+              {(idx?.reports ?? []).slice(0, 20).map((r) => (
+                <FragmentRow key={r.id} r={r} open={openRep?.id === r.id} detail={openRep?.id === r.id ? openRep.data : null}
+                  onClick={async () => {
+                    if (openRep?.id === r.id) { setOpenRep(null); return; }
+                    setOpenRep({ id: r.id, data: null });
+                    setOpenRep({ id: r.id, data: await getReport(r.path) });
+                  }} tzKey={tzKey} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className="disclaimer">
         本看板消费 <code>feed/</code>(GitHub raw 优先、捆绑快照兜底,每 5 分钟自动刷新)。做多做空引擎为
         <strong>流 B 条件因子统计套利残差均值回归</strong>,全程<strong>扣成本(净·压力成本为唯一计价货币)</strong>。
@@ -449,5 +470,44 @@ function BookTable({ title, rows, color }: { title: string; rows: any[]; color: 
         </tbody>
       </table>
     </div>
+  );
+}
+
+function FragmentRow({ r, open, detail, onClick, tzKey }: {
+  r: import("@/lib/feed").ReportSummary; open: boolean;
+  detail: import("@/lib/feed").FullReport | null; onClick: () => void; tzKey: ReturnType<typeof useTz>;
+}) {
+  return (
+    <>
+      <tr onClick={onClick} style={{ cursor: "pointer", background: open ? "rgba(76,141,255,.08)" : undefined }}>
+        <td className="src">{fmtDateTime(r.produced_at, tzKey)}</td>
+        <td><span className="badge">{r.kind}</span></td>
+        <td>{r.producer}{r.agent_role ? <span className="src"> ({r.agent_role})</span> : null}</td>
+        <td style={{ color: (r.net_sharpe ?? 0) > 0 ? UP : r.net_sharpe == null ? MUT : DOWN }}>{r.net_sharpe == null ? "—" : r.net_sharpe.toFixed(2)}</td>
+        <td>{r.n_alerts || "—"}</td>
+        <td>{r.n_candidates || "—"}</td>
+        <td className="src" style={{ maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.contribution_summary || r.verdict || "—"}</td>
+      </tr>
+      {open && (
+        <tr>
+          <td colSpan={7} style={{ background: "var(--bg)", padding: 12 }}>
+            {!detail ? <span className="loading">加载中…</span> : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {detail.engine?.verdict && <div><b>裁决:</b><span className="src"> {detail.engine.verdict}</span></div>}
+                {(detail.alerts ?? []).map((a, i) => (
+                  <div key={i}><span className="badge" style={{ borderColor: LVL[a.level], color: LVL[a.level], marginRight: 6 }}>{a.level}</span>
+                    <span className="src">{a.message}</span></div>
+                ))}
+                {(detail.factory_candidates ?? []).slice(0, 4).map((c, i) => (
+                  <div key={i} className="src">🏭 <code>{c.expr}</code> → {c.decision}{c.note ? ` · ${c.note}` : ""}</div>
+                ))}
+                {detail.contribution?.summary && <div className="src">📈 {detail.contribution.summary}</div>}
+                {detail.notes && <div className="src" style={{ color: MUT }}>{detail.notes}</div>}
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
