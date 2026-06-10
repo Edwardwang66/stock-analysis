@@ -240,6 +240,8 @@ function SymbolView() {
                 <tr><th>布林上轨</th><td>{fmt(ind.bb_upper)}</td><th>布林下轨</th><td>{fmt(ind.bb_lower)}</td></tr>
                 <tr><th>近1月%</th><td>{fmt(ind.return_1m_pct)}</td><th>近3月%</th><td>{fmt(ind.return_3m_pct)}</td></tr>
                 <tr><th>52周高</th><td>{fmt(ind.high_52w)}</td><th>52周低</th><td>{fmt(ind.low_52w)}</td></tr>
+                <tr><th>ATR(14)</th><td>{fmt(ind.atr14)}</td><th>量比(20)</th><td>{ind.vol_ratio == null ? "—" : `${ind.vol_ratio.toFixed(2)}×${ind.vol_ratio >= 1.5 ? " 放量" : ind.vol_ratio <= 0.6 ? " 缩量" : ""}`}</td></tr>
+                <tr><th>KDJ·K/D</th><td>{fmt(ind.kdj_k, 1)} / {fmt(ind.kdj_d, 1)}</td><th>KDJ·J</th><td>{ind.kdj_j == null ? "—" : `${ind.kdj_j.toFixed(1)}${ind.kdj_j >= 100 ? " 超买" : ind.kdj_j <= 0 ? " 超卖" : ""}`}</td></tr>
               </tbody>
             </table>
           </div>

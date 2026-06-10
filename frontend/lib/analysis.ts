@@ -1,5 +1,5 @@
 // 规则化(非 LLM)技术分析,与 backend/app/analysis/signals.py 一致。
-import { bollinger, last, macd, pctReturn, rsi, sma } from "./indicators";
+import { atr, bollinger, kdj, last, macd, pctReturn, rsi, sma, volumeRatio } from "./indicators";
 import type { Bar } from "./datasource";
 
 export interface Signal { name: string; verdict: string; detail: string }
@@ -14,6 +14,9 @@ export interface Analysis {
 
 export function analyze(bars: Bar[]): Analysis {
   const closes = bars.map((b) => b.close);
+  const highs = bars.map((b) => b.high);
+  const lows = bars.map((b) => b.low);
+  const volumes = bars.map((b) => b.volume);
   const price = closes.length ? closes[closes.length - 1] : null;
   const sma50 = last(sma(closes, 50));
   const sma200 = last(sma(closes, 200));
@@ -22,6 +25,7 @@ export function analyze(bars: Bar[]): Analysis {
   const macdV = last(m.line), macdS = last(m.sig);
   const bb = bollinger(closes, 20, 2);
   const bbUp = last(bb.up), bbLo = last(bb.lo);
+  const kdjV = kdj(highs, lows, closes, 9);
 
   const signals: Signal[] = [];
   let score = 0;
@@ -62,6 +66,10 @@ export function analyze(bars: Bar[]): Analysis {
       return_1m_pct: pctReturn(closes, 21), return_3m_pct: pctReturn(closes, 63),
       high_52w: closes.length ? Math.max(...closes.slice(-252)) : null,
       low_52w: closes.length ? Math.min(...closes.slice(-252)) : null,
+      // 展示型扩展指标(不参与评分,保持与 screener/backend 评分口径一致)
+      atr14: atr(highs, lows, closes, 14),
+      kdj_k: kdjV.k, kdj_d: kdjV.d, kdj_j: kdjV.j,
+      vol_ratio: volumeRatio(volumes, 20),
     },
   };
 }

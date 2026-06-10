@@ -85,3 +85,43 @@ export function pctReturn(v: number[], lb: number): Maybe {
   if (v.length <= lb || v[v.length - 1 - lb] === 0) return null;
   return (v[v.length - 1] / v[v.length - 1 - lb] - 1) * 100;
 }
+
+/** ATR(p):平均真实波幅(Wilder 平滑)。bars 需含 high/low/close。 */
+export function atr(highs: number[], lows: number[], closes: number[], p = 14): Maybe {
+  const n = closes.length;
+  if (n <= p) return null;
+  const trs: number[] = [];
+  for (let i = 1; i < n; i++) {
+    trs.push(Math.max(
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1]),
+    ));
+  }
+  let a = trs.slice(0, p).reduce((s, x) => s + x, 0) / p;
+  for (let i = p; i < trs.length; i++) a = (a * (p - 1) + trs[i]) / p;
+  return a;
+}
+
+/** KDJ(9,3,3):返回最新 K/D/J。 */
+export function kdj(highs: number[], lows: number[], closes: number[], p = 9): { k: Maybe; d: Maybe; j: Maybe } {
+  const n = closes.length;
+  if (n < p) return { k: null, d: null, j: null };
+  let k = 50, d = 50;
+  for (let i = p - 1; i < n; i++) {
+    const hh = Math.max(...highs.slice(i - p + 1, i + 1));
+    const ll = Math.min(...lows.slice(i - p + 1, i + 1));
+    const rsv = hh === ll ? 50 : ((closes[i] - ll) / (hh - ll)) * 100;
+    k = (2 / 3) * k + (1 / 3) * rsv;
+    d = (2 / 3) * d + (1 / 3) * k;
+  }
+  return { k, d, j: 3 * k - 2 * d };
+}
+
+/** 量比:最新一根成交量 / 近 p 根均量(>1 放量,<1 缩量)。 */
+export function volumeRatio(volumes: number[], p = 20): Maybe {
+  if (volumes.length < p + 1) return null;
+  const recent = volumes[volumes.length - 1];
+  const base = volumes.slice(-p - 1, -1).reduce((s, x) => s + x, 0) / p;
+  return base > 0 ? recent / base : null;
+}

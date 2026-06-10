@@ -31,6 +31,19 @@ export default function SearchBox() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // 全局快捷键 “/” 聚焦搜索(输入框内不拦截)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        boxRef.current?.querySelector("input")?.focus();
+      }
+    };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, []);
+
   function goto(sym: string) {
     setOpen(false); setQ("");
     router.push(`/symbol/?s=${encodeURIComponent(sym)}`);
@@ -54,7 +67,7 @@ export default function SearchBox() {
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => list.length && setOpen(true)}
         onKeyDown={onKey}
-        placeholder="搜索:苹果 / AAPL / 茅台 / 0700 / BTC …"
+        placeholder="搜索:苹果 / AAPL / 茅台 / 0700 / BTC …(按 / 聚焦)"
         autoComplete="off"
       />
       {open && list.length > 0 && (
