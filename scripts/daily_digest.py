@@ -158,6 +158,33 @@ def main() -> int:
             lines.append(f"| {s} | {q['price'] if q else '—'} | {fmt_pct(q['pct']) if q else '—'} | {has_note} |")
         lines.append("")
 
+    # 3.5) OpenClaw 当日汇总报告(若已投递则全文嵌入)+ 覆盖率审计
+    analysis_md = ROOT / "feed" / "screener" / f"analysis-{today}.md"
+    if not analysis_md.exists() and latest and latest.get("date"):
+        analysis_md = ROOT / "feed" / "screener" / f"analysis-{latest['date']}.md"
+    if analysis_md.exists():
+        lines.append("## 🤖 OpenClaw 当日汇总报告\n")
+        lines.append(analysis_md.read_text().strip())
+        lines.append("")
+    else:
+        lines.append("## 🤖 OpenClaw 当日汇总报告\n\n_今日尚未投递(期望文件 feed/screener/analysis-日期.md)。_\n")
+
+    # 覆盖率审计:三池(自选池 ∪ 看多全名单 ∪ SA LP 前8+INFY)逐一检查当日 note
+    fund_doc = jload(ROOT / "feed" / "funds" / "situational-awareness.json", {})
+    fund_syms = [p.get("ticker") for p in fund_doc.get("positions", [])[:8] if str(p.get("ticker", "")).startswith("US:")]
+    if any(p.get("ticker") == "US:INFY" for p in fund_doc.get("positions", [])):
+        fund_syms.append("US:INFY")
+    expect = list(dict.fromkeys(
+        wl + [f"US:{x['symbol']}" for x in (latest.get("items", []) if latest else [])] + fund_syms))
+    covered, missing = [], []
+    for s in expect:
+        nd = jload(NOTES_DIR / f"{s.replace(':', '-')}.json", None)
+        ref_date = (latest.get("date") if latest else None) or today
+        (covered if (nd and nd.get("date") in (today, ref_date)) else missing).append(s)
+    lines.append(f"## ✅ AI 解读覆盖率:{len(covered)}/{len(expect)}\n")
+    if missing:
+        lines.append(f"❌ 缺:{', '.join(missing[:40])}{' …' if len(missing) > 40 else ''}\n")
+
     # 4) 市场快照
     mh = jload(MARKET_HIST, [])
     if mh:

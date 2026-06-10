@@ -31,9 +31,13 @@
 ## 1. 拉取当日输入(每日覆盖范围,2026-06-09 版)
 - [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
 - [ ] 云端自选池:`feed/watchlist.json` 的 `symbols`(**全部必做**,一只不落)
-- [ ] 要分析的标的集合 =
-      **云端自选池全部** ∪ **看多清单前 10(按 v2 分数排序)** ∪
+- [ ] 要分析的标的集合(2026-06-09 Edward 定版)=
+      **云端自选池全部** ∪ **看多清单全部(≥50 一只不落;v2 评分后清单已变精)** ∪
       **SA LP 基金前 8 持仓 + US:INFY**(`feed/funds/situational-awareness.json`,13F 换仓时自动跟随)
+- [ ] **额外产出一份当日汇总报告**(给 Edward 的 report,日报 Issue 会自动嵌入):
+      写入 `feed/screener/analysis-<YYYY-MM-DD>.md`,结构:
+      ① 三池总览(自选池/看多/SA LP 各自的多空倾向统计) ② 看多清单按主题分组点评
+      ③ 最值得关注的 3-5 只(理由+风险) ④ 与昨日清单的进出变化 ⑤ 数据来源列表
 - [ ] note 的 thesis/view 须含方法论结论:TD9 当前计数、52 周位置、SuperTrend(10,3) 方向、
       缠论笔方向与背驰迹象(口径见 [`methodology.md`](methodology.md))
 - [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`、`feed/market/history.json`

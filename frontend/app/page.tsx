@@ -221,7 +221,8 @@ export default function Home() {
       <div className="header">
         <h1>📈 多市场股票数据看板</h1>
         <span className="tag">美股 · 港股 · A股 · 加密 · 实时行情 · 主力资金 · 非 LLM 技术分析</span>
-        <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>💼 持仓</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>📋 总览</Link>
+        <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>💼 持仓</Link>
         <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📈 每日选股</Link>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🛰️ 情报看板</Link>

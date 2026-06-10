@@ -112,6 +112,13 @@ export interface MarketSnapshot {
 }
 export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
 
+// 个股 AI 解读索引(OpenClaw 投递;updated_at 用于判断当日覆盖)
+export interface NotesIndex {
+  updated_at: string;
+  symbols: { symbol: string; date: string; stance: string; view: string }[];
+}
+export const getNotesIndex = () => fetchJson<NotesIndex>("stock-notes/index.json");
+
 // 跟踪基金 13F 持仓(funds-13f.yml 周检自动更新)
 export interface FundPosition {
   ticker: string; name: string; type: string; value: number; shares: number; theme?: string;
