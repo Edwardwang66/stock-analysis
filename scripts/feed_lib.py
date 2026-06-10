@@ -179,6 +179,7 @@ def _artifact_freshness() -> dict:
     _put("intraday", "intraday/latest.json", "at")
     _put("market_history", "market/history.json", "at", "date")
     _put("funds_13f", "funds/situational-awareness.json", "filed")
+    _put("crypto_state", "crypto/state.json", "updated_at")
     return out
 
 

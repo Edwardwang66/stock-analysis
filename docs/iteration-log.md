@@ -40,8 +40,18 @@
   真解=Norgate $50/月(设计文档工具栈)
 - 遗留→Cycle 7:pit_membership.py(时点成分重建+缺失率曲线)
 
+## Cycle 7(2026-06-10,用户指令:围绕 Hyperliquid 接口开发)
+- 实测 API 全面板:perpDexs(9个 builder DEX)/predictedFundings(230资产跨所)/l2Book/spot
+- **发现 HIP-3 合成美股/指数/私有公司永续 24/7 交易**(XYZ100 $10亿/日,SP500 $7亿,
+  SPACEX/OPENAI/ANTHROPIC 私有公司永续)→ 填"美股盘后无价格发现"缺口
+- scripts/hyperliquid_monitor.py(三路采集+容错回退)→ feed/crypto/state.json + feed报告;
+  hyperliquid-monitor.yml 每2h;/intel 新增🧲衍生品情报卡;审计 SLA crypto_state
+- docs/hyperliquid-integration.md:接口全图+缺口矩阵+路线图(隔夜缺口研究=下一个高价值项)
+- 连贯性自查:监控报告不带 market_state(避免覆盖引擎完整市场状态文件)
+
 ## 待办池(按优先级)
-1. pit_membership.py:Wikipedia 变更表重建 S&P500 时点成分 + 缺失率曲线(消偏差免费第一步)
+1. **隔夜缺口研究**:HIP-3 永续盘后走势 vs 次日开盘缺口(gap_oc 的实时领先版,见 hyperliquid-integration.md §4.1)
+2. pit_membership.py:Wikipedia 变更表重建 S&P500 时点成分 + 缺失率曲线(消偏差免费第一步)
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
