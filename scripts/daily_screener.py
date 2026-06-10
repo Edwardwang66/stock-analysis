@@ -106,12 +106,15 @@ async def score_one(client, sem, ticker, meta) -> dict | None:
         rs_raw = None
         if None not in (r63, r126, r189, r252):
             rs_raw = 0.4 * r63 + 0.2 * r126 + 0.2 * r189 + 0.2 * r252
+        hi52 = max(closes[-252:]); lo52 = min(closes[-252:])
+        w52_dd = round((closes[-1] / hi52 - 1) * 100, 1) if hi52 else None          # 距52周高 %
+        w52_pos = round((closes[-1] - lo52) / (hi52 - lo52) * 100) if hi52 and hi52 > lo52 else None  # 区间分位
         return {
             "symbol": ticker, "name": meta["name"], "indices": meta["indices"],
             "score": a.score, "verdict": a.verdict, "price": round(price, 2),
             "change_pct": round(chg, 2), "rsi14": round(a.indicators.get("rsi14") or 0, 1),
             "bullish_signals": bull,
-            "_rs_raw": rs_raw, "_r63": r63, "_r252": r252,
+            "_rs_raw": rs_raw, "_r63": r63, "_r252": r252, "_w52dd": w52_dd, "_w52pos": w52_pos,
         }
 
 
@@ -137,9 +140,10 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
             "rs": rs,
             "r63": round(r["_r63"] * 100, 1) if r.get("_r63") is not None else None,
             "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
+            "w52dd": r.get("_w52dd"), "w52pos": r.get("_w52pos"),
         }
     for r in scored:  # 必须在写 latest.json 前清理,否则 picks 带 _rs_raw 脏字段
-        for k in ("_rs_raw", "_r63", "_r252"):
+        for k in ("_rs_raw", "_r63", "_r252", "_w52dd", "_w52pos"):
             r.pop(k, None)
     picks = sorted([r for r in scored if r["score"] >= threshold],
                    key=lambda x: (x["score"], x["bullish_signals"], x["change_pct"]), reverse=True)

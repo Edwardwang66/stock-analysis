@@ -172,7 +172,7 @@ export const getScores = () => fetchJson<ScoreTable>("screener/scores.json");
 // RS 相对强度排名(daily_screener 全宇宙百分位 1-99;methodology §6)
 export interface RsTable {
   date: string; generated_at: string; universe: number;
-  ranks: Record<string, { rs: number | null; r63: number | null; r252: number | null }>;
+  ranks: Record<string, { rs: number | null; r63: number | null; r252: number | null; w52dd?: number | null; w52pos?: number | null }>;
 }
 export const getRsRanks = () => fetchJson<RsTable>("signals/rs-ranks.json");
 

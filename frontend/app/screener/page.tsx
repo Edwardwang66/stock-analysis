@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
+import { getRsRanks, type RsTable } from "@/lib/feed";
 import { fmtDateTime, fmtTime, useTz } from "@/lib/timefmt";
 import LangSelect from "@/components/LangSelect";
 
@@ -11,6 +12,14 @@ type Filter = "ALL" | "SP500" | "NDX100";
 const LIVE_MAX = 60; // 控制公共代理压力上限
 
 export default function ScreenerPage() {
+  const [rsT, setRsT] = useState<RsTable | null>(null);
+  useEffect(() => { getRsRanks().then(setRsT).catch(() => {}); }, []);
+  const near52 = (() => {
+    if (!rsT?.ranks) return [] as { sym: string; dd: number; rs: number | null }[];
+    return Object.entries(rsT.ranks)
+      .flatMap(([sym, v]) => (v.w52dd != null && v.w52dd >= -3 ? [{ sym, dd: v.w52dd, rs: v.rs }] : []))
+      .sort((a, b) => b.dd - a.dd).slice(0, 24);
+  })();
   const [data, setData] = useState<ScreenerList | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -47,6 +56,22 @@ export default function ScreenerPage() {
         <LangSelect />
         <span className="tag">标普500 + 纳指100 · 非 LLM 规则化评分</span>
       </div>
+
+      {near52.length > 0 && (
+        <div className="section" style={{ marginTop: 8 }}>
+          <h2>🏔 52周新高接近榜
+            <span className="src" style={{ marginLeft: 10 }}>距 52 周高 ≤3%(George-Hwang 动量区)· 全宇宙扫描 · RS 同显</span>
+          </h2>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {near52.map((x) => (
+              <Link key={x.sym} href={`/symbol/?s=${encodeURIComponent("US:" + x.sym)}`} className="badge"
+                style={{ fontSize: 12, padding: "5px 10px", color: x.dd >= 0 ? "#69f0ae" : "var(--text)" }}>
+                {x.sym} {x.dd >= 0 ? "新高" : `${x.dd}%`}{x.rs != null && <span style={{ color: x.rs >= 80 ? "#26a69a" : "#787b86" }}> RS{x.rs}</span>}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {data?.date && (
         <div className="hint" style={{ background: "rgba(76,141,255,.08)", borderColor: "rgba(76,141,255,.35)" }}>
