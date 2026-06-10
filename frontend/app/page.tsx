@@ -10,6 +10,7 @@ import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/d
 import { getIndex, getIntradayLive, getRepoWatchlist, type IntradayDoc } from "@/lib/feed";
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketLabel, useLang } from "@/lib/names";
+import { useNightQuotes } from "@/lib/nightquotes";
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
@@ -25,6 +26,7 @@ const LS_SORT = "ui:sort:v1";
 
 export default function Home() {
   const lang = useLang();
+  const night = useNightQuotes();
   const [cloudOpen, setCloudOpen] = useState(false);
   useEffect(() => { setCloudOpen(window.localStorage.getItem("ui:cloudpool") === "open"); }, []);
   const toggleCloud = () => setCloudOpen((v) => { const n = !v; window.localStorage.setItem("ui:cloudpool", n ? "open" : "closed"); return n; });
@@ -437,6 +439,13 @@ export default function Home() {
                 </span>
               )}
             </h3>
+            {g.mkt === "US" && night.usClosed && night.indices.length > 0 && (
+              <p className="src" style={{ margin: "2px 0 8px" }}>
+                🌙 夜盘永续:{night.indices.filter((x) => ["SP500", "USTECH", "MAG7"].includes(x.symbol))
+                  .map((x) => `${x.symbol === "SP500" ? "标普" : x.symbol === "USTECH" ? "纳指" : "MAG7"} ${x.chg24h != null ? (x.chg24h >= 0 ? "+" : "") + (x.chg24h * 100).toFixed(2) + "%" : "—"}`)
+                  .join(" · ")}(24h · Hyperliquid)· 个股卡片含 🌙 夜盘行
+              </p>
+            )}
             {renderCards(g.symbols, g.mkt)}
           </div>
         );

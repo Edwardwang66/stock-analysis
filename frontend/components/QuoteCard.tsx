@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
+import { useNightQuotes } from "@/lib/nightquotes";
+import { marketStatus } from "@/lib/marketstatus";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 // 纯展示组件:报价一律由父级统一拉取下发(单一数据源,卡片间/看板间不会出现
@@ -24,6 +26,7 @@ export default function QuoteCard({
   tag?: string;
 }) {
   const lang = useLang();
+  const night = useNightQuotes();
   const q = quote;
   const isCrypto = marketOf(symbol) === "CRYPTO";
   const dir = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
@@ -72,6 +75,18 @@ export default function QuoteCard({
                 最高 {q.high?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"} · 最低 {q.low?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"}
               </div>
             )}
+            {(() => {
+              const nq = night.map[symbol] && !marketStatus(marketOf(symbol)).open ? night.map[symbol] : null;
+              if (!nq) return null;
+              const gap = q.price ? (nq.mark / q.price - 1) * 100 : null;
+              return (
+                <div className="src" style={{ marginTop: 4 }}>
+                  🌙 夜盘 <span style={{ color: "var(--text)" }}>{nq.mark.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  {nq.chg24h != null && <span className={nq.chg24h >= 0 ? "up" : "down"}> {nq.chg24h >= 0 ? "+" : ""}{(nq.chg24h * 100).toFixed(2)}%<span className="muted" style={{ fontSize: 10 }}>24h</span></span>}
+                  {gap != null && Math.abs(gap) >= 0.3 && <span className={gap >= 0 ? "up" : "down"}> · 隐含{gap >= 0 ? "高开" : "低开"} {Math.abs(gap).toFixed(1)}%</span>}
+                </div>
+              );
+            })()}
             <div className="src" style={{ marginTop: 6 }}>来源 {q.source} · 点击看分析 →</div>
           </>
         ) : error ? (

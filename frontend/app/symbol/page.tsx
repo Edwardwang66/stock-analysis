@@ -18,6 +18,8 @@ import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
+import { useNightQuotes } from "@/lib/nightquotes";
+import { marketStatus as mktStatus } from "@/lib/marketstatus";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 const RANGES = ["6mo", "1y", "2y", "5y"];
@@ -41,6 +43,7 @@ function exportCSV(symbol: string, range: string, interval: string, bars: Bar[])
 
 function SymbolView() {
   const lang = useLang();
+  const night = useNightQuotes();
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
   const [range, setRange] = useState("2y");
@@ -181,6 +184,17 @@ function SymbolView() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>{nameOf(symbol, lang)}</h1>
+        {(() => {
+          const nq = night.map[symbol];
+          if (!nq || mktStatus(symbol.split(":")[0]).open) return null;
+          return (
+            <span className="badge" title={`Hyperliquid 永续 ${nq.hlSymbol} · 实证 corr 0.965 · 资金费率 ${nq.fundingApr != null ? (nq.fundingApr * 100).toFixed(0) + "%" : "—"}`}
+              style={{ marginLeft: 10, fontSize: 12, color: (nq.chg24h ?? 0) >= 0 ? "#26a69a" : "#ef5350" }}>
+              🌙 夜盘 {nq.mark.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {nq.chg24h != null && ` ${nq.chg24h >= 0 ? "+" : ""}${(nq.chg24h * 100).toFixed(2)}% (24h)`}
+            </span>
+          );
+        })()}
         <span className="muted">{symbol}</span>
         <button className="btn" style={{ background: starred ? "var(--accent)" : "transparent", border: "1px solid var(--border)" }}
           onClick={() => { toggleWatchlist(symbol); setStarred(inWatchlist(symbol)); }}>

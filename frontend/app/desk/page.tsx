@@ -14,6 +14,7 @@ import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
 import RrgChart, { type RrgItem } from "@/components/RrgChart";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
+import { useNightQuotes } from "@/lib/nightquotes";
 // 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
 
 const UP = "#26a69a", DOWN = "#ef5350", MUT = "#787b86";
@@ -51,6 +52,7 @@ function ago(iso?: string | null): string {
 
 export default function DeskPage() {
   const lang = useLang();
+  const night = useNightQuotes();
   const [wl, setWl] = useState<string[]>([]);
   const [scr, setScr] = useState<ScreenerList | null>(null);
   const [scores, setScores] = useState<ScoreTable | null>(null);
@@ -469,7 +471,7 @@ export default function DeskPage() {
 
           <div className="section" style={{ overflowX: "auto", marginTop: 8 }}>
             <table>
-              <thead><tr><th>标的</th><th>标签</th><th>行业</th><th>评分</th><th>RS</th><th>现价</th><th>当日</th><th>AI</th></tr></thead>
+              <thead><tr><th>标的</th><th>标签</th><th>行业</th><th>评分</th><th>RS</th><th>现价</th><th>当日</th>{night.usClosed && Object.keys(night.map).length > 0 && <th>🌙 夜盘</th>}<th>AI</th></tr></thead>
               <tbody>
                 {view.map((r) => {
                   const q = quotes[r.symbol];
@@ -500,11 +502,26 @@ export default function DeskPage() {
                       <td className={pc == null ? "muted" : pc >= 0 ? "up" : "down"}>
                         {pc == null ? "…" : `${pc >= 0 ? "+" : ""}${pc.toFixed(2)}%`}
                       </td>
+                      {night.usClosed && Object.keys(night.map).length > 0 && (() => {
+                        const nq = night.map[r.symbol];
+                        if (!nq) return <td className="muted">—</td>;
+                        const gap = q?.price ? (nq.mark / q.price - 1) * 100 : null;
+                        return (
+                          <td title={`Hyperliquid ${nq.hlSymbol} · 24h ${nq.chg24h != null ? (nq.chg24h * 100).toFixed(2) + "%" : "—"} · 费率 ${nq.fundingApr != null ? (nq.fundingApr * 100).toFixed(0) + "%" : "—"}`}>
+                            <span>{fmt(nq.mark)}</span>
+                            {gap != null && Math.abs(gap) >= 0.3 && (
+                              <span className={gap >= 0 ? "up" : "down"} style={{ marginLeft: 4, fontSize: 12 }}>
+                                {gap >= 0 ? "+" : ""}{gap.toFixed(1)}%
+                              </span>
+                            )}
+                          </td>
+                        );
+                      })()}
                       <td>{noteCell(r.symbol)}</td>
                     </tr>
                   );
                 })}
-                {!view.length && <tr><td colSpan={8} className="src">当前过滤条件下没有标的。</td></tr>}
+                {!view.length && <tr><td colSpan={9} className="src">当前过滤条件下没有标的。</td></tr>}
               </tbody>
             </table>
           </div>
