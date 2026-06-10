@@ -1,0 +1,48 @@
+# 持续迭代日志(Continuous Development Log)
+
+> 每小时迭代循环的台账:做了什么、验证结果、诚实结论。**新循环开工前先读本文件,避免重复劳动。**
+> 体例:Cycle N(日期)| 交付 | 验证 | 结论/遗留。
+
+## Cycle 1(2026-06-10,PR #35)
+- 真 holdout 切分(R5,holdout≥2025-01-01,裁决以 holdout 为准);净值曲线+SR趋势上看板
+- **修 CI 缓存陈旧 bug**(Actions 恢复昨日缓存→引擎跑旧数据;>12h 自动刷新)
+- 结论:train 净SR −0.20 / holdout −0.58,样本外恶化,按 R4/R5 淘汰(诚实)
+
+## Cycle 2(2026-06-10,PR #36)
+- validation.cscv_pbo(Bailey-LdP;多种子无偏验证)+ study_pbo.py 参数网格研究
+- **PBO=0.59 → 本引擎上调参改进大概率是噪声**;vol_target=4% 唯一正净SR(holdout+0.03≈0),
+  不据此改默认(R5)。docs/study-pbo-2026-06-10.md
+- statarb 增加 vol_target 选项(默认关)
+
+## Cycle 3(2026-06-10,PR #36)
+- factor_factory.py:预注册预算化公式因子搜索(N=304)+六门控(BY-FDR+|t|≥3+净成本)
+- **0/304 过门**(最佳 |t|=1.9)——验证漏斗按设计杀掉全部噪声;接入 EOD routine
+- LLM 接入只需替换 propose_candidates,门控管线不变
+
+## Cycle 4(2026-06-10,PR #36)— 数据实效性/连贯性大审计(用户优先级)
+- 修:持仓簿滞后3日(改在最后bar构簿)/ asof_data 污染(取真实数据末日)/
+  index 新鲜度语义(只取引擎报告)/ **Yahoo 长区间接口比 5d 滞后1日(5d 尾部合并补丁)**
+- scripts/audit_feed.py(SLA+连贯性硬规则→feed/health.json)+watchdog 升级+看板①区健康徽标
+- dependabot-automerge.yml(事件层+6h清扫层;npm/pip major 拦截);清存量 PR #31-34
+
+## Cycle 5(2026-06-10,PR #38/#41)
+- **热修:requirements.txt 双钉 uvicorn(0.49+0.34)→ daily-screener 连续失败的根因**;
+  修后 rs-ranks 生成(511只),13F 刷到 2026Q1
+- 回撤治理阶梯(§7.4:-6/-8/-12%分级降仓+峰谷-15% kill+单日-2%冻结)+
+  SSR 做空约束(Reg SHO 201 日线代理;5.4年拦截24次加空)
+- 诚实结论:低波配置下阶梯零触发(月-6%≈7σ),属尾部保险管道;净SR三位小数不变
+- **终审:audit_feed 全绿(0 critical/0 warn/0 info)**
+
+## Cycle 6(2026-06-10,进行中)
+- study_downshift.py:D5 容量护城河第一次实证(S&P600 分层抽样 vs 大盘,同参零调参对照)
+- monthly-studies.yml:PBO+下沉研究月度定时(防参数漂移成新过拟合)
+- docs/survivorship-bias-data-sources.md:免费消偏差路径=Wikipedia 时点成分+缺失率量化;
+  真解=Norgate $50/月(设计文档工具栈)
+- 遗留→Cycle 7:pit_membership.py(时点成分重建+缺失率曲线)
+
+## 待办池(按优先级)
+1. pit_membership.py:Wikipedia 变更表重建 S&P500 时点成分 + 缺失率曲线(消偏差免费第一步)
+2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
+3. /intel 报告详情浏览(点击报告看全文)
+4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
+5. OFI/盘口模块(需分钟级数据,执行层 §6.5)

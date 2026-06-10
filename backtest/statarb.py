@@ -123,8 +123,11 @@ def _returns(adj: np.ndarray) -> np.ndarray:
     return r
 
 
-def load_market(tickers: list[str], start_year: int):
-    """加载主日历 + 因子(SPY/行业 ETF)+ 标的的对齐收益/ADV。"""
+def load_market(tickers: list[str], start_year: int, sector_map: dict | None = None):
+    """加载主日历 + 因子(SPY/行业 ETF)+ 标的的对齐收益/ADV。
+
+    sector_map: 可选 {ticker: GICS sector};缺省读 sector_map.json(大盘);
+    下沉 universe(如 S&P600)由调用方传入,保证行业 ETF 残差化仍生效。"""
     spy = datamod.load("SPY")
     if not spy:
         raise SystemExit("缺少 SPY 缓存,请先 `python data.py` 或运行 build_demo_cache()。")
@@ -141,7 +144,7 @@ def load_market(tickers: list[str], start_year: int):
         al = _aligned(etf, dates)
         sector_ret[etf] = _returns(al[0]) if al else np.full(len(dates), np.nan)
 
-    sectors = json.load(open(os.path.join(HERE, "sector_map.json")))
+    sectors = sector_map if sector_map is not None else json.load(open(os.path.join(HERE, "sector_map.json")))
     names = {}
     for tk in tickers:
         al = _aligned(tk, dates)
@@ -314,11 +317,11 @@ def book_for_day(dates, spy_ret, sector_ret, names, k: int, p: StatArbParams,
 # ----------------------------- 回测主循环 -----------------------------
 
 def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
-        verbose: bool = True) -> dict:
+        verbose: bool = True, sector_map: dict | None = None) -> dict:
     p = p or StatArbParams()
     tickers = tickers or DEMO_UNIVERSE
     import datetime as _dt
-    dates, spy_ret, sector_ret, names = load_market(tickers, p.start_year)
+    dates, spy_ret, sector_ret, names = load_market(tickers, p.start_year, sector_map)
     start_k = next((k for k, d in enumerate(dates)
                     if _dt.datetime.utcfromtimestamp(int(d)).year >= p.start_year), p.window)
     start_k = max(start_k, p.window + 1)

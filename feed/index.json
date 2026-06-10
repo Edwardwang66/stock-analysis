@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-10T06:01:14Z",
+  "updated_at": "2026-06-10T06:13:13Z",
   "freshness": {
-    "last_report_at": "2026-06-10T06:01:14Z",
+    "last_report_at": "2026-06-10T06:13:13Z",
     "market_data_asof": "2026-06-08",
     "report_age_hours": 0.0,
-    "data_age_days": 2.25,
+    "data_age_days": 2.26,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.25
+        "age_days": 2.26
       },
       "market_state": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.25
+        "age_days": 2.26
       },
       "screener": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.25
+        "age_days": 0.26
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.25
+        "age_days": 0.26
       },
       "stock_notes": {
         "exists": true,
@@ -36,17 +36,17 @@
       "intraday": {
         "exists": true,
         "asof": "2026-06-10T04:16:19+00:00",
-        "age_days": 0.07
+        "age_days": 0.08
       },
       "market_history": {
         "exists": true,
         "asof": "2026-06-10T04:49:05+00:00",
-        "age_days": 0.05
+        "age_days": 0.06
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 23.25
+        "age_days": 23.26
       }
     }
   },
@@ -59,13 +59,14 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.56≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 24,
+    "total_reports": 25,
     "by_kind": {
+      "manual": 3,
       "routine": 11,
-      "manual": 2,
       "openclaw": 11
     },
     "by_producer": {
+      "study-downshift": 1,
       "github-actions-routine": 11,
       "study-pbo": 1,
       "factor-factory-local": 1,
@@ -75,16 +76,31 @@
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 18,
-    "last_7d": 24
+    "last_24h": 19,
+    "last_7d": 25
   },
   "timeline": {
     "2026-06-06": 2,
     "2026-06-08": 4,
     "2026-06-09": 13,
-    "2026-06-10": 5
+    "2026-06-10": 6
   },
   "reports": [
+    {
+      "id": "study-downshift-2026-06-10T0613Z",
+      "kind": "manual",
+      "produced_at": "2026-06-10T06:13:13Z",
+      "asof_data": "2026-06-08",
+      "producer": "study-downshift",
+      "agent_role": "engine",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "Universe 下沉实验:毛SR增益 +0.15,净SR增益 +0.08;容量地板将小盘实现杠杆压至 0.29。",
+      "path": "reports/study-downshift-2026-06-10T0613Z.json"
+    },
     {
       "id": "routine-2026-06-10T0601Z",
       "kind": "routine",
@@ -447,6 +463,13 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-10T06:13:13Z",
+      "producer": "study-downshift",
+      "id": "study-downshift-2026-06-10T0613Z",
+      "type": "regime_update",
+      "summary": "Universe 下沉实验:毛SR增益 +0.15,净SR增益 +0.08;容量地板将小盘实现杠杆压至 0.29。"
+    },
     {
       "at": "2026-06-10T06:01:14Z",
       "producer": "github-actions-routine",

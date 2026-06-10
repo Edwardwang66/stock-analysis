@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "id": "study-downshift-2026-06-10T0613Z",
+  "kind": "manual",
+  "produced_at": "2026-06-10T06:13:13Z",
+  "asof_data": "2026-06-08",
+  "producer": {
+    "name": "study-downshift",
+    "agent_role": "engine"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "downshift-study",
+      "message": "D5 下沉实验:小盘毛SR +0.21 vs 大盘 +0.07(增益 +0.15);净SR -0.23 vs -0.31。详见 docs/study-downshift-2026-06-10.md",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "Universe 下沉实验:毛SR增益 +0.15,净SR增益 +0.08;容量地板将小盘实现杠杆压至 0.29。"
+  },
+  "notes": "同参零调参对照;幸存者偏差小盘更重(结果为上界);不据此直接切生产 universe。"
+}
