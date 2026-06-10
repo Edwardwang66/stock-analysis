@@ -146,9 +146,18 @@ export default function Home() {
     return { loaded: rows.length, total: allVisibleSymbols.length, gainers, losers, avg };
   }, [quotes, allVisibleSymbols]);
 
+  // 单卡重试:只拉这一只,成功后清除其错误(绕过 30s 内存缓存由 refreshId 整体刷新负责)
+  const retryOne = async (s: string) => {
+    setErrors((prev) => { const next = { ...prev }; delete next[s]; return next; });
+    const got = await getQuotes([s]);
+    if (got[s]) setQuotes((prev) => ({ ...prev, [s]: got[s] }));
+    else setErrors((prev) => ({ ...prev, [s]: "仍无数据,稍后再试" }));
+  };
+
   const renderCards = (list: string[]) => (
     <div className="grid">{list.map((s) => (
-      <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes} />
+      <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
+        onRetry={() => { void retryOne(s); }} />
     ))}</div>
   );
 

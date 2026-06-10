@@ -12,11 +12,13 @@ export default function QuoteCard({
   quote = null,
   error = "",
   loading = false,
+  onRetry,
 }: {
   symbol: string;
   quote?: Quote | null;
   error?: string;
   loading?: boolean;
+  onRetry?: () => void;
 }) {
   const q = quote;
   const isCrypto = marketOf(symbol) === "CRYPTO";
@@ -50,7 +52,12 @@ export default function QuoteCard({
             <div className="src" style={{ marginTop: 8 }}>来源 {q.source} · 点击看分析 →</div>
           </>
         ) : error ? (
-          <div className="err" style={{ fontSize: 12 }}>{error}</div>
+          <div className="err" style={{ fontSize: 12 }}>
+            {error}
+            {onRetry && (
+              <button className="retry" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRetry(); }}>重试</button>
+            )}
+          </div>
         ) : loading ? (
           <div aria-busy="true">
             <div className="skeleton" style={{ width: "60%", height: 26, marginTop: 6 }} />

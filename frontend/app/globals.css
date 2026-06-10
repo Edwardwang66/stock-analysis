@@ -50,6 +50,8 @@ a { color: inherit; text-decoration: none; }
   color: var(--muted); font-size: 15px; line-height: 1; padding: 4px; }
 .card .star.on { color: #f7b500; }
 .card .star:hover { color: #f7b500; }
+.card .retry { margin-left: 8px; background: transparent; border: 1px solid var(--border); color: var(--accent);
+  border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 11px; }
 .card .sym { font-weight: 600; font-size: 15px; }
 .card .src { font-size: 11px; color: var(--muted); }
 .price { font-size: 22px; font-weight: 700; margin: 6px 0 2px; }

@@ -46,6 +46,15 @@ function SymbolView() {
 
   useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
 
+  // 动态页标题:股票名 + 实时价(标签页可当迷你行情看)
+  useEffect(() => {
+    const base = `${nameOf(symbol)} ${symbol}`;
+    document.title = quote?.price != null
+      ? `${quote.price.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""} · ${base}`
+      : `${base} · 多市场股票数据看板`;
+    return () => { document.title = "多市场股票数据看板"; };
+  }, [symbol, quote]);
+
   useEffect(() => {
     let alive = true;
     setLoading(true); setErr("");
