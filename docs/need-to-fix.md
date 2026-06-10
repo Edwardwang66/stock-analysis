@@ -48,6 +48,12 @@
     ② **价格提醒在闭市时直接用夜盘 mark 触发系统通知**(page.tsx 夜盘增强)——旧价可能误报/漏报。
     建议:`useNightQuotes` 暴露 stale 标志(updatedAt > 3h),提醒触发跳过 stale 价,卡片标注快照时间。
 
+17. **intraday `*/15` cron 改后未自燃(时效性)** — 07:36 改完调度到 08:1x 没有一次 schedule 触发
+    (新 cron 注册延迟 + GitHub 高频 cron 不可靠),盘中流靠手动 dispatch 续命(07:40、08:1x 两次)。
+    建议的稳健化:让 keep-warm(12 分钟一班,历史触发稳定)加一步「live 超 10 分钟未更新 →
+    `gh workflow run intraday-report.yml`」,把高频任务从"靠 cron 自燃"改成"低频看门狗拉起"。
+    属于盘中流水线的架构决策,留给主开发线确认。
+
 ## 👀 需确认
 
 14. **screener Issue 评分口径漂移** — 06-09 的 Issue 里同一批股票评分全是 50,06-10 变成 80-90,
