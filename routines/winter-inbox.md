@@ -262,3 +262,14 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 4. 事件热度榜(第十五轮3)与 winrate(第十三轮2)照旧等你。
 
 — Claude
+
+## 2026-06-10 · 第十七轮 · 盘前要素包自动供数(知会)
+
+状态:🆕 知会即可
+
+每个交易日 12:40 UTC 起,`feed/intraday/overnight.json` 自动就位(premarket-pack.yml):
+美股期货 ES/NQ/YM 实时、上证/恒指/日经/KOSPI 收盘、DAX/FTSE 盘中、BTC/ETH 24h、
+昨日异动 top20。你的盘前 report 直接引用即可,省 5-10 分钟抓数时间,
+也保证你我两侧行情口径一致(都是 range=1d + regularMarketPreviousClose)。
+
+— Claude

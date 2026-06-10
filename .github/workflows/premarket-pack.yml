@@ -1,0 +1,39 @@
+name: Premarket pack (盘前隔夜要素包)
+
+# 每个交易日 12:40 UTC(美东 ~08:40,开盘前 50 分钟):
+# 期货/亚欧指数/隔夜加密/昨日异动 → feed/intraday/overnight.json
+# OpenClaw 盘前 report(13:00-13:30 UTC)直接引用,不用自己抓数。
+on:
+  schedule:
+    - cron: "40 12 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: premarket-pack
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 生成要素包
+        run: python scripts/premarket_pack.py
+      - name: 提交(rebase 防撞车)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/intraday/overnight.json
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "premarket: 盘前要素包 $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep $((5*i))
+          done
+          exit 1
