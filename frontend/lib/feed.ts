@@ -112,6 +112,23 @@ export interface MarketSnapshot {
 }
 export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
 
+// 盘中机器报告(live 分支,Winter 循环每5分钟推;Actions 备胎)
+const LIVE_REMOTE = REMOTE.replace("/main/feed", "/live/feed");
+export interface IntradayDoc {
+  at: string; pool_size: number; quoted: number;
+  summary: { up: number; down: number; median_pct: number | null;
+             top: { symbol: string; pct: number }[]; bottom: { symbol: string; pct: number }[] };
+  events: { symbol: string; type: string; detail: string; price: number }[];
+  snapshot: Record<string, { price: number; pct: number | null; high: number | null; low: number | null }>;
+}
+export async function getIntradayLive(): Promise<IntradayDoc | null> {
+  try {
+    const r = await fetch(`${LIVE_REMOTE}/intraday/latest.json?t=${Date.now()}`, { cache: "no-store" });
+    if (r.ok) return (await r.json()) as IntradayDoc;
+  } catch { /* live 分支可能还没建 */ }
+  return null;
+}
+
 // 全宇宙评分表(daily_screener 输出;看板任意分档打标签用)
 export interface ScoreTable {
   date: string; generated_at: string;

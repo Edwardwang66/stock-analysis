@@ -135,6 +135,23 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     (out_dir / "latest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / f"{today}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / "issue.md").write_text(render_issue(payload))
+    # 当日 ≥阈值 自动并入云端分析池(tier=screener,每日整体轮换;Edward 2026-06-10 要求)
+    wl_path = ROOT / "feed" / "watchlist.json"
+    try:
+        wl = json.loads(wl_path.read_text())
+        wl.setdefault("tiers", {})["screener"] = [f"US:{r['symbol']}" for r in picks]
+        flat: list[str] = []
+        for tier in ("core", "salp", "futu", "screener"):
+            for sym in wl["tiers"].get(tier, []):
+                if isinstance(sym, str) and ":" in sym and sym not in flat:
+                    flat.append(sym)
+        wl["symbols"] = flat
+        wl["updated_at"] = payload["generated_at"]
+        wl_path.write_text(json.dumps(wl, ensure_ascii=False, indent=2) + "\n")
+        print(f"[watchlist] screener tier 轮换:{len(picks)} 只,池总数 {len(flat)}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[watchlist] 更新失败(不阻断):{e}")
+
     # 全宇宙分数表(看板分档标签用:90+/80+/70+ 等任意档位)
     scores_path = out_dir / "scores.json"
     scores_path.write_text(json.dumps({

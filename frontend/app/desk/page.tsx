@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getFundHoldings, getIndex, getMarketHistory, getNotesIndex, getRepoWatchlist, getScores, getScreener,
-  type FeedIndex, type FundHoldings, type MarketSnapshot, type NotesIndex, type ScoreTable, type ScreenerList,
+  getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getScores, getScreener,
+  type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorOf } from "@/lib/sectors";
@@ -53,6 +53,15 @@ export default function DeskPage() {
   const [mh, setMh] = useState<MarketSnapshot[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [loading, setLoading] = useState(true);
+  // 盘中机器流(live 分支,60s 轮询;非交易时段自动为 null)
+  const [live, setLiveDoc] = useState<IntradayDoc | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => getIntradayLive().then((d) => { if (alive) setLiveDoc(d); }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 60_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, []);
   // 过滤与排序
   const [pools, setPools] = useState<Set<PoolKey>>(new Set());   // 空 = 全部
   const [sector, setSector] = useState("全部");
@@ -183,6 +192,33 @@ export default function DeskPage() {
 
       {loading ? <div className="loading">加载中…</div> : (
         <>
+          {/* 盘中机器流(交易时段才有;Winter 5 分钟循环 → live 分支) */}
+          {live && (
+            <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
+              <h2>⚡ 盘中流(机器报告 · {new Date(live.at).toLocaleTimeString()} · 池 {live.quoted}/{live.pool_size})
+                <span className="src" style={{ marginLeft: 10 }}>
+                  涨 <span className="up">{live.summary.up}</span> / 跌 <span className="down">{live.summary.down}</span>
+                  {live.summary.median_pct != null && <> · 中位 {live.summary.median_pct >= 0 ? "+" : ""}{live.summary.median_pct.toFixed(2)}%</>}
+                </span>
+              </h2>
+              {live.events.length ? (
+                <div className="signal-list">
+                  {live.events.slice(0, 12).map((e, i) => (
+                    <Link key={i} href={`/symbol/?s=${encodeURIComponent(e.symbol)}`} className="signal" style={{ alignItems: "baseline" }}>
+                      <span>
+                        <span className="badge" style={{ marginRight: 8, fontSize: 11,
+                          color: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500",
+                          borderColor: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500" }}>{e.type}</span>
+                        {nameOf(e.symbol)} <span className="src">{e.symbol.replace(/^US:/, "")}</span>
+                      </span>
+                      <span className="src">{e.detail} @ {fmt(e.price)}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : <p className="src">本轮无触发事件(异动≥0.8%/5分钟、当日新高新低)。</p>}
+            </div>
+          )}
+
           {/* 过滤 + 排序工具条 */}
           <div className="toolbar" style={{ marginTop: 4 }}>
             <div className="segmented">

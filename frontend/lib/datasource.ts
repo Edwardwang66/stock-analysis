@@ -174,6 +174,36 @@ export async function getBackendHealth(): Promise<any | null> {
   return h ?? { ok: false };
 }
 
+// ---- 盘中机器快照(live 分支)作为免代理报价缓存 ----
+// Winter 循环/Actions 每 5 分钟产出全池快照;6 分钟内视为可用。模块级 60s 记忆防重复拉取。
+interface LiveSnap { data: Record<string, { price: number; pct: number | null; high: number | null; low: number | null }>; ageMin: number }
+let liveSnapCache: { snap: LiveSnap | null; at: number } | null = null;
+let liveSnapInflight: Promise<LiveSnap | null> | null = null;
+
+async function getLiveSnapshot(): Promise<LiveSnap | null> {
+  const now = Date.now();
+  if (liveSnapCache && now - liveSnapCache.at < 60_000) return liveSnapCache.snap;
+  if (liveSnapInflight) return liveSnapInflight;
+  liveSnapInflight = (async () => {
+    try {
+      const r = await fetchT(`https://raw.githubusercontent.com/edwardwang66/stock-analysis/live/feed/intraday/latest.json?t=${now}`, 6000);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const ageMs = now - new Date(j.at).getTime();
+      if (!isFinite(ageMs) || ageMs > 6 * 60_000) return null; // 过期快照不用(收盘后走常规路径)
+      const snap: LiveSnap = { data: j.snapshot ?? {}, ageMin: Math.max(1, Math.round(ageMs / 60_000)) };
+      return snap;
+    } catch {
+      return null;
+    } finally {
+      setTimeout(() => { liveSnapInflight = null; }, 0);
+    }
+  })();
+  const snap = await liveSnapInflight;
+  liveSnapCache = { snap, at: now };
+  return snap;
+}
+
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
   return { market: (market || "").toUpperCase(), code: (code || "").toUpperCase() };
@@ -334,6 +364,30 @@ export async function getQuotes(
         onPartial?.(quote);
       }
     }
+  }
+
+  // 快路径②:盘中机器快照(live 分支,≤6 分钟新鲜)——免代理拿到池内股票报价。
+  // 这是无后端模式的源头提速:Winter/Actions 每 5 分钟算好,前端一次 fetch 全拿。
+  const stillMissing = missing.filter((s) => !out[s] && !s.startsWith("CRYPTO:"));
+  if (stillMissing.length >= 3) {
+    try {
+      const snap = await getLiveSnapshot();
+      if (snap) {
+        for (const symbol of stillMissing) {
+          const v = snap.data[symbol];
+          if (!v || v.price == null) continue;
+          const prev = v.pct != null ? v.price / (1 + v.pct / 100) : null;
+          const quote: Quote = {
+            symbol, price: v.price,
+            change: prev != null ? v.price - prev : null, changePct: v.pct,
+            high: v.high, low: v.low, currency: "", source: `快照(${snap.ageMin}分钟)`,
+          };
+          quoteCache.set(symbol, { quote, expires: Date.now() + 60_000 });
+          out[symbol] = quote;
+          onPartial?.(quote);
+        }
+      }
+    } catch { /* 快照不可用则继续走代理 */ }
   }
 
   // 批量没拿到的(后端冷启动/出错)逐个回退:加密走直连必成,股票尝试代理
