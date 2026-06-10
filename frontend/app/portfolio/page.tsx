@@ -9,12 +9,15 @@ import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 import LiveClock from "@/components/LiveClock";
 import LangSelect from "@/components/LangSelect";
 import { useLang } from "@/lib/names";
+import { useNightQuotes } from "@/lib/nightquotes";
+import { marketStatus } from "@/lib/marketstatus";
 
 const fmt = (n: number | null | undefined, d = 2) =>
   n == null || !isFinite(n) ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
 
 export default function PortfolioPage() {
   const lang = useLang();
+  const night = useNightQuotes();
   const [list, setList] = useState<Holding[]>([]);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [sym, setSym] = useState("");
@@ -127,7 +130,21 @@ export default function PortfolioPage() {
                     <td>{fmt(r.qty, 6)}</td>
                     <td>{fmt(r.cost)}</td>
                     <td>{fmt(r.price)}</td>
-                    <td>{fmt(r.mv)}</td>
+                    <td>{fmt(r.mv)}
+                      {(() => {
+                        const nq = night.map[r.symbol];
+                        if (!nq || marketStatus(r.symbol.split(":")[0]).open || r.qty == null) return null;
+                        const nmv = nq.mark * r.qty;
+                        const d = r.mv ? (nmv / r.mv - 1) * 100 : null;
+                        return (
+                          <div className="src" style={{ fontSize: 11 }}>
+                            🌙 {fmt(nmv)}{d != null && Math.abs(d) >= 0.3 && (
+                              <span className={d >= 0 ? "up" : "down"}> {d >= 0 ? "+" : ""}{d.toFixed(1)}%</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className={r.pnl == null ? "muted" : r.pnl >= 0 ? "up" : "down"}>{r.pnl == null ? "—" : `${r.pnl >= 0 ? "+" : ""}${fmt(r.pnl)}`}</td>
                     <td className={r.pnlPct == null ? "muted" : r.pnlPct >= 0 ? "up" : "down"}>{r.pnlPct == null ? "—" : `${r.pnlPct >= 0 ? "+" : ""}${r.pnlPct.toFixed(2)}%`}</td>
                     <td className="muted">{r.currency || "—"}</td>
