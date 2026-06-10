@@ -5,7 +5,8 @@ name: Feed watchdog (实效性+连贯性审计)
 # 把 feed/health.json 写回仓库(看板①区消费);有 critical 问题时开 Issue 告警(去重)。
 on:
   schedule:
-    - cron: "0 9,21 * * *"
+    - cron: "0 9,21 * * *"        # 完整审计(原节奏)
+    - cron: "25 0-20/1 * * 1-5"   # 交易时段每小时:三级备胎检查(live>30min 则补跑一轮盘中报告)
   workflow_dispatch:
 
 permissions:
@@ -21,6 +22,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
+        run: |
+          git fetch origin live:live 2>/dev/null || true
+          AGE=99999
+          if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
+            AGE=$(python3 -c "import json,datetime as d; at=json.load(open('/tmp/live_latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
+          fi
+          echo "live 年龄 ${AGE}s"
+          if [ "$AGE" -lt 1800 ]; then echo "盘中流健康,跳过"; exit 0; fi
+          echo "⚠️ 盘中流断流(${AGE}s),三级备胎补跑"
+          git worktree add /tmp/live live 2>/dev/null || true
+          mkdir -p /tmp/live/feed/intraday
+          cp /tmp/live_latest.json /tmp/live/feed/intraday/latest.json 2>/dev/null || true
+          INTRADAY_OUT=/tmp/live/feed/intraday/latest.json python3 scripts/intraday_report.py || exit 0
+          cd /tmp/live
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/intraday/latest.json
+          git diff --cached --quiet || { git commit -m "intraday: $(date -u +%H:%M) (watchdog兜底)"; git push origin live || true; }
       - name: 运行审计并写 health.json
         id: audit
         run: |
