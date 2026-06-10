@@ -334,7 +334,7 @@ export default function DeskPage() {
               </div>
               <div style={{ overflowX: "auto" }}>
                 <table>
-                  <thead><tr><th>美股永续</th><th>24/7 价</th><th>24h</th><th>资金费率(年化)</th><th>24h 量</th></tr></thead>
+                  <thead><tr><th>美股永续</th><th>24/7 价</th><th>24h</th><th>vs 正股</th><th>资金费率(年化)</th><th>24h 量</th></tr></thead>
                   <tbody>
                     {hl.equity_perps.stocks.slice(0, 10).map((x) => {
                       const local = x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`;
@@ -346,6 +346,13 @@ export default function DeskPage() {
                             <span className="src" style={{ marginLeft: 6 }}>{x.symbol}</span></td>
                           <td>{fmt(x.mark)}</td>
                           <td className={(x.chg24h ?? 0) >= 0 ? "up" : "down"}>{x.chg24h != null ? `${(x.chg24h * 100).toFixed(2)}%` : "—"}</td>
+                          {(() => {
+                            const q = quotes[local];
+                            const gap = q?.price ? (x.mark / q.price - 1) * 100 : null;
+                            return <td className={gap == null ? "muted" : gap >= 0 ? "up" : "down"}
+                              title="永续价 vs 正股最新价;闭市时=隐含跳空,盘中≈0 为正常">
+                              {gap == null ? "—" : `${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`}</td>;
+                          })()}
                           <td className={(x.funding_apr ?? 0) >= 0 ? "up" : "down"}>{x.funding_apr != null ? `${(x.funding_apr * 100).toFixed(1)}%` : "—"}</td>
                           <td className="src">{x.vol24h_usd ? `$${(x.vol24h_usd / 1e6).toFixed(0)}M` : "—"}</td>
                         </tr>

@@ -33,6 +33,8 @@ jobs:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
           GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python scripts/hyperliquid_monitor.py --publish
+      - name: Pre-IPO/24-7 历史追加(幂等)
+        run: python scripts/preipo_history.py
       - name: Commit + push
         run: |
           git config user.name  "hl-monitor[bot]"
