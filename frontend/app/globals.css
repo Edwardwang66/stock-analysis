@@ -150,3 +150,7 @@ th { color: var(--muted); font-weight: 500; }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+/* K线全屏模式 */
+.chart-full { position: fixed !important; inset: 0; z-index: 60; background: var(--bg); padding: 10px; }
+.chart-full .tv-chart { height: calc(100vh - 90px) !important; }

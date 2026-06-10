@@ -41,11 +41,18 @@ export default function Chart({
   const [showFib, setShowFib] = useState(false); // 自动斐波回撤(252根高低点)
   const [showIchi, setShowIchi] = useState(false); // Ichimoku 简版(转换/基准/云)
   const [showVsa, setShowVsa] = useState(false); // VSA 量价信号(四类)
+  const [full, setFull] = useState(false); // 全屏
+  useEffect(() => {
+    if (!full) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setFull(false); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [full]);
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
     const chart = createChart(ref.current, {
-      height: 440,
+      height: full ? Math.max(420, window.innerHeight - 110) : 440,
       layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#d1d4dc" },
       grid: { vertLines: { color: "#2a2e39" }, horzLines: { color: "#2a2e39" } },
       timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#2a2e39" },
@@ -275,7 +282,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, showVsa, levels, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, showVsa, full, levels, compare]);
 
   return (
     <>
@@ -301,6 +308,9 @@ export default function Chart({
         <button className={showVsa ? "active" : ""} onClick={() => setShowVsa((v) => !v)}>
           {showVsa ? "✓ VSA" : "VSA"}
         </button>
+        <button onClick={() => setFull((v) => !v)} title="全屏/还原(Esc 退出)">
+          {full ? "✕ 退出全屏" : "⛶ 全屏"}
+        </button>
         {levels && levels.length > 0 && (
           <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
             {showLv ? "✓ 支撑压力" : "支撑压力"}
@@ -312,7 +322,7 @@ export default function Chart({
       </div>
       <div style={{ position: "relative" }}>
         <div ref={legendRef} className="chart-legend" />
-        <div ref={ref} style={{ width: "100%" }} />
+        <div ref={ref} className={"tv-chart" + (full ? " chart-full" : "")} style={{ width: "100%" }} />
       </div>
       <div className="src" style={{ marginTop: 6 }}>
         {compare
