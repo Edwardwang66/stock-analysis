@@ -304,6 +304,7 @@ export default function Home() {
         <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>📋 总览</Link>
         <Link href="/reports/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📜 报告</Link>
         <Link href="/alerts/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>⏰ 告警</Link>
+        <Link href="/help/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>❓</Link>
         <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>💼 持仓</Link>
         <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📈 每日选股</Link>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🎯 追踪</Link>
