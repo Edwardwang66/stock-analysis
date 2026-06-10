@@ -3,7 +3,7 @@
 // 全部复用既有指标库,与图上开关同口径;多空计票给总倾向。非投资建议。
 import { useEffect, useMemo, useState } from "react";
 import type { Bar } from "@/lib/datasource";
-import { anchoredVwap, superTrend, tdSetup, ttmSqueeze } from "@/lib/indicators";
+import { anchoredVwap, superTrend, tdSetup, ttmSqueeze, volumeRatio } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 import { getRsRanks, type RsTable } from "@/lib/feed";
 import { useNightQuotes } from "@/lib/nightquotes";
@@ -90,6 +90,12 @@ export default function SignalRadar({ symbol, bars }: { symbol: string; bars: Ba
     if (a != null) {
       out.push({ label: `AVWAP${price >= a ? "上" : "下"}`, tone: price >= a ? "up" : "down",
                  title: `52周低点锚定成本线 ${a.toFixed(2)}:价在线上=底部以来买家整体盈利`, vote: price >= a ? 1 : -1 });
+    }
+    // 6.5) 量比(今量/20日均量)
+    const vr = volumeRatio(bars.map((b) => b.volume));
+    if (vr != null && isFinite(vr)) {
+      out.push({ label: `量比 ${vr.toFixed(1)}`, tone: vr >= 2 ? "warn" : vr <= 0.5 ? "mut" : "mut",
+                 title: "最新一根成交量 / 20 日均量:≥2 显著放量,≤0.5 缩量", vote: 0 });
     }
     // 7) 夜盘(闭市)
     const nq = night.map[symbol];
