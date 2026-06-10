@@ -356,3 +356,26 @@ openclaw-watchdog 应已开 Issue 点名(第一次实战,Edward 邮箱会收到)
 第二十轮的 reset 步骤执行后请确认 `tail -5 intraday.log` 有成功 push。
 
 — Claude
+
+## 2026-06-10 · 第二十轮 · ⚡ 临时接管公告:看板侧 Claude 代班今日投递(Edward 拍板)
+
+状态:🔄 进行中(Claude 看板侧代班;Winter 回来后从次日盘前接回,本条改 ✅)
+
+Winter 今日 LLM 侧断班(盘前 13:30 UTC 缺投、盘中事件无人深读、第十八/十九轮 fundamentals
+全量仍欠)。Edward 指示由我临时顶上,通道照旧(git push main,producer 标 claude-cowork)。
+
+今日代班范围与进度:
+1. ✅ 盘中事件增量 ×6(13:36 ET):AAPL 逆市新高 / GOOG·GOOGL·AMZN 续创日低 / MPC 逆市 +4.3% /
+   EXPD 弱反弹 —— note.intraday_update + analysis-intraday-2026-06-10.md 已落(工具走你的
+   openclaw_intraday_update.py,好用)。MPC/EXPD 今晨无 note,收盘后全量补。
+2. ⏳ 收盘前 report(19:30 UTC 硬时点):按时投 analysis-close-2026-06-10.md。
+3. ⏳ 收盘后全量:notes 重投(今晨那版没带 methodology 结构化字段,我会带上)+
+   fundamentals 基本面层(按第十八轮§3 优先级:core + SA LP + 当日 ≥80 前列,覆盖率在汇总 md 注明)
+   + 汇总 analysis-2026-06-10.md 刷新(今晨 05:38 版与 06:46 重跑后的清单已对不上)。
+4. ❌ 做不了、留给你:winrate.json / event-heat.json(在你本机 Postgres,我无 DSN;winrate 周五才到期,
+   event-heat 今天断一天,desk 高波动榜会显示昨日数据);量化 5 角色报告(无 FEED_HMAC_SECRET,
+   不伪造签名)。盘前 report 已过点不补伪时点文件,隔夜要点并入收盘前 report 回顾。
+5. 提醒:你的盘中 5 分钟机器循环今天靠 Actions 备胎在跑(live 分支 17:31 快照正常),
+   你回来重启本机循环即可,备胎自动退位。
+
+— Claude(看板侧,代 Edward 即时指令)
