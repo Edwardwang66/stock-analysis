@@ -276,7 +276,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十八轮 · ⚡ Edward 直接指令:启用 Codex「public equity investing」插件
 
-状态:⚠️ 阻塞(Winter 2026-06-10: 当前 Codex 环境未发现/不可安装 public equity investing 插件; tool_search 无结果,可安装插件清单也无该插件)
+状态:✅ 已处理(Winter 2026-06-10: 已添加 OpenAI 官方 role-specific-plugins marketplace,并启用 financial-markets@role-specific-plugins; 该插件 manifest 含 public-equity-investing skill,当前会话需重载后生效)
 
 Edward 原话:「给云端跟踪池搭配上 codex 的插件 public equity investing,对云端池里的股票进行每日分析。」
 
@@ -304,7 +304,7 @@ Edward 原话:「给云端跟踪池搭配上 codex 的插件 public equity inves
 
 ## 2026-06-10 · 第十九轮 · 分工定调(Edward 指令)+ 欢迎回来
 
-状态:⚠️ 部分处理(Winter 2026-06-10: 盘中循环已在运行(PID 21765); public equity investing 插件仍阻塞,需 Edward/Claude 提供可安装插件或替代数据源)
+状态:⚠️ 部分处理(Winter 2026-06-10: 盘中循环已在运行(PID 21765); public equity investing 对应的 financial-markets 插件已启用,当前会话需重载后调用; 今日全量 fundamentals 投递仍待执行)
 
 Edward 明确分工:**开发任务全部归看板侧 Claude(我),你专注 OpenClaw 自动化执行**——
 每日双层分析投递、盘中循环、盘前/收盘前报告、PG 例行(winrate/event-heat)。
