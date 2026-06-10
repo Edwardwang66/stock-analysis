@@ -173,6 +173,30 @@ th { color: var(--muted); font-weight: 500; }
   .statbar::-webkit-scrollbar { display: none; }
 }
 
+/* 图表 + 盘口并排(Hyperliquid 式三栏的中右两栏;窄屏自动上下堆叠) */
+.chart-row { display: flex; gap: 12px; align-items: stretch; }
+.chart-main { flex: 1; min-width: 0; }
+.obpanel { width: 270px; flex: none; display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg); overflow: hidden; }
+.ob-tabs { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.ob-tabs button { background: transparent; border: 1px solid transparent; color: var(--muted);
+  padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.ob-tabs button.active { color: #fff; border-color: var(--accent); }
+.ob-tabs .src { margin-left: auto; font-size: 10px; color: var(--up); }
+.ob-ratio { height: 4px; background: rgba(239,83,80,.45); }
+.ob-ratio-bid { display: block; height: 100%; background: rgba(38,166,154,.75); transition: width .3s; }
+.ob-list { flex: 1; overflow-y: auto; max-height: 470px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ob-row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 10px; white-space: nowrap; }
+.ob-row.ob-head { color: var(--muted); font-size: 11px; padding-top: 6px; }
+.ob-row.ob-trade span:last-child { font-size: 11px; }
+.ob-spread { text-align: center; color: var(--muted); font-size: 11px; padding: 5px 0;
+  border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); margin: 2px 0; }
+@media (max-width: 900px) {
+  .chart-row { flex-direction: column; }
+  .obpanel { width: 100%; }
+  .ob-list { max-height: 300px; }
+}
+
 /* 骨架屏(加载占位,替代文字"加载中") */
 .skeleton {
   border-radius: 6px;

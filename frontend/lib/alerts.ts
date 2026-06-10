@@ -43,6 +43,17 @@ export function removeAlert(id: string): void {
   write(read().filter((a) => a.id !== id));
 }
 
+/** 改目标价(图上拖拽提醒线用):重新判定方向,并复位触发状态。 */
+export function updateAlertTarget(id: string, target: number, currentPrice: number | null): void {
+  write(read().map((a) => (a.id === id
+    ? {
+        ...a, target,
+        dir: (currentPrice != null && target < currentPrice ? "below" : "above") as PriceAlert["dir"],
+        triggeredAt: null, triggeredPrice: undefined,
+      }
+    : a)));
+}
+
 export function clearTriggered(): void {
   write(read().filter((a) => !a.triggeredAt));
 }

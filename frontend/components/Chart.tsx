@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
+import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi, type IPriceLine } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
 import { anchoredVwap, sma, superTrend, tdSetup, ttmSqueeze, vsaSignals } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
@@ -19,16 +19,30 @@ function fmtDate(t: number): string {
   return d.getUTCHours() || d.getUTCMinutes() ? `${base} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC` : base;
 }
 
+export interface MyLine {
+  id: string;
+  price: number;
+  title: string;
+  color: string;
+  /** 可拖拽(提醒线):按住线上下移动,松手回调 onLineDrag */
+  draggable?: boolean;
+}
+
 export default function Chart({
   bars,
   compare = null,
   levels = null,
+  myLines = null,
+  onLineDrag,
 }: {
   bars: Bar[];
   /** 对比叠加:右轴切百分比模式,两边都按首值归一(TradingView 同款体验) */
   compare?: { name: string; bars: Bar[] } | null;
   /** 支撑压力水平线组(如 周Pivot),由「支撑压力」开关控制显示 */
   levels?: { price: number; label: string; color?: string }[] | null;
+  /** "我的"信息上图(Hyperliquid 式):持仓成本线 / 价格提醒线,由「我的」开关控制 */
+  myLines?: MyLine[] | null;
+  onLineDrag?: (id: string, price: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
@@ -38,10 +52,14 @@ export default function Chart({
   // sq=TTM Squeeze fib=自动斐波 ichi=Ichimoku简版 vsa=量价信号 chan=缠论结构
   const [flags, setFlags] = usePref("chart:overlays:v1", {
     chan: false, td: true, st: false, lv: false, av: false, sq: false, fib: false, ichi: false, vsa: false,
+    mine: true, // "我的"持仓/提醒线默认开
   });
   const toggle = (k: keyof typeof flags) => setFlags((f) => ({ ...f, [k]: !f[k] }));
   const { chan: showChan, td: showTd, st: showSt, lv: showLv, av: showAv,
-          sq: showSq, fib: showFib, ichi: showIchi, vsa: showVsa } = flags;
+          sq: showSq, fib: showFib, ichi: showIchi, vsa: showVsa, mine: showMine } = flags;
+  // 拖拽回调走 ref:父组件每次渲染都会换函数身份,不让它触发整图重建
+  const dragCb = useRef(onLineDrag);
+  dragCb.current = onLineDrag;
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -205,6 +223,68 @@ export default function Chart({
       }
     }
 
+    // "我的"信息上图(Hyperliquid 精髓:把你的状态画进市场):
+    // 实线=持仓成本,虚线=价格提醒;提醒线支持按住拖拽改价,松手生效。
+    const disposers: (() => void)[] = [];
+    if (showMine && myLines?.length && !compare) {
+      const lineMap = new Map<string, { line: IPriceLine; draggable: boolean }>();
+      for (const ml of myLines) {
+        const line = candles.createPriceLine({
+          price: ml.price, color: ml.color, lineWidth: 1,
+          lineStyle: ml.draggable ? LineStyle.Dashed : LineStyle.Solid,
+          axisLabelVisible: true, title: ml.title,
+        });
+        lineMap.set(ml.id, { line, draggable: !!ml.draggable });
+      }
+      const el = ref.current;
+      if (el && myLines.some((m) => m.draggable)) {
+        let dragging: { id: string; line: IPriceLine } | null = null;
+        const relY = (e: PointerEvent) => e.clientY - el.getBoundingClientRect().top;
+        const findNear = (y: number): { id: string; line: IPriceLine } | null => {
+          for (const [id, v] of lineMap) {
+            if (!v.draggable) continue;
+            const ly = candles.priceToCoordinate(v.line.options().price);
+            if (ly != null && Math.abs(ly - y) <= 6) return { id, line: v.line };
+          }
+          return null;
+        };
+        const onDown = (e: PointerEvent) => {
+          const hit = findNear(relY(e));
+          if (!hit) return;
+          dragging = hit;
+          chart.applyOptions({ handleScroll: false, handleScale: false });
+          e.preventDefault();
+          e.stopPropagation(); // capture 阶段拦住,不让图表进入平移
+        };
+        const onHover = (e: PointerEvent) => {
+          if (!dragging) el.style.cursor = findNear(relY(e)) ? "ns-resize" : "";
+        };
+        const onMove = (e: PointerEvent) => {
+          if (!dragging) return;
+          const p = candles.coordinateToPrice(relY(e));
+          if (p != null && p > 0) dragging.line.applyOptions({ price: p });
+        };
+        const onUp = () => {
+          if (!dragging) return;
+          const { id, line } = dragging;
+          dragging = null;
+          chart.applyOptions({ handleScroll: true, handleScale: true });
+          el.style.cursor = "";
+          dragCb.current?.(id, line.options().price);
+        };
+        el.addEventListener("pointerdown", onDown, true);
+        el.addEventListener("pointermove", onHover);
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+        disposers.push(() => {
+          el.removeEventListener("pointerdown", onDown, true);
+          el.removeEventListener("pointermove", onHover);
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+        });
+      }
+    }
+
     // 标记合并:TD9 与 缠论 可同开,统一 setMarkers 一次
     const allMarkers: any[] = [];
 
@@ -275,12 +355,18 @@ export default function Chart({
     });
 
     chart.timeScale().fitContent();
-    return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, flags, levels, compare]);
+    return () => { disposers.forEach((d) => d()); chart.remove(); chartRef.current = null; };
+  }, [bars, flags, levels, compare, myLines]);
 
   return (
     <>
       <div className="ranges" style={{ justifyContent: "flex-end" }}>
+        {myLines && myLines.length > 0 && (
+          <button className={showMine ? "active" : ""} onClick={() => toggle("mine")}
+            title="把我的持仓成本线 / 价格提醒线画在图上;提醒线(虚线)按住可上下拖拽改价">
+            {showMine ? "✓ 💼 我的" : "💼 我的"}
+          </button>
+        )}
         <button className={showTd ? "active" : ""} onClick={() => toggle("td")}>
           {showTd ? "✓ 神奇九转" : "神奇九转"}
         </button>
@@ -322,6 +408,7 @@ export default function Chart({
           ? "缠论:白线=笔 · 黄虚线=中枢 · 标签 1/2/3B=买点 1/2/3S=卖点(含背驰,简化版,灵感来自观潮 TideView)"
           : <>均线:<span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量 · 鼠标移到图上看每日明细</>}
         {showTd && <> · 九转:<span className="up">绿数字=下跌段(超卖)</span> <span className="down">红数字=上涨段(衰竭)</span>,6 起显示、9✓=完美九转(预警非建议)</>}
+        {showMine && !compare && myLines && myLines.length > 0 && <> · 💼 我的:实线=持仓成本 · 虚线=价格提醒(按住线可拖拽改价)</>}
       </div>
     </>
   );
