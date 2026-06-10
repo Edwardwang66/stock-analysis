@@ -28,12 +28,12 @@
 > 强趋势股 50-90 分、弱多 30-45 分,不再全是 50。note 引用分数时用 v2 实际数字。
 > 模型无关:你的 OpenClaw 用 **GPT-5.5** 即可(设 `OPENCLAW_MODEL=gpt-5.5`)。
 
-## 1. 拉取当日输入(每日覆盖范围,2026-06-09 版)
-- [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
-- [ ] 云端自选池:`feed/watchlist.json` 的 `symbols`(**全部必做**,一只不落)
-- [ ] 要分析的标的集合(2026-06-09 Edward 定版)=
-      **云端自选池全部** ∪ **看多清单全部(≥80 一只不落;v2+高阈值 = 多因子共振精选)** ∪
-      **SA LP 基金前 8 持仓 + US:INFY**(`feed/funds/situational-awareness.json`,13F 换仓时自动跟随)
+## 1. 拉取当日输入(每日覆盖范围,2026-06-10 版)
+- [ ] 完整必析池:`feed/watchlist.json` 的 `symbols`(**唯一真相源**,全部必做,一只不落)。
+      `daily_screener` 已把 ≥80 全名单轮换写入 `tier=screener`,SA LP 也在 `tier=salp`;
+      读取 `symbols` 即可,不用再单独并集 screener 或 SA LP。
+- [ ] 看多清单:`feed/screener/latest.json` 仅作评分/主题/行业上下文(≥80,v2+高阈值 = 多因子共振精选)。
+- [ ] SA LP:`feed/funds/situational-awareness.json` 仅作持仓背景上下文;换仓后会同步进入 watchlist。
 - [ ] **额外产出一份当日汇总报告**(给 Edward 的 report,日报 Issue 会自动嵌入):
       写入 `feed/screener/analysis-<YYYY-MM-DD>.md`,结构:
       ① 三池总览(自选池/看多/SA LP 各自的多空倾向统计) ② 看多清单按主题分组点评

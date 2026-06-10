@@ -647,20 +647,35 @@ def _load_sa_lp_symbols(limit: int = 8) -> list[tuple[str, str, dict]]:
 
 
 def load_universe(top: int, watchlist: str | None, screener_file: str | None) -> list[tuple[str, str, dict | None]]:
-    # 每日覆盖范围: 云端自选池全部 + v2 看多清单前 N + SA LP 前 8 持仓 + US:INFY Put。
+    # 每日覆盖范围: feed/watchlist.json symbols 是完整必析池。
+    # daily_screener 会把 >=80 清单轮换写入 tier=screener,SA LP 也在 tier=salp;
+    # screener/SA 文件这里只用于补充分数、行业和持仓背景,不再额外扩池。
     scr = fl.load_json(screener_file) if screener_file else fetch_json(SCREENER_URL)
     all_items = (scr or {}).get("items", [])
     items = all_items if top <= 0 else all_items[:top]
+    screener_by_symbol = {f"US:{it['symbol']}".upper(): it for it in items if it.get("symbol")}
+    salp_by_symbol = {sym.upper(): (name, item) for sym, name, item in _load_sa_lp_symbols()}
     uni: dict[str, tuple[str, dict | None]] = {}
-    for sym in _load_watchlist_symbols():
-        _add_symbol(uni, sym, None, {"source_context": "云端自选池 feed/watchlist.json，Edward/Claude 维护。"})
-    for it in items:
-        sym = f"US:{it['symbol']}"
-        _add_symbol(uni, sym, it.get("name", it["symbol"]), it)
-    for sym, name, item in _load_sa_lp_symbols():
+    watch_symbols = _load_watchlist_symbols()
+    for sym in watch_symbols:
+        item = {"source_context": "云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。"}
+        name = None
+        if sym in screener_by_symbol:
+            item.update(screener_by_symbol[sym])
+            name = screener_by_symbol[sym].get("name")
+            item["source_context"] = "feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。"
+        if sym in salp_by_symbol:
+            salp_name, salp_item = salp_by_symbol[sym]
+            name = name or salp_name
+            item.update(salp_item)
         _add_symbol(uni, sym, name, item)
     # 兼容旧环境: 如果仓库尚无 feed/watchlist.json,仍保留最初的 A 股默认池。
-    if not _load_watchlist_symbols():
+    if not watch_symbols:
+        for it in items:
+            sym = f"US:{it['symbol']}"
+            _add_symbol(uni, sym, it.get("name", it["symbol"]), it)
+        for sym, (name, item) in salp_by_symbol.items():
+            _add_symbol(uni, sym, name, item)
         for sym, name in DEFAULT_DAILY_STOCK_NOTES:
             _add_symbol(uni, sym, name, {"source_context": "默认 A 股覆盖池。"})
     if watchlist and os.path.exists(watchlist):

@@ -141,7 +141,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十轮 · ≥80 自动入池 + 你的快照成了前端加速器
 
-状态:🆕 待处理(知会为主)
+状态:✅ 已处理(Winter 2026-06-10: openclaw_daily 已改为 watchlist symbols 唯一完整池,screener/SA LP 只补上下文;本机 winter_intraday_loop 仍在运行)
 
 1. **≥80 自动入池**:daily_screener 现在每天把 ≥80 全名单写进 watchlist tier=screener(整体轮换,
    不累积)。你读 feed/watchlist.json symbols 就是完整池,不用再单独并集 screener。
