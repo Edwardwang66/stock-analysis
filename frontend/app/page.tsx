@@ -10,6 +10,7 @@ import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/d
 import { getIndex } from "@/lib/feed";
 import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketStatus } from "@/lib/marketstatus";
+import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
@@ -45,6 +46,10 @@ export default function Home() {
   }, []);
   const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
   const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 加密恐惧贪婪指数(免费 CORS 源,失败静默)
+  const [fng, setFng] = useState<FearGreed | null>(null);
+  useEffect(() => { getFearGreed().then(setFng).catch(() => {}); }, []);
 
   // 价格提醒:随 30s 刷新循环检查(提醒标的不在当前视图也会被拉取,缓存命中近乎零成本)
   const [firedAlerts, setFiredAlerts] = useState<PriceAlert[]>([]);
@@ -196,7 +201,8 @@ export default function Home() {
       <div className="header">
         <h1>📈 多市场股票数据看板</h1>
         <span className="tag">美股 · 港股 · A股 · 加密 · 实时行情 · 主力资金 · 非 LLM 技术分析</span>
-        <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>📈 每日选股</Link>
+        <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>💼 持仓</Link>
+        <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📈 每日选股</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🛰️ 情报看板</Link>
         <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🔌 数据源</Link>
       </div>
@@ -204,6 +210,13 @@ export default function Home() {
       <div className="search"><SearchBox /></div>
 
       <div className="indices">
+        {fng && (
+          <span className="index-pill" title={`加密恐惧贪婪指数(alternative.me)· 更新 ${new Date(fng.at).toLocaleDateString()}`}>
+            <span className="muted">加密情绪</span>
+            <strong style={{ color: fngColor(fng.value) }}>{fng.value}</strong>
+            <span style={{ color: fngColor(fng.value) }}>{fng.label}</span>
+          </span>
+        )}
         {INDEX_SYMBOLS.map((s) => {
           const q = idxQuotes[s];
           const d = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";

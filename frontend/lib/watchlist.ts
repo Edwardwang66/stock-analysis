@@ -26,10 +26,11 @@ export function toggleWatchlist(symbol: string): string[] {
 
 export function exportUserData(): void {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     watchlist: getWatchlist(),
     alerts: JSON.parse(localStorage.getItem("alerts:v1") || "[]"),
+    portfolio: JSON.parse(localStorage.getItem("portfolio:v1") || "[]"),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -53,6 +54,13 @@ export function importUserData(text: string): number {
     const add = data.alerts.filter((a: any) => a && a.id && a.symbol && !ids.has(a.id));
     localStorage.setItem("alerts:v1", JSON.stringify([...curAlerts, ...add]));
     window.dispatchEvent(new Event("alerts-changed"));
+  }
+  if (Array.isArray(data.portfolio)) {
+    const curPf = JSON.parse(localStorage.getItem("portfolio:v1") || "[]");
+    const ids = new Set(curPf.map((h: any) => h?.id));
+    const add = data.portfolio.filter((h: any) => h && h.id && h.symbol && !ids.has(h.id));
+    localStorage.setItem("portfolio:v1", JSON.stringify([...curPf, ...add]));
+    window.dispatchEvent(new Event("portfolio-changed"));
   }
   window.dispatchEvent(new Event("watchlist-changed"));
   return merged.length - cur.length;
