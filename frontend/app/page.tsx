@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
+import { checkAlerts, clearTriggered, notify, type PriceAlert } from "@/lib/alerts";
+import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import { getIndex } from "@/lib/feed";
 import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
@@ -43,6 +45,24 @@ export default function Home() {
   }, []);
   const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
   const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 价格提醒:随 30s 刷新循环检查(提醒标的不在当前视图也会被拉取,缓存命中近乎零成本)
+  const [firedAlerts, setFiredAlerts] = useState<PriceAlert[]>([]);
+  useEffect(() => {
+    const syms = Array.from(new Set(getAlerts().filter((a) => !a.triggeredAt).map((a) => a.symbol)));
+    if (!syms.length) return;
+    let alive = true;
+    getQuotes(syms).then((m) => {
+      if (!alive) return;
+      const prices = Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v?.price]));
+      const fired = checkAlerts(prices);
+      if (fired.length) {
+        setFiredAlerts((prev) => [...prev, ...fired]);
+        notify(fired, nameOf);
+      }
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [refreshId]);
 
   // 情报 feed 新鲜度:陈旧时在首页轻提示(与情报看板同一判定)
   const [feedStale, setFeedStale] = useState<{ asof: string | null } | null>(null);
@@ -196,6 +216,14 @@ export default function Home() {
           );
         })}
       </div>
+
+      {firedAlerts.length > 0 && (
+        <div className="hint" style={{ borderColor: "var(--up)", background: "rgba(38,166,154,.08)" }}>
+          ⏰ 价格提醒触发:{firedAlerts.map((a) => `${nameOf(a.symbol)} ${a.dir === "above" ? "≥" : "≤"} ${a.target}(现 ${a.triggeredPrice})`).join(" · ")}
+          <button className="btn subtle" style={{ marginLeft: 10, padding: "2px 10px", fontSize: 12 }}
+            onClick={() => { clearTriggered(); setFiredAlerts([]); }}>知道了</button>
+        </div>
+      )}
 
       {feedStale && (
         <div className="hint">

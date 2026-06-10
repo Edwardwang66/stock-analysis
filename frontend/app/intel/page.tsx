@@ -86,7 +86,7 @@ export default function IntelDashboard() {
       </div>
 
       {/* 市场状态 + 做多做空引擎裁决 */}
-      <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16 }}>
         <div className="section">
           <h2>③ 最新市场状态</h2>
           {mkt ? (
@@ -131,7 +131,7 @@ export default function IntelDashboard() {
       {/* 做多做空簿 */}
       <div className="section">
         <h2>⑤ 当前做多做空簿 {sig && <span className="src">@ {sig.asof} · 多 {sig.n_long} / 空 {sig.n_short} · 毛杠杆 {num(sig.gross_leverage)} · 净敞口 {pct(sig.net_exposure, 2)}</span>}</h2>
-        <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16 }}>
           <BookTable title="做多 (Top)" rows={longs} color={UP} />
           <BookTable title="做空 (Top)" rows={shorts} color={DOWN} />
         </div>

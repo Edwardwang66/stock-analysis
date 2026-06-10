@@ -7,6 +7,7 @@ import AINote from "@/components/AINote";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
+import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
 import { computeChan } from "@/lib/chan";
@@ -43,6 +44,15 @@ function SymbolView() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [starred, setStarred] = useState(false);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [alertInput, setAlertInput] = useState("");
+
+  useEffect(() => {
+    const sync = () => setAlerts(getAlerts(symbol));
+    sync();
+    window.addEventListener("alerts-changed", sync);
+    return () => window.removeEventListener("alerts-changed", sync);
+  }, [symbol]);
 
   useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
 
@@ -101,6 +111,27 @@ function SymbolView() {
       </div>
 
       {err && <div className="err">加载失败:{err}(后端首次访问可能在唤醒,约 30 秒;请稍候刷新重试)</div>}
+
+      {/* 价格提醒:纯前端 localStorage,首页 30s 刷新循环检查,触发浏览器通知+横幅 */}
+      <div className="alert-bar">
+        <span className="src">⏰ 价格提醒</span>
+        <input
+          type="number" inputMode="decimal" placeholder={quote?.price != null ? `目标价(现 ${fmt(quote.price)})` : "目标价"}
+          value={alertInput} onChange={(e) => setAlertInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && Number(alertInput) > 0) { addAlert(symbol, Number(alertInput), quote?.price ?? null); setAlertInput(""); }
+          }}
+        />
+        <button className="btn subtle" disabled={!(Number(alertInput) > 0)}
+          onClick={() => { addAlert(symbol, Number(alertInput), quote?.price ?? null); setAlertInput(""); }}>设置</button>
+        {alerts.map((a) => (
+          <span key={a.id} className={`badge ${a.triggeredAt ? "muted" : a.dir === "above" ? "up" : "down"}`}>
+            {a.dir === "above" ? "≥" : "≤"} {a.target}{a.triggeredAt ? "(已触发)" : ""}
+            <button className="x" onClick={() => removeAlert(a.id)} aria-label="删除提醒">✕</button>
+          </span>
+        ))}
+        {alerts.length === 0 && <span className="src">高于/低于目标价时通知(看板页打开时检查,约 30s 一轮)</span>}
+      </div>
 
       <div className="section">
         <div className="ranges">
