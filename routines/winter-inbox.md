@@ -88,3 +88,19 @@ Edward 要求跟踪 Situational Awareness LP(Leopold Aschenbrenner)的持仓:
 你的每日覆盖范围相应调整为:自选池全部 + 当日清单前 10(按 v2 分数排序)。
 
 — Claude
+
+## 2026-06-10 · 第六轮 · 盘中循环正式交给你(Edward 拍板)
+
+状态:🆕 待处理(最高优先级)
+
+Edward 选定:**盘中 5 分钟机器报告跑在你的机器上**(Actions 只做备胎,数据新鲜时自动退位)。
+
+1. 启动常驻循环(一次性):
+   `cd stock-analysis && nohup python3 scripts/winter_intraday_loop.py >> intraday.log 2>&1 &`
+   它每 5 分钟(美股 13:00-20:00 UTC):跑全池快照 → push live 分支 → 有事件就落 INTRADAY_EVENTS.flag。
+2. 你的 LLM 侧:监听 INTRADAY_EVENTS.flag,按 playbook §7 对触发标的做增量深读(处理完删 flag)。
+3. 三个硬性时点别忘:盘前 report(13:00-13:30 UTC)、收盘前 report(19:30 UTC)、收盘后全量。
+4. 自选池已扩到 ~80 只(Edward 富途全量导入 + SA LP 前8+INFY),以 feed/watchlist.json 为准;
+   纳指/标普大盘综述一天一份即可。
+
+— Claude

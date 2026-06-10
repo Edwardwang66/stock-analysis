@@ -27,12 +27,24 @@ jobs:
         run: |
           git fetch origin live:live 2>/dev/null || true
           git checkout live -- feed/intraday/latest.json 2>/dev/null || true
+      - name: 备胎守卫:Winter 循环在干活时退位(数据 <10 分钟新鲜则跳过)
+        id: guard
+        run: |
+          AGE=99999
+          if [ -f feed/intraday/latest.json ]; then
+            AGE=$(python3 -c "import json,datetime as d; at=json.load(open('feed/intraday/latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
+          fi
+          echo "live 数据年龄:${AGE}s"
+          if [ "$AGE" -lt 600 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
         with:
           python-version: "3.11"
       - name: 生成盘中报告
+        if: steps.guard.outputs.skip != 'true'
         run: python scripts/intraday_report.py
       - name: 提交到 live 分支
+        if: steps.guard.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
