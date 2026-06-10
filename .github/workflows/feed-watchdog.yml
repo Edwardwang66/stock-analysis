@@ -14,7 +14,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: 检查新鲜度并按需开 Issue
         env:
           GH_TOKEN: ${{ github.token }}
