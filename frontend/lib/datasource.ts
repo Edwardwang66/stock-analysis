@@ -291,16 +291,23 @@ export async function getQuotes(
 
   const backendable = missing.filter((s) => !s.startsWith("IDX:")); // 指数不发后端,避免整批 422
   if (API_BASE && backendable.length >= 1) {
-    const rows = await backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(backendable.join(","))}`);
-    for (const d of Array.isArray(rows) ? rows : []) {
-      if (d.error || d.price == null) continue;
-      const quote = {
-        symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
-        high: d.high, low: d.low, currency: d.currency, source: d.source,
-      };
-      quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
-      out[quote.symbol] = quote;
-      onPartial?.(quote);
+    // 后端单次上限 50 个标的 → 分块并发,任何一块失败不影响其他块
+    const chunks: string[][] = [];
+    for (let i = 0; i < backendable.length; i += 50) chunks.push(backendable.slice(i, i + 50));
+    const results = await Promise.all(
+      chunks.map((c) => backendJson(`/api/v1/quotes?symbols=${encodeURIComponent(c.join(","))}`)),
+    );
+    for (const rows of results) {
+      for (const d of Array.isArray(rows) ? rows : []) {
+        if (d.error || d.price == null) continue;
+        const quote = {
+          symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
+          high: d.high, low: d.low, currency: d.currency, source: d.source,
+        };
+        quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
+        out[quote.symbol] = quote;
+        onPartial?.(quote);
+      }
     }
   }
 
