@@ -1,14 +1,14 @@
 {
   "symbol": "KR:005930",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: 005930 属于 Technology/Consumer Electronics，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 307250.00，20/50/200日均线约 304562.50/250864.00/153763.75；TD9 下行3；52周位置 80% 分位、距高点 -17.0%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 7.6%/63.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: 005930 属于 Technology/Consumer Electronics，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 302500.00，20/50/200日均线约 304325.00/250769.00/153740.00；TD9 下行3；52周位置 距高 -18.2%、78分位；SuperTrend(10,3) 空头·约 3 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 6.0%/61.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 KR 交易所/公司公告源 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings(StockStory)；Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap(Investor's Business Daily)；HKC, ANTGAMER, KOORUI Make Strong Debut at COMPUTEX 2026 with World-First Display Innovations(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Ceasefire 'teeters on a knife-edge', threatening global shipping(Yahoo Finance Video)；Medicare program unable to pay full benefits in 7 years, report finds(Yahoo Finance)；Generations of nature lovers protect key property within Myra–Bellevue Park(GlobeNewswire)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行3；52周位置 80% 分位、距高点 -17.0%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行3；52周位置 距高 -18.2%、78分位；SuperTrend(10,3) 空头·约 3 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: 005930.KS",
@@ -19,12 +19,41 @@
       "url": "https://finance.yahoo.com/quote/005930.KS/news/"
     },
     {
-      "title": "Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/lovesac-love-reports-q1-everything-031652229.html"
+      "title": "Ceasefire 'teeters on a knife-edge', threatening global shipping",
+      "url": "https://finance.yahoo.com/video/ceasefire-teeters-on-a-knife-edge-threatening-global-shipping-200044375.html"
     },
     {
-      "title": "Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap",
-      "url": "https://finance.yahoo.com/m/25a6a429-345e-3138-9f10-7360fba3d0d1/dow-jones-futures-fall-on.html"
+      "title": "Medicare program unable to pay full benefits in 7 years, report finds",
+      "url": "https://finance.yahoo.com/markets/article/medicare-program-unable-to-pay-full-benefits-in-7-years-report-finds-200024970.html"
+    },
+    {
+      "title": "Samsung Ships Industry-First Commercial HBM4 - Samsung Semiconductor",
+      "url": "https://semiconductor.samsung.com/news-events/news/samsung-ships-industry-first-commercial-hbm4-with-ultimate-performance-for-ai-computing/"
+    },
+    {
+      "title": "Samsung Electronics (KRX:005930) Statistics & Valuation - StockAnalysis",
+      "url": "https://stockanalysis.com/quote/krx/005930/statistics/"
+    },
+    {
+      "title": "Samsung begins mass production and customer shipments of HBM4 - Verdict",
+      "url": "https://www.verdict.co.uk/samsung-begins-mass-production-and-customer-shipments-of-hbm4/"
+    },
+    {
+      "title": "Broadcom-Linked AI Selloff Hits Samsung, SK Hynix Stocks In Korea - Yahoo Finance",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/broadcom-linked-ai-selloff-hits-064441875.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行3",
+    "week52": "距高 -18.2% · 78分位",
+    "supertrend": "空头·约 3 个交易日前翻转",
+    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰"
+  },
+  "fundamentals": {
+    "valuation": "6/10收₩302,500(-6.1%),TTM市盈率24.3倍、前瞻约5.5倍(stockanalysis)",
+    "quality": "业界首发HBM4商用量产出货(英伟达/AMD采用),公司预计2026年HBM销售较2025年增逾两倍",
+    "catalysts": "博通指引疲软致存储股二连跌(6/5、6/10);12层HBM4E样品5/29已向大客户出样;Q2财报临近",
+    "peers": "HBM4量产出货抢先海力士/美光;唯一兼具逻辑代工+存储+先进封装产能的厂商",
+    "verdict": "基本面强:HBM4率先量产、HBM销售指引翻两倍以上"
+  }
 }

@@ -1,14 +1,14 @@
 {
   "symbol": "US:IREN",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: IREN 属于 Financial Services/Capital Markets，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 54.02，20/50/200日均线约 58.55/50.70/47.14；TD9 下行4；52周位置 66% 分位、距高点 -29.7%；SuperTrend(10,3) 多头，约 41 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: 股票，主题 矿场转 AI 数据中心，13F asof 2025-12-31。；近20/60交易日收益约 -2.0%/29.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: IREN LIMITED 属于 Financial Services/Capital Markets，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 51.52，20/50/200日均线约 58.29/51.10/47.29；TD9 下行5；52周位置 距高 -33.0%、62分位；SuperTrend(10,3) 空头·约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: 股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 -8.9%/14.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Can IREN's 800MW Australia Campus Help Meet Rising APAC AI Demand?(Zacks)；Assessing IREN (NasdaqGS:IREN) Valuation After Recent Share Price Volatility(Simply Wall St.)；Why Dell Technologies (DELL) Is Down 14.0% After AI Server Surge And New Supercomputer Deals - And What's Next(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Iren Ltd (IREN): Crypto Mining Giving Way to AI Data Centers(Insider Monkey)；AI Infrastructure Scorecard: Which of These 3 Stocks Is Delivering on Triple-Digit Growth Promises(24/7 Wall St.)；Can IREN's 800MW Australia Campus Help Meet Rising APAC AI Demand?(Zacks)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行4；52周位置 66% 分位、距高点 -29.7%；SuperTrend(10,3) 多头，约 41 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行5；52周位置 距高 -33.0%、62分位；SuperTrend(10,3) 空头·约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: IREN",
@@ -19,12 +19,41 @@
       "url": "https://finance.yahoo.com/quote/IREN/news/"
     },
     {
-      "title": "Can IREN's 800MW Australia Campus Help Meet Rising APAC AI Demand?",
-      "url": "https://finance.yahoo.com/sectors/technology/articles/irens-800mw-australia-campus-help-141700397.html"
+      "title": "Iren Ltd (IREN): Crypto Mining Giving Way to AI Data Centers",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/iren-ltd-iren-crypto-mining-172553278.html"
     },
     {
-      "title": "Assessing IREN (NasdaqGS:IREN) Valuation After Recent Share Price Volatility",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/assessing-iren-nasdaqgs-iren-valuation-231808719.html"
+      "title": "AI Infrastructure Scorecard: Which of These 3 Stocks Is Delivering on Triple-Digit Growth Promises",
+      "url": "https://finance.yahoo.com/m/42153167-8db6-36fc-b9ac-975b6999afef/ai-infrastructure-scorecard%3A.html"
+    },
+    {
+      "title": "IREN Business Update and Q3 FY26 Results - GlobeNewswire",
+      "url": "https://www.globenewswire.com/news-release/2026/05/07/3290719/0/en/iren-business-update-and-q3-fy26-results.html"
+    },
+    {
+      "title": "IREN (IREN) Statistics - StockAnalysis",
+      "url": "https://stockanalysis.com/stocks/iren/statistics/"
+    },
+    {
+      "title": "IREN Q3 FY26 Earnings Call Transcript (SEC 8-K)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000187884826000028/irentranscript.htm"
+    },
+    {
+      "title": "IREN earnings analysis - Motley Fool",
+      "url": "https://www.fool.com/investing/2026/05/18/irens-earnings-highlight-long-term-growth-potentia/"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行5",
+    "week52": "距高 -33.0% · 62分位",
+    "supertrend": "空头·约 1 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰"
+  },
+  "fundamentals": {
+    "valuation": "市值约188亿美元、EV约205亿,EV/收入约27x、TTM PE约97x(stockanalysis,6/10)",
+    "quality": "FQ3营收1.45亿环比降(上季1.85亿),净亏2.48亿含1.4亿减值;合同ARR已达31亿美元",
+    "catalysts": "目标2026年底ARR 37亿美元、后程放量;微软合同收入爬坡、新增采购5万张GPU;与英伟达合作5GW管线",
+    "peers": "EV/收入约27x高于CORZ(约25x)和CRWV(13.9x),靠微软/英伟达大客户合同获最高叙事溢价",
+    "verdict": "基本面中性:微软英伟达合同叙事强、2026算力满约,但当期收入下滑且亏损,ARR兑现待验证"
+  }
 }

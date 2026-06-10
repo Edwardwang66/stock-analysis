@@ -1,14 +1,14 @@
 {
   "symbol": "US:TSLA",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 396.68，20/50/200日均线约 422.49/396.72/414.95；TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 51% 分位、距高点 -20.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -10.9%/1.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 381.59，20/50/200日均线约 419.89/397.25/415.16；TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -23.5%、44分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -12.0%/-3.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: TSLA Stock Hits 1-Month Low Amid SpaceX Merger Jitters — But Analyst Sees Tesla Holders Getting 66% Of Deal Within A Year(Stocktwits)；Elon Musk, after DOGE and politics, bets on SpaceX IPO(AFP)；GM Follows Tesla’s Playbook — Expands Into Energy Storage With Peak Partnership(Stocktwits)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Tesla Slips as BYD Raises Global Ambitions(GuruFocus.com)；Tesla Stock Surges Into Bull Case as JPMorgan Lifts Target 227%(GuruFocus.com)；Robinhood Enters This Hot, Lucrative Market. The Stock Is Jumping.(Investor's Business Daily)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 51% 分位、距高点 -20.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -23.5%、44分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: TSLA",
@@ -19,12 +19,42 @@
       "url": "https://finance.yahoo.com/quote/TSLA/news/"
     },
     {
-      "title": "TSLA Stock Hits 1-Month Low Amid SpaceX Merger Jitters — But Analyst Sees Tesla Holders Getting 66% Of Deal Within A Year",
-      "url": "https://finance.yahoo.com/m/8e18203a-056d-3b6a-80b4-c343b479038b/tsla-stock-hits-1-month-low.html"
+      "title": "Tesla Slips as BYD Raises Global Ambitions",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/tesla-slips-byd-raises-global-194542675.html"
     },
     {
-      "title": "Elon Musk, after DOGE and politics, bets on SpaceX IPO",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/elon-musk-doge-politics-bets-013142887.html"
+      "title": "Tesla Stock Surges Into Bull Case as JPMorgan Lifts Target 227%",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/tesla-stock-surges-bull-case-193621115.html"
+    },
+    {
+      "title": "Tesla (TSLA) Q1 2026 earnings report - CNBC",
+      "url": "https://www.cnbc.com/2026/04/22/tesla-tsla-q1-2026-earnings-report.html"
+    },
+    {
+      "title": "Tesla Q1 2026 financial results - Electrek",
+      "url": "https://electrek.co/2026/04/22/tesla-tsla-q1-2026-financial-results/"
+    },
+    {
+      "title": "TSLA Forward PE Ratio - GuruFocus",
+      "url": "https://www.gurufocus.com/term/forward-pe-ratio/TSLA"
+    },
+    {
+      "title": "Tesla (TSLA) Earnings Dates - TipRanks",
+      "url": "https://www.tipranks.com/stocks/tsla/earnings"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行8(防衰竭)",
+    "week52": "距高 -23.5% · 44分位",
+    "supertrend": "空头·约 4 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 43
+  },
+  "fundamentals": {
+    "valuation": "PE(TTM)约357-407x,前瞻PE约195-213x,显著高于自身历史均值",
+    "quality": "Q1营收224亿美元+16%,毛利率升至21.1%;交付35.8万辆低于预期,储能收入-12%",
+    "catalysts": "Q2财报定于7/29;Robotaxi扩至9个美国市场,Cybercab已于4月在得州投产",
+    "peers": "前瞻PE约213x,远高于汽车行业中位13.8x,估值高度依赖自动驾驶进展",
+    "verdict": "基本面中性:毛利率修复但交付下滑、库存积压、储能走弱"
+  }
 }

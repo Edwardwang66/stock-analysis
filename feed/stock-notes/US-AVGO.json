@@ -1,14 +1,14 @@
 {
   "symbol": "US:AVGO",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: AVGO 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 392.16，20/50/200日均线约 425.54/401.98/356.83；TD9 下行4；52周位置 59% 分位、距高点 -20.8%；SuperTrend(10,3) 空头，约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -8.5%/21.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: AVGO 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 372.10，20/50/200日均线约 423.18/403.55/357.22；TD9 下行5；52周位置 距高 -24.8%、51分位；SuperTrend(10,3) 空头·约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -11.3%/14.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: The AI Trade Just Had Its Worst Stretch in Months. Here Are 3 Reasons the Sell-Off Could Be a Buying Opportunity.(Motley Fool)；SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls(24/7 Wall St.)；Bank of America aggressively revamps Oracle stock price target(TheStreet)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Nasdaq, S&P Drop 1%, Dow Sinks 600 Points as Trump Iran Threat Sparks Market Panic(GuruFocus.com)；Big Tech is dragging the S&P 500 lower in June(Yahoo Finance Video)；Qualcomm Drops 6%, Arm Holdings Falls 5% as Mobile-Chip Stocks Slide in the Selloff(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行4；52周位置 59% 分位、距高点 -20.8%；SuperTrend(10,3) 空头，约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行5；52周位置 距高 -24.8%、51分位；SuperTrend(10,3) 空头·约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: AVGO",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/AVGO/news/"
     },
     {
-      "title": "The AI Trade Just Had Its Worst Stretch in Months. Here Are 3 Reasons the Sell-Off Could Be a Buying Opportunity.",
-      "url": "https://finance.yahoo.com/m/bfea628d-f33e-30e6-b6a1-db51855a67f9/the-ai-trade-just-had-its.html"
+      "title": "Nasdaq, S&P Drop 1%, Dow Sinks 600 Points as Trump Iran Threat Sparks Market Panic",
+      "url": "https://finance.yahoo.com/markets/articles/nasdaq-p-drop-1-dow-193300784.html"
     },
     {
-      "title": "SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls",
-      "url": "https://finance.yahoo.com/m/5255c8c9-aaeb-3bf7-b1b6-c9fa9d91cdaf/smh-etf-investors%3A-watch.html"
+      "title": "Big Tech is dragging the S&P 500 lower in June",
+      "url": "https://finance.yahoo.com/video/big-tech-is-dragging-the-sp-500-lower-in-june-193121554.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行5",
+    "week52": "距高 -24.8% · 51分位",
+    "supertrend": "空头·约 5 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 70
+  }
 }

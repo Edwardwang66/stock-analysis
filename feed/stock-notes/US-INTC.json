@@ -1,14 +1,14 @@
 {
   "symbol": "US:INTC",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: Intel 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 107.92，20/50/200日均线约 114.09/91.38/52.13；TD9 下行1；52周位置 78% 分位、距高点 -18.7%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: Call(+1股)，主题 美国晶圆制造，13F asof 2025-12-31。；近20/60交易日收益约 -16.6%/135.8%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: INTC 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 107.04，20/50/200日均线约 113.41/92.70/52.54；TD9 下行2；52周位置 距高 -19.4%、77分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -11.3%/133.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls(24/7 Wall St.)；Why J.M. Smucker Stock Jumped Today(Motley Fool)；Taiwan Eyes Curbs on AI Chip Sales to China to Align With US(Bloomberg)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: 2 Hypergrowth Pure-Play AI Stocks to Buy and Hold for the Next Decade(Motley Fool)；SoFi Just Became the First U.S. Bank to Launch Its Own Stablecoin. Here's Why It Matters.(Motley Fool)；2 Stocks That Could Soar from SpaceX's $26.5 Trillion Artificial Intelligence (AI) Empire(Motley Fool)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行1；52周位置 78% 分位、距高点 -18.7%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行2；52周位置 距高 -19.4%、77分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: INTC",
@@ -19,12 +19,38 @@
       "url": "https://finance.yahoo.com/quote/INTC/news/"
     },
     {
-      "title": "SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls",
-      "url": "https://finance.yahoo.com/m/5255c8c9-aaeb-3bf7-b1b6-c9fa9d91cdaf/smh-etf-investors%3A-watch.html"
+      "title": "2 Hypergrowth Pure-Play AI Stocks to Buy and Hold for the Next Decade",
+      "url": "https://finance.yahoo.com/m/aa9bc4b4-980d-39d9-a814-0826cb946541/2-hypergrowth-pure-play-ai.html"
     },
     {
-      "title": "Why J.M. Smucker Stock Jumped Today",
-      "url": "https://finance.yahoo.com/m/2ab2cee0-db22-3cf8-ad1d-9d61348792ce/why-j.m.-smucker-stock-jumped.html"
+      "title": "SoFi Just Became the First U.S. Bank to Launch Its Own Stablecoin. Here's Why It Matters.",
+      "url": "https://finance.yahoo.com/m/3b9f3979-078d-3383-aafc-2827cf87b703/sofi-just-became-the-first.html"
+    },
+    {
+      "title": "Intel (INTC) Q1 2026 Earnings Transcript | The Motley Fool",
+      "url": "https://www.fool.com/earnings/call-transcripts/2026/04/23/intel-intc-q1-2026-earnings-transcript/"
+    },
+    {
+      "title": "AI demand lifts Intel Q1 2026 revenue and outlook - StockTitan",
+      "url": "https://www.stocktitan.net/sec-filings/INTC/8-k-intel-corp-reports-material-event-d8930f0603bf.html"
+    },
+    {
+      "title": "Intel (INTC) - Stock Analysis",
+      "url": "https://stockanalysis.com/stocks/intc/"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行2",
+    "week52": "距高 -19.4% · 77分位",
+    "supertrend": "空头·约 4 个交易日前翻转",
+    "chan": "下行笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 98
+  },
+  "fundamentals": {
+    "valuation": "市值约5313亿美元,远期PE约102倍,TTM营收538亿美元",
+    "quality": "Q1营收136亿美元同比+7%,非GAAP毛利率41%超指引约650bp,18A良率超内部预期",
+    "catalysts": "7/23财报;18A放量与代工客户进展为主线,DCAI收入同比+22%的持续性待验证",
+    "peers": "增速落后AMD/英伟达,代工规模仍远逊台积电,但毛利率修复(39.2%→41%)快于预期",
+    "verdict": "基本面中性:拐点信号增多、毛利率修复,但盈利基数低、远期估值已计入较多改善"
+  }
 }

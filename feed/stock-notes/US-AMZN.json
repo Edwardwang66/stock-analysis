@@ -1,14 +1,14 @@
 {
   "symbol": "US:AMZN",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: AMZN 属于 Consumer Cyclical/Internet Retail，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 244.19，20/50/200日均线约 261.51/252.81/232.35；TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 58% 分位、距高点 -12.3%；SuperTrend(10,3) 空头，约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -9.2%/17.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: AMZN 属于 Consumer Cyclical/Internet Retail，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 238.00，20/50/200日均线约 260.11/253.55/232.39；TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -14.6%、51分位；SuperTrend(10,3) 空头·约 6 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -10.5%/12.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls(24/7 Wall St.)；Assessing Amazon.com (AMZN) Valuation After Recent Share Price Pullback And Long Term Return Strength(Simply Wall St.)；Amazon sparks major surge in overlooked 175-year-old tech stock(TheStreet)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Amazon Expands Freight Service Nationwide(GuruFocus.com)；Neura Robotics Raises $1.4 Billion As Humanoid AI Race Accelerates(GuruFocus.com)；Amazon Secures $17.5 Billion Loan After Record C$14 Billion Bond Sale(GuruFocus.com)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 58% 分位、距高点 -12.3%；SuperTrend(10,3) 空头，约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -14.6%、51分位；SuperTrend(10,3) 空头·约 6 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: AMZN",
@@ -19,16 +19,19 @@
       "url": "https://finance.yahoo.com/quote/AMZN/news/"
     },
     {
-      "title": "SMH ETF Investors: Watch Hyperscaler Capex Guidance at July Earnings Calls",
-      "url": "https://finance.yahoo.com/m/5255c8c9-aaeb-3bf7-b1b6-c9fa9d91cdaf/smh-etf-investors%3A-watch.html"
+      "title": "Amazon Expands Freight Service Nationwide",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/amazon-expands-freight-nationwide-194648358.html"
     },
     {
-      "title": "Assessing Amazon.com (AMZN) Valuation After Recent Share Price Pullback And Long Term Return Strength",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/assessing-amazon-com-amzn-valuation-001709516.html"
+      "title": "Neura Robotics Raises $1.4 Billion As Humanoid AI Race Accelerates",
+      "url": "https://finance.yahoo.com/sectors/technology/articles/neura-robotics-raises-1-4-193957020.html"
     }
   ],
-  "intraday_update": {
-    "at": "13:36 ET",
-    "note": "续创日低 238.06(-2.5%),TD9 下行计数已至 7、逼近 8/9 衰竭区,短线超卖反弹概率在累积,但未见反转确认,维持中性偏防守"
+  "methodology": {
+    "td9": "下行8(防衰竭)",
+    "week52": "距高 -14.6% · 51分位",
+    "supertrend": "空头·约 6 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 54
   }
 }

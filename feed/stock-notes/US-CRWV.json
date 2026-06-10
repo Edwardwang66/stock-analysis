@@ -1,14 +1,14 @@
 {
   "symbol": "US:CRWV",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: CoreWeave 属于 Technology/Software—Infrastructure，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 98.45，20/50/200日均线约 107.47/107.65/100.02；TD9 下行4；52周位置 28% 分位、距高点 -47.4%；SuperTrend(10,3) 空头，约 20 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；SA LP 持仓背景: 股票+Call，主题 AI 云算力，13F asof 2025-12-31。；近20/60交易日收益约 -14.2%/21.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: COREWEAVE INC 属于 Technology/Software—Infrastructure，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 95.61，20/50/200日均线约 106.86/108.18/100.03；TD9 下行5；52周位置 距高 -48.9%、26分位；SuperTrend(10,3) 空头·约 21 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；SA LP 持仓背景: Call+股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 -11.3%/11.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: CRWV Dips After Report Of Co-Founders Cashing In $2.3B Stock Since 2025 IPO(Stocktwits)；CoreWeave Founders Dump Billions Amid Explosive Stock Rally(GuruFocus.com)；Elon Musk Just Created $26 Billion a Year for SpaceX Days Before the IPO(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Follow The Money: How Blackstone's AI Kingmaker Role Spans Google, Anthropic And More(Investor's Business Daily)；AI Infrastructure Scorecard: Which of These 3 Stocks Is Delivering on Triple-Digit Growth Promises(24/7 Wall St.)；How AMD Is Mimicking Nvidia’s Circular Funding Deals(Barrons.com)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行4；52周位置 28% 分位、距高点 -47.4%；SuperTrend(10,3) 空头，约 20 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行5；52周位置 距高 -48.9%、26分位；SuperTrend(10,3) 空头·约 21 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: CRWV",
@@ -19,12 +19,37 @@
       "url": "https://finance.yahoo.com/quote/CRWV/news/"
     },
     {
-      "title": "CRWV Dips After Report Of Co-Founders Cashing In $2.3B Stock Since 2025 IPO",
-      "url": "https://finance.yahoo.com/m/0a1ac71a-8748-3efa-a73b-a2c4820df0c9/crwv-dips-after-report-of.html"
+      "title": "Follow The Money: How Blackstone's AI Kingmaker Role Spans Google, Anthropic And More",
+      "url": "https://finance.yahoo.com/m/b05646e8-7619-3c3b-9a99-8251c3de62fa/follow-the-money%3A-how.html"
     },
     {
-      "title": "CoreWeave Founders Dump Billions Amid Explosive Stock Rally",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/coreweave-founders-dump-billions-amid-195320772.html"
+      "title": "AI Infrastructure Scorecard: Which of These 3 Stocks Is Delivering on Triple-Digit Growth Promises",
+      "url": "https://finance.yahoo.com/m/42153167-8db6-36fc-b9ac-975b6999afef/ai-infrastructure-scorecard%3A.html"
+    },
+    {
+      "title": "CoreWeave Q1 2026 Earnings Press Release (SEC 8-K)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001769628/000176962826000220/coreweave1q26earningspress.htm"
+    },
+    {
+      "title": "CoreWeave (CRWV) Statistics - StockAnalysis",
+      "url": "https://stockanalysis.com/stocks/crwv/statistics/"
+    },
+    {
+      "title": "CoreWeave Q1 2026 Earnings Transcript - Motley Fool",
+      "url": "https://www.fool.com/earnings/call-transcripts/2026/05/08/coreweave-crwv-q1-2026-earnings-transcript/"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行5",
+    "week52": "距高 -48.9% · 26分位",
+    "supertrend": "空头·约 21 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，有背驰迹象"
+  },
+  "fundamentals": {
+    "valuation": "市值约522亿美元、EV约866亿,EV/收入约13.9x(6/10),TTM净亏约15.9亿仍未盈利",
+    "quality": "Q1营收20.8亿美元+112%,backlog达994亿美元,调整后EBITDA率56%,但净亏扩大至7.4亿",
+    "catalysts": "FY26营收指引120-130亿、资本开支上调至310-350亿;已签电力3.5GW、2030年目标超8GW",
+    "peers": "EV/收入13.9x低于IREN约27x,订单规模居新云之首,但EV较市值高约340亿、杠杆显著更重",
+    "verdict": "基本面中性:订单与增速属叙事最强一档,但净亏扩大、高杠杆高资本开支,财务质量未跟上"
+  }
 }

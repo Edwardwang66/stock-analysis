@@ -1,14 +1,14 @@
 {
   "symbol": "US:SMCI",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
-  "stance": "看多",
-  "thesis": "多头: SMCI 属于 Technology/Computer Hardware，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 40.64，20/50/200日均线约 38.65/31.75/36.02；TD9 下行3；52周位置 49% 分位、距高点 -34.8%；SuperTrend(10,3) 多头，约 38 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 21.2%/32.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
+  "stance": "中性",
+  "thesis": "多头: SMCI 属于 Technology/Computer Hardware，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 29.27，20/50/200日均线约 38.48/31.92/35.94；TD9 下行4；52周位置 距高 -53.1%、23分位；SuperTrend(10,3) 空头·约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -10.7%/-8.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: S&P 500, Dow, Nasdaq Futures Decline As US Launches Fresh ‘Self-Defense Strikes’ On Iran: SMCI, TLRY, DKNG, CBRL In Focus(Stocktwits)；SMCI Stock Tumbles After-Hours Following $7B Stock Offering To Fund $39B AI Order Backlog(Stocktwits)；Supermicro tumbles after-hours on large capital raise to fund AI server surge(Investing.com)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Sector Update: Tech Stocks Fall Late Afternoon(MT Newswires)；Stock Market Today: Nasdaq, Chip Stocks Get Pummeled. Trump Threatens Iran. (Live Coverage)(Investor's Business Daily)；Super Micro Computer vs Dell Technologies: The Better Stock For 2026(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行3；52周位置 49% 分位、距高点 -34.8%；SuperTrend(10,3) 多头，约 38 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行4；52周位置 距高 -53.1%、23分位；SuperTrend(10,3) 空头·约 1 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SMCI",
@@ -19,16 +19,19 @@
       "url": "https://finance.yahoo.com/quote/SMCI/news/"
     },
     {
-      "title": "S&P 500, Dow, Nasdaq Futures Decline As US Launches Fresh ‘Self-Defense Strikes’ On Iran: SMCI, TLRY, DKNG, CBRL In Focus",
-      "url": "https://finance.yahoo.com/m/81cb0664-6270-399f-b762-d4da7bca357a/s%26p-500%2C-dow%2C-nasdaq-futures.html"
+      "title": "Sector Update: Tech Stocks Fall Late Afternoon",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/sector-tech-stocks-fall-afternoon-193639801.html"
     },
     {
-      "title": "SMCI Stock Tumbles After-Hours Following $7B Stock Offering To Fund $39B AI Order Backlog",
-      "url": "https://finance.yahoo.com/m/24825a0c-dc03-3bf7-ae6f-457420a6d92e/smci-stock-tumbles.html"
+      "title": "Stock Market Today: Nasdaq, Chip Stocks Get Pummeled. Trump Threatens Iran. (Live Coverage)",
+      "url": "https://finance.yahoo.com/m/10570e89-0a46-392e-a220-4dc8a69e55aa/stock-market-today%3A-nasdaq%2C.html"
     }
   ],
-  "intraday_update": {
-    "at": "15:09 ET",
-    "note": "刷新日低 31.18,AI 硬件链(SMCI/DELL/HPE 同日新低)受博通指引疲软第二日扩散拖累,服务器组装环节弹性最大、跌幅居前"
+  "methodology": {
+    "td9": "下行4",
+    "week52": "距高 -53.1% · 23分位",
+    "supertrend": "空头·约 1 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 20
   }
 }

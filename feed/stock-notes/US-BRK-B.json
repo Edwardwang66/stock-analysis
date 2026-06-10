@@ -1,14 +1,14 @@
 {
   "symbol": "US:BRK-B",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: BRK-B 属于 Financial Services/Insurance—Diversified，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 487.77，20/50/200日均线约 481.37/477.43/490.43；TD9 上行4；52周位置 53% 分位、距高点 -5.6%；SuperTrend(10,3) 多头，约 16 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 1.7%/-0.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: BRK-B 属于 Financial Services/Insurance—Diversified，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 484.10，20/50/200日均线约 481.33/477.61/490.41；TD9 上行5；52周位置 距高 -6.3%、47分位；SuperTrend(10,3) 多头·约 17 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -0.2%/-1.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: This Alternative Asset Manager Looks Built for a Higher-for-Longer World(2026-06-09)；Berkshire's massive $8.5B bet suggests major housing market shift(2026-06-09)；Q2 Earnings Highs And Lows: Berkshire Hathaway (NYSE:BRK.A) Vs The Rest Of The Diversified Financial Services Stocks(2026-06-09)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: London Company Income Equity Strategy Added Berkshire Hathaway (BRK-B) Over Buyback Resumption(2026-06-10)；Warren Buffett Just Sent the Stock Market an 8-Word Warning. Here's What History Says Is Coming Next.(2026-06-10)；Warren Buffett’s $400 Billion Is Going Nowhere for Now: Here’s Why Berkshire Hathaway Is My Top Pick for the Next 20 Years(2026-06-10)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行4；52周位置 53% 分位、距高点 -5.6%；SuperTrend(10,3) 多头，约 16 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行5；52周位置 距高 -6.3%、47分位；SuperTrend(10,3) 多头·约 17 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: BRK-B",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/BRK-B/news/"
     },
     {
-      "title": "This Alternative Asset Manager Looks Built for a Higher-for-Longer World",
-      "url": "https://www.fool.com/investing/2026/06/09/this-alternative-asset-manager-looks-built-for-a-h/?.tsrc=rss"
+      "title": "London Company Income Equity Strategy Added Berkshire Hathaway (BRK-B) Over Buyback Resumption",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/london-company-income-equity-strategy-134831007.html?.tsrc=rss"
     },
     {
-      "title": "Berkshire's massive $8.5B bet suggests major housing market shift",
-      "url": "https://www.thestreet.com/investing/stocks/berkshires-brk-massive-8-5b-bet-suggests-the-housing-market-could-finally-rebound?.tsrc=rss"
+      "title": "Warren Buffett Just Sent the Stock Market an 8-Word Warning. Here's What History Says Is Coming Next.",
+      "url": "https://www.fool.com/investing/2026/06/10/warren-buffett-just-sent-the-stock-market-an-8-wor/?.tsrc=rss"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "上行5",
+    "week52": "距高 -6.3% · 47分位",
+    "supertrend": "多头·约 17 个交易日前翻转",
+    "chan": "震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 35
+  }
 }

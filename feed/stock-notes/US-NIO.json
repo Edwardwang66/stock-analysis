@@ -1,14 +1,14 @@
 {
   "symbol": "US:NIO",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: NIO 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 5.28，20/50/200日均线约 5.73/6.04/5.87；TD9 下行3；52周位置 41% 分位、距高点 -34.2%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -13.0%/-9.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: NIO 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 5.17，20/50/200日均线约 5.69/6.04/5.86；TD9 下行4；52周位置 距高 -35.5%、39分位；SuperTrend(10,3) 空头·约 28 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -14.9%/-14.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Assessing NIO (NIO) Valuation After Strong Delivery Growth And ES9 Ramp-Up(Simply Wall St.)；NIO Inc. (NIO) Announces Vehicle Delivery Results for May 2026(Insider Monkey)；Is NIO's Path to Positive Operating Profit Becoming Clear?(Zacks)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Trump Administration Labels Tesla Rival Nio A Chinese Military Company—EV Maker Says 'Not Justified'(Benzinga)；Nio Stock Slides Overnight: Traders Weigh EV Maker's Overseas Push As Exports Make Up Less Than 1% Of Deliveries(Stocktwits)；NIO’s Pentagon Listing Puts Geopolitics Against Record ES9-Driven Momentum(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行3；52周位置 41% 分位、距高点 -34.2%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行4；52周位置 距高 -35.5%、39分位；SuperTrend(10,3) 空头·约 28 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: NIO",
@@ -19,12 +19,18 @@
       "url": "https://finance.yahoo.com/quote/NIO/news/"
     },
     {
-      "title": "Assessing NIO (NIO) Valuation After Strong Delivery Growth And ES9 Ramp-Up",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/assessing-nio-nio-valuation-strong-171017491.html"
+      "title": "Trump Administration Labels Tesla Rival Nio A Chinese Military Company—EV Maker Says 'Not Justified'",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/trump-administration-labels-tesla-rival-133114947.html"
     },
     {
-      "title": "NIO Inc. (NIO) Announces Vehicle Delivery Results for May 2026",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/nio-inc-nio-announces-vehicle-152617334.html"
+      "title": "Nio Stock Slides Overnight: Traders Weigh EV Maker's Overseas Push As Exports Make Up Less Than 1% Of Deliveries",
+      "url": "https://finance.yahoo.com/m/8697ff73-d699-3447-ad4f-ed6a58ae8eda/nio-stock-slides-overnight%3A.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行4",
+    "week52": "距高 -35.5% · 39分位",
+    "supertrend": "空头·约 28 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰"
+  }
 }

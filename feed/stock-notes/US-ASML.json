@@ -1,14 +1,14 @@
 {
   "symbol": "US:ASML",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: ASML 属于 Technology/Semiconductor Equipment & Materials，当前进入看多清单，技术评分 90、RSI14 65.0；最新价约 1777.77，20/50/200日均线约 1616.52/1505.83/1229.04；TD9 上行6；52周位置 95% 分位、距高点 -2.9%；SuperTrend(10,3) 多头，约 42 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；近20/60交易日收益约 13.5%/32.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: ASML 属于 Technology/Semiconductor Equipment & Materials，当前进入看多清单，技术评分 85、RSI14 61.1；最新价约 1734.19，20/50/200日均线约 1627.18/1515.44/1233.93；TD9 下行1；52周位置 距高 -5.3%、92分位；SuperTrend(10,3) 多头·约 43 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 14.0%/26.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: BofA Remains Bullish on ASML Holding (ASML) – Here’s Why(Insider Monkey)；One Factory to Rule Them All: How Musk’s Terafab Could Rewrite the Scale of U.S. Chip Production(24/7 Wall St.)；Assessing ASML Holding (NasdaqGS:ASML) Valuation After A Strong Multi‑Period Share Price Run(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: ASML Surges 64%, Yet Trades At Cheapest Relative Valuation In A Decade(GuruFocus.com)；Sector Update: Tech Stocks Fall Late Afternoon(MT Newswires)；Sector Update: Tech(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行6；52周位置 95% 分位、距高点 -2.9%；SuperTrend(10,3) 多头，约 42 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行1；52周位置 距高 -5.3%、92分位；SuperTrend(10,3) 多头·约 43 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: ASML",
@@ -19,12 +19,42 @@
       "url": "https://finance.yahoo.com/quote/ASML/news/"
     },
     {
-      "title": "BofA Remains Bullish on ASML Holding (ASML) – Here’s Why",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/bofa-remains-bullish-asml-holding-172426358.html"
+      "title": "ASML Surges 64%, Yet Trades At Cheapest Relative Valuation In A Decade",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/asml-surges-64-yet-trades-194713064.html"
     },
     {
-      "title": "One Factory to Rule Them All: How Musk’s Terafab Could Rewrite the Scale of U.S. Chip Production",
-      "url": "https://finance.yahoo.com/m/52aa16da-15d6-3491-9bf5-442d5d38f131/one-factory-to-rule-them-all%3A.html"
+      "title": "Sector Update: Tech Stocks Fall Late Afternoon",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/sector-tech-stocks-fall-afternoon-193639801.html"
+    },
+    {
+      "title": "ASML Q1 2026 press release (Form 6-K) - SEC",
+      "url": "https://www.sec.gov/Archives/edgar/data/937966/000162828026025147/pressreleasefinancialresul.htm"
+    },
+    {
+      "title": "ASML reports €32.7 billion total net sales and €9.6 billion net income in 2025 - ASML",
+      "url": "https://www.asml.com/en/news/press-releases/2026/q4-2025-financial-results"
+    },
+    {
+      "title": "ASML (ADR) Stock Overview - StockAnalysis",
+      "url": "https://stockanalysis.com/stocks/asml/"
+    },
+    {
+      "title": "ASML Financial Calendar - ASML Investors",
+      "url": "https://www.asml.com/en/investors/financial-calendar"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行1",
+    "week52": "距高 -5.3% · 92分位",
+    "supertrend": "多头·约 43 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 94
+  },
+  "fundamentals": {
+    "valuation": "ADR 6/10报$1,741(-2.1%),TTM市盈率58.2倍、前瞻约44.5倍(stockanalysis)",
+    "quality": "Q1'26销售€88亿(+约13%),毛利率53%;2025年末在手订单€388亿,EUV独家供应",
+    "catalysts": "7/15盘前发Q2'26财报(指引销售€84-90亿);全年指引上调至€360-400亿;AI资本开支驱动EUV需求",
+    "peers": "EUV光刻无竞争者(尼康/佳能缺席),订单能见度优于AMAT/KLAC等设备同行",
+    "verdict": "基本面强:上调全年指引、€388亿订单提供多年收入能见度"
+  }
 }

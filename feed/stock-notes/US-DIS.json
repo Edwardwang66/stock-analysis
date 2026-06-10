@@ -1,14 +1,14 @@
 {
   "symbol": "US:DIS",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: DIS 属于 Communication Services/Entertainment，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 99.33，20/50/200日均线约 102.50/102.12/107.73；TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 22% 分位、距高点 -20.3%；SuperTrend(10,3) 空头，约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -5.1%/0.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: DIS 属于 Communication Services/Entertainment，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 98.61，20/50/200日均线约 102.12/102.20/107.63；TD9 下行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -20.9%、20分位；SuperTrend(10,3) 空头·约 6 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -7.1%/-0.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Warner Bros Stock Hits  3-Month Low. The Paramount Merger Spread Is Too Good to Pass Up.(Barrons.com)；All 30 Dow Jones Stocks Ranked: Buy, Sell or Hold?(Kiplinger)；Disney World's Top Rival Needs a Better Sophomore Season(Motley Fool)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Group 1 Automotive's Melkeya McDuffie Named to Mogul's Top 100 People Leaders of 2026(PR Newswire)；Warner Bros Stock Hits  3-Month Low. The Paramount Merger Spread Is Too Good to Pass Up.(Barrons.com)；All 30 Dow Jones Stocks Ranked: Buy, Sell or Hold?(Kiplinger)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行8，7/8/9 高阶计数需防短线衰竭；52周位置 22% 分位、距高点 -20.3%；SuperTrend(10,3) 空头，约 5 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -20.9%、20分位；SuperTrend(10,3) 空头·约 6 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: DIS",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/DIS/news/"
     },
     {
-      "title": "Warner Bros Stock Hits  3-Month Low. The Paramount Merger Spread Is Too Good to Pass Up.",
-      "url": "https://finance.yahoo.com/m/4ee0d066-f4a6-3d88-9215-cfc614da4434/warner-bros-stock-hits-.html"
+      "title": "Group 1 Automotive's Melkeya McDuffie Named to Mogul's Top 100 People Leaders of 2026",
+      "url": "https://finance.yahoo.com/sectors/technology/articles/group-1-automotives-melkeya-mcduffie-170900867.html"
     },
     {
-      "title": "All 30 Dow Jones Stocks Ranked: Buy, Sell or Hold?",
-      "url": "https://finance.yahoo.com/m/77aecd26-5b6e-3147-80f9-4c6919eb5081/all-30-dow-jones-stocks.html"
+      "title": "Warner Bros Stock Hits  3-Month Low. The Paramount Merger Spread Is Too Good to Pass Up.",
+      "url": "https://finance.yahoo.com/m/4ee0d066-f4a6-3d88-9215-cfc614da4434/warner-bros-stock-hits-.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行9(防衰竭)",
+    "week52": "距高 -20.9% · 20分位",
+    "supertrend": "空头·约 6 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 24
+  }
 }

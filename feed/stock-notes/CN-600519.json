@@ -1,14 +1,14 @@
 {
   "symbol": "CN:600519",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: 600519 属于 Consumer Defensive/Beverages—Wineries & Distilleries，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 1279.67，20/50/200日均线约 1297.05/1370.74/1423.30；TD9 上行1；52周位置 9% 分位、距高点 -18.4%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -4.8%/-8.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: 600519 属于 Consumer Defensive/Beverages—Wineries & Distilleries，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 1275.88，20/50/200日均线约 1296.87/1370.66/1423.28；TD9 上行1；52周位置 距高 -18.6%、8分位；SuperTrend(10,3) 空头·约 27 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -5.1%/-8.3%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 CN 交易所/公司公告源 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings(StockStory)；Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap(Investor's Business Daily)；HKC, ANTGAMER, KOORUI Make Strong Debut at COMPUTEX 2026 with World-First Display Innovations(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Medicare program unable to pay full benefits in 7 years, report finds(Yahoo Finance)；Generations of nature lovers protect key property within Myra–Bellevue Park(GlobeNewswire)；Ridgewood Infrastructure Acquires Dauntless Air, Premier Provider of Emergency Management Infrastructure(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行1；52周位置 9% 分位、距高点 -18.4%；SuperTrend(10,3) 空头，约 27 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 上行1；52周位置 距高 -18.6%、8分位；SuperTrend(10,3) 空头·约 27 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: 600519.SS",
@@ -19,12 +19,37 @@
       "url": "https://finance.yahoo.com/quote/600519.SS/news/"
     },
     {
-      "title": "Lovesac (LOVE) Reports Q1: Everything You Need To Know Ahead Of Earnings",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/lovesac-love-reports-q1-everything-031652229.html"
+      "title": "Medicare program unable to pay full benefits in 7 years, report finds",
+      "url": "https://finance.yahoo.com/markets/article/medicare-program-unable-to-pay-full-benefits-in-7-years-report-finds-200024970.html"
     },
     {
-      "title": "Dow Jones Futures Fall On Iran News After Market Whipsaws; CPI Inflation On Tap",
-      "url": "https://finance.yahoo.com/m/25a6a429-345e-3138-9f10-7360fba3d0d1/dow-jones-futures-fall-on.html"
+      "title": "Generations of nature lovers protect key property within Myra–Bellevue Park",
+      "url": "https://finance.yahoo.com/sectors/energy/articles/generations-nature-lovers-protect-key-200000541.html"
+    },
+    {
+      "title": "贵州茅台2026年第一季度报告",
+      "url": "https://stockmc.xueqiu.com/202604/600519_20260425_G9JL.pdf"
+    },
+    {
+      "title": "贵州茅台:Q1高质量开局 市场化改革成效显著(新浪财经研报)",
+      "url": "https://stock.finance.sina.com.cn/stock/go.php/vReport_Show/kind/search/rptid/831085893793/index.phtml"
+    },
+    {
+      "title": "贵州茅台的市盈率到底是多少 - 东方财富财富号",
+      "url": "https://caifuhao.eastmoney.com/news/20260424230017411686730"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "上行1",
+    "week52": "距高 -18.6% · 8分位",
+    "supertrend": "空头·约 27 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，有背驰迹象"
+  },
+  "fundamentals": {
+    "valuation": "PE-TTM约21x,处近五年低分位;PB约7.6x;静态股息率约3.74%",
+    "quality": "26Q1营收547亿元+6.3%,归母净利272亿元+1.5%;毛利率89.8%,同比降2.2pct",
+    "catalysts": "直销改革推进,Q1直销收入+27%、批发-10.9%;关注中报与中秋旺季动销",
+    "peers": "PE约21x仍高于五粮液约16x、泸州老窖约15x,品牌溢价延续",
+    "verdict": "基本面中性:盈利质量高但增速降档,批发渠道收入下滑"
+  }
 }

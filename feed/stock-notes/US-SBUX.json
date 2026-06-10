@@ -1,14 +1,14 @@
 {
   "symbol": "US:SBUX",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: SBUX 属于 Consumer Cyclical/Restaurants，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 97.41，20/50/200日均线约 101.27/99.87/91.43；TD9 上行1；52周位置 63% 分位、距高点 -10.5%；SuperTrend(10,3) 空头，约 8 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -7.9%/-1.8%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: SBUX 属于 Consumer Cyclical/Restaurants，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 98.76，20/50/200日均线约 100.88/100.11/91.49；TD9 上行2；52周位置 距高 -9.3%、67分位；SuperTrend(10,3) 空头·约 9 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -7.3%/1.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Oatly Explores China Buyout as Shares Fall More Than 35%(GuruFocus.com)；Starbucks Elbows Into Healthy-Beverage Market(The Wall Street Journal)；Corporate America has been draining the world’s water. Matt Damon’s new campaign calls on Gap, Starbucks, and Amazon to help give it back(Fortune)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Starbucks CEO Says 22,000 Overseas Stores Could Double(GuruFocus.com)；Starbucks weighs Japan stake sale or IPO(Quartz)；Starbucks, Dunkin', and Luckin push products outside of coffee(TheStreet)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行1；52周位置 63% 分位、距高点 -10.5%；SuperTrend(10,3) 空头，约 8 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 上行2；52周位置 距高 -9.3%、67分位；SuperTrend(10,3) 空头·约 9 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SBUX",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/SBUX/news/"
     },
     {
-      "title": "Oatly Explores China Buyout as Shares Fall More Than 35%",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/oatly-explores-china-buyout-shares-200329824.html"
+      "title": "Starbucks CEO Says 22,000 Overseas Stores Could Double",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/starbucks-ceo-says-22-000-180807976.html"
     },
     {
-      "title": "Starbucks Elbows Into Healthy-Beverage Market",
-      "url": "https://finance.yahoo.com/m/85dc6b10-ef6e-365a-b35c-0b8568da61cf/starbucks-elbows-into.html"
+      "title": "Starbucks weighs Japan stake sale or IPO",
+      "url": "https://finance.yahoo.com/m/f201bc04-338f-3375-81d5-ac58d7e11f07/starbucks-weighs-japan-stake.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "上行2",
+    "week52": "距高 -9.3% · 67分位",
+    "supertrend": "空头·约 9 个交易日前翻转",
+    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 54
+  }
 }

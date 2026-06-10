@@ -1,14 +1,14 @@
 {
   "symbol": "US:QQQ",
   "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "openclaw-agent:stock-analyst",
+  "model": "Claude (看板侧代班)",
+  "producer": "claude-cowork:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: QQQ 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 707.83，20/50/200日均线约 721.98/673.56/623.29；TD9 下行3；52周位置 82% 分位、距高点 -5.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json，Edward/Claude 维护。；近20/60交易日收益约 -0.8%/19.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: QQQ 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 693.69，20/50/200日均线约 721.30/676.27/623.90；TD9 下行4；52周位置 距高 -7.3%、76分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -1.9%/15.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: S&P 500, Dow, Nasdaq Futures Decline As US Launches Fresh ‘Self-Defense Strikes’ On Iran: SMCI, TLRY, DKNG, CBRL In Focus(Stocktwits)；Rob Arnott: Will SpaceX Create The Biggest Bubble Ever?(etf.com)；S&P 500, Nasdaq End Lower As Investors Take Breather From AI And Chips — AAPL, ASTS, APLD, RIVN, ZVRA In Focus(Stocktwits)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: OpenAI vs. Anthropic IPO: What sets these AI companies apart(Yahoo Finance Video)；RSP vs. SPY: Does Equal Weight Beat the Cap-Weighted S&P 500?(24/7 Wall St.)；QQQ vs. QQQM: Same Index, So Which One Should You Actually Buy?(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行3；52周位置 82% 分位、距高点 -5.5%；SuperTrend(10,3) 空头，约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行4；52周位置 距高 -7.3%、76分位；SuperTrend(10,3) 空头·约 4 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: QQQ",
@@ -19,12 +19,18 @@
       "url": "https://finance.yahoo.com/quote/QQQ/news/"
     },
     {
-      "title": "S&P 500, Dow, Nasdaq Futures Decline As US Launches Fresh ‘Self-Defense Strikes’ On Iran: SMCI, TLRY, DKNG, CBRL In Focus",
-      "url": "https://finance.yahoo.com/m/81cb0664-6270-399f-b762-d4da7bca357a/s%26p-500%2C-dow%2C-nasdaq-futures.html"
+      "title": "OpenAI vs. Anthropic IPO: What sets these AI companies apart",
+      "url": "https://finance.yahoo.com/video/openai-vs-anthropic-ipo-what-sets-these-ai-companies-apart-195206256.html"
     },
     {
-      "title": "Rob Arnott: Will SpaceX Create The Biggest Bubble Ever?",
-      "url": "https://finance.yahoo.com/m/b2fe71eb-2399-37aa-b390-abe6984d4685/rob-arnott%3A-will-spacex.html"
+      "title": "RSP vs. SPY: Does Equal Weight Beat the Cap-Weighted S&P 500?",
+      "url": "https://finance.yahoo.com/m/be119912-9d46-32c2-a16f-fc0405e0d15c/rsp-vs.-spy%3A-does-equal.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "下行4",
+    "week52": "距高 -7.3% · 76分位",
+    "supertrend": "空头·约 4 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰"
+  }
 }
