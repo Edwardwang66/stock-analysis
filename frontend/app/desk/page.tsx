@@ -246,6 +246,7 @@ export default function DeskPage() {
         <span className="tag">全池标签视图 · {rows.length} 只 · 选股日 {scr?.date ?? "—"}(美东 · 阈值 ≥{scr?.threshold ?? 80})</span>
         <a href="https://github.com/Edwardwang66/stock-analysis/issues?q=is%3Aissue+label%3Adaily-digest" target="_blank" rel="noreferrer"
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
+        <Link href="/reports/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>📜 报告</Link>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
         <LangSelect />
@@ -288,8 +289,7 @@ export default function DeskPage() {
               <span className="src" style={{ marginLeft: 10 }}>
                 盘前 {mdPre ? "✅" : "⏳"} · 盘中滚动 {mdIntra ? `✅(${mdIntra.split("\n").filter(Boolean).length} 行)` : "⏳"} · 收盘前 {mdClose ? "✅" : "⏳"}
               </span>
-              <a href={`https://github.com/Edwardwang66/stock-analysis/tree/main/feed/screener`} target="_blank" rel="noreferrer"
-                className="src" style={{ marginLeft: 10, color: "var(--accent)" }}>原文 →</a>
+              <Link href="/reports/" className="src" style={{ marginLeft: 10, color: "var(--accent)" }}>报告中心 →</Link>
             </h2>
             {ovn?.futures && ovn.date === today() && (
               <p className="src" style={{ margin: "4px 0 8px" }}>
