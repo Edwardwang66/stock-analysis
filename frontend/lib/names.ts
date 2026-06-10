@@ -187,6 +187,7 @@ export const NAME_DB: Record<string, Pair> = {
   "IDX:000001.SS": ["上证指数", "SSE Composite"], "IDX:^HSI": ["恒生指数", "Hang Seng"],
   "IDX:^N225": ["日经225", "Nikkei 225"], "IDX:^KS11": ["韩国KOSPI", "KOSPI"],
   "IDX:^GDAXI": ["德国DAX", "DAX"], "IDX:^FTSE": ["富时100", "FTSE 100"],
+  "IDX:ES=F": ["标普期货", "S&P Fut"], "IDX:NQ=F": ["纳指期货", "Nasdaq Fut"], "IDX:YM=F": ["道指期货", "Dow Fut"],
 };
 
 /** 双语名称解析:库 → feed 名称兜底 → 裸代码。 */
