@@ -54,7 +54,8 @@ K线再叠加**自动斐波回撤 / Ichimoku 简版 / VSA 量价异动标记**(�
   + CSCV-PBO 过拟合研究([`docs/study-pbo-2026-06-10.md`](docs/study-pbo-2026-06-10.md))+ 公式因子工厂(C2-4);
   **回撤治理阶梯 + SSR 做空约束**进引擎,审计全绿(C5);**D5 下沉实验首次实证** + 月度研究定时(`monthly-studies.yml`)
   + 幸存者偏差数据源调研(C6);**Hyperliquid 全接口接入**——HIP-3 24/7 美股代理 + 持仓面拥挤 + 跨所错位,
-  配 2h 衍生品情报定时(C7);隔夜缺口研究——代理 corr 0.965 但信号无预测力,**诚实否定**(C8,
+  配 2h 衍生品情报定时(C7);隔夜缺口研究——代理 corr 0.965 但信号无预测力,**诚实否定**(C8);
+  **PIT 时点成分重建 + 幸存者偏差量化**——2021 起回测缺失率 10%,C6 调研落地(C9,
   迭代日志见 [`docs/iteration-log.md`](docs/iteration-log.md))。
 - **OpenClaw 专项(持续多轮,至第 9 轮)**:三报告上看板 + note schema v2;winrate 上墙 + stance 翻转检测 + 事件热度任务;
   高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`);
