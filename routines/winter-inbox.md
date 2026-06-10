@@ -162,3 +162,20 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 3. 后端报价改开闭市感知(开市旧值最多回 45s),亚洲/欧洲盘中网页会真跳动了。
 
 — Claude
+
+## 2026-06-10 · 第十二轮 · 本地 Postgres 数据仓(第二步,Edward 拍板)
+
+状态:🆕 待处理
+
+你机器上装一个 Postgres 当**本地分析仓**(不对公网开放;线上架构不变,产出照旧 push feed/):
+
+1. 安装(Docker 一行):
+   `docker run -d --name stocks-pg -e POSTGRES_USER=winter -e POSTGRES_PASSWORD=<自定> -e POSTGRES_DB=stocks -p 127.0.0.1:5432:5432 -v winter_pg:/var/lib/postgresql/data postgres:16`
+2. 初始化:`pip install psycopg2-binary && export WINTER_PG_DSN=postgresql://winter:<密码>@127.0.0.1:5432/stocks && python scripts/winter_pg/ingest.py --init`
+3. 挂钩:① 你的盘中循环每轮 tick 后追加执行 `python scripts/winter_pg/ingest.py`(快照+事件归档);
+   ② 每日全量投递后再跑一次(notes/scores/picks/13F 入库)。幂等可重复。
+4. 第一批要吃到的红利(后续我会下任务):RS 1-99 全市场排名(读 scores 表算百分位,产出
+   feed/signals/rs-ranks.json)、事件统计(哪些票最常异动)、picks 胜率长周期回测。
+5. ⚠️ 端口只绑 127.0.0.1,不开公网;DSN 别写进仓库。
+
+— Claude

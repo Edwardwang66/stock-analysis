@@ -14,6 +14,13 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+// Vercel 边缘代理(自有,替代公共 CORS 代理):构建时注入,或运行在 *.vercel.app 时同源
+const EDGE_ENV = process.env.NEXT_PUBLIC_EDGE_BASE || "";
+function edgeBase(): string | null {
+  if (EDGE_ENV) return EDGE_ENV.replace(/\/$/, "");
+  if (typeof window !== "undefined" && /\.vercel\.app$/.test(window.location.hostname)) return "";
+  return null;
+}
 /** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
 export const HAS_BACKEND = Boolean(API_BASE);
 // 开市感知分级新鲜期(2026-06-10):加密 8s;开市中的市场 15s;休市 5min(价格不动,
@@ -381,6 +388,33 @@ export async function getQuotes(
     }
   }
 
+  // 快路径①.5:Vercel 边缘代理(自有,~100-300ms,边缘缓存 10s)——干掉公共代理依赖
+  const eb = edgeBase();
+  if (eb !== null) {
+    const edgeable = missing.filter((s) => !out[s] && !s.startsWith("CRYPTO:"));
+    if (edgeable.length) {
+      const chunks: string[][] = [];
+      for (let i = 0; i < edgeable.length; i += 40) chunks.push(edgeable.slice(i, i + 40));
+      try {
+        const results = await Promise.all(chunks.map((c) =>
+          fetchT(`${eb}/api/quote?symbols=${encodeURIComponent(c.join(","))}`, 8000).then((r) => (r.ok ? r.json() : null)),
+        ));
+        for (const rows of results) {
+          for (const d of Array.isArray(rows) ? rows : []) {
+            if (d.error || d.price == null) continue;
+            const quote: Quote = {
+              symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
+              high: d.high, low: d.low, currency: d.currency ?? "", source: d.source ?? "edge",
+            };
+            quoteCache.set(quote.symbol, { quote, expires: Date.now() + quoteTtl(quote.symbol) });
+            out[quote.symbol] = quote;
+            onPartial?.(quote);
+          }
+        }
+      } catch { /* 边缘不可用 → 继续快照/公共代理 */ }
+    }
+  }
+
   // 快路径②:盘中机器快照(live 分支,≤6 分钟新鲜)——免代理拿到池内股票报价。
   // 这是无后端模式的源头提速:Winter/Actions 每 5 分钟算好,前端一次 fetch 全拿。
   const stillMissing = missing.filter((s) => !out[s] && !s.startsWith("CRYPTO:"));
@@ -440,6 +474,17 @@ function barsFromBackend(d: any): Bar[] | null {
 }
 
 async function fetchBars(symbol: string, range: string, interval: string): Promise<Bar[]> {
+  // 边缘代理 K线(全市场含 IDX/加密),失败回退原路径
+  const eb = edgeBase();
+  if (eb !== null) {
+    try {
+      const r = await fetchT(`${eb}/api/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`, 9000);
+      if (r.ok) {
+        const j = await r.json();
+        if (Array.isArray(j?.bars) && j.bars.length) return j.bars as Bar[];
+      }
+    } catch { /* fall through */ }
+  }
   if (API_BASE && !symbol.startsWith("IDX:")) {
     const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
     if (bars) return bars;
