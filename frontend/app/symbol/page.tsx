@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Chart from "@/components/Chart";
 import AINote from "@/components/AINote";
 import ChanPanel from "@/components/ChanPanel";
@@ -12,6 +12,7 @@ import Fundamentals from "@/components/Fundamentals";
 import StatBar from "@/components/StatBar";
 import SymbolSwitcher from "@/components/SymbolSwitcher";
 import OrderBookPanel from "@/components/OrderBookPanel";
+import Collapse from "@/components/Collapse";
 import type { MyLine } from "@/components/Chart";
 import { addAlert, getAlerts, removeAlert, updateAlertTarget, type PriceAlert } from "@/lib/alerts";
 import { getHoldings, type Holding } from "@/lib/portfolio";
@@ -68,6 +69,8 @@ function SymbolView() {
   const [interval, setInterval] = usePref("symbol:interval", "1d");
   const [view, setView] = usePref<"tabs" | "report">("symbol:view", "tabs");
   const [tabPref, setTabPref] = usePref<ModKey>("symbol:tab", "ta");
+  const [order, setOrder] = usePref<ModKey[]>("symbol:order", MODULES.map((m) => m.key));
+  const [collapsed, setCollapsed] = usePref<Partial<Record<ModKey, boolean>>>("symbol:collapsed", {});
   const [bars, setBars] = useState<Bar[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [an, setAn] = useState<Analysis | null>(null);
@@ -231,7 +234,38 @@ function SymbolView() {
   const isIdx = symbol.startsWith("IDX:");
   // 指数无个股微观结构:资金/筹码、基本面不展示
   const visibleModules = MODULES.filter((m) => !(isIdx && (m.key === "flow" || m.key === "fund")));
-  const tab = visibleModules.some((m) => m.key === tabPref) ? tabPref : "ta";
+  // 模块顺序:用户存档优先,缺的(新版本新增)补到末尾;再过滤出当前标的可见的
+  const fullOrder = (() => {
+    const all = MODULES.map((m) => m.key);
+    const ord = order.filter((k) => all.includes(k));
+    for (const k of all) if (!ord.includes(k)) ord.push(k);
+    return ord;
+  })();
+  const visKeys = fullOrder.filter((k) => visibleModules.some((m) => m.key === k));
+  const tab = visKeys.includes(tabPref) ? tabPref : "ta";
+
+  // 研报模式排序:与相邻可见模块换位(隐藏模块的相对位置保留)
+  const moveModule = (k: ModKey, dir: -1 | 1) => {
+    const vi = visKeys.indexOf(k);
+    const ti = vi + dir;
+    if (ti < 0 || ti >= visKeys.length) return;
+    const target = visKeys[ti];
+    const next = fullOrder.slice();
+    const a = next.indexOf(k), b = next.indexOf(target);
+    next[a] = target; next[b] = k;
+    setOrder(next);
+  };
+
+  // 吸顶迷你价格条:页头滚出视野时出现(Hyperliquid 移动端 persistent header 同款)
+  const headRef = useRef<HTMLDivElement>(null);
+  const [showMini, setShowMini] = useState(false);
+  useEffect(() => {
+    const el = headRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const ob = new IntersectionObserver(([e]) => setShowMini(!e.isIntersecting));
+    ob.observe(el);
+    return () => ob.disconnect();
+  }, []);
 
   // 各分析模块。工作台(tabs)模式按需渲染:切到哪个 tab 才挂载哪个(自带请求的模块切到才发请求);
   // 研报模式保留原长页体验,全部展开。
@@ -323,7 +357,17 @@ function SymbolView() {
 
   return (
     <div className="container">
-      <div className="header">
+      {showMini && quote && (
+        <div className="minibar" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} title="回到顶部">
+          <strong>{nameOf(symbol, lang)}</strong>
+          <span className="muted" style={{ fontSize: 12 }}>{symbol}</span>
+          <span className={`mb-price ${dir}`}>{fmt(quote.price)}</span>
+          {quote.changePct != null && (
+            <span className={dir} style={{ fontSize: 13 }}>{quote.changePct >= 0 ? "+" : ""}{quote.changePct.toFixed(2)}%</span>
+          )}
+        </div>
+      )}
+      <div className="header" ref={headRef}>
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <SymbolSwitcher symbol={symbol} />
         <span className="muted">{symbol}</span>
@@ -409,10 +453,12 @@ function SymbolView() {
       {/* 模块区:工作台模式(tabs,按需加载,图表保持 C 位) / 研报模式(传统长页全展开) */}
       <div className="tabs" style={{ marginTop: 18 }}>
         {view === "tabs"
-          ? visibleModules.map((m) => (
-              <button key={m.key} className={m.key === tab ? "active" : ""} onClick={() => setTabPref(m.key)}>{m.label}</button>
+          ? visKeys.map((k) => (
+              <button key={k} className={k === tab ? "active" : ""} onClick={() => setTabPref(k)}>
+                {MODULES.find((m) => m.key === k)!.label}
+              </button>
             ))
-          : <span className="muted" style={{ fontSize: 13, alignSelf: "center" }}>研报模式:全部模块展开</span>}
+          : <span className="muted" style={{ fontSize: 13, alignSelf: "center" }}>研报模式:全部模块展开,可折叠、可排序(都会记住)</span>}
         <button className="linklike" style={{ marginLeft: "auto" }}
           onClick={() => setView(view === "tabs" ? "report" : "tabs")}
           title={view === "tabs" ? "切到传统长页:全部模块一次展开,适合通读" : "切回工作台:模块收进标签页,按需加载"}>
@@ -421,7 +467,15 @@ function SymbolView() {
       </div>
       {view === "tabs"
         ? renderModule(tab)
-        : visibleModules.map((m) => <div key={m.key}>{renderModule(m.key)}</div>)}
+        : visKeys.map((k, i) => (
+            <Collapse key={k} title={MODULES.find((m) => m.key === k)!.label}
+              collapsed={!!collapsed[k]}
+              onToggle={() => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
+              onUp={i > 0 ? () => moveModule(k, -1) : null}
+              onDown={i < visKeys.length - 1 ? () => moveModule(k, 1) : null}>
+              {renderModule(k)}
+            </Collapse>
+          ))}
 
       <div className="disclaimer">本页分析为规则化技术指标,<strong>仅供信息参考,不构成投资建议</strong>(Not financial advice)。</div>
     </div>

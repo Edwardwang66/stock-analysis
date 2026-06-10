@@ -74,3 +74,50 @@ export function marketStatus(market: string): MarketStatus {
   }
   return { open: false, label: "" };
 }
+
+// ---- 距开/收盘倒计时(Hyperliquid 资金费率倒计时的股市类比) ----
+// 与上面的常规时段一致;分钟精度,不含节假日。加密/未知市场返回 null。
+const SESSIONS: Record<string, [number, number][]> = {
+  US: [[H(9, 30), H(16)]],
+  HK: [[H(9, 30), H(12)], [H(13), H(16)]],
+  CN: [[H(9, 30), H(11, 30)], [H(13), H(15)]],
+  JP: [[H(9), H(11, 30)], [H(12, 30), H(15, 30)]],
+  KR: [[H(9), H(15, 30)]],
+  DE: [[H(9), H(17, 30)]],
+  GB: [[H(8), H(16, 30)]],
+};
+const TZ: Record<string, string> = {
+  US: "America/New_York", HK: "Asia/Hong_Kong", CN: "Asia/Shanghai", JP: "Asia/Tokyo",
+  KR: "Asia/Seoul", DE: "Europe/Berlin", GB: "Europe/London",
+};
+
+function fmtDur(mins: number): string {
+  if (mins >= 1440) return `${Math.floor(mins / 1440)}天${Math.floor((mins % 1440) / 60)}时`;
+  if (mins >= 60) return `${Math.floor(mins / 60)}时${mins % 60}分`;
+  return `${mins}分`;
+}
+
+/** 下一个开/收盘事件倒计时,如 "距收盘 2时15分" / "距开盘 1天3时"。 */
+export function marketCountdown(market: string): { open: boolean; text: string } | null {
+  const sessions = SESSIONS[market];
+  const tz = TZ[market];
+  if (!sessions || !tz) return null;
+  const { dow, minutes } = localParts(tz);
+  // 向后找 8 天内最近的开/收盘边界(开盘边界=open 事件,收盘边界=close 事件)
+  let bestAt = Infinity;
+  let bestIsOpen = false;
+  for (let d = 0; d < 8 && !isFinite(bestAt); d++) {
+    const day = (dow + d) % 7;
+    if (day === 0 || day === 6) continue;
+    for (const [a, b] of sessions) {
+      for (const [m, isOpen] of [[a, true], [b, false]] as const) {
+        const at = d * 1440 + m - minutes;
+        if (at <= 0) continue;
+        if (at < bestAt) { bestAt = at; bestIsOpen = isOpen; }
+      }
+    }
+  }
+  if (!isFinite(bestAt)) return null;
+  const open = marketStatus(market).open;
+  return { open, text: `${bestIsOpen ? "距开盘" : "距收盘"} ${fmtDur(bestAt)}` };
+}

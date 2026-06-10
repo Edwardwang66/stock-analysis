@@ -523,6 +523,28 @@ export async function getIntraday(symbol: string, interval = "5m", range = "1d")
   return cachedBars(symbol.trim().toUpperCase(), range, interval);
 }
 
+// ---- 下次财报日(美股,Yahoo quoteSummary calendarEvents)----
+// 免费源尽力而为:代理失败/接口拒绝(Yahoo 该端点有时要求 crumb)返回 null,UI 自动隐藏。
+// localStorage 缓存:拿到结果存 24h,失败存 6h(别每次开页都把代理打一遍)。
+const LS_EARN_PREFIX = "ds:earn:v1:";
+
+export async function getEarningsDate(symbol: string): Promise<number | null> {
+  const { market, code } = parseSymbol(symbol.trim().toUpperCase());
+  if (market !== "US") return null;
+  const key = `${LS_EARN_PREFIX}${code}`;
+  const hit = lsRead<{ at: number; ts: number | null }>(key);
+  if (hit && Date.now() - hit.at < (hit.ts != null ? 24 : 6) * 3600_000) return hit.ts;
+  let ts: number | null = null;
+  try {
+    const j = await fetchViaProxy(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${code}?modules=calendarEvents`);
+    const arr = j?.quoteSummary?.result?.[0]?.calendarEvents?.earnings?.earningsDate;
+    const raw = Array.isArray(arr) ? arr[0]?.raw : null;
+    if (typeof raw === "number" && isFinite(raw)) ts = raw * 1000;
+  } catch { /* 拿不到就算了,UI 隐藏 */ }
+  lsWrite(key, { at: Date.now(), ts });
+  return ts;
+}
+
 // ---- 美股盘前/盘后(扩展时段)----
 // Yahoo chart includePrePost=true:用扩展时段最后一根 1m bar 当前价。
 // 盘前涨跌基准 = 昨收;盘后基准 = 当日常规收盘。免费源无「夜盘」(Blue Ocean 为付费通道)。

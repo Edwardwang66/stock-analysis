@@ -197,6 +197,25 @@ th { color: var(--muted); font-weight: 500; }
   .ob-list { max-height: 300px; }
 }
 
+/* 吸顶迷你价格条:个股页页头滚出视野时出现,滚动中不丢行情上下文 */
+.minibar { position: fixed; top: 0; left: 0; right: 0; z-index: 70; display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 16px; background: rgba(19,23,34,.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border); cursor: pointer; font-variant-numeric: tabular-nums; }
+.minibar .mb-price { font-size: 16px; font-weight: 700; }
+
+/* 研报模式模块容器:折叠 + 排序 */
+.collapse-block { margin-top: 18px; }
+.collapse-head { display: flex; align-items: center; gap: 8px; }
+.collapse-title { background: transparent; border: 0; color: var(--muted); cursor: pointer;
+  font-size: 13px; font-weight: 600; padding: 2px 0; display: inline-flex; align-items: center; gap: 6px; }
+.collapse-title:hover { color: var(--text); }
+.collapse-title .caret { font-size: 11px; }
+.collapse-actions { margin-left: auto; display: inline-flex; gap: 4px; }
+.collapse-actions button { background: transparent; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 11px; }
+.collapse-actions button:hover { color: var(--text); border-color: var(--accent); }
+.collapse-block > .section, .collapse-block > div > .section { margin-top: 8px; }
+
 /* 骨架屏(加载占位,替代文字"加载中") */
 .skeleton {
   border-radius: 6px;

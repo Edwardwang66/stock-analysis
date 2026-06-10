@@ -2,8 +2,9 @@
 // Hyperliquid 式一行统计条:现价/涨跌/高低/昨收/成交量/52周位置/盘前盘后/夜盘 一行排开,
 // 信息密度高、每项 hover 有解释;替代原先散落在页头的报价碎片。
 import { useEffect, useRef, useState } from "react";
-import type { ExtendedQuote, Quote } from "@/lib/datasource";
+import { getEarningsDate, type ExtendedQuote, type Quote } from "@/lib/datasource";
 import type { NightQuote } from "@/lib/nightquotes";
+import { marketCountdown } from "@/lib/marketstatus";
 
 function fmt(n: number | null | undefined, d = 2): string {
   return n == null ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -51,7 +52,27 @@ export default function StatBar({
     prevRef.current = p;
   }, [quote?.price]);
 
+  // 距开/收盘倒计时(Hyperliquid 资金费率倒计时的股市类比),30s 重算
+  const [cd, setCd] = useState<{ open: boolean; text: string } | null>(null);
+  useEffect(() => {
+    const market = symbol.split(":")[0];
+    const calc = () => setCd(marketCountdown(market));
+    calc();
+    const id = window.setInterval(calc, 30_000);
+    return () => window.clearInterval(id);
+  }, [symbol]);
+
+  // 下次财报日(美股;免费源尽力而为,拿不到自动隐藏)
+  const [earnTs, setEarnTs] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setEarnTs(null);
+    getEarningsDate(symbol).then((t) => { if (alive) setEarnTs(t); }).catch(() => {});
+    return () => { alive = false; };
+  }, [symbol]);
+
   if (!quote) return null;
+  const earnDays = earnTs != null ? Math.ceil((earnTs - Date.now()) / 86400_000) : null;
   const pos52 = high52 != null && low52 != null && high52 > low52
     ? Math.max(0, Math.min(100, ((quote.price - low52) / (high52 - low52)) * 100))
     : null;
@@ -94,6 +115,17 @@ export default function StatBar({
         <Item label="🌙 夜盘" cls={(night.chg24h ?? 0) >= 0 ? "up" : "down"}
           title={`Hyperliquid 永续 ${night.hlSymbol} · 实证 corr 0.965 · 资金费率 ${night.fundingApr != null ? (night.fundingApr * 100).toFixed(0) + "%" : "—"}`}>
           {fmt(night.mark)}{night.chg24h != null && ` (${night.chg24h >= 0 ? "+" : ""}${(night.chg24h * 100).toFixed(2)}%)`}
+        </Item>
+      )}
+      {cd && (
+        <Item label={cd.open ? "🟢 盘中" : "⚪ 休市"} title="基于常规交易时段的本地推算,不含节假日">
+          {cd.text}
+        </Item>
+      )}
+      {earnDays != null && earnDays >= 0 && earnDays <= 90 && (
+        <Item label="📅 财报" title={`下次财报日 ${new Date(earnTs as number).toLocaleDateString("zh-CN")}(Yahoo 预排,可能变动)`}>
+          {new Date(earnTs as number).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })}
+          {earnDays === 0 ? " · 今天" : ` · ${earnDays}天`}
         </Item>
       )}
       <Item label="货币 · 来源" title="报价货币与数据来源">{quote.currency || "—"} · {quote.source}</Item>
