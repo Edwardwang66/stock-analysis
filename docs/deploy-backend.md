@@ -60,3 +60,15 @@ curl localhost:8000/api/v1/health
 curl "localhost:8000/api/v1/analysis?symbol=US:AAPL&range=2y"
 curl "localhost:8000/api/v1/chan?symbol=CRYPTO:BTCUSDT&interval=1wk&range=2y"
 ```
+
+## 指数(IDX)支持(2026-06-09)
+
+后端已支持 `IDX:` 市场(Yahoo 代码直传):`IDX:^GSPC / ^IXIC / ^DJI / ^HSI / 000001.SS`。
+**重新部署后端后生效**(Render 自动跟 main)。注意:前端当前对 IDX 一律走浏览器直连 Yahoo
+(兼容未升级后端);后端确认升级后,可把 `frontend/lib/datasource.ts` 里两处
+`!symbol.startsWith("IDX:")` 守卫移除,让指数也吃后端缓存。
+
+```bash
+curl "localhost:8000/api/v1/quotes?symbols=IDX:%5EGSPC,IDX:000001.SS"
+curl "localhost:8000/api/v1/ohlcv?symbol=IDX:%5EHSI&range=1y"
+```
