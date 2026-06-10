@@ -6,11 +6,14 @@ import { getBackendHealth, HAS_BACKEND } from "@/lib/datasource";
 import { getForex, type Forex } from "@/lib/forex";
 import { getCrossExchange, type ExPrice } from "@/lib/multiprice";
 import LangSelect from "@/components/LangSelect";
+import { clearErrors, readErrors } from "@/components/ErrorCollector";
 
 const UP = "#26a69a", DOWN = "#ef5350";
 const STATUS_C: Record<string, string> = { 已接入: UP, 可接入: "#f7b500", 不可用: DOWN };
 
 export default function SourcesPage() {
+  const [errs, setErrs] = useState<{ at: string; msg: string; src?: string }[]>([]);
+  useEffect(() => { setErrs(readErrors().reverse()); }, []);
   const [fx, setFx] = useState<Forex | null>(null);
   const [xc, setXc] = useState<ExPrice[]>([]);
   const [health, setHealth] = useState<any | null>(null);
@@ -114,6 +117,23 @@ export default function SourcesPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="section">
+        <h2>🐞 前端错误日志(本机)
+          <button className="linklike" style={{ marginLeft: 10, fontSize: 12 }}
+            onClick={() => { clearErrors(); setErrs([]); }}>清空</button>
+        </h2>
+        {errs.length === 0 ? <p className="src">无记录(window.onerror / unhandledrejection 自动采集,只存本机,最多 50 条)。</p> : (
+          <div style={{ maxHeight: 260, overflow: "auto" }}>
+            {errs.map((e, i) => (
+              <p key={i} className="src" style={{ margin: "4px 0", fontSize: 12 }}>
+                <span className="muted">{e.at.slice(5, 19).replace("T", " ")}</span> {e.msg}
+                {e.src && <span className="muted"> @{e.src.split("/").pop()}</span>}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="disclaimer">
