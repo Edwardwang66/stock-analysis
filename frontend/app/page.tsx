@@ -6,6 +6,7 @@ import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
+import { marketStatus } from "@/lib/marketstatus";
 import { getWatchlist } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
@@ -208,12 +209,26 @@ export default function Home() {
       <Heatmap symbols={symbols} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
 
       <h2 className="block-title">行情卡片</h2>
-      {groups ? groups.map((g) => (
-        <div key={g.mkt}>
-          <h3 className="group-title">{g.label} <span className="src">{g.symbols.length} 只</span></h3>
-          {renderCards(g.symbols)}
-        </div>
-      )) : renderCards(symbols)}
+      {groups ? groups.map((g) => {
+        const st = marketStatus(g.mkt);
+        return (
+          <div key={g.mkt}>
+            <h3 className="group-title">{g.label} <span className="src">{g.symbols.length} 只</span>
+              {st.label && <span className={`badge ${st.open ? "up" : "muted"}`} style={{ fontSize: 11 }}>{st.label}</span>}
+            </h3>
+            {renderCards(g.symbols)}
+          </div>
+        );
+      }) : (
+        <>
+          {tab !== "ALL" && marketStatus(tab).label && (
+            <p className="src" style={{ margin: "0 0 8px" }}>
+              市场状态:<span className={marketStatus(tab).open ? "up" : "muted"}>{marketStatus(tab).label}</span>(本地推算,不含节假日)
+            </p>
+          )}
+          {renderCards(symbols)}
+        </>
+      )}
 
       <div className="disclaimer">
         数据来源:暗号 = Binance(data-api.binance.vision)· 美/港/A股 = Yahoo Finance(经公共 CORS 代理,自动多代理回退)。

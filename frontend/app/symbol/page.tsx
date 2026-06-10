@@ -41,6 +41,14 @@ function SymbolView() {
       try {
         const [b, q] = await Promise.all([getOHLCV(symbol, range, interval), getQuote(symbol)]);
         if (!alive) return;
+        // 日/周线:用实时报价修正最后一根 bar,保证页头价格、K线末根与指标同源一致
+        if (b.length && q?.price != null && (interval === "1d" || interval === "1wk")) {
+          const last = b[b.length - 1];
+          b[b.length - 1] = {
+            ...last, close: q.price,
+            high: Math.max(last.high, q.price), low: Math.min(last.low, q.price),
+          };
+        }
         setBars(b); setQuote(q); setAn(analyze(b)); setLoading(false);
       } catch (e: any) {
         if (alive) { setErr(e?.message || "加载失败"); setLoading(false); }
