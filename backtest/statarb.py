@@ -89,27 +89,32 @@ class StatArbParams:
     n_trials: int = 200             # 申报试验次数(用于 Deflated Sharpe;诚实登记,见 §6.7)
     holdout_start: str = "2025-01-01"  # 真 holdout 起点(R5):此日(含)之后只做终检,不据其调参
     vol_target: float | None = None  # 年化波动目标(如0.04);None=关闭。开启则按近21日实现波动缩放毛杠杆(§6.3)
+    governance: bool = True          # 回撤治理阶梯(§7.4):月内-6%/-8%/-12%分级降仓,峰谷-15% kill,单日-2%冻结
     factors: list[str] = field(default_factory=lambda: ["SPY", "SECTOR"])
 
 
 # ----------------------------- 数据对齐 -----------------------------
 
 def _aligned(ticker: str, dates: np.ndarray, dmap: dict | None = None):
-    """把单标的对齐到主日历 dates,返回 (adj[], vol[]),缺失为 nan。"""
+    """把单标的对齐到主日历 dates,返回 (adj[], vol[], low[], close_raw[]),缺失为 nan。"""
     d = datamod.load(ticker)
     if not d or len(d.get("adjclose", [])) < 260:
         return None
     ts = np.asarray(d["ts"], dtype=np.int64)
     adj = np.asarray(d["adjclose"], dtype=float)
     vol = np.asarray(d["volume"], dtype=float)
+    low = np.asarray(d.get("low", d["adjclose"]), dtype=float)
+    craw = np.asarray(d.get("close", d["adjclose"]), dtype=float)
     m = {int(t): i for i, t in enumerate(ts)}
     a = np.full(len(dates), np.nan)
     v = np.full(len(dates), np.nan)
+    lo = np.full(len(dates), np.nan)
+    cr = np.full(len(dates), np.nan)
     for k, dt in enumerate(dates):
         i = m.get(int(dt))
         if i is not None:
-            a[k], v[k] = adj[i], vol[i]
-    return a, v
+            a[k], v[k], lo[k], cr[k] = adj[i], vol[i], low[i], craw[i]
+    return a, v, lo, cr
 
 
 def _returns(adj: np.ndarray) -> np.ndarray:
@@ -142,7 +147,7 @@ def load_market(tickers: list[str], start_year: int):
         al = _aligned(tk, dates)
         if al is None:
             continue
-        adj, vol = al
+        adj, vol, low, craw = al
         ret = _returns(adj)
         sec = sectors.get(tk, "")
         etf = SECTOR_ETF.get(sec, "SPY")
@@ -153,7 +158,15 @@ def load_market(tickers: list[str], start_year: int):
             seg = notional[lo:k + 1]
             seg = seg[np.isfinite(seg)]
             adv[k] = seg.mean() if len(seg) else np.nan
-        names[tk] = {"ret": ret, "adj": adj, "adv": adv, "sector": sec, "etf": etf}
+        # SSR(Reg SHO Rule 201,§6.5):日内低点较前收跌 ≥10% 触发,当日+次日生效。
+        # 日线代理:low[k]/close_raw[k-1] - 1 ≤ -10%(无逐笔数据,保守近似)。
+        ssr = np.zeros(len(dates), dtype=bool)
+        trig = np.zeros(len(dates), dtype=bool)
+        for k in range(1, len(dates)):
+            if np.isfinite(low[k]) and np.isfinite(craw[k - 1]) and craw[k - 1] > 0:
+                trig[k] = (low[k] / craw[k - 1] - 1.0) <= -0.10
+            ssr[k] = trig[k] or trig[k - 1]
+        names[tk] = {"ret": ret, "adj": adj, "adv": adv, "sector": sec, "etf": etf, "ssr": ssr}
     return dates, spy_ret, sector_ret, names
 
 
@@ -283,10 +296,19 @@ def book_for_day(dates, spy_ret, sector_ret, names, k: int, p: StatArbParams,
         w2 = np.clip(w2, -p.name_cap, p.name_cap)
         weights = {t: float(wi) for t, wi in zip(tks2, w2) if abs(wi) > 1e-6}
 
+    # SSR(Reg SHO Rule 201):触发日+次日,空头腿只许持有/回补、不许加空(§6.5)
+    ssr_blocked = 0
+    for t in list(weights):
+        if names[t]["ssr"][k] and weights[t] < prev_w.get(t, 0.0) and weights[t] < 0:
+            weights[t] = min(prev_w.get(t, 0.0), 0.0)
+            if abs(weights[t]) < 1e-6:
+                del weights[t]
+            ssr_blocked += 1
+
     for t, sig in diag.items():
         sig["sigma_d"] = sig_sigma.get(t, 0.02)
         sig["adv_usd"] = sig_adv.get(t, 0.0)
-    return weights, diag, breaker, new_active
+    return weights, diag, breaker, new_active, ssr_blocked
 
 
 # ----------------------------- 回测主循环 -----------------------------
@@ -305,16 +327,52 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     active: set = set()
     net_rets, gross_rets, turnovers, n_pos, breaker_counts = [], [], [], [], []
     ret_ts: list[int] = []          # 每条净收益对应的实现日(t+1)时间戳
+    # 回撤治理状态(§7.4 阶梯;全部因果:只用已实现净收益)
+    import datetime as _dt2
+    equity = 1.0
+    global_peak = 1.0
+    month_peak = 1.0
+    cur_month = None
+    killed_month = None             # 峰谷 -15% kill-switch:清仓至当月结束(模拟口径,R1)
+    gov_days = {"yellow": 0, "orange": 0, "red": 0, "kill": 0, "daily_freeze": 0}
+    ssr_blocks_total = 0
 
     for k in range(start_k, len(dates) - 1):
-        weights, diag, breaker, active = book_for_day(
+        weights, diag, breaker, active, ssr_blocked = book_for_day(
             dates, spy_ret, sector_ret, names, k, p, prev_w, active)
+        ssr_blocks_total += ssr_blocked
         # vol-scaling(§6.3,因果:只用过去净收益):实现波动高于目标则等比降杠杆
         if p.vol_target and len(net_rets) >= 21:
             rv = float(np.std(net_rets[-21:], ddof=1)) * np.sqrt(252)
             if rv > 1e-6:
                 scale = float(np.clip(p.vol_target / rv, 0.5, 1.5))
                 weights = {t: w * scale for t, w in weights.items()}
+
+        # ---- 回撤治理阶梯(§7.4):月内回撤 -6%/-8%/-12% 分级降仓;峰谷 -15% kill ----
+        month = _dt2.datetime.utcfromtimestamp(int(dates[k])).strftime("%Y-%m")
+        if month != cur_month:
+            cur_month = month
+            month_peak = equity
+        mtd_dd = equity / month_peak - 1.0
+        pv_dd = equity / global_peak - 1.0
+        if p.governance:
+            if killed_month == month or pv_dd <= -0.15:
+                if killed_month != month and pv_dd <= -0.15:
+                    killed_month = month
+                weights = {}
+                gov_days["kill"] += 1
+            elif net_rets and net_rets[-1] < -0.02:
+                weights = dict(prev_w)              # 单日亏 >2%:冻结一日,不下新单
+                gov_days["daily_freeze"] += 1
+            elif mtd_dd <= -0.12:
+                weights = {t: w * 0.3 for t, w in weights.items()}
+                gov_days["red"] += 1
+            elif mtd_dd <= -0.08:
+                weights = {t: w * 0.5 for t, w in weights.items()}
+                gov_days["orange"] += 1
+            elif mtd_dd <= -0.06:
+                weights = {t: w * 0.75 for t, w in weights.items()}
+                gov_days["yellow"] += 1
         # 实现下一日收益(t->t+1)
         gross_r = 0.0
         for t, w in weights.items():
@@ -334,6 +392,9 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
         net_rets.append(gross_r - cost)
         gross_rets.append(gross_r)
         ret_ts.append(int(dates[k + 1]))
+        equity *= (1 + net_rets[-1])
+        global_peak = max(global_peak, equity)
+        month_peak = max(month_peak, equity)
         turnovers.append(turnover)
         n_pos.append(len(weights))
         breaker_counts.append(len(breaker))
@@ -344,11 +405,13 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     rep = _summarize(net, gross, np.array(ret_ts, dtype=np.int64),
                      turnovers, n_pos, breaker_counts, dates, start_k, p)
     # 实时簿:在最后一根 bar(无需 t+1 实现收益)上再构一次,asof=数据最新日,消除 1 日滞后
-    live_w, live_diag, live_breaker, _ = book_for_day(
+    live_w, live_diag, live_breaker, _, _ = book_for_day(
         dates, spy_ret, sector_ret, names, len(dates) - 1, p, prev_w, active)
     rep["latest_book"] = _latest_book(live_w, live_diag, names, dates[-1])
     rep["latest_breaker"] = [{"ticker": t, "reason": r} for t, r in sorted(live_breaker.items())]
     rep["universe_size"] = len(names)
+    rep["risk_governance"] = {"enabled": p.governance, "days": gov_days,
+                              "ssr_short_blocks": int(ssr_blocks_total)}
     rep["_net_series"] = net.tolist()          # 日净收益全序列(供 CSCV/研究脚本;不入 feed)
     if verbose:
         _print_report(rep)
@@ -489,6 +552,10 @@ def _print_report(rep):
           f"回撤 {tr['max_drawdown']*100:.1f}%  ({tr['n_days']}日)")
     print(f"  终检段(holdout≥{ho.get('start')}) 净 Sharpe {ho['sharpe']:+.2f}  年化 {ho['ann_return']*100:+.1f}%  "
           f"回撤 {ho['max_drawdown']*100:.1f}%  ({ho['n_days']}日)")
+    rg = rep.get("risk_governance", {})
+    if rg:
+        print(f"  风险治理: {'开' if rg.get('enabled') else '关'}  触发 {rg.get('days')}  "
+              f"SSR拦截加空 {rg.get('ssr_short_blocks')} 次")
     print(f"\n  裁决:{rep['verdict']}")
     lb = rep["latest_book"]
     print(f"\n  最新持仓簿 @ {lb['asof']}:多 {lb['n_long']} / 空 {lb['n_short']}  "
