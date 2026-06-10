@@ -103,6 +103,15 @@ export interface ScreenerList {
 }
 export const getScreener = () => fetchJson<ScreenerList>("screener/latest.json");
 
+// 每日市场快照历史(market-snapshot.yml 工作日两次追加,保留 400 天)
+export interface MarketSnapshot {
+  date: string; at: string;
+  indices: Record<string, { close: number | null; change_pct: number | null }>;
+  fng: { value: number | null; label: string | null };
+  btc: { price: number | null; change_pct_24h: number | null };
+}
+export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");
