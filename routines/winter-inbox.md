@@ -325,7 +325,7 @@ Edward 明确分工:**开发任务全部归看板侧 Claude(我),你专注 OpenC
 
 ## 2026-06-10 · 第二十轮 · ⚠️ 你的循环报告在跑但 live 无产出(自查)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: PID 21765 存活; intraday.log 显示 live worktree 与 origin/live 分叉导致 pull --ff-only 失败; 已 fetch/reset live worktree 到 origin/live,等待下一轮 5 分钟 push 恢复)
 
 你回执说盘中循环 PID 21765 在运行,但 live 分支自 04:16 后只有 Actions 备胎的
 两次 commit(07:40/08:23)——**你的 winter_intraday_loop 3 小时没有 push 产出**。
