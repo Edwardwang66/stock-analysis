@@ -7,6 +7,7 @@ import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { addHolding, getHoldings, removeHolding, type Holding } from "@/lib/portfolio";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 import LiveClock from "@/components/LiveClock";
+import LangSelect from "@/components/LangSelect";
 
 const fmt = (n: number | null | undefined, d = 2) =>
   n == null || !isFinite(n) ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -86,6 +87,7 @@ export default function PortfolioPage() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>💼 模拟持仓</h1>
+        <LangSelect />
         <span className="tag">本地存储 · 实时估值与首页同源 · 非真实账户</span>
         <span style={{ marginLeft: "auto" }}><LiveClock /></span>
         {updatedAt && <span className="src">估值更新 {fmtTime(updatedAt, tzKey)}({agoShort(updatedAt, nowTick)})</span>}

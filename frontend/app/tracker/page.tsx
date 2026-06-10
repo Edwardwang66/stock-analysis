@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreenerHistory, getWinrate, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
 import TzSelect from "@/components/TzSelect";
+import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 
@@ -77,6 +78,7 @@ export default function TrackerPage() {
         <h1>🎯 选股追踪</h1>
         <span className="tag">每日达标选股全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
         <span style={{ marginLeft: "auto" }}><LiveClock /></span>
+        <LangSelect />
         <TzSelect />
         {updatedAt && <span className="src">估值 {fmtTime(updatedAt, tzKey)}({agoShort(updatedAt, nowTick)})</span>}
       </div>

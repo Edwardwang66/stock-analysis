@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
 import { fmtDateTime, fmtTime, useTz } from "@/lib/timefmt";
+import LangSelect from "@/components/LangSelect";
 
 const IDX_LABEL: Record<string, string> = { SP500: "标普500", NDX100: "纳指100" };
 type Filter = "ALL" | "SP500" | "NDX100";
@@ -43,6 +44,7 @@ export default function ScreenerPage() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>📈 每日选股 · 技术评分 ≥ {data?.threshold ?? 50}</h1>
+        <LangSelect />
         <span className="tag">标普500 + 纳指100 · 非 LLM 规则化评分</span>
       </div>
 
