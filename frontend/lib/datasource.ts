@@ -14,12 +14,15 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
-// Vercel 边缘代理(自有,替代公共 CORS 代理):构建时注入,或运行在 *.vercel.app 时同源
+// Vercel 边缘代理(自有,替代公共 CORS 代理)。优先级:
+// 构建时 NEXT_PUBLIC_EDGE_BASE > 运行在 *.vercel.app 同源 > 生产默认域名(2026-06-10 实测可用)。
+// 边缘不可用时自动落到 live 快照/公共代理,故障安全。
 const EDGE_ENV = process.env.NEXT_PUBLIC_EDGE_BASE || "";
+const EDGE_DEFAULT = "https://stock-analysis-ten-phi.vercel.app";
 function edgeBase(): string | null {
   if (EDGE_ENV) return EDGE_ENV.replace(/\/$/, "");
   if (typeof window !== "undefined" && /\.vercel\.app$/.test(window.location.hostname)) return "";
-  return null;
+  return EDGE_DEFAULT;
 }
 /** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
 export const HAS_BACKEND = Boolean(API_BASE);
