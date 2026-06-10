@@ -7,7 +7,7 @@
 
 新增 **富途式看板(Futu-style)** 模块:**资金流向 / 主力资金**、**筹码分布 / 获利比例 / 支撑位·压力位**、**买卖盘口**、**基本面财报**,对标富途个股页。
 
-## ✨ 看板功能一览(2026-06-09 更新)
+## ✨ 看板功能一览(2026-06-10 更新)
 
 **首页看板**:打开默认加载**全部市场**(美/港/A/加密并行,渐进式渲染:快源先上屏);
 指数概览行(标普500/纳指/道指/恒指/上证,可点入详情);今日强弱 Top3 涨跌榜(零额外请求);
@@ -23,6 +23,10 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
 
 **其他**:自选+提醒 JSON 导入导出(跨设备迁移);PWA manifest(手机可加到主屏);
 `/sources` 页后端健康面板(运行时长/缓存/熔断实况);情报 feed 陈旧时首页轻提示;移动端 640px 适配。
+
+**6-10 新增**:**中英双语**切换挂全站 + 搜索双语联想(中文名可搜美股);首页大分组折叠(默认 12 卡,可展开);
+**`/desk` 工作台**:盘前隔夜要素行(premarket pack)+ 🔥 高波动榜(近 7 天事件聚合)+ 选股 winrate 上墙;
+**`/screener`**:全宇宙 **RS 1-99 排名榜**(方法论六法落地)+ 每日技术评分≥80 清单;`/tracker` 选股表现追踪看板。
 
 ---
 
@@ -41,6 +45,15 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
 - **OpenClaw 完整方案** [`docs/openclaw-integration.md`](docs/openclaw-integration.md):agent 名册 + 三投递通道 +
   HMAC 签名 + CI 安全闸门(`scripts/validate_feed.py`)。
 - **情报看板 `/intel`**:何时获得多少信息 / 怎么帮助到系统 / 仓库是否最新(站内 🛰️ 情报看板入口)。
+- **引擎迭代(Cycle 1-5,2026-06-10)**:真 holdout 终检 + 净值曲线/SR 趋势上看板(C1);数据**实效性/连贯性审计**体系
+  + CSCV-PBO 过拟合研究([`docs/study-pbo-2026-06-10.md`](docs/study-pbo-2026-06-10.md))+ 公式因子工厂(C2-4);
+  **回撤治理阶梯 + SSR 做空约束**进引擎,审计全绿(C5)。
+- **OpenClaw 专项(第 1-5 轮)**:三报告上看板 + note schema v2;winrate 上墙 + stance 翻转检测 + 事件热度任务;
+  高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`)。
+
+**🔧 自动化运维**:13 个 GitHub Actions 工作流无人值守 —— 9 个定时数据任务(screener/digest/intraday/市场快照/13F/
+盘前要素包/双看门狗/keep-warm)+ Pages 部署 + 投递校验闸门 + **Dependabot 自动合并**(`dependabot-automerge.yml`:
+月度 minor/patch 自动合,major 拦截留人工;npm/pip major 已在 `dependabot.yml` 层 ignore)。
 
 **主力资金的数据真实性(重要)**:
 - **暗号**:接入 Binance **真实逐笔(aggTrades)+ 真实盘口(depth)**,按成交额分档 + 主动买卖方向算 → **真·主力资金 / 真·买卖盘**(免费源里少数能拿到逐笔的市场)。
@@ -73,9 +86,10 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ├── backend/                           # FastAPI 后端:行情适配器 + 非LLM分析(Python)
 ├── backtest/                          # 因子研究 + 回测;statarb.py = 流 B 做多做空引擎
 ├── feed/                              # 情报馈送(JSON 单一真相源):routine + OpenClaw 写,看板读
-├── scripts/                           # run_routine / openclaw_client / validate_feed / feed_lib
+├── scripts/                           # 定时任务执行端:screener/digest/intraday/快照/13F/盘前包/审计/投递
 ├── routines/                          # Claude 可执行 routine playbook
-├── .github/workflows/                 # deploy-pages + alpha-routine(定时) + feed-validate(投递闸门)
+├── state/                             # 跨 session 持久状态(winter 轮询位点等)
+├── .github/workflows/                 # 13 个工作流:9 定时数据任务 + Pages 部署 + 投递闸门 + dependabot 自动合并
 ├── research/
 │   └── ai-agents-skills-market-scan.md  # 市场调研:股票/经济/市场相关 AI Agent 与 Skills 全景
 └── docs/
@@ -84,7 +98,8 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
     ├── positioning.md                 # 差异化定位分析(vs 竞品)
     ├── cost-estimate.md               # 成本测算(数据源 + Claude API + 基建)
     ├── compliance.md                  # 合规 / 法律专项
-    └── data-model-api.md              # 数据模型 / REST·WS API 契约
+    ├── data-model-api.md              # 数据模型 / REST·WS API 契约
+    └── …                              # self-improving-alpha-loop / openclaw-integration / study-pbo 等,见文档导航
 ```
 
 ## 🎯 项目定位
