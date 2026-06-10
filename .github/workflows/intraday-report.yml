@@ -19,12 +19,12 @@ permissions:
 
 concurrency:
   group: intraday-report
-  cancel-in-progress: true
+  cancel-in-progress: false   # true 会连环取消排队中的 run(高峰 runner 排队>15min 时永远轮空)
 
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 11
     steps:
       - uses: actions/checkout@v6
         with:
@@ -59,5 +59,5 @@ jobs:
             else
               echo "Winter 循环在岗,本轮退位"
             fi
-            [ "$i" -lt 3 ] && sleep 265 || true
+            [ "$i" -lt 2 ] && sleep 265 || true
           done
