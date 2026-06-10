@@ -106,12 +106,27 @@ th { color: var(--muted); font-weight: 500; }
 .tile-pct { font-size: 13px; color: #fff; opacity: .95; margin-top: 2px; }
 @media (max-width: 640px) {
   .container { padding: 14px 10px 48px; }
+  .header { gap: 8px; }
   .header h1 { font-size: 17px; }
+  .header .tag { display: none; }                  /* 窄屏隐藏长标语,按钮不挤换行 */
+  .header .btn { padding: 6px 9px; font-size: 12px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
   .heatmap { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
   .price { font-size: 19px; }
   .section { padding: 12px; overflow-x: auto; }
   .toolbar { gap: 6px; }
+  .index-pill { padding: 5px 9px; font-size: 11px; gap: 5px; }
+  .index-pill svg { display: none; }               /* 窄屏隐藏 sparkline,省横向空间 */
+  .segmented button { padding: 6px 8px; font-size: 11px; }
+  table { font-size: 12px; }
+  th, td { padding: 6px 6px; white-space: nowrap; } /* 配合 section 横滚,不挤压换行 */
+  .signal { flex-wrap: wrap; }
+}
+/* 触控设备:点击目标加大,去 hover 缩放抖动 */
+@media (pointer: coarse) {
+  .btn, .segmented button, .tabs button { min-height: 38px; }
+  .tile:hover { transform: none; }
+  .star { font-size: 18px; padding: 6px; }
 }
 .chart-legend { position: absolute; top: 8px; left: 10px; z-index: 3; font-size: 12px;
   color: var(--text); background: rgba(19,23,34,.78); padding: 4px 8px; border-radius: 6px;
