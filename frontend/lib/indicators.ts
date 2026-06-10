@@ -236,3 +236,52 @@ export function prevWeekHLC(bars: { time: number; high: number; low: number; clo
   if (order.length < 2) return null;
   return groups.get(order[order.length - 2]) ?? null;
 }
+
+/** 锚定 VWAP(Anchored VWAP):从 anchor 索引起累计 Σ(典型价×量)/Σ量。机构成本线。 */
+export function anchoredVwap(
+  bars: { high: number; low: number; close: number; volume: number }[], anchor: number,
+): Maybe[] {
+  const out: Maybe[] = Array(bars.length).fill(null);
+  if (anchor < 0 || anchor >= bars.length) return out;
+  let pv = 0, vv = 0;
+  for (let i = anchor; i < bars.length; i++) {
+    const b = bars[i];
+    const tp = (b.high + b.low + b.close) / 3;
+    pv += tp * (b.volume || 0);
+    vv += b.volume || 0;
+    out[i] = vv > 0 ? pv / vv : null;
+  }
+  return out;
+}
+
+/** TTM Squeeze:布林(20,2)完全收进 Keltner(20,1.5×ATR)= 波动挤压(蓄势);
+ *  释放 = 挤压解除首根;方向参考 12-26 动量。返回每根状态。 */
+export function ttmSqueeze(
+  highs: number[], lows: number[], closes: number[],
+): { on: boolean[]; fired: boolean[]; mom: Maybe[] } {
+  const n = closes.length;
+  const on: boolean[] = Array(n).fill(false);
+  const fired: boolean[] = Array(n).fill(false);
+  const basis = sma(closes, 20);
+  // 布林带宽
+  const dev: Maybe[] = Array(n).fill(null);
+  for (let i = 19; i < n; i++) {
+    const m = basis[i];
+    if (m == null) continue;
+    let s2 = 0;
+    for (let j = i - 19; j <= i; j++) s2 += (closes[j] - m) ** 2;
+    dev[i] = Math.sqrt(s2 / 20);
+  }
+  // Keltner:EMA20 ± 1.5×ATR20(简化用 SMA 中轨,与布林同基准更可比)
+  const tr: number[] = closes.map((c, i) =>
+    i === 0 ? highs[0] - lows[0] : Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+  const atr20 = sma(tr, 20);
+  for (let i = 19; i < n; i++) {
+    const m = basis[i], d = dev[i], a = atr20[i];
+    if (m == null || d == null || a == null) continue;
+    on[i] = m + 2 * d < m + 1.5 * a && m - 2 * d > m - 1.5 * a; // 布林上下轨都在 Keltner 内
+    if (i > 0 && !on[i] && on[i - 1]) fired[i] = true;
+  }
+  const mom: Maybe[] = macd(closes).line;
+  return { on, fired, mom };
+}

@@ -12,6 +12,7 @@ import { sectorOf } from "@/lib/sectors";
 import TzSelect from "@/components/TzSelect";
 import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
+import RrgChart, { type RrgItem } from "@/components/RrgChart";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 // 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
 
@@ -203,6 +204,20 @@ export default function DeskPage() {
     return n;
   });
 
+  // 轮动象限数据:池内美股(rs-ranks 覆盖)
+  const rrgItems = useMemo<RrgItem[]>(() => {
+    if (!rs?.ranks) return [];
+    const out: RrgItem[] = [];
+    for (const r of rows) {
+      if (!r.symbol.startsWith("US:")) continue;
+      const v = rs.ranks[r.symbol.slice(3)];
+      if (!v || v.rs == null || v.r63 == null) continue;
+      const color = r.tags.includes("watch") ? "#f7b500" : r.tags.includes("salp") ? "#26c6da" : (r.score ?? 0) >= 80 ? "#26a69a" : "#787b86";
+      out.push({ symbol: r.symbol, name: nameOf(r.symbol, lang), rs: v.rs, r63: v.r63, color });
+    }
+    return out;
+  }, [rows, rs, lang]);
+
   const noteCell = (sym: string) => {
     const n = noteMap.get(sym);
     if (!n) return <span className="down">❌</span>;
@@ -313,6 +328,21 @@ export default function DeskPage() {
                   </Link>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* 轮动象限(RRG 近似,RS×63日动量) */}
+          {rrgItems.length >= 8 && (
+            <div className="section" style={{ marginTop: 4 }}>
+              <details>
+                <summary style={{ cursor: "pointer" }}>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>📡 轮动象限</span>
+                  <span className="src" style={{ marginLeft: 10 }}>
+                    池内美股 {rrgItems.length} 只 · x=RS分位 y=63日动量 · ⭐金 🦅青 80+绿 · 点击进个股
+                  </span>
+                </summary>
+                <RrgChart items={rrgItems} />
+              </details>
             </div>
           )}
 
