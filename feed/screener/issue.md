@@ -88,5 +88,5 @@
 _(还有 71 只未列出,完整见 `feed/screener/latest.json` 或 /screener 页面)_
 
 > 评分为**规则化技术指标**(均线/RSI/MACD/布林,-100..100),**非 LLM、非投资建议**(Not financial advice)。
-> 数据源 Yahoo Finance · 生成 2026-06-10T02:50:18.372826+00:00
+> 数据源 Yahoo Finance · 生成 2026-06-10T02:58:25.019174+00:00
 > 在线看板:https://edwardwang66.github.io/stock-analysis/screener/
