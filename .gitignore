@@ -13,7 +13,10 @@ frontend/out/
 **/data_cache/
 **/crypto_cache/
 **/binance_cache/
-feed/intraday/
+# 盘中5分钟心跳只进 live 分支不污染 main;盘前要素包(每日一次)须进 main 供 /desk 与盘前报告读
+# 注:父目录被排除时负向规则无效,故用 /* 而非整目录
+feed/intraday/*
+!feed/intraday/overnight.json
 
 # OS / 编辑器
 .DS_Store

@@ -50,8 +50,9 @@ screener 选股表加载后用统一数据层**实时价覆盖**清单生成时�
   + CSCV-PBO 过拟合研究([`docs/study-pbo-2026-06-10.md`](docs/study-pbo-2026-06-10.md))+ 公式因子工厂(C2-4);
   **回撤治理阶梯 + SSR 做空约束**进引擎,审计全绿(C5);**D5 下沉实验首次实证** + 月度研究定时(`monthly-studies.yml`)
   + 幸存者偏差数据源调研(C6,迭代日志见 [`docs/iteration-log.md`](docs/iteration-log.md))。
-- **OpenClaw 专项(第 1-5 轮)**:三报告上看板 + note schema v2;winrate 上墙 + stance 翻转检测 + 事件热度任务;
-  高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`)。
+- **OpenClaw 专项(持续多轮,至第 9 轮)**:三报告上看板 + note schema v2;winrate 上墙 + stance 翻转检测 + 事件热度任务;
+  高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`);
+  Codex public-equity-investing 插件接入。
 
 **🔧 自动化运维**:14 个 GitHub Actions 工作流无人值守 —— 10 个定时任务(screener/digest/intraday/市场快照/13F/
 盘前要素包/月度研究/双看门狗/keep-warm)+ Pages 部署 + 投递校验闸门 + **Dependabot 自动合并**(`dependabot-automerge.yml`:
