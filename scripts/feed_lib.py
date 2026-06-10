@@ -158,6 +158,30 @@ def _days_since(date_str: str | None) -> float | None:
         return None
 
 
+def _artifact_freshness() -> dict:
+    """逐数据面板的实际新鲜度(直接读文件,不信报告自报)——看板①区与审计共用。"""
+    out = {}
+    def _put(key, path, *fields):
+        d = load_json(os.path.join(FEED, path))
+        if d is None:
+            out[key] = {"exists": False}
+            return
+        if isinstance(d, list):
+            d = d[-1] if d else {}
+        val = next((d.get(f) for f in fields if isinstance(d, dict) and d.get(f)), None)
+        out[key] = {"exists": True, "asof": val,
+                    "age_days": round(_days_since(str(val)), 2) if val else None}
+    _put("signals_book", "signals/latest.json", "asof")
+    _put("market_state", "market/state.json", "asof_data", "updated_at")
+    _put("screener", "screener/latest.json", "date")
+    _put("rs_ranks", "signals/rs-ranks.json", "date")
+    _put("stock_notes", "stock-notes/index.json", "updated_at")
+    _put("intraday", "intraday/latest.json", "at")
+    _put("market_history", "market/history.json", "at", "date")
+    _put("funds_13f", "funds/situational-awareness.json", "filed")
+    return out
+
+
 def rebuild_index() -> dict:
     """扫描 feed/reports/ 重建 index.json(CI 合并投递后调用,保证看板一致)。"""
     rdir = os.path.join(FEED, "reports")
@@ -202,16 +226,19 @@ def rebuild_index() -> dict:
     latest = reports[0] if reports else None
     latest_engine = next((r for r in reports if r.get("engine")), latest)
     age_hours = (_days_since(latest["produced_at"]) * 24) if latest else None
-    data_age_days = _days_since((latest or {}).get("asof_data")) if latest else None
+    # 实效性:market_data_asof 只取最近「带引擎数据」的报告 ——
+    # factory/study/openclaw 的 asof 语义不同,混用会虚报数据新鲜度(审计 2026-06-10)。
+    data_age_days = _days_since((latest_engine or {}).get("asof_data")) if latest_engine else None
     index = {
         "schema_version": "1.0",
         "updated_at": now_iso(),
         "freshness": {
             "last_report_at": latest["produced_at"] if latest else None,
-            "market_data_asof": latest.get("asof_data") if latest else None,
+            "market_data_asof": (latest_engine or {}).get("asof_data") if latest_engine else None,
             "report_age_hours": round(age_hours, 2) if age_hours is not None else None,
             "data_age_days": round(data_age_days, 2) if data_age_days is not None else None,
             "stale": (age_hours is not None and age_hours > STALE_HOURS),
+            "sources": _artifact_freshness(),
         },
         "latest": {
             "report": f"reports/{os.path.basename(report_path(latest_engine['id']))}" if latest_engine else None,

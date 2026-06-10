@@ -214,3 +214,12 @@ export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");
 export const getFactory = () => fetchJson<FactoryStore>("factory/candidates.json");
 export const getReport = (path: string) => fetchJson<FullReport>(path);
+
+// feed 健康审计(scripts/audit_feed.py 产出;watchdog 每日两次刷新)
+export interface HealthIssue { level: string; code: string; message: string }
+export interface SourceFreshness { exists: boolean; asof?: string | null; age_days?: number | null }
+export interface FeedHealth {
+  checked_at: string; ok: boolean; critical: number; warn: number;
+  issues: HealthIssue[]; sources: Record<string, SourceFreshness>;
+}
+export const getHealth = () => fetchJson<FeedHealth>("health.json");

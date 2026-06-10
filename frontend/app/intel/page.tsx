@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  getFundHoldings, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
-  type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
+  getFundHoldings, getHealth, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
+  type FeedHealth, type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
 import { fmtDateTime, useTz } from "@/lib/timefmt";
 
@@ -24,6 +24,7 @@ export default function IntelDashboard() {
   const [rep, setRep] = useState<FullReport | null>(null);
   const [hist, setHist] = useState<MarketSnapshot[]>([]);
   const [fund, setFund] = useState<FundHoldings | null>(null);
+  const [health, setHealth] = useState<FeedHealth | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const tzKey = useTz();
 
@@ -34,6 +35,7 @@ export default function IntelDashboard() {
     setSig(await getSignals()); setMkt(await getMarket()); setFac(await getFactory());
     setHist((await getMarketHistory()) ?? []);
     setFund(await getFundHoldings("situational-awareness"));
+    setHealth(await getHealth());
     if (i.latest.report) setRep(await getReport(i.latest.report));
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
@@ -65,7 +67,29 @@ export default function IntelDashboard() {
           <Stat label="数据滞后" value={fresh?.data_age_days != null ? `${fresh.data_age_days.toFixed(1)} 天` : "—"} />
           <Stat label="上次报告" value={fresh?.report_age_hours != null ? `${fresh.report_age_hours.toFixed(1)} 小时前` : "—"} />
           <Stat label="index 更新于" value={idx ? fmtDateTime(idx.updated_at, tzKey) : "—"} />
+          {health && <Stat label="审计" value={health.ok ? `通过 ✓ (${health.warn} 警告)` : `${health.critical} 严重 ✗`} color={health.ok ? UP : DOWN} />}
         </div>
+        {/* 逐数据面板新鲜度(audit_feed.py 实测,非报告自报) */}
+        {health?.sources && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {([["signals_book", "持仓簿"], ["market_state", "市场状态"], ["screener", "选股"], ["rs_ranks", "RS排名"],
+               ["stock_notes", "AI解读"], ["intraday", "盘中"], ["market_history", "快照史"], ["funds_13f", "13F"]] as const).map(([k, label]) => {
+              const s = health.sources[k];
+              const bad = !s?.exists || (s.age_days != null && s.age_days > 3 && k !== "funds_13f");
+              return (
+                <span key={k} className="badge" title={s?.asof ?? "缺失"}
+                  style={{ borderColor: bad ? DOWN : "var(--border)", color: bad ? DOWN : MUT }}>
+                  {label} {!s?.exists ? "缺失" : s.age_days != null ? `${s.age_days.toFixed(1)}d` : "✓"}
+                </span>
+              );
+            })}
+          </div>
+        )}
+        {health && !health.ok && (
+          <div className="err" style={{ marginTop: 10 }}>
+            {health.issues.filter((i) => i.level === "critical").map((i, j) => <div key={j}>[{i.code}] {i.message}</div>)}
+          </div>
+        )}
       </div>
 
       {/* 信息量统计:什么时候获得了多少信息 */}

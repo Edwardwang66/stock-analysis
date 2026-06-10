@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-06-10T05:39:20Z",
+  "ok": true,
+  "critical": 0,
+  "warn": 1,
+  "issues": [
+    {
+      "level": "warn",
+      "code": "missing-artifact",
+      "message": "feed 缺少 rs_ranks(前端已引用,将渲染为空)"
+    }
+  ],
+  "sources": {
+    "signals_book": {
+      "exists": true,
+      "asof": "2026-06-08",
+      "age_days": 2.24
+    },
+    "market_state": {
+      "exists": true,
+      "asof": "2026-06-08",
+      "age_days": 2.24
+    },
+    "screener": {
+      "exists": true,
+      "asof": "2026-06-10",
+      "age_days": 0.24
+    },
+    "rs_ranks": {
+      "exists": false
+    },
+    "stock_notes": {
+      "exists": true,
+      "asof": "2026-06-10T03:29:13Z",
+      "age_days": 0.09
+    },
+    "intraday": {
+      "exists": true,
+      "asof": "2026-06-10T04:16:19+00:00",
+      "age_days": 0.06
+    },
+    "market_history": {
+      "exists": true,
+      "asof": "2026-06-10T04:49:05+00:00",
+      "age_days": 0.03
+    },
+    "funds_13f": {
+      "exists": true,
+      "asof": "2026-02-11",
+      "age_days": 119.24
+    }
+  }
+}

@@ -60,6 +60,11 @@ jobs:
           ARGS=""
           if [ "${{ github.event.inputs.fast }}" = "true" ]; then ARGS="--fast"; fi
           python scripts/run_routine.py $ARGS
+      - name: EOD 公式因子工厂(预算化搜索 + 六门控,仅收盘后那班跑)
+        if: github.event.schedule == '30 22 * * 1-5'
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+        run: python backtest/factor_factory.py --publish
       - name: Commit + push feed 更新
         run: |
           git config user.name  "alpha-routine[bot]"
