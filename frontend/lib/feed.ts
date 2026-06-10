@@ -112,6 +112,15 @@ export interface MarketSnapshot {
 }
 export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
 
+// 云端自选池(Edward 重点跟踪 = OpenClaw 每日必须全覆盖)
+export interface RepoWatchlist { version: number; updated_at: string; symbols: string[] }
+export const getRepoWatchlist = () => fetchJson<RepoWatchlist>("watchlist.json");
+
+// 选股追踪历史(daily-digest.yml 每日入库;/tracker 页消费)
+export interface TrackedPick { symbol: string; name?: string; score?: number; pick_price?: number }
+export interface TrackedDay { date: string; generated_at?: string; threshold?: number; items: TrackedPick[] }
+export const getScreenerHistory = () => fetchJson<TrackedDay[]>("screener/history.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");

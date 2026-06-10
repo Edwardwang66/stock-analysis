@@ -16,7 +16,11 @@ export interface Quote {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 /** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
 export const HAS_BACKEND = Boolean(API_BASE);
-const QUOTE_CACHE_MS = 30_000;
+const QUOTE_CACHE_MS = 30_000;          // 股票:盘中报价新鲜期
+const CRYPTO_CACHE_MS = 8_000;          // 加密:直连免费,可以更"实时"
+function quoteTtl(symbol: string): number {
+  return symbol.startsWith("CRYPTO:") ? CRYPTO_CACHE_MS : QUOTE_CACHE_MS;
+}
 const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
 
@@ -301,9 +305,9 @@ export async function getQuotes(
     if (cached && cached.expires > now) { out[symbol] = cached.quote; onPartial?.(cached.quote); continue; }
     // L2:上次会话 30s 内的报价同样视为新鲜(硬刷新后不重复拉)
     const p = persisted[symbol];
-    if (p && now - p.at <= QUOTE_CACHE_MS) {
+    if (p && now - p.at <= quoteTtl(symbol)) {
       out[symbol] = p.q;
-      quoteCache.set(symbol, { quote: p.q, expires: p.at + QUOTE_CACHE_MS });
+      quoteCache.set(symbol, { quote: p.q, expires: p.at + quoteTtl(symbol) });
       onPartial?.(p.q);
       continue;
     }
@@ -325,7 +329,7 @@ export async function getQuotes(
           symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
           high: d.high, low: d.low, currency: d.currency, source: d.source,
         };
-        quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
+        quoteCache.set(quote.symbol, { quote, expires: now + quoteTtl(quote.symbol) });
         out[quote.symbol] = quote;
         onPartial?.(quote);
       }
@@ -341,7 +345,7 @@ export async function getQuotes(
     }
     try {
       const quote = await req;
-      quoteCache.set(symbol, { quote, expires: Date.now() + QUOTE_CACHE_MS });
+      quoteCache.set(symbol, { quote, expires: Date.now() + quoteTtl(symbol) });
       out[symbol] = quote;
       onPartial?.(quote);
     } catch {

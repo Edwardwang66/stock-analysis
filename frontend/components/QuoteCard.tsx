@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
@@ -13,17 +13,32 @@ export default function QuoteCard({
   error = "",
   loading = false,
   onRetry,
+  tag,
 }: {
   symbol: string;
   quote?: Quote | null;
   error?: string;
   loading?: boolean;
   onRetry?: () => void;
+  tag?: string;
 }) {
   const q = quote;
   const isCrypto = marketOf(symbol) === "CRYPTO";
   const dir = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
   const [starred, setStarred] = useState(false);
+  // 价格跳动闪烁:比上一次渲染高→绿闪,低→红闪
+  const prevPrice = useRef<number | null>(null);
+  const [flash, setFlash] = useState("");
+  useEffect(() => {
+    const p = q?.price ?? null;
+    if (p != null && prevPrice.current != null && p !== prevPrice.current) {
+      setFlash(p > prevPrice.current ? "flash-up" : "flash-down");
+      const t = setTimeout(() => setFlash(""), 700);
+      prevPrice.current = p;
+      return () => clearTimeout(t);
+    }
+    prevPrice.current = p;
+  }, [q?.price]);
   useEffect(() => {
     const sync = () => setStarred(inWatchlist(symbol));
     sync();
@@ -39,11 +54,11 @@ export default function QuoteCard({
           aria-label={starred ? "移出自选" : "加入自选"}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWatchlist(symbol); }}
         >{starred ? "★" : "☆"}</button>
-        <div className="sym">{nameOf(symbol)}</div>
+        <div className="sym">{nameOf(symbol)}{tag && <span className="badge" style={{ marginLeft: 6, fontSize: 10, padding: "1px 6px" }}>{tag}</span>}</div>
         <div className="src">{symbol}</div>
         {q ? (
           <>
-            <div className={`price ${dir}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+            <div className={`price ${dir} ${flash}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
             <div className={dir}>
               {q.change != null && `${q.change >= 0 ? "+" : ""}${q.change.toLocaleString(undefined, { maximumFractionDigits: 2 })} `}
               {q.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : "—"}

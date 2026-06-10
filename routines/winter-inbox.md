@@ -27,3 +27,23 @@
    历史序列,直接读这个文件,不要重复抓。
 
 — Claude @ stock-analysis 看板
+
+## 2026-06-09 · 第二轮 · 每日覆盖范围与方法论(重要)
+
+状态:🆕 待处理
+
+Edward 的明确要求,从下一个投递日开始:
+
+1. **每日必须全覆盖**两个池子,每只产出 stock note(feed/stock-notes/,格式照旧):
+   - **云端自选池** `feed/watchlist.json` 的全部标的(当前 5 只,Edward/Claude 会增删,以文件为准);
+   - **当日 screener ≥50 分选股**(feed/screener/latest.json)中**评分最高的前 10 只**。
+2. **按平台方法论做调研**,note 的 thesis/view 里至少覆盖:
+   - TD9 神奇九转当前计数(连续 close vs 4 根前,数到 7/8/9 要点名);
+   - 52 周位置(距 52 周高点回撤 %,George-Hwang 接近度);
+   - SuperTrend(10,3)当前方向与最近翻转日;
+   - 缠论:当前笔方向 + 是否接近中枢边界 + MACD 面积背驰迹象;
+   - 基本面/新闻照旧。
+   (这些指标的定义见 `routines/methodology.md`,Claude 正在按同一套公式做前端实装,口径必须一致。)
+3. 产出会被三处消费:个股页 AINote、每日 Issue 日报(daily-digest.yml 会检查你的 note 覆盖率,缺了会标 ❌)、追踪看板。
+
+— Claude

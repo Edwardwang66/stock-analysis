@@ -7,8 +7,9 @@ import SearchBox from "@/components/SearchBox";
 import { checkAlerts, clearTriggered, notify, type PriceAlert } from "@/lib/alerts";
 import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
-import { getIndex } from "@/lib/feed";
+import { getIndex, getRepoWatchlist } from "@/lib/feed";
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
+import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
@@ -34,6 +35,16 @@ export default function Home() {
     window.addEventListener("watchlist-changed", sync);
     return () => window.removeEventListener("watchlist-changed", sync);
   }, []);
+
+  // 云端跟踪池(feed/watchlist.json):OpenClaw 每日全覆盖分析的标的,自动并入自选区
+  const [cloudWatch, setCloudWatch] = useState<string[]>([]);
+  useEffect(() => {
+    getRepoWatchlist().then((w) => setCloudWatch(w?.symbols ?? [])).catch(() => {});
+  }, []);
+  const watchAll = useMemo(
+    () => Array.from(new Set([...cloudWatch, ...watch])),
+    [cloudWatch, watch],
+  );
 
   // 记住上次的 tab / 排序(挂载后恢复,避免 SSR 水合不一致)
   useEffect(() => {
@@ -94,10 +105,10 @@ export default function Home() {
   }, []);
 
   const baseSymbols = useMemo(() => symbolsForTab(tab), [tab]);
-  // 页面上实际渲染的全集 = 自选 + 当前 tab(看板统计也用同一个集合,保证一致)
+  // 页面上实际渲染的全集 = 自选(云端+本地)+ 当前 tab(看板统计也用同一个集合,保证一致)
   const allVisibleSymbols = useMemo(
-    () => Array.from(new Set([...watch, ...baseSymbols])),
-    [baseSymbols, watch],
+    () => Array.from(new Set([...watchAll, ...baseSymbols])),
+    [baseSymbols, watchAll],
   );
 
   useEffect(() => {
@@ -127,11 +138,21 @@ export default function Home() {
     return () => { alive = false; };
   }, [allVisibleSymbols, refreshId]);
 
-  // 30s 自动刷新;页面隐藏时暂停,回到前台立即补一次
+  // 加密实时推送:可见的加密标的合并到一条 Binance WebSocket(~1s 跳动,零轮询)
+  useEffect(() => {
+    const cryptos = allVisibleSymbols.filter((s) => s.startsWith("CRYPTO:"));
+    if (!cryptos.length) return;
+    return subscribeCryptoLive(cryptos, (q) => {
+      setQuotes((prev) => ({ ...prev, [q.symbol]: q }));
+    });
+  }, [allVisibleSymbols]);
+
+  // 10s 自动刷新(数据层分级新鲜期:加密 8s 实时跳动,股票 30s 内走缓存零外呼);
+  // 页面隐藏时暂停,回到前台立即补一次
   useEffect(() => {
     const id = window.setInterval(() => {
       if (!document.hidden) setRefreshId((x) => x + 1);
-    }, 30_000);
+    }, 10_000);
     const onVis = () => { if (!document.hidden) setRefreshId((x) => x + 1); };
     document.addEventListener("visibilitychange", onVis);
     return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
@@ -202,6 +223,7 @@ export default function Home() {
         <span className="tag">美股 · 港股 · A股 · 加密 · 实时行情 · 主力资金 · 非 LLM 技术分析</span>
         <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>💼 持仓</Link>
         <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📈 每日选股</Link>
+        <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🛰️ 情报看板</Link>
         <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🔌 数据源</Link>
       </div>
@@ -286,10 +308,10 @@ export default function Home() {
         </div>
       )}
 
-      {watch.length > 0 && (
+      {watchAll.length > 0 && (
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            ⭐ 我的自选
+            ⭐ 我的自选 <span className="src">☁ = 云端跟踪池(OpenClaw 每日全面分析)</span>
             <button className="linklike" onClick={() => exportUserData()}>导出备份</button>
             <label className="linklike" style={{ cursor: "pointer" }}>
               导入
@@ -305,7 +327,10 @@ export default function Home() {
                 }} />
             </label>
           </h2>
-          {renderCards(watch)}
+          <div className="grid">{watchAll.map((s) => (
+            <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
+              tag={cloudWatch.includes(s) ? "☁" : undefined} onRetry={() => { void retryOne(s); }} />
+          ))}</div>
         </>
       )}
 

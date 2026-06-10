@@ -9,6 +9,7 @@ import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
 import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
+import { subscribeCryptoLive } from "@/lib/livePrice";
 import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
 import { computeChan } from "@/lib/chan";
@@ -70,6 +71,42 @@ function SymbolView() {
   }, [symbol]);
 
   useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
+
+  // 末根 bar 跟价(日/周线):价格、K线、指标保持同源
+  const patchLastBar = (price: number) => {
+    setBars((prev) => {
+      if (!prev.length) return prev;
+      const last = prev[prev.length - 1];
+      if (last.close === price) return prev;
+      const next = [...prev];
+      next[next.length - 1] = {
+        ...last, close: price,
+        high: Math.max(last.high, price), low: Math.min(last.low, price),
+      };
+      return next;
+    });
+  };
+
+  // 实时价:加密走 Binance WebSocket(~1s 推送,零轮询延迟);股票 5s 短轮询
+  //(免费股票源本身有交易所级延迟,这是免费数据的物理上限,UI 如实标注)
+  useEffect(() => {
+    if (symbol.startsWith("CRYPTO:")) {
+      return subscribeCryptoLive([symbol], (q) => {
+        setQuote(q);
+        if (q.price != null && (interval === "1d" || interval === "1wk")) patchLastBar(q.price);
+      });
+    }
+    const id = window.setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const q = await getQuote(symbol);
+        setQuote(q);
+        if (q?.price != null && (interval === "1d" || interval === "1wk")) patchLastBar(q.price);
+      } catch { /* 单次失败忽略,下一轮再试 */ }
+    }, 5_000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, interval]);
 
   // 动态页标题:股票名 + 实时价(标签页可当迷你行情看)
   useEffect(() => {
