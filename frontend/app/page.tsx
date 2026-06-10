@@ -121,17 +121,22 @@ export default function Home() {
 
   // 指数概览:独立加载(不计入看板涨跌统计),60s 自刷新
   const [idxQuotes, setIdxQuotes] = useState<Record<string, Quote | null>>({});
+  // 🌙 美股闭市时,指数条追加期货(夜里宏观锚;Yahoo ES=F/NQ=F/YM=F 经统一数据层)
+  const idxList = useMemo(
+    () => (night.usClosed ? [...INDEX_SYMBOLS, "IDX:ES=F", "IDX:NQ=F", "IDX:YM=F"] : INDEX_SYMBOLS),
+    [night.usClosed],
+  );
   useEffect(() => {
     let alive = true;
-    const cached = getCachedQuotesSync(INDEX_SYMBOLS);
+    const cached = getCachedQuotesSync(idxList);
     if (Object.keys(cached).length) setIdxQuotes((prev) => ({ ...cached, ...prev }));
-    const load = () => getQuotes(INDEX_SYMBOLS, (q) => {
+    const load = () => getQuotes(idxList, (q) => {
       if (alive) setIdxQuotes((prev) => ({ ...prev, [q.symbol]: q }));
     }).catch(() => {});
     load();
     const id = window.setInterval(() => { if (!document.hidden) load(); }, 60_000);
     return () => { alive = false; window.clearInterval(id); };
-  }, []);
+  }, [idxList]);
 
   const baseSymbols = useMemo(() => symbolsForTab(tab), [tab]);
   // 页面上实际渲染的全集 = 自选(云端+本地)+ 当前 tab(看板统计也用同一个集合,保证一致)
@@ -288,7 +293,7 @@ export default function Home() {
             <span style={{ color: fngColor(fng.value) }}>{fng.label}</span>
           </span>
         )}
-        {INDEX_SYMBOLS.map((s) => {
+        {idxList.map((s) => {
           const q = idxQuotes[s];
           const d = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
           return (
