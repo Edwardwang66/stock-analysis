@@ -5,6 +5,7 @@ import {
   getFundHoldings, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
   type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
+import { fmtDateTime, useTz } from "@/lib/timefmt";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const pct = (x?: number | null, d = 1) => (x == null ? "—" : `${(x * 100).toFixed(d)}%`);
@@ -24,6 +25,7 @@ export default function IntelDashboard() {
   const [hist, setHist] = useState<MarketSnapshot[]>([]);
   const [fund, setFund] = useState<FundHoldings | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const tzKey = useTz();
 
   async function load() {
     const i = await getIndex();
@@ -62,7 +64,7 @@ export default function IntelDashboard() {
           <Stat label="最新数据日期" value={fresh?.market_data_asof || "—"} />
           <Stat label="数据滞后" value={fresh?.data_age_days != null ? `${fresh.data_age_days.toFixed(1)} 天` : "—"} />
           <Stat label="上次报告" value={fresh?.report_age_hours != null ? `${fresh.report_age_hours.toFixed(1)} 小时前` : "—"} />
-          <Stat label="index 更新于" value={idx ? idx.updated_at.replace("T", " ").replace("Z", " UTC") : "—"} />
+          <Stat label="index 更新于" value={idx ? fmtDateTime(idx.updated_at, tzKey) : "—"} />
         </div>
       </div>
 
@@ -227,7 +229,7 @@ export default function IntelDashboard() {
           <tbody>
             {(idx?.contributions || []).slice(0, 12).map((c, i) => (
               <tr key={i}>
-                <td className="src">{c.at.replace("T", " ").replace("Z", "")}</td>
+                <td className="src">{fmtDateTime(c.at, tzKey)}</td>
                 <td>{c.producer}</td>
                 <td><span className="badge">{c.type}</span></td>
                 <td>{c.summary || "—"}</td>

@@ -12,6 +12,8 @@ import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, sy
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
+import { fmtTime, useTz } from "@/lib/timefmt";
+import TzSelect from "@/components/TzSelect";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
@@ -28,6 +30,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshId, setRefreshId] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const tzKey = useTz();
 
   useEffect(() => {
     const sync = () => setWatch(getWatchlist());
@@ -312,7 +315,8 @@ export default function Home() {
         <button className="btn subtle" onClick={() => setRefreshId((x) => x + 1)} disabled={loadingQuotes}>
           {loadingQuotes ? "刷新中" : "刷新行情"}
         </button>
-        {lastUpdated && <span className="src">更新 {lastUpdated.toLocaleTimeString()}</span>}
+        {lastUpdated && <span className="src">更新 {fmtTime(lastUpdated, tzKey, true)}</span>}
+        <TzSelect />
       </div>
 
       {movers && (

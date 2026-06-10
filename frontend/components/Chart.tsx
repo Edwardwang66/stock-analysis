@@ -15,7 +15,7 @@ function fmtDate(t: number): string {
   const d = new Date(t * 1000);
   const p = (n: number) => String(n).padStart(2, "0");
   const base = `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
-  return d.getUTCHours() || d.getUTCMinutes() ? `${base} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}` : base;
+  return d.getUTCHours() || d.getUTCMinutes() ? `${base} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC` : base;
 }
 
 export default function Chart({

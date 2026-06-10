@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
+import { fmtDateTime, fmtTime, useTz } from "@/lib/timefmt";
 
 const IDX_LABEL: Record<string, string> = { SP500: "标普500", NDX100: "纳指100" };
 type Filter = "ALL" | "SP500" | "NDX100";
@@ -15,6 +16,7 @@ export default function ScreenerPage() {
   // 与首页同一数据层取实时报价,覆盖清单生成时的冻结价(跨页一致)
   const [live, setLive] = useState<Record<string, Quote>>({});
   const [liveAt, setLiveAt] = useState<Date | null>(null);
+  const tzKey = useTz();
 
   useEffect(() => {
     let alive = true;
@@ -61,10 +63,10 @@ export default function ScreenerPage() {
         <>
           <div className="toolbar">
             <div className="stat">
-              <span>日期 {data.date}</span>
+              <span>美东交易日 {data.date}</span>
               <span>扫描 {data.scanned}/{data.universe_size}</span>
               <span className="up">命中 {data.count} 只(≥{data.threshold})</span>
-              <span>{liveAt ? `实时价 ${liveAt.toLocaleTimeString()}` : Object.keys(live).length ? "实时价更新中…" : "价格为生成时数据"}</span>
+              <span>{liveAt ? `实时价 ${fmtTime(liveAt, tzKey, true)}` : Object.keys(live).length ? "实时价更新中…" : "价格为生成时数据"}</span>
             </div>
             <div className="segmented">
               {(["ALL", "SP500", "NDX100"] as Filter[]).map((f) => (
@@ -107,7 +109,7 @@ export default function ScreenerPage() {
 
       <div className="disclaimer">
         评分为<strong>规则化技术指标</strong>(均线/RSI/MACD/布林,范围 -100..100),<strong>仅供信息参考,不构成投资建议</strong>(Not financial advice)。
-        每日清单同时通过 GitHub Issue 推送(已指派给仓库所有者,GitHub 邮件通知)。数据源 Yahoo Finance · 生成 {data?.generated_at?.slice(0, 16)?.replace("T", " ") ?? "—"}。
+        每日清单同时通过 GitHub Issue 推送(已指派给仓库所有者,GitHub 邮件通知)。数据源 Yahoo Finance · 生成 {data?.generated_at ? fmtDateTime(data.generated_at, tzKey) : "—"}。
       </div>
     </div>
   );

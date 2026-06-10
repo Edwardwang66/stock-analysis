@@ -8,6 +8,8 @@ import {
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorOf } from "@/lib/sectors";
+import TzSelect from "@/components/TzSelect";
+import { fmtTime, useTz } from "@/lib/timefmt";
 // 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
 
 const UP = "#26a69a", DOWN = "#ef5350", MUT = "#787b86";
@@ -66,6 +68,7 @@ export default function DeskPage() {
   const [pools, setPools] = useState<Set<PoolKey>>(new Set());   // 空 = 全部
   const [sector, setSector] = useState("全部");
   const [sort, setSort] = useState<SortKey>("tag");
+  const tzKey = useTz();
 
   useEffect(() => {
     let alive = true;
@@ -183,11 +186,12 @@ export default function DeskPage() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>← 返回</Link>
         <h1>📋 总览</h1>
-        <span className="tag">全池标签视图 · {rows.length} 只 · 选股日 {scr?.date ?? "—"}(阈值 ≥{scr?.threshold ?? 80})</span>
+        <span className="tag">全池标签视图 · {rows.length} 只 · 选股日 {scr?.date ?? "—"}(美东 · 阈值 ≥{scr?.threshold ?? 80})</span>
         <a href="https://github.com/Edwardwang66/stock-analysis/issues?q=is%3Aissue+label%3Adaily-digest" target="_blank" rel="noreferrer"
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
+        <TzSelect />
       </div>
 
       {loading ? <div className="loading">加载中…</div> : (
@@ -195,7 +199,7 @@ export default function DeskPage() {
           {/* 盘中机器流(交易时段才有;Winter 5 分钟循环 → live 分支) */}
           {live && (
             <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
-              <h2>⚡ 盘中流(机器报告 · {new Date(live.at).toLocaleTimeString()} · 池 {live.quoted}/{live.pool_size})
+              <h2>⚡ 盘中流(机器报告 · {fmtTime(live.at, tzKey)} · 池 {live.quoted}/{live.pool_size})
                 <span className="src" style={{ marginLeft: 10 }}>
                   涨 <span className="up">{live.summary.up}</span> / 跌 <span className="down">{live.summary.down}</span>
                   {live.summary.median_pct != null && <> · 中位 {live.summary.median_pct >= 0 ? "+" : ""}{live.summary.median_pct.toFixed(2)}%</>}

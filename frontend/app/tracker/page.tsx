@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreenerHistory, type TrackedDay } from "@/lib/feed";
+import TzSelect from "@/components/TzSelect";
+import { fmtTime, useTz } from "@/lib/timefmt";
 
 const AUTO_DAYS = 2;    // 最近 N 个交易日自动实时估值;更早的按需点击估值(控代理压力)
 
@@ -16,6 +18,7 @@ export default function TrackerPage() {
   const [loadingDays, setLoadingDays] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const tzKey = useTz(); // 时区切换时间戳联动
 
   const valueDay = (d: TrackedDay) => {
     setLoadingDays((prev) => new Set(prev).add(d.date));
@@ -69,7 +72,8 @@ export default function TrackerPage() {
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>🎯 选股追踪</h1>
         <span className="tag">每日达标选股全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
-        {updatedAt && <span className="src" style={{ marginLeft: "auto" }}>估值 {updatedAt.toLocaleTimeString()}</span>}
+        <span style={{ marginLeft: "auto" }}><TzSelect /></span>
+        {updatedAt && <span className="src">估值 {fmtTime(updatedAt, tzKey, true)}</span>}
       </div>
 
       {overall && (
@@ -91,7 +95,7 @@ export default function TrackerPage() {
       ) : dayStats.map((d, di) => (
         <div className="section" key={d.date}>
           <h2>
-            {d.date} <span className="src">持仓 {d.items.length} 只</span>
+            {d.date} <span className="src">美东交易日 · 持仓 {d.items.length} 只</span>
             {di === 0 && <span className="badge" style={{ marginLeft: 8, fontSize: 11 }}>最新</span>}
             {d.valued && d.n > 0 && (
               <span className="src" style={{ marginLeft: 10 }}>
@@ -129,7 +133,7 @@ export default function TrackerPage() {
       ))}
 
       <div className="disclaimer">
-        「选中价」= 入选当日收盘价;收益按实时价计算,未含交易成本。历史保留 60 个交易日,每日全量(≥阈值一只不落)。
+        「选中价」= 入选当日(美东交易日)收盘价;日期均为美东交易日;收益按实时价计算,未含交易成本。历史保留 60 个交易日,每日全量(≥阈值一只不落)。
         评分为规则化技术指标(v2 十因子),<strong>仅供信息参考,不构成投资建议</strong>(Not financial advice)。
       </div>
     </div>
