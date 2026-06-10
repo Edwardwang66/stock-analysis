@@ -190,3 +190,4 @@ def analyze(symbol: str, bars: list[Bar], source: str = "") -> AnalysisResult:
         summary=summary,
         source=source,
     )
+
