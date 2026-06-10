@@ -205,6 +205,17 @@ export interface WinrateDoc {
 }
 export const getWinrate = () => fetchJson<WinrateDoc>("screener/winrate.json");
 
+
+// 盘前隔夜要素包(premarket-pack.yml 12:40 UTC;盘前报告与 /desk 共用)
+export interface OvernightBlock { name: string; price: number; pct: number }
+export interface OvernightDoc {
+  date?: string; generated_at?: string;
+  futures?: Record<string, OvernightBlock>; asia?: Record<string, OvernightBlock>;
+  europe?: Record<string, OvernightBlock>; crypto?: Record<string, { price: number; pct: number }>;
+  yesterday_movers?: { symbol: string; pct: number; price?: number }[];
+}
+export const getOvernight = () => fetchJson<OvernightDoc>("intraday/overnight.json");
+
 // 事件热度榜(Winter PG intraday_events 近7天聚合,每日收盘后投递)
 export interface EventHeatItem { symbol: string; moves: number; highs: number; lows: number; total: number }
 export interface EventHeatDoc { generated_at?: string; window_days?: number; items?: EventHeatItem[] }

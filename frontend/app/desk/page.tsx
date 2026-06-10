@@ -3,12 +3,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getEventHeat, getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
-  type EventHeatDoc, type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
+  getAnalysisMd, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
+import { sectorLabel, useLang } from "@/lib/names";
 import { sectorOf } from "@/lib/sectors";
 import TzSelect from "@/components/TzSelect";
+import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 // 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
@@ -47,6 +49,7 @@ function ago(iso?: string | null): string {
 }
 
 export default function DeskPage() {
+  const lang = useLang();
   const [wl, setWl] = useState<string[]>([]);
   const [scr, setScr] = useState<ScreenerList | null>(null);
   const [scores, setScores] = useState<ScoreTable | null>(null);
@@ -65,6 +68,8 @@ export default function DeskPage() {
   const [mdClose, setMdClose] = useState<string | null>(null);
   const [heat, setHeat] = useState<EventHeatDoc | null>(null);
   useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
+  const [ovn, setOvn] = useState<OvernightDoc | null>(null);
+  useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
@@ -216,6 +221,7 @@ export default function DeskPage() {
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
+        <LangSelect />
         <LiveClock />
         <TzSelect />
       </div>
@@ -239,7 +245,7 @@ export default function DeskPage() {
                         <span className="badge" style={{ marginRight: 8, fontSize: 11,
                           color: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500",
                           borderColor: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500" }}>{e.type}</span>
-                        {nameOf(e.symbol)} <span className="src">{e.symbol.replace(/^US:/, "")}</span>
+                        {nameOf(e.symbol, lang)} <span className="src">{e.symbol.replace(/^US:/, "")}</span>
                       </span>
                       <span className="src">{e.detail} @ {fmt(e.price)}</span>
                     </Link>
@@ -258,6 +264,13 @@ export default function DeskPage() {
               <a href={`https://github.com/Edwardwang66/stock-analysis/tree/main/feed/screener`} target="_blank" rel="noreferrer"
                 className="src" style={{ marginLeft: 10, color: "var(--accent)" }}>原文 →</a>
             </h2>
+            {ovn?.futures && ovn.date === today() && (
+              <p className="src" style={{ margin: "4px 0 8px" }}>
+                盘前要素:{Object.values(ovn.futures).map((f) => `${f.name} ${f.pct >= 0 ? "+" : ""}${f.pct}%`).join(" · ")}
+                {ovn.asia && <> ｜ 亚洲 {Object.values(ovn.asia).map((f) => `${f.name} ${f.pct >= 0 ? "+" : ""}${f.pct}%`).join(" · ")}</>}
+                {ovn.crypto?.BTCUSDT && <> ｜ BTC {ovn.crypto.BTCUSDT.pct >= 0 ? "+" : ""}{ovn.crypto.BTCUSDT.pct.toFixed(1)}%</>}
+              </p>
+            )}
             {mdIntra && (
               <details>
                 <summary style={{ cursor: "pointer", fontSize: 13 }} className="src">盘中事件解读滚动(最新在下,点开看全部)</summary>
@@ -311,7 +324,7 @@ export default function DeskPage() {
             </div>
             <select value={sector} onChange={(e) => setSector(e.target.value)}
               style={{ background: "var(--panel)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12 }}>
-              {sectors.map((s) => <option key={s} value={s}>{s === "全部" ? "行业:全部" : s}</option>)}
+              {sectors.map((s) => <option key={s} value={s}>{s === "全部" ? (lang === "en" ? "Sector: All" : "行业:全部") : sectorLabel(s, lang)}</option>)}
             </select>
             <div className="segmented">
               <button className={sort === "tag" ? "active" : ""} onClick={() => setSort("tag")}>默认</button>
@@ -333,7 +346,7 @@ export default function DeskPage() {
                   return (
                     <tr key={r.symbol}>
                       <td>
-                        <Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol)}</Link>
+                        <Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol, lang)}</Link>
                         <span className="src" style={{ marginLeft: 6 }}>{r.symbol.replace(/^US:/, "")}</span>
                       </td>
                       <td>

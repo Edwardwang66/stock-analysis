@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
+import { useLang } from "@/lib/names";
 
 // 纯展示组件:与行情卡片共用同一份 quotes(父级单一数据源),保证看板各区数值一致。
 interface Tile { symbol: string; pct: number | null; price: number | null }
@@ -16,6 +17,7 @@ function color(pct: number | null): string {
 }
 
 function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, Quote | null> }) {
+  const lang = useLang();
   const tiles = useMemo<Tile[]>(
     () => symbols.map((s) => ({
       symbol: s,
@@ -31,9 +33,9 @@ function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, 
           <div
             className="tile"
             style={{ background: color(t.pct) }}
-            title={`${nameOf(t.symbol)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
+            title={`${nameOf(t.symbol, lang)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
           >
-            <div className="tile-name">{nameOf(t.symbol)}</div>
+            <div className="tile-name">{nameOf(t.symbol, lang)}</div>
             <div className="tile-pct">{t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}</div>
           </div>
         </Link>

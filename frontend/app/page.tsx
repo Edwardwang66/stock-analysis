@@ -9,11 +9,13 @@ import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import { getIndex, getIntradayLive, getRepoWatchlist, type IntradayDoc } from "@/lib/feed";
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
+import { marketLabel, useLang } from "@/lib/names";
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 import TzSelect from "@/components/TzSelect";
+import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
 
@@ -22,6 +24,10 @@ const LS_TAB = "ui:tab:v1";
 const LS_SORT = "ui:sort:v1";
 
 export default function Home() {
+  const lang = useLang();
+  const [cloudOpen, setCloudOpen] = useState(false);
+  useEffect(() => { setCloudOpen(window.localStorage.getItem("ui:cloudpool") === "open"); }, []);
+  const toggleCloud = () => setCloudOpen((v) => { const n = !v; window.localStorage.setItem("ui:cloudpool", n ? "open" : "closed"); return n; });
   // 默认「全部」:打开即并行加载所有市场(加密直连最快先上屏,股票渐进补齐)
   const [tab, setTab] = useState("ALL");
   const [watch, setWatch] = useState<string[]>([]);
@@ -224,12 +230,32 @@ export default function Home() {
     return { top: sorted.slice(0, 3), bottom: sorted.slice(-3).reverse() };
   }, [quotes, allVisibleSymbols]);
 
-  const renderCards = (list: string[]) => (
-    <div className="grid">{list.map((s) => (
-      <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
-        onRetry={() => { void retryOne(s); }} />
-    ))}</div>
-  );
+  // 大分组默认 12 张卡,可展开全部(250 代表票时代的页面长度控制)
+  const [expandedMkts, setExpandedMkts] = useState<Set<string>>(new Set());
+  const renderCards = (list: string[], collapseKey?: string) => {
+    const isExp = !collapseKey || expandedMkts.has(collapseKey) || list.length <= 14;
+    const shown = isExp ? list : list.slice(0, 12);
+    return (
+      <>
+        <div className="grid">{shown.map((s) => (
+          <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
+            onRetry={() => { void retryOne(s); }} />
+        ))}</div>
+        {!isExp && (
+          <button className="linklike" style={{ margin: "10px 0 4px", fontSize: 13 }}
+            onClick={() => setExpandedMkts((prev) => new Set(prev).add(collapseKey))}>
+            ▼ 展开全部 {list.length} 只
+          </button>
+        )}
+        {isExp && collapseKey && list.length > 14 && expandedMkts.has(collapseKey) && (
+          <button className="linklike" style={{ margin: "10px 0 4px", fontSize: 13 }}
+            onClick={() => setExpandedMkts((prev) => { const n = new Set(prev); n.delete(collapseKey); return n; })}>
+            ▲ 收起(显示前 12)
+          </button>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="container">
@@ -259,7 +285,7 @@ export default function Home() {
           const d = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
           return (
             <Link key={s} href={`/symbol/?s=${encodeURIComponent(s)}`} className="index-pill">
-              <span className="muted">{nameOf(s)}</span>
+              <span className="muted">{nameOf(s, lang)}</span>
               <strong>{q?.price != null ? q.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</strong>
               <span className={d}>{q?.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : ""}</span>
             </Link>
@@ -273,7 +299,7 @@ export default function Home() {
           {liveEvents.slice(0, 6).map((e, i) => (
             <Link key={i} href={`/symbol/?s=${encodeURIComponent(e.symbol)}`}
               className={`mover ${e.type === "新低" ? "down" : e.type === "新高" ? "up" : ""}`}>
-              {e.type} {nameOf(e.symbol)} {e.detail.replace("5分钟 ", "")}
+              {e.type} {nameOf(e.symbol, lang)} {e.detail.replace("5分钟 ", "")}
             </Link>
           ))}
           <Link href="/desk/" className="src" style={{ color: "var(--accent)" }}>全部 →</Link>
@@ -282,7 +308,7 @@ export default function Home() {
 
       {firedAlerts.length > 0 && (
         <div className="hint" style={{ borderColor: "var(--up)", background: "rgba(38,166,154,.08)" }}>
-          ⏰ 价格提醒触发:{firedAlerts.map((a) => `${nameOf(a.symbol)} ${a.dir === "above" ? "≥" : "≤"} ${a.target}(现 ${a.triggeredPrice})`).join(" · ")}
+          ⏰ 价格提醒触发:{firedAlerts.map((a) => `${nameOf(a.symbol, lang)} ${a.dir === "above" ? "≥" : "≤"} ${a.target}(现 ${a.triggeredPrice})`).join(" · ")}
           <button className="btn subtle" style={{ marginLeft: 10, padding: "2px 10px", fontSize: 12 }}
             onClick={() => { clearTriggered(); setFiredAlerts([]); }}>知道了</button>
         </div>
@@ -319,6 +345,7 @@ export default function Home() {
         </button>
         {lastUpdated && <span className="src">更新 {fmtTime(lastUpdated, tzKey)}({agoShort(lastUpdated, nowTick)})</span>}
         <LiveClock />
+        <LangSelect />
         <TzSelect />
       </div>
 
@@ -327,13 +354,13 @@ export default function Home() {
           <span className="src">今日强弱</span>
           {movers.top.map((q) => (
             <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover up">
-              {nameOf(q.symbol)} +{(q.changePct ?? 0).toFixed(2)}%
+              {nameOf(q.symbol, lang)} +{(q.changePct ?? 0).toFixed(2)}%
             </Link>
           ))}
           <span className="src">|</span>
           {movers.bottom.map((q) => (
             <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover down">
-              {nameOf(q.symbol)} {(q.changePct ?? 0).toFixed(2)}%
+              {nameOf(q.symbol, lang)} {(q.changePct ?? 0).toFixed(2)}%
             </Link>
           ))}
         </div>
@@ -344,10 +371,11 @@ export default function Home() {
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             ☁ 云端跟踪池({cloudWatch.length})
+            <button className="linklike" onClick={toggleCloud}>{cloudOpen ? "▲ 收起" : "▼ 展开"}</button>
             <span className="src">OpenClaw 每日全析 · 按涨跌排序</span>
             <Link href="/desk/" className="linklike">→ 标签/行业/评分视图</Link>
           </h2>
-          <Heatmap symbols={cloudWatch} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
+          {cloudOpen && <Heatmap symbols={cloudWatch} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />}
         </>
       )}
 
@@ -379,7 +407,7 @@ export default function Home() {
 
       <div className="tabs">
         {MARKETS.map((m) => (
-          <button key={m.key} className={m.key === tab ? "active" : ""} onClick={() => pickTab(m.key)}>{m.label}</button>
+          <button key={m.key} className={m.key === tab ? "active" : ""} onClick={() => pickTab(m.key)}>{marketLabel(m.key, lang)}</button>
         ))}
       </div>
 
@@ -409,7 +437,7 @@ export default function Home() {
                 </span>
               )}
             </h3>
-            {renderCards(g.symbols)}
+            {renderCards(g.symbols, g.mkt)}
           </div>
         );
       }) : (
@@ -419,7 +447,7 @@ export default function Home() {
               市场状态:<span className={marketStatus(tab).open ? "up" : "muted"}>{marketStatus(tab).label}</span>(本地推算,不含节假日)
             </p>
           )}
-          {renderCards(symbols)}
+          {renderCards(symbols, tab)}
         </>
       )}
 

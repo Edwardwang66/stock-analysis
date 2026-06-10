@@ -126,6 +126,21 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
         results = await asyncio.gather(*[score_one(client, sem, t, m) for t, m in tickers])
 
     scored = [r for r in results if r]
+    # RS 排名先算(methodology §6,IBD 全宇宙百分位),内部字段清理后再写任何文件
+    rs_pool = [r for r in scored if r.get("_rs_raw") is not None]
+    rs_pool.sort(key=lambda x: x["_rs_raw"])
+    n_rs = len(rs_pool)
+    ranks = {}
+    for i, r in enumerate(rs_pool):
+        rs = max(1, min(99, round((i + 1) / n_rs * 99))) if n_rs else None
+        ranks[r["symbol"]] = {
+            "rs": rs,
+            "r63": round(r["_r63"] * 100, 1) if r.get("_r63") is not None else None,
+            "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
+        }
+    for r in scored:  # 必须在写 latest.json 前清理,否则 picks 带 _rs_raw 脏字段
+        for k in ("_rs_raw", "_r63", "_r252"):
+            r.pop(k, None)
     picks = sorted([r for r in scored if r["score"] >= threshold],
                    key=lambda x: (x["score"], x["bullish_signals"], x["change_pct"]), reverse=True)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -144,18 +159,6 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     (out_dir / "latest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / f"{today}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / "issue.md").write_text(render_issue(payload))
-    # RS 相对强度 1-99(methodology §6,IBD 风格全宇宙百分位;Actions 扫描产出)
-    rs_pool = [r for r in scored if r.get("_rs_raw") is not None]
-    rs_pool.sort(key=lambda x: x["_rs_raw"])
-    n_rs = len(rs_pool)
-    ranks = {}
-    for i, r in enumerate(rs_pool):
-        rs = max(1, min(99, round((i + 1) / n_rs * 99))) if n_rs else None
-        ranks[r["symbol"]] = {
-            "rs": rs,
-            "r63": round(r["_r63"] * 100, 1) if r.get("_r63") is not None else None,
-            "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
-        }
     rs_path = ROOT / "feed" / "signals" / "rs-ranks.json"
     rs_path.parent.mkdir(parents=True, exist_ok=True)
     rs_path.write_text(json.dumps({
@@ -164,10 +167,6 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
         "note": "RS=全宇宙(标普500∪纳指100)加权动量百分位 1-99;raw=0.4*63d+0.2*126d+0.2*189d+0.2*252d",
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"[rs] 排名 {n_rs} 只 → feed/signals/rs-ranks.json")
-    # 清理内部字段(不进 latest.json)
-    for r in scored:
-        for k in ("_rs_raw", "_r63", "_r252"):
-            r.pop(k, None)
 
     # 当日 ≥阈值 自动并入云端分析池(tier=screener,每日整体轮换;Edward 2026-06-10 要求)
     wl_path = ROOT / "feed" / "watchlist.json"

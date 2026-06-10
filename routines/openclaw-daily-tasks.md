@@ -111,9 +111,13 @@
 - [ ] **盘前 report(硬性)**:美东 09:00 前(13:00-13:30 UTC 窗口)投递
       `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥80)盘前异动、
       隔夜新闻、今日事件窗口、按方法论给出当日关注位(Pivot/九转/SuperTrend 状态)。
+      **行情原料直接读 `feed/intraday/overnight.json`**(12:40 UTC 自动生成:美股期货
+      ES/NQ/YM、亚洲收盘、欧洲盘中、隔夜加密、昨日异动 top20),不用自己抓。
 - [ ] **盘中事件驱动(每5分钟轮询,只写增量)**:轮询 live 分支 `feed/intraday/latest.json` 的
-      `events[]`;对触发 异动/新高/新低 的标的,更新该标的 stock-note 并把一句话追加到
-      `feed/screener/analysis-intraday-<date>.md`(滚动追加,不重写全文)。
+      `events[]`(本机直接看 `INTRADAY_EVENTS.flag` 更快);对触发标的生成一句话解读后用
+      **一条命令落两处**:`python scripts/openclaw_intraday_update.py --symbol <SYM> --note "<一句话>" --push`
+      (自动 merge note.intraday_update + 滚动追加 analysis-intraday-<date>.md,rebase 安全);
+      处理完 `--clear-flag`。缺投盘前/收盘前报告会被 openclaw-watchdog 自动开 Issue 点名。
 - [ ] **收盘前 report(硬性)**:美东 15:30(19:30 UTC)投递 `feed/screener/analysis-close-<date>.md`:
       尾盘 30 分钟关注点、当日全池复盘要点、明日前瞻。
 - [ ] 收盘后照旧:全量 notes + 当日汇总(§1 的 analysis-<date>.md);纳指/标普大盘综述一天一份即可。

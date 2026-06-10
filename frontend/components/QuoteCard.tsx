@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
+import { useLang } from "@/lib/names";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 // 纯展示组件:报价一律由父级统一拉取下发(单一数据源,卡片间/看板间不会出现
@@ -22,6 +23,7 @@ export default function QuoteCard({
   onRetry?: () => void;
   tag?: string;
 }) {
+  const lang = useLang();
   const q = quote;
   const isCrypto = marketOf(symbol) === "CRYPTO";
   const dir = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
@@ -54,7 +56,7 @@ export default function QuoteCard({
           aria-label={starred ? "移出自选" : "加入自选"}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWatchlist(symbol); }}
         >{starred ? "★" : "☆"}</button>
-        <div className="sym">{nameOf(symbol)}{tag && <span className="badge" style={{ marginLeft: 6, fontSize: 10, padding: "1px 6px" }}>{tag}</span>}</div>
+        <div className="sym">{nameOf(symbol, lang)}{tag && <span className="badge" style={{ marginLeft: 6, fontSize: 10, padding: "1px 6px" }}>{tag}</span>}</div>
         <div className="src">{symbol}</div>
         {q ? (
           <>
