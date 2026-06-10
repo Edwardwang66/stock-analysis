@@ -264,7 +264,7 @@ export default function DeskPage() {
       const v = rs.ranks[r.symbol.slice(3)];
       if (!v || v.rs == null || v.r63 == null) continue;
       const color = r.tags.includes("watch") ? "#f7b500" : r.tags.includes("salp") ? "#26c6da" : (r.score ?? 0) >= 80 ? "#26a69a" : "#787b86";
-      out.push({ symbol: r.symbol, name: nameOf(r.symbol, lang), rs: v.rs, r63: v.r63, color });
+      out.push({ symbol: r.symbol, name: nameOf(r.symbol, lang), rs: v.rs, r63: v.r63, r126: v.r126 ?? null, color });
     }
     return out;
   }, [rows, rs, lang]);

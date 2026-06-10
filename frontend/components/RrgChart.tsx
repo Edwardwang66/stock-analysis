@@ -6,7 +6,7 @@ import { useMemo } from "react";
 // 右上=领涨(强+动量),右下=高位转弱,左下=落后,左上=底部改善。
 // 经典 RRG 用 RS-Ratio/RS-Momentum;此处以现有 rs/r63 近似,口径见 methodology §6。
 
-export interface RrgItem { symbol: string; name: string; rs: number; r63: number; color: string }
+export interface RrgItem { symbol: string; name: string; rs: number; r63: number; r126?: number | null; color: string }
 
 const W = 720, H = 420, PAD = 42;
 
@@ -50,13 +50,23 @@ export default function RrgChart({ items }: { items: RrgItem[] }) {
         <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={11} fill="var(--muted)">RS 相对强度分位(0-100)→</text>
         <text x={12} y={H / 2} fontSize={11} fill="var(--muted)" transform={`rotate(-90 12 ${H / 2})`} textAnchor="middle">63日动量 % →</text>
         {/* 散点 */}
-        {pts.map((p) => (
-          <Link key={p.symbol} href={`/symbol/?s=${encodeURIComponent(p.symbol)}`}>
-            <circle cx={p.x} cy={p.y} r={4.5} fill={p.color} fillOpacity={0.85} stroke="var(--bg)" strokeWidth={1}>
-              <title>{`${p.name} · RS ${p.rs} · 63日 ${p.r63 >= 0 ? "+" : ""}${p.r63}%`}</title>
-            </circle>
-          </Link>
-        ))}
+        {pts.map((p) => {
+          const accel = p.r126 != null ? p.r63 - p.r126 : null; // 短期动量 vs 中期:>0 加速
+          return (
+            <Link key={p.symbol} href={`/symbol/?s=${encodeURIComponent(p.symbol)}`}>
+              <g>
+                <circle cx={p.x} cy={p.y} r={4.5} fill={p.color} fillOpacity={0.85} stroke="var(--bg)" strokeWidth={1} />
+                {accel != null && Math.abs(accel) >= 3 && (
+                  <path d={accel > 0
+                    ? `M ${p.x - 3} ${p.y - 7} L ${p.x + 3} ${p.y - 7} L ${p.x} ${p.y - 12} Z`
+                    : `M ${p.x - 3} ${p.y + 7} L ${p.x + 3} ${p.y + 7} L ${p.x} ${p.y + 12} Z`}
+                    fill={accel > 0 ? "#26a69a" : "#ef5350"} fillOpacity={0.9} />
+                )}
+                <title>{`${p.name} · RS ${p.rs} · 63日 ${p.r63 >= 0 ? "+" : ""}${p.r63}%${p.r126 != null ? ` · 126日 ${p.r126 >= 0 ? "+" : ""}${p.r126}%(${(accel ?? 0) > 0 ? "动量加速" : "动量减速"})` : ""}`}</title>
+              </g>
+            </Link>
+          );
+        })}
         {/* 重点标注 */}
         {labeled.map((p) => (
           <text key={`t${p.symbol}`} x={p.x + 7} y={p.y + 4} fontSize={10.5} fill="var(--text)" opacity={0.92}>
