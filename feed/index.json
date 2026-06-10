@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-10T06:30:44Z",
+  "updated_at": "2026-06-10T06:40:14Z",
   "freshness": {
-    "last_report_at": "2026-06-10T06:30:44Z",
+    "last_report_at": "2026-06-10T06:40:14Z",
     "market_data_asof": "2026-06-08",
     "report_age_hours": 0.0,
-    "data_age_days": 2.27,
+    "data_age_days": 2.28,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.27
+        "age_days": 2.28
       },
       "market_state": {
         "exists": true,
         "asof": "2026-06-08",
-        "age_days": 2.27
+        "age_days": 2.28
       },
       "screener": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.27
+        "age_days": 0.28
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-06-10",
-        "age_days": 0.27
+        "age_days": 0.28
       },
       "stock_notes": {
         "exists": true,
@@ -36,22 +36,22 @@
       "intraday": {
         "exists": true,
         "asof": "2026-06-10T04:16:19+00:00",
-        "age_days": 0.09
+        "age_days": 0.1
       },
       "market_history": {
         "exists": true,
         "asof": "2026-06-10T04:49:05+00:00",
-        "age_days": 0.07
+        "age_days": 0.08
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 23.27
+        "age_days": 23.28
       },
       "crypto_state": {
         "exists": true,
         "asof": "2026-06-10T06:30:42Z",
-        "age_days": 0.0
+        "age_days": 0.01
       }
     }
   },
@@ -64,13 +64,14 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.56≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 27,
+    "total_reports": 28,
     "by_kind": {
+      "manual": 4,
       "routine": 13,
-      "manual": 3,
       "openclaw": 11
     },
     "by_producer": {
+      "study-overnight-gap": 1,
       "hyperliquid-monitor": 2,
       "study-downshift": 1,
       "github-actions-routine": 11,
@@ -82,16 +83,31 @@
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 21,
-    "last_7d": 27
+    "last_24h": 22,
+    "last_7d": 28
   },
   "timeline": {
     "2026-06-06": 2,
     "2026-06-08": 4,
     "2026-06-09": 13,
-    "2026-06-10": 8
+    "2026-06-10": 9
   },
   "reports": [
+    {
+      "id": "study-overnight-2026-06-10T0640Z",
+      "kind": "manual",
+      "produced_at": "2026-06-10T06:40:14Z",
+      "asof_data": "2026-06-08",
+      "producer": "study-overnight-gap",
+      "agent_role": "engine",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "隔夜缺口研究:代理质量 +0.96,信号价值 t≈-0.6。",
+      "path": "reports/study-overnight-2026-06-10T0640Z.json"
+    },
     {
       "id": "hl-monitor-2026-06-10T0630Z",
       "kind": "routine",
@@ -499,6 +515,13 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-10T06:40:14Z",
+      "producer": "study-overnight-gap",
+      "id": "study-overnight-2026-06-10T0640Z",
+      "type": "regime_update",
+      "summary": "隔夜缺口研究:代理质量 +0.96,信号价值 t≈-0.6。"
+    },
     {
       "at": "2026-06-10T06:30:44Z",
       "producer": "hyperliquid-monitor",
