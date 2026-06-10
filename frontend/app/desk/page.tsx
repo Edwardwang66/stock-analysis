@@ -327,6 +327,12 @@ export default function DeskPage() {
                 </span>
               </h2>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                {(hl.equity_perps.commodities ?? []).filter((x) => ["CL", "SILVER", "GOLD"].includes(x.symbol)).map((x) => (
+                  <span key={x.symbol} className="badge" style={{ fontSize: 12, padding: "5px 10px",
+                    color: (x.chg24h ?? 0) >= 0 ? UP : DOWN }}>
+                    {x.symbol === "CL" ? "原油" : x.symbol === "SILVER" ? "白银" : "黄金"} {fmt(x.mark)} {x.chg24h != null ? `${(x.chg24h * 100).toFixed(2)}%` : ""}
+                  </span>
+                ))}
                 {(hl.equity_perps.indices ?? []).filter((x) => ["SP500", "USTECH", "MAG7"].includes(x.symbol)).map((x) => (
                   <span key={x.symbol} className="badge" style={{ fontSize: 12, padding: "5px 10px",
                     color: (x.chg24h ?? 0) >= 0 ? UP : DOWN }}>
