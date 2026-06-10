@@ -163,10 +163,23 @@ export default function DeskPage() {
     const id = window.setInterval(() => { if (!document.hidden) load(); }, 60_000);
     return () => { alive = false; window.clearInterval(id); };
   }, []);
-  // 过滤与排序
+  // 过滤与排序(localStorage 记忆,刷新不丢)
   const [pools, setPools] = useState<Set<PoolKey>>(new Set());   // 空 = 全部
   const [sector, setSector] = useState("全部");
   const [sort, setSort] = useState<SortKey>("tag");
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("desk:filters") || "{}");
+      if (Array.isArray(saved.pools)) setPools(new Set(saved.pools));
+      if (typeof saved.sector === "string") setSector(saved.sector);
+      if (typeof saved.sort === "string") setSort(saved.sort);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("desk:filters", JSON.stringify({ pools: Array.from(pools), sector, sort }));
+    } catch { /* ignore */ }
+  }, [pools, sector, sort]);
   const tzKey = useTz();
   const nowTick = useNow(1000);
 
@@ -332,6 +345,35 @@ export default function DeskPage() {
               </div>
             </div>
           )}
+
+          {/* 池内宽度分布条(全部行情就位后显示) */}
+          {(() => {
+            const pcs = rows.map((r) => quotes[r.symbol]?.changePct).filter((x): x is number => x != null);
+            if (pcs.length < 30) return null;
+            const buckets = [-3, -1, 0, 1, 3];
+            const cnt = [0, 0, 0, 0, 0, 0];
+            for (const p2 of pcs) {
+              let i = buckets.findIndex((b) => p2 < b);
+              if (i === -1) i = 5;
+              cnt[i]++;
+            }
+            const colors = ["#b71c1c", "#ef5350", "#f1979b", "#9bd4b1", "#26a69a", "#0b8043"];
+            const labels = ["<-3%", "-3~-1", "-1~0", "0~1", "1~3", ">3%"];
+            const total = pcs.length;
+            const up = pcs.filter((x) => x > 0).length;
+            return (
+              <div style={{ margin: "2px 2px 10px" }}>
+                <div style={{ display: "flex", height: 10, borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)" }}
+                  title={cnt.map((c, i) => `${labels[i]}: ${c} 只`).join(" · ")}>
+                  {cnt.map((c, i) => c > 0 && <div key={i} style={{ width: `${(c / total) * 100}%`, background: colors[i] }} />)}
+                </div>
+                <div className="src" style={{ fontSize: 11, marginTop: 3 }}>
+                  池内宽度:涨 <span className="up">{up}</span> / 跌 <span className="down">{total - up - pcs.filter((x) => x === 0).length}</span>
+                  · 中位 {(pcs.sort((a, b) => a - b)[Math.floor(pcs.length / 2)] ?? 0).toFixed(2)}% · {total} 只已报价
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 盘中机器流(交易时段才有;Winter 5 分钟循环 → live 分支) */}
           {live && (
