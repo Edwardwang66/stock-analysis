@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreenerHistory, type TrackedDay } from "@/lib/feed";
 import TzSelect from "@/components/TzSelect";
-import { fmtTime, useTz } from "@/lib/timefmt";
+import LiveClock from "@/components/LiveClock";
+import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 
 const AUTO_DAYS = 2;    // 最近 N 个交易日自动实时估值;更早的按需点击估值(控代理压力)
 
@@ -19,6 +20,7 @@ export default function TrackerPage() {
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const tzKey = useTz(); // 时区切换时间戳联动
+  const nowTick = useNow(1000);
 
   const valueDay = (d: TrackedDay) => {
     setLoadingDays((prev) => new Set(prev).add(d.date));
@@ -72,8 +74,9 @@ export default function TrackerPage() {
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>🎯 选股追踪</h1>
         <span className="tag">每日达标选股全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
-        <span style={{ marginLeft: "auto" }}><TzSelect /></span>
-        {updatedAt && <span className="src">估值 {fmtTime(updatedAt, tzKey, true)}</span>}
+        <span style={{ marginLeft: "auto" }}><LiveClock /></span>
+        <TzSelect />
+        {updatedAt && <span className="src">估值 {fmtTime(updatedAt, tzKey)}({agoShort(updatedAt, nowTick)})</span>}
       </div>
 
       {overall && (

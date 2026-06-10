@@ -64,3 +64,25 @@ export function fmtDateTime(input: Date | string | number | null | undefined, k?
   if (!isFinite(d.getTime())) return "—";
   return fmt(d, k ?? getTz(), true);
 }
+
+/** 每 ms 毫秒滴答一次的当前时间(驱动活动时钟与"N秒前"自动跳动)。 */
+export function useNow(ms = 1000): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), ms);
+    return () => window.clearInterval(id);
+  }, [ms]);
+  return now;
+}
+
+/** 短相对时间:刚刚 / N秒前 / N分钟前 / N小时前(配合 useNow 实时跳动)。 */
+export function agoShort(input: Date | string | number | null | undefined, now: number): string {
+  if (input == null) return "";
+  const t = new Date(input).getTime();
+  if (!isFinite(t)) return "";
+  const s = Math.max(0, Math.floor((now - t) / 1000));
+  if (s < 5) return "刚刚";
+  if (s < 60) return `${s}秒前`;
+  if (s < 3600) return `${Math.floor(s / 60)}分钟前`;
+  return `${(s / 3600).toFixed(1)}小时前`;
+}

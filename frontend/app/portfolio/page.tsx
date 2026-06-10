@@ -5,7 +5,8 @@ import { getQuotes, type Quote } from "@/lib/datasource";
 import { getForex, type Forex } from "@/lib/forex";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { addHolding, getHoldings, removeHolding, type Holding } from "@/lib/portfolio";
-import { fmtTime, useTz } from "@/lib/timefmt";
+import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
+import LiveClock from "@/components/LiveClock";
 
 const fmt = (n: number | null | undefined, d = 2) =>
   n == null || !isFinite(n) ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -18,6 +19,7 @@ export default function PortfolioPage() {
   const [cost, setCost] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const tzKey = useTz();
+  const nowTick = useNow(1000);
   const [fx, setFx] = useState<Forex | null>(null);
   const [toUSD, setToUSD] = useState(false);
 
@@ -85,7 +87,8 @@ export default function PortfolioPage() {
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>💼 模拟持仓</h1>
         <span className="tag">本地存储 · 实时估值与首页同源 · 非真实账户</span>
-        {updatedAt && <span className="src" style={{ marginLeft: "auto" }}>估值更新 {fmtTime(updatedAt, tzKey, true)}</span>}
+        <span style={{ marginLeft: "auto" }}><LiveClock /></span>
+        {updatedAt && <span className="src">估值更新 {fmtTime(updatedAt, tzKey)}({agoShort(updatedAt, nowTick)})</span>}
       </div>
 
       <div className="section">
