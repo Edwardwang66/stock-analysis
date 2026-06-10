@@ -1,10 +1,11 @@
 name: Keep backend warm
 
 # Render 免费实例闲置 15 分钟会休眠,导致用户打开站点时首批请求冷启动 30-50s。
-# 每 12 分钟 ping 一次 /health,让后端保持唤醒(需在仓库 Variables 设 API_BASE)。
+# 每 30 分钟兜底 ping(交易时段的高频保活由 intraday-report 循环内顺手完成;
+# 2026-06-10:两个 <15min 高频 schedule 互相挤兑导致备胎被丢,故合并)。
 on:
   schedule:
-    - cron: "*/12 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:

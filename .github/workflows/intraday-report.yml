@@ -59,5 +59,7 @@ jobs:
             else
               echo "Winter 循环在岗,本轮退位"
             fi
+            # 顺手保活 Render(替代 keep-warm 高频 schedule)
+            curl -fsS --max-time 20 "${{ vars.API_BASE }}/api/v1/health" >/dev/null 2>&1 || true
             [ "$i" -lt 2 ] && sleep 265 || true
           done
