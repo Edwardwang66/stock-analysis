@@ -1,18 +1,25 @@
 // 各市场标签与默认标的(用于看板分区/热力图)。
+// 排序即产品重心:美股 + A股 为主,其余次之(日/韩/德为 2026-06 新增覆盖)。
 export const MARKETS = [
   { key: "ALL", label: "全部" },
   { key: "US", label: "美股" },
-  { key: "HK", label: "港股" },
   { key: "CN", label: "A股" },
+  { key: "HK", label: "港股" },
   { key: "CRYPTO", label: "加密" },
+  { key: "JP", label: "日股" },
+  { key: "KR", label: "韩股" },
+  { key: "DE", label: "德股" },
 ] as const;
 
-// 港股代码用 4 位(Yahoo 用 0700.HK)
+// 港股代码用 4 位(Yahoo 用 0700.HK);日 .T / 韩 .KS / 德 .DE
 export const DEFAULT_SYMBOLS: Record<string, string[]> = {
   US: ["US:AAPL", "US:MSFT", "US:NVDA", "US:TSLA", "US:GOOGL", "US:AMZN", "US:META"],
-  HK: ["HK:0700", "HK:9988", "HK:3690", "HK:0939", "HK:1810"],
   CN: ["CN:600519", "CN:000001", "CN:600036", "CN:601318", "CN:300750"],
+  HK: ["HK:0700", "HK:9988", "HK:3690", "HK:0939", "HK:1810"],
   CRYPTO: ["CRYPTO:BTCUSDT", "CRYPTO:ETHUSDT", "CRYPTO:SOLUSDT", "CRYPTO:BNBUSDT", "CRYPTO:XRPUSDT"],
+  JP: ["JP:7203", "JP:6758", "JP:9984"],
+  KR: ["KR:005930", "KR:000660", "KR:373220"],
+  DE: ["DE:SAP", "DE:SIE", "DE:VOW3"],
 };
 
 export function symbolsForTab(tab: string): string[] {
@@ -21,12 +28,17 @@ export function symbolsForTab(tab: string): string[] {
 }
 
 export const MARKET_LABEL: Record<string, string> = {
-  US: "美股", HK: "港股", CN: "A股", CRYPTO: "加密", IDX: "指数",
+  US: "美股", CN: "A股", HK: "港股", CRYPTO: "加密",
+  JP: "日股", KR: "韩股", DE: "德股", IDX: "指数",
 };
+
+// 「全部」视图分组顺序(美股/A股优先)
+export const GROUP_ORDER = ["US", "CN", "HK", "CRYPTO", "JP", "KR", "DE"];
 
 // 指数概览(IDX: 前缀 → Yahoo 代码原样直传,如 ^GSPC / 000001.SS)
 export const INDEX_SYMBOLS: string[] = [
-  "IDX:^GSPC", "IDX:^IXIC", "IDX:^DJI", "IDX:^HSI", "IDX:000001.SS",
+  "IDX:^GSPC", "IDX:^IXIC", "IDX:^DJI", "IDX:000001.SS", "IDX:^HSI",
+  "IDX:^N225", "IDX:^KS11", "IDX:^GDAXI",
 ];
 
 /** 从 "US:AAPL" 取市场前缀。 */
@@ -74,6 +86,23 @@ export const LOCAL_SYMBOLS: SymInfo[] = [
   { symbol: "IDX:^DJI", name: "道琼斯 DowJones", market: "IDX" },
   { symbol: "IDX:^HSI", name: "恒生指数 HSI", market: "IDX" },
   { symbol: "IDX:000001.SS", name: "上证指数 SSE", market: "IDX" },
+  { symbol: "IDX:^N225", name: "日经225 Nikkei", market: "IDX" },
+  { symbol: "IDX:^KS11", name: "韩国KOSPI", market: "IDX" },
+  { symbol: "IDX:^GDAXI", name: "德国DAX", market: "IDX" },
+  { symbol: "JP:7203", name: "丰田汽车 Toyota", market: "JP" },
+  { symbol: "JP:6758", name: "索尼 Sony", market: "JP" },
+  { symbol: "JP:9984", name: "软银集团 SoftBank", market: "JP" },
+  { symbol: "JP:8306", name: "三菱UFJ MUFG", market: "JP" },
+  { symbol: "JP:6861", name: "基恩士 Keyence", market: "JP" },
+  { symbol: "KR:005930", name: "三星电子 Samsung", market: "KR" },
+  { symbol: "KR:000660", name: "SK海力士 SKHynix", market: "KR" },
+  { symbol: "KR:373220", name: "LG新能源 LGES", market: "KR" },
+  { symbol: "KR:035420", name: "NAVER", market: "KR" },
+  { symbol: "DE:SAP", name: "思爱普 SAP", market: "DE" },
+  { symbol: "DE:SIE", name: "西门子 Siemens", market: "DE" },
+  { symbol: "DE:VOW3", name: "大众汽车 Volkswagen", market: "DE" },
+  { symbol: "DE:BMW", name: "宝马 BMW", market: "DE" },
+  { symbol: "DE:ALV", name: "安联 Allianz", market: "DE" },
 ];
 
 export const NAMES: Record<string, string> = Object.fromEntries(

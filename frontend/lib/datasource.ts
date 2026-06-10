@@ -207,6 +207,9 @@ function yahooCode(market: string, code: string): string {
   if (market === "US" || market === "IDX") return code; // IDX: Yahoo 代码原样直传(^GSPC / 000001.SS)
   if (market === "HK") return `${code.padStart(4, "0")}.HK`;
   if (market === "CN") return code.startsWith("6") ? `${code}.SS` : `${code}.SZ`;
+  if (market === "JP") return `${code}.T`;    // 东证
+  if (market === "KR") return `${code}.KS`;   // KOSPI(KOSDAQ 标的可直接写 KR:xxxxxx.KQ)
+  if (market === "DE") return `${code}.DE`;   // XETRA
   return code;
 }
 const Y_INTERVAL: Record<string, string> = {

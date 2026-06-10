@@ -1,7 +1,7 @@
 // 外汇汇率 —— Frankfurter(ECB 官方,无 key、CORS *),失败回退 open.er-api。
 export interface Forex { base: string; date: string; rates: Record<string, number>; source: string }
 
-const SYMBOLS = ["CNY", "HKD", "EUR", "JPY", "GBP", "AUD"];
+const SYMBOLS = ["CNY", "HKD", "EUR", "JPY", "GBP", "AUD", "KRW"];
 
 export async function getForex(base = "USD"): Promise<Forex> {
   try {

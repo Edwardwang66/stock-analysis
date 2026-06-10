@@ -10,6 +10,9 @@ function rssCode(symbol: string): string | null {
   if (market === "HK") return `${code.padStart(4, "0")}.HK`;
   if (market === "CN") return code.startsWith("6") ? `${code}.SS` : `${code}.SZ`;
   if (market === "IDX") return code;
+  if (market === "JP") return `${code}.T`;
+  if (market === "KR") return `${code}.KS`;
+  if (market === "DE") return `${code}.DE`;
   if (market === "CRYPTO") {
     // BTCUSDT → BTC-USD(Yahoo 加密代码)
     const base = code.replace(/(USDT|USD|BUSD)$/, "");

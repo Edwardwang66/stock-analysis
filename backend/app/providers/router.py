@@ -32,6 +32,9 @@ CHAINS: dict[str, list] = {
     "CN": [_TENCENT, _YAHOO],
     "CRYPTO": [_BINANCE, _OKX],
     "IDX": [_YAHOO],                    # 指数:Yahoo 代码直传(^GSPC / 000001.SS)
+    "JP": [_YAHOO],                     # 东证 .T(2026-06 新增,Yahoo 单源)
+    "KR": [_YAHOO],                     # KOSPI .KS
+    "DE": [_YAHOO],                     # XETRA .DE
 }
 
 _FAIL_THRESHOLD = 3

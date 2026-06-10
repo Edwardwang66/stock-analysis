@@ -47,5 +47,24 @@ export function marketStatus(market: string): MarketStatus {
     if (minutes >= H(11, 30) && minutes < H(13)) return { open: false, label: "午休" };
     return { open: false, label: "休市" };
   }
+  if (market === "JP") {
+    const { dow, minutes } = localParts("Asia/Tokyo");
+    if (!(dow >= 1 && dow <= 5)) return { open: false, label: "休市" };
+    if (inAny(minutes, [[H(9), H(11, 30)], [H(12, 30), H(15, 30)]])) return { open: true, label: "盘中" };
+    if (minutes >= H(11, 30) && minutes < H(12, 30)) return { open: false, label: "午休" };
+    return { open: false, label: "休市" };
+  }
+  if (market === "KR") {
+    const { dow, minutes } = localParts("Asia/Seoul");
+    if (!(dow >= 1 && dow <= 5)) return { open: false, label: "休市" };
+    if (inAny(minutes, [[H(9), H(15, 30)]])) return { open: true, label: "盘中" };
+    return { open: false, label: "休市" };
+  }
+  if (market === "DE") {
+    const { dow, minutes } = localParts("Europe/Berlin");
+    if (!(dow >= 1 && dow <= 5)) return { open: false, label: "休市" };
+    if (inAny(minutes, [[H(9), H(17, 30)]])) return { open: true, label: "盘中" };
+    return { open: false, label: "休市" };
+  }
   return { open: false, label: "" };
 }

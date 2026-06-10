@@ -6,7 +6,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel
 
-Market = Literal["US", "HK", "CN", "CRYPTO", "IDX"]
+Market = Literal["US", "HK", "CN", "CRYPTO", "IDX", "JP", "KR", "DE"]
 
 
 class Symbol(BaseModel):
@@ -22,7 +22,7 @@ class Symbol(BaseModel):
             raise ValueError(f"bad symbol (need MARKET:CODE): {s!r}")
         market, code = s.split(":", 1)
         market = market.upper()
-        if market not in ("US", "HK", "CN", "CRYPTO", "IDX"):
+        if market not in ("US", "HK", "CN", "CRYPTO", "IDX", "JP", "KR", "DE"):
             raise ValueError(f"unknown market: {market!r}")
         return cls(market=market, code=code.upper())  # type: ignore[arg-type]
 

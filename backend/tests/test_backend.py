@@ -166,6 +166,13 @@ async def main():
     from app.providers.yahoo import _yahoo_code
     ok("IDX Yahoo 代码直传", _yahoo_code(si) == "^GSPC" and _yahoo_code(Symbol.parse("IDX:000001.SS")) == "000001.SS")
 
+    print("== JP/KR/DE 新市场 ==")
+    ok("JP/KR/DE 符号可解析", all(Symbol.parse(x).market == x.split(":")[0] for x in ("JP:7203", "KR:005930", "DE:SAP")))
+    ok("JP/KR/DE 在降级链注册", all(m in router.CHAINS for m in ("JP", "KR", "DE")))
+    ok("Yahoo 后缀映射", _yahoo_code(Symbol.parse("JP:7203")) == "7203.T"
+       and _yahoo_code(Symbol.parse("KR:005930")) == "005930.KS"
+       and _yahoo_code(Symbol.parse("DE:SAP")) == "SAP.DE")
+
     print(f"\n全部通过:{PASS} 项")
 
 

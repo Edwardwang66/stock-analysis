@@ -8,7 +8,7 @@ import { checkAlerts, clearTriggered, notify, type PriceAlert } from "@/lib/aler
 import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import { getIndex } from "@/lib/feed";
-import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
+import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
@@ -152,11 +152,10 @@ export default function Home() {
     return sortFn ? arr.sort(sortFn) : arr;
   }, [baseSymbols, sortFn]);
 
-  // 「全部」视图按市场分组渲染,排序在组内生效
+  // 「全部」视图按市场分组渲染(美股/A股优先),排序在组内生效
   const groups = useMemo(() => {
     if (tab !== "ALL") return null;
-    const order = ["US", "HK", "CN", "CRYPTO"];
-    return order.map((mkt) => {
+    return GROUP_ORDER.map((mkt) => {
       const arr = baseSymbols.filter((s) => marketOf(s) === mkt);
       return { mkt, label: MARKET_LABEL[mkt] ?? mkt, symbols: sortFn ? arr.sort(sortFn) : arr };
     }).filter((g) => g.symbols.length);
