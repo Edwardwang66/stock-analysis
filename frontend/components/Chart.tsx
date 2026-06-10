@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
-import { sma } from "@/lib/indicators";
+import { sma, tdSetup } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 
 const MA = [
@@ -30,6 +30,7 @@ export default function Chart({
   const legendRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [showChan, setShowChan] = useState(false);
+  const [showTd, setShowTd] = useState(true); // 九转默认开(方法论 #1)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -73,20 +74,39 @@ export default function Chart({
       }
     }
 
+    // 标记合并:TD9 与 缠论 可同开,统一 setMarkers 一次
+    const allMarkers: any[] = [];
+
+    if (showTd) {
+      // TD9 神奇九转:只显示最终数到 ≥6 的段,且从 6 起标数字(9 高亮,完美 9 加 ✓)
+      const tds = tdSetup(bars.map((b) => b.high), bars.map((b) => b.low), bars.map((b) => b.close));
+      for (const m of tds) {
+        if (m.runMax < 6 || m.count < 6) continue;
+        const isNine = m.count === 9;
+        allMarkers.push({
+          time: bars[m.idx].time,
+          position: m.side === "sell" ? "aboveBar" : "belowBar",
+          color: m.side === "sell" ? (isNine ? "#ff8a80" : "#ef5350") : (isNine ? "#69f0ae" : "#26a69a"),
+          shape: "circle",
+          size: isNine ? 1 : 0,
+          text: isNine ? (m.perfected ? "9✓" : "9") : String(m.count),
+        });
+      }
+    }
+
     if (showChan) {
       const chan = computeChan(bars);
       const endpoints = new Set<number>();
       chan.strokes.forEach((s) => { endpoints.add(s.from.time); endpoints.add(s.to.time); });
       const bspTimes = new Set(chan.points.map((p) => p.time));
-      const fractalMarkers = chan.fractals.filter((f) => endpoints.has(f.time) && !bspTimes.has(f.time)).map((f) => ({
+      chan.fractals.filter((f) => endpoints.has(f.time) && !bspTimes.has(f.time)).forEach((f) => allMarkers.push({
         time: f.time, position: f.type === "top" ? "aboveBar" : "belowBar",
         color: f.type === "top" ? "#ef5350" : "#26a69a", shape: f.type === "top" ? "arrowDown" : "arrowUp",
       }));
-      const bspMarkers = chan.points.map((p) => {
+      chan.points.forEach((p) => {
         const buy = p.kind.endsWith("B");
-        return { time: p.time, position: buy ? "belowBar" : "aboveBar", color: buy ? "#26a69a" : "#ef5350", shape: buy ? "arrowUp" : "arrowDown", text: p.kind };
+        allMarkers.push({ time: p.time, position: buy ? "belowBar" : "aboveBar", color: buy ? "#26a69a" : "#ef5350", shape: buy ? "arrowUp" : "arrowDown", text: p.kind });
       });
-      candles.setMarkers([...fractalMarkers, ...bspMarkers].sort((a, b) => (a.time as number) - (b.time as number)) as any);
       const pts: { time: any; value: number }[] = [];
       if (chan.strokes.length) {
         pts.push({ time: chan.strokes[0].from.time, value: chan.strokes[0].from.price });
@@ -97,6 +117,10 @@ export default function Chart({
         candles.createPriceLine({ price: p.zg, color: "#f7b500", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "ZG" });
         candles.createPriceLine({ price: p.zd, color: "#f7b500", lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "ZD" });
       });
+    }
+
+    if (allMarkers.length) {
+      candles.setMarkers(allMarkers.sort((a, b) => (a.time as number) - (b.time as number)) as any);
     }
 
     // 十字光标 tooltip:日期 + OHLC + 涨跌% + 量
@@ -121,11 +145,14 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, compare]);
+  }, [bars, showChan, showTd, compare]);
 
   return (
     <>
       <div className="ranges" style={{ justifyContent: "flex-end" }}>
+        <button className={showTd ? "active" : ""} onClick={() => setShowTd((v) => !v)}>
+          {showTd ? "✓ 神奇九转" : "神奇九转"}
+        </button>
         <button className={showChan ? "active" : ""} onClick={() => setShowChan((v) => !v)}>
           {showChan ? "✓ 缠论结构" : "缠论结构"}
         </button>
@@ -140,6 +167,7 @@ export default function Chart({
           : showChan
           ? "缠论:白线=笔 · 黄虚线=中枢 · 标签 1/2/3B=买点 1/2/3S=卖点(含背驰,简化版,灵感来自观潮 TideView)"
           : <>均线:<span style={{ color: "#4c8dff" }}>MA20</span> · <span style={{ color: "#f7b500" }}>MA50</span> · <span style={{ color: "#ab47bc" }}>MA200</span> · 底部为成交量 · 鼠标移到图上看每日明细</>}
+        {showTd && <> · 九转:<span className="up">绿数字=下跌段(超卖)</span> <span className="down">红数字=上涨段(衰竭)</span>,6 起显示、9✓=完美九转(预警非建议)</>}
       </div>
     </>
   );

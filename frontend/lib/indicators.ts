@@ -125,3 +125,49 @@ export function volumeRatio(volumes: number[], p = 20): Maybe {
   const base = volumes.slice(-p - 1, -1).reduce((s, x) => s + x, 0) / p;
   return base > 0 ? recent / base : null;
 }
+
+// ---- TD9 神奇九转(仅 Setup 段,东方财富口径;见 routines/methodology.md)----
+export interface TdMark {
+  idx: number;                 // bar 下标
+  count: number;               // 1..9
+  side: "buy" | "sell";        // buy=下跌九转(将反弹) sell=上涨九转(将衰竭)
+  perfected: boolean;          // 完美 9
+  runMax: number;              // 本段最终数到几(渲染时只显示 runMax>=6 的段)
+}
+
+export function tdSetup(highs: number[], lows: number[], closes: number[]): TdMark[] {
+  const n = closes.length;
+  const out: TdMark[] = [];
+  let buyRun: TdMark[] = [];
+  let sellRun: TdMark[] = [];
+  const flush = (run: TdMark[]) => {
+    const max = run.length ? run[run.length - 1].count : 0;
+    for (const m of run) { m.runMax = max; out.push(m); }
+  };
+  for (let i = 4; i < n; i++) {
+    // 买入计数:close < close[i-4](连续;相等即断,口径见 methodology)
+    if (closes[i] < closes[i - 4]) {
+      const count = (buyRun.length ? buyRun[buyRun.length - 1].count : 0) + 1;
+      let perfected = false;
+      if (count === 9) {
+        const ref = Math.min(lows[i - 2], lows[i - 3]);     // 第7、6根
+        perfected = lows[i] <= ref || lows[i - 1] <= ref;   // 第9或第8根
+      }
+      buyRun.push({ idx: i, count, side: "buy", perfected, runMax: 0 });
+      if (count === 9) { flush(buyRun); buyRun = []; }      // 数满 9 重新数
+    } else { flush(buyRun); buyRun = []; }
+    if (closes[i] > closes[i - 4]) {
+      const count = (sellRun.length ? sellRun[sellRun.length - 1].count : 0) + 1;
+      let perfected = false;
+      if (count === 9) {
+        const ref = Math.max(highs[i - 2], highs[i - 3]);
+        perfected = highs[i] >= ref || highs[i - 1] >= ref;
+      }
+      sellRun.push({ idx: i, count, side: "sell", perfected, runMax: 0 });
+      if (count === 9) { flush(sellRun); sellRun = []; }
+    } else { flush(sellRun); sellRun = []; }
+  }
+  flush(buyRun); flush(sellRun);
+  out.sort((a, b) => a.idx - b.idx);
+  return out;
+}
