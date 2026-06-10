@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-06-10T2217Z",
+  "kind": "routine",
+  "produced_at": "2026-06-10T22:17:25Z",
+  "asof_data": "2026-06-10",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/27309941201"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ZEC 资金费年化 -78%(OI $179M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ZEC"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "TON 资金费年化 -63%(OI $39M)——挤压/单边持仓信号。",
+      "tickers": [
+        "TON"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -1.63% (mark 7247.9,$1033M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:24 流动永续持仓面,跨所错位 83,HIP-3 24/7 资产 99。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "5202d2ab4680698b95a1b2c9c30ab8e61f95bd6a7b8f1cde8e7fa3bda1572bf5"
+  }
+}
