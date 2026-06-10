@@ -1,6 +1,58 @@
 {
-  "updated_at": "2026-06-06T10:14:47Z",
+  "updated_at": "2026-06-09T23:34:06Z",
   "candidates": [
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "复核 factor-factory 同名趋势延续候选。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。",
+      "_source": "openclaw-red-team-2026-06-09T2334Z",
+      "_at": "2026-06-09T23:34:06Z"
+    },
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。",
+      "_source": "openclaw-factor-factory-2026-06-09T2333Z",
+      "_at": "2026-06-09T23:33:57Z"
+    },
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "复核 factor-factory 同名趋势延续候选。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。",
+      "_source": "openclaw-red-team-2026-06-09T2323Z",
+      "_at": "2026-06-09T23:23:50Z"
+    },
+    {
+      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
+      "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
+      "incremental_ic": 0.0,
+      "post_cutoff": true,
+      "pbo": 1.0,
+      "t_stat": 0.0,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。",
+      "_source": "openclaw-factor-factory-2026-06-09T2323Z",
+      "_at": "2026-06-09T23:23:40Z"
+    },
     {
       "expr": "rank(-ts_zscore(residual_return, 5)) * sign(adv_20)",
       "hypothesis": "5 日残差被过度外推 -> 反转;以流动性为门(事前经济机制)。",

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "id": "openclaw-crowding-monitor-2026-06-09T2323Z",
+  "kind": "openclaw",
+  "produced_at": "2026-06-09T23:23:22Z",
+  "asof_data": "2026-06-09",
+  "producer": {
+    "name": "openclaw-agent:crowding-monitor",
+    "model": "gpt-5.5 (via OpenClaw)",
+    "agent_role": "crowding-monitor",
+    "run_url": "local-openclaw-daily"
+  },
+  "market_state": {
+    "crowding_proxy": 0.29587943021885793,
+    "crowding_alert": false,
+    "breadth_pct_above_50dma": 1.0
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "crowding",
+      "message": "看多清单前15只 6个月日收益平均相关约 0.30，50日均线上方占比约 100%；拥挤只代表尾部同向风险，不是做空信号。",
+      "tickers": [
+        "APH",
+        "LUV",
+        "RL",
+        "MAS",
+        "PKG"
+      ]
+    }
+  ],
+  "contribution": {
+    "type": "risk_alert",
+    "summary": "更新看多清单同质化/拥挤代理，供仓位层做预防性降杠杆参考。"
+  },
+  "notes": "拥挤代理=前15只看多标的两两日收益相关均值；免费公开日线口径。"
+}

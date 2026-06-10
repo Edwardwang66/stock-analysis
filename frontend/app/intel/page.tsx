@@ -128,7 +128,44 @@ export default function IntelDashboard() {
                 <Stat label="成本拖累/年" value={pct(rep.engine.cost_drag_ann)} color={WARN} />
                 <Stat label="Deflated SR" value={num(rep.engine.deflated_sharpe?.dsr, 3)} />
               </div>
+              {/* 真 holdout 切分(R5):裁决以从未据其调参的终检段为准 */}
+              {rep.engine.holdout && (
+                <table style={{ marginTop: 10 }}>
+                  <thead><tr><th>段</th><th>净 Sharpe</th><th>年化</th><th>回撤</th><th>天数</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td className="src">研究段 (train)</td>
+                      <td style={{ color: (rep.engine.train?.sharpe || 0) > 0 ? UP : DOWN }}>{num(rep.engine.train?.sharpe)}</td>
+                      <td>{pct(rep.engine.train?.ann_return)}</td>
+                      <td>{pct(rep.engine.train?.max_drawdown)}</td>
+                      <td className="src">{rep.engine.train?.n_days}</td>
+                    </tr>
+                    <tr>
+                      <td className="src">终检段 (holdout ≥{rep.engine.holdout?.start})</td>
+                      <td style={{ fontWeight: 600, color: (rep.engine.holdout?.sharpe || 0) > 0 ? UP : DOWN }}>{num(rep.engine.holdout?.sharpe)}</td>
+                      <td>{pct(rep.engine.holdout?.ann_return)}</td>
+                      <td>{pct(rep.engine.holdout?.max_drawdown)}</td>
+                      <td className="src">{rep.engine.holdout?.n_days}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
               <p className="src" style={{ marginTop: 10, lineHeight: 1.6 }}>{rep.engine.verdict}</p>
+              {/* 净值曲线 + 历次报告净 Sharpe 趋势 */}
+              <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+                {(rep.engine.equity_curve?.length ?? 0) >= 2 && (
+                  <Spark label={`净值曲线(${rep.engine.equity_curve[0].d} 起,扣成本)`}
+                    values={rep.engine.equity_curve.map((p: { d: string; v: number }) => p.v)}
+                    lastText={num(rep.engine.equity_curve[rep.engine.equity_curve.length - 1]?.v, 3)} />
+                )}
+                {(() => {
+                  const srs = (idx?.reports || []).filter((r) => r.kind === "routine" && r.net_sharpe != null)
+                    .map((r) => r.net_sharpe as number).reverse();
+                  return srs.length >= 2 ? (
+                    <Spark label={`历次报告净 Sharpe(近 ${srs.length} 次)`} values={srs} lastText={num(srs[srs.length - 1], 3)} />
+                  ) : null;
+                })()}
+              </div>
             </>
           ) : <p className="loading">加载中…</p>}
         </div>

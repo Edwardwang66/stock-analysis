@@ -87,6 +87,7 @@ class StatArbParams:
     half_spread_bps: float = 5.0    # 单边价差成本(bps)
     impact_Y: float = 0.5           # 平方根冲击系数
     n_trials: int = 200             # 申报试验次数(用于 Deflated Sharpe;诚实登记,见 §6.7)
+    holdout_start: str = "2025-01-01"  # 真 holdout 起点(R5):此日(含)之后只做终检,不据其调参
     factors: list[str] = field(default_factory=lambda: ["SPY", "SECTOR"])
 
 
@@ -302,6 +303,7 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     prev_w: dict[str, float] = {}
     active: set = set()
     net_rets, gross_rets, turnovers, n_pos, breaker_counts = [], [], [], [], []
+    ret_ts: list[int] = []          # 每条净收益对应的实现日(t+1)时间戳
     last_diag, last_breaker, last_weights = {}, {}, {}
 
     for k in range(start_k, len(dates) - 1):
@@ -325,6 +327,7 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
         turnover = float(np.abs(dw).sum())
         net_rets.append(gross_r - cost)
         gross_rets.append(gross_r)
+        ret_ts.append(int(dates[k + 1]))
         turnovers.append(turnover)
         n_pos.append(len(weights))
         breaker_counts.append(len(breaker))
@@ -333,7 +336,8 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
 
     net = np.array(net_rets)
     gross = np.array(gross_rets)
-    rep = _summarize(net, gross, turnovers, n_pos, breaker_counts, dates, start_k, p)
+    rep = _summarize(net, gross, np.array(ret_ts, dtype=np.int64),
+                     turnovers, n_pos, breaker_counts, dates, start_k, p)
     rep["latest_book"] = _latest_book(last_weights, last_diag, names, dates[-2])
     rep["latest_breaker"] = [{"ticker": t, "reason": r} for t, r in sorted(last_breaker.items())]
     rep["universe_size"] = len(names)
@@ -342,11 +346,45 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     return rep
 
 
-def _summarize(net, gross, turnovers, n_pos, breaker_counts, dates, start_k, p):
+def _slice_stats(r: np.ndarray) -> dict:
+    """一段净收益的标准统计(净口径)。"""
+    if len(r) < 5:
+        return {"sharpe": float("nan"), "ann_return": float("nan"), "ann_vol": float("nan"),
+                "max_drawdown": float("nan"), "hit_rate": float("nan"), "n_days": int(len(r))}
+    return {
+        "sharpe": val.sharpe(r), "ann_return": float(r.mean() * 252),
+        "ann_vol": float(r.std(ddof=1) * np.sqrt(252)),
+        "max_drawdown": val.max_drawdown(r), "hit_rate": float((r > 0).mean()),
+        "n_days": int(len(r)),
+    }
+
+
+def _equity_curve(net: np.ndarray, ret_ts: np.ndarray, max_points: int = 280) -> list[dict]:
+    """净值曲线(累积,起点 1.0),降采样到 ≤max_points 供看板绘制。"""
+    if len(net) == 0:
+        return []
+    equity = np.cumprod(1 + net)
+    import datetime as _dt
+    idx = list(range(0, len(net), max(1, len(net) // max_points)))
+    if idx[-1] != len(net) - 1:
+        idx.append(len(net) - 1)
+    return [{"d": _dt.datetime.utcfromtimestamp(int(ret_ts[i])).strftime("%Y-%m-%d"),
+             "v": round(float(equity[i]), 5)} for i in idx]
+
+
+def _summarize(net, gross, ret_ts, turnovers, n_pos, breaker_counts, dates, start_k, p):
     import datetime as _dt
     ann = float(net.mean() * 252)
     vol = float(net.std(ddof=1) * np.sqrt(252)) if len(net) > 1 else float("nan")
     dsr = val.deflated_sharpe(net, n_trials=p.n_trials)
+
+    # 真 holdout 切分(R5):holdout_start(含)之后为终检段,之前为研究段
+    ho_ts = int(_dt.datetime.strptime(p.holdout_start, "%Y-%m-%d")
+                .replace(tzinfo=_dt.timezone.utc).timestamp())
+    in_ho = ret_ts >= ho_ts
+    train_stats = _slice_stats(net[~in_ho])
+    holdout_stats = _slice_stats(net[in_ho])
+    holdout_stats["start"] = p.holdout_start
     return {
         "engine": "stream_b_statarb_residual_meanreversion",
         "period": {
@@ -367,20 +405,34 @@ def _summarize(net, gross, turnovers, n_pos, breaker_counts, dates, start_k, p):
         "book": {"avg_positions": float(np.mean(n_pos)),
                  "avg_breaker_per_day": float(np.mean(breaker_counts))},
         "deflated_sharpe": dsr,
-        "verdict": _verdict(val.sharpe(net), dsr),
+        "train": train_stats,
+        "holdout": holdout_stats,
+        "equity_curve": _equity_curve(net, ret_ts),
+        "verdict": _verdict(val.sharpe(net), dsr, holdout_stats),
     }
 
 
-def _verdict(net_sharpe: float, dsr: dict) -> str:
-    """L6 口径的诚实裁决(R4/R5):净 Sharpe + DSR 是否过门。"""
+def _verdict(net_sharpe: float, dsr: dict, holdout: dict | None = None) -> str:
+    """L6 口径的诚实裁决(R4/R5):净 Sharpe + DSR + holdout 段是否过门。
+
+    裁决以 holdout 段(从未据其调参)为准 —— 全样本数字只作背景(R5)。
+    """
+    ho_sr = (holdout or {}).get("sharpe", float("nan"))
     if not np.isfinite(net_sharpe):
         return "数据不足,无法裁决"
+    parts = []
+    if np.isfinite(ho_sr):
+        if ho_sr <= 0:
+            parts.append(f"holdout({(holdout or {}).get('start','?')}起)净 Sharpe={ho_sr:.2f}≤0 —— 终检不过,按 R4/R5 应淘汰")
+        else:
+            parts.append(f"holdout 净 Sharpe={ho_sr:.2f}>0 —— 终检段存活")
     if net_sharpe <= 0:
-        return "扣成本后不盈利 —— 按设计应淘汰(净成本是唯一货币 R4)"
-    if dsr.get("dsr", 0) < 0.95:
-        return (f"净 Sharpe={net_sharpe:.2f} 为正,但 DSR={dsr.get('dsr', float('nan')):.2f}<0.95 "
-                f"(扣 {dsr.get('n_trials')} 次试验后不显著)—— 仅作候选,需真 holdout 终检(R5)")
-    return f"净 Sharpe={net_sharpe:.2f} 且 DSR={dsr.get('dsr'):.2f}≥0.95 —— 通过研究层门控,进入 shadow"
+        parts.append(f"全样本净 Sharpe={net_sharpe:.2f}≤0(净成本是唯一货币 R4)")
+    elif dsr.get("dsr", 0) < 0.95:
+        parts.append(f"全样本 DSR={dsr.get('dsr', float('nan')):.2f}<0.95(扣 {dsr.get('n_trials')} 次试验后不显著)")
+    else:
+        parts.append(f"全样本净 Sharpe={net_sharpe:.2f} 且 DSR={dsr.get('dsr'):.2f}≥0.95")
+    return ";".join(parts)
 
 
 def _latest_book(weights, diag, names, asof_ts):
@@ -423,6 +475,11 @@ def _print_report(rep):
           f"日均持仓 {rep['book']['avg_positions']:.0f}  日均熔断 {rep['book']['avg_breaker_per_day']:.1f}")
     dsr = rep["deflated_sharpe"]
     print(f"  Deflated Sharpe={dsr['dsr']:.3f} (n_trials={dsr['n_trials']}, skew={dsr['skew']:.2f}, kurt={dsr['kurt']:.1f})")
+    tr, ho = rep["train"], rep["holdout"]
+    print(f"\n  研究段(train)  净 Sharpe {tr['sharpe']:+.2f}  年化 {tr['ann_return']*100:+.1f}%  "
+          f"回撤 {tr['max_drawdown']*100:.1f}%  ({tr['n_days']}日)")
+    print(f"  终检段(holdout≥{ho.get('start')}) 净 Sharpe {ho['sharpe']:+.2f}  年化 {ho['ann_return']*100:+.1f}%  "
+          f"回撤 {ho['max_drawdown']*100:.1f}%  ({ho['n_days']}日)")
     print(f"\n  裁决:{rep['verdict']}")
     lb = rep["latest_book"]
     print(f"\n  最新持仓簿 @ {lb['asof']}:多 {lb['n_long']} / 空 {lb['n_short']}  "
