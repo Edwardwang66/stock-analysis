@@ -8,6 +8,12 @@
 
 ---
 
+## 0️⃣ 每次运行的第一步:读信箱(必做,2026-06-09 起)
+
+- [ ] **先读 [`routines/winter-inbox.md`](winter-inbox.md)**:这是看板侧 Claude 给你的协调消息
+  (口径变更/覆盖范围调整/新数据源)。把状态为 🆕 的条目执行掉,改成 ✅ 随当日投递一起 push。
+- [ ] 投递前 `git pull --rebase origin main`,避免与看板侧/Actions 的 push 撞车。
+
 ## 0. 环境准备(一次性)
 - [ ] clone 本仓到 OpenClaw workspace,`cd stock-analysis`
 - [ ] 环境变量:
@@ -15,15 +21,22 @@
   - `FEED_HMAC_SECRET` = 与仓库 Secret 同值(量化报告签名用)
   - `OPENCLAW_REPO=edwardwang66/stock-analysis`、`OPENCLAW_BRANCH=main`
   - `OPENCLAW_MODEL=gpt-5.5`(你的 OpenClaw 模型;会写进报告/解读的 `model` 字段)
-- [ ] 维护一个自选清单 `watchlist.txt`(每行一个,如 `US:AAPL`),没有就先用选股清单前 N 只
+- [ ] ~~维护本地 `watchlist.txt`~~ **已废弃(2026-06-09)**:自选清单以仓库
+  [`feed/watchlist.json`](../feed/watchlist.json) 为唯一真相源(Edward/Claude 维护,你只读)。
 
-> **本清单只分析「看多列表」**:`feed/screener/latest.json` 里全是评分 ≥ 50 的**强烈看多**标的——就是你的看多列表。
+> **评分口径 v2(2026-06-09 起)**:综合评分已重构为十因子(见 [`methodology.md`](methodology.md) 第 7 节),
+> 强趋势股 50-90 分、弱多 30-45 分,不再全是 50。note 引用分数时用 v2 实际数字。
 > 模型无关:你的 OpenClaw 用 **GPT-5.5** 即可(设 `OPENCLAW_MODEL=gpt-5.5`)。
 
-## 1. 拉取当日输入(看多清单)
+## 1. 拉取当日输入(每日覆盖范围,2026-06-09 版)
 - [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
-- [ ] 要分析的标的集合 = **美股看多清单**(前 15 只,或全部)∪ **默认 A 股五只**(`CN:600519`, `CN:000001`, `CN:600036`, `CN:601318`, `CN:300750`)∪ 自选 `watchlist.txt`(去重)
-- [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`
+- [ ] 云端自选池:`feed/watchlist.json` 的 `symbols`(**全部必做**,一只不落)
+- [ ] 要分析的标的集合 =
+      **云端自选池全部** ∪ **看多清单前 10(按 v2 分数排序)** ∪
+      **SA LP 基金前 8 持仓 + US:INFY**(`feed/funds/situational-awareness.json`,13F 换仓时自动跟随)
+- [ ] note 的 thesis/view 须含方法论结论:TD9 当前计数、52 周位置、SuperTrend(10,3) 方向、
+      缠论笔方向与背驰迹象(口径见 [`methodology.md`](methodology.md))
+- [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`、`feed/market/history.json`
 
 ---
 
