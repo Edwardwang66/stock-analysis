@@ -234,6 +234,10 @@ export interface EventHeatItem { symbol: string; moves: number; highs: number; l
 export interface EventHeatDoc { generated_at?: string; window_days?: number; items?: EventHeatItem[] }
 export const getEventHeat = () => fetchJson<EventHeatDoc>("signals/event-heat.json");
 
+// Pre-IPO/24-7 历史(hyperliquid-monitor 每 2h 追加 preipo_history.py)
+export interface PreipoPoint { at: string; marks: Record<string, number> }
+export const getPreipoHistory = () => fetchJson<PreipoPoint[]>("crypto/preipo-history.json");
+
 // 缠论买卖点全宇宙统计(chan-stats.yml 每周六;chan_engine.py 与前端 chan.ts 同口径)
 export interface ChanStatCell { n: number; win_rate: number | null; avg_ret: number | null }
 export interface ChanStatsDoc {

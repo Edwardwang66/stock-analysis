@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsHistory, getRsRanks, getScores, getScreener, getScreenerHistory,
+  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getPreipoHistory, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsHistory, getRsRanks, getScores, getScreener, getScreenerHistory,
   type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
@@ -81,6 +81,8 @@ export default function DeskPage() {
     const id = window.setInterval(() => { if (!document.hidden) load(); }, 120_000);
     return () => { alive = false; window.clearInterval(id); };
   }, []);
+  const [pipo, setPipo] = useState<{ at: string; marks: Record<string, number> }[]>([]);
+  useEffect(() => { const t = setTimeout(() => getPreipoHistory().then((h) => setPipo(h ?? [])).catch(() => {}), 2800); return () => clearTimeout(t); }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
   useEffect(() => { const t = setTimeout(() => getOvernight().then(setOvn).catch(() => {}), 1200); return () => clearTimeout(t); }, []);
   const [rsHist, setRsHist] = useState<{ date: string; rs: Record<string, number> }[]>([]);
@@ -459,6 +461,17 @@ export default function DeskPage() {
                       style={{ fontSize: 12, padding: "5px 10px", color: (x.chg24h ?? 0) >= 0 ? UP : DOWN }}>
                       {x.symbol === "SPACEX" ? "SpaceX" : x.symbol === "ANTHROPIC" ? "Anthropic" : x.symbol === "OPENAI" ? "OpenAI" : x.symbol}
                       {" "}${fmt(x.mark)} {x.chg24h != null ? `${x.chg24h >= 0 ? "+" : ""}${(x.chg24h * 100).toFixed(1)}%` : ""}
+                      {(() => {
+                        const vals = pipo.map((pt) => pt.marks?.[x.symbol]).filter((v): v is number => v != null).slice(-30);
+                        if (vals.length < 4) return null;
+                        const w = 40, h2 = 12, mn = Math.min(...vals), mx = Math.max(...vals);
+                        const ptsStr = vals.map((v, i) => `${((i / (vals.length - 1)) * w).toFixed(1)},${(h2 - ((v - mn) / (mx - mn || 1)) * h2).toFixed(1)}`).join(" ");
+                        return (
+                          <svg width={w} height={h2} style={{ marginLeft: 5, opacity: 0.85, verticalAlign: "middle" }} aria-hidden>
+                            <polyline points={ptsStr} fill="none" stroke={vals[vals.length - 1] >= vals[0] ? UP : DOWN} strokeWidth="1.3" />
+                          </svg>
+                        );
+                      })()}
                       {x.funding_apr != null && x.funding_apr > 0.3 && <span style={{ color: "#f7b500" }}> 🔥{(x.funding_apr * 100).toFixed(0)}%</span>}
                     </span>
                   ))}
