@@ -172,7 +172,7 @@ export const getScores = () => fetchJson<ScoreTable>("screener/scores.json");
 // RS 相对强度排名(daily_screener 全宇宙百分位 1-99;methodology §6)
 export interface RsTable {
   date: string; generated_at: string; universe: number;
-  ranks: Record<string, { rs: number | null; r63: number | null; r252: number | null; w52dd?: number | null; w52pos?: number | null }>;
+  ranks: Record<string, { rs: number | null; r63: number | null; r126?: number | null; r252: number | null; w52dd?: number | null; w52pos?: number | null }>;
 }
 export const getRsRanks = () => fetchJson<RsTable>("signals/rs-ranks.json");
 
@@ -221,6 +221,7 @@ export interface OvernightDoc {
   futures?: Record<string, OvernightBlock>; asia?: Record<string, OvernightBlock>;
   europe?: Record<string, OvernightBlock>; crypto?: Record<string, { price: number; pct: number }>;
   yesterday_movers?: { symbol: string; pct: number; price?: number }[];
+  perp_movers?: { symbol: string; kind?: string; mark?: number; chg24h: number; funding_apr?: number | null }[];
 }
 export const getOvernight = () => fetchJson<OvernightDoc>("intraday/overnight.json");
 

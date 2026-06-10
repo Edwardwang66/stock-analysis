@@ -114,7 +114,7 @@ async def score_one(client, sem, ticker, meta) -> dict | None:
             "score": a.score, "verdict": a.verdict, "price": round(price, 2),
             "change_pct": round(chg, 2), "rsi14": round(a.indicators.get("rsi14") or 0, 1),
             "bullish_signals": bull,
-            "_rs_raw": rs_raw, "_r63": r63, "_r252": r252, "_w52dd": w52_dd, "_w52pos": w52_pos,
+            "_rs_raw": rs_raw, "_r63": r63, "_r126": r126, "_r252": r252, "_w52dd": w52_dd, "_w52pos": w52_pos,
         }
 
 
@@ -139,11 +139,12 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
         ranks[r["symbol"]] = {
             "rs": rs,
             "r63": round(r["_r63"] * 100, 1) if r.get("_r63") is not None else None,
+            "r126": round(r["_r126"] * 100, 1) if r.get("_r126") is not None else None,
             "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
             "w52dd": r.get("_w52dd"), "w52pos": r.get("_w52pos"),
         }
     for r in scored:  # 必须在写 latest.json 前清理,否则 picks 带 _rs_raw 脏字段
-        for k in ("_rs_raw", "_r63", "_r252", "_w52dd", "_w52pos"):
+        for k in ("_rs_raw", "_r63", "_r126", "_r252", "_w52dd", "_w52pos"):
             r.pop(k, None)
     picks = sorted([r for r in scored if r["score"] >= threshold],
                    key=lambda x: (x["score"], x["bullish_signals"], x["change_pct"]), reverse=True)

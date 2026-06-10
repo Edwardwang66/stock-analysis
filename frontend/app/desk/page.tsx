@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener, getScreenerHistory,
   type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
@@ -83,6 +83,47 @@ export default function DeskPage() {
   }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
   useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
+  const [scrHist, setScrHist] = useState<{ date: string; items: { symbol: string }[] }[]>([]);
+  useEffect(() => { getScreenerHistory().then((h) => setScrHist((h ?? []) as any)).catch(() => {}); }, []);
+
+  // 📌 今日要点(纯前端聚合现有 feed)
+  const briefing = useMemo(() => {
+    const out: { icon: string; text: string; href?: string }[] = [];
+    // 1) 宏观:期货 + 亚洲最大异动
+    if (ovn?.futures && ovn.date === today()) {
+      const f = Object.values(ovn.futures).map((x) => `${x.name.replace("期货", "")} ${x.pct >= 0 ? "+" : ""}${x.pct}%`).join(" / ");
+      const asia = Object.values(ovn.asia ?? {}).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))[0];
+      out.push({ icon: "🌐", text: `期货 ${f}${asia ? ` · 亚洲最大异动 ${asia.name} ${asia.pct >= 0 ? "+" : ""}${asia.pct}%` : ""}` });
+    }
+    // 2) 夜盘预警:perp_movers ∩ 自选池
+    const wlCodes = new Set(wl.filter((x) => x.startsWith("US:")).map((x) => x.slice(3)).concat(wl.includes("KR:000660") ? ["SKHX"] : []));
+    const pm = (ovn?.perp_movers ?? []).filter((x) => wlCodes.has(x.symbol)).slice(0, 4);
+    if (pm.length) {
+      out.push({ icon: "🌙", text: `自选夜盘异动:${pm.map((x) => `${nameOf(x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`, lang)} ${x.chg24h >= 0 ? "+" : ""}${x.chg24h}%`).join(" · ")}` });
+    }
+    // 3) 缠论信号 ∩ 自选池
+    const K: Record<string, string> = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
+    const ca = chanA.filter((a) => wlCodes.has(a.symbol)).slice(0, 5);
+    if (ca.length) {
+      out.push({ icon: "☯", text: `自选缠论信号:${ca.map((a) => `${nameOf(`US:${a.symbol}`, lang)} ${K[a.kind] ?? a.kind}`).join(" · ")}`, href: "/tracker/" });
+    }
+    // 4) 选股名单变动(今日 vs 上一交易日)
+    if (scrHist.length >= 2) {
+      const cur = new Set(scrHist[scrHist.length - 1].items.map((x) => x.symbol));
+      const prev = new Set(scrHist[scrHist.length - 2].items.map((x) => x.symbol));
+      const added = [...cur].filter((x) => !prev.has(x));
+      const dropped = [...prev].filter((x) => !cur.has(x));
+      if (added.length || dropped.length) {
+        out.push({ icon: "📈", text: `≥80 名单:新进 ${added.length} 只${added.length ? `(${added.slice(0, 3).map((x) => nameOf(x, lang)).join("/")}${added.length > 3 ? "…" : ""})` : ""} · 掉出 ${dropped.length} 只`, href: "/screener/" });
+      }
+    }
+    // 5) 高波动 top
+    const h0 = heat?.items?.[0];
+    if (h0) out.push({ icon: "🔥", text: `本周最躁动:${nameOf(h0.symbol, lang)}(${h0.total} 次事件${h0.lows > h0.highs ? ",偏新低" : h0.highs > h0.lows ? ",偏新高" : ""})` });
+    // 6) OpenClaw 节拍
+    out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
+    return out;
+  }, [ovn, wl, chanA, scrHist, heat, mdPre, mdIntra, mdClose, lang]);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
@@ -256,6 +297,22 @@ export default function DeskPage() {
 
       {loading ? <div className="loading">加载中…</div> : (
         <>
+          {/* 📌 今日要点(聚合卡) */}
+          {briefing.length > 0 && (
+            <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
+              <h2>📌 今日要点</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {briefing.map((b, i) => (
+                  <div key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>
+                    <span style={{ marginRight: 6 }}>{b.icon}</span>
+                    {b.text}
+                    {b.href && <Link href={b.href} style={{ marginLeft: 8, color: "var(--accent)", fontSize: 12 }}>→</Link>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 盘中机器流(交易时段才有;Winter 5 分钟循环 → live 分支) */}
           {live && (
             <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
