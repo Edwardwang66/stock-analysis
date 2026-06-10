@@ -29,6 +29,28 @@ def _cache_path(ticker: str) -> str:
     return os.path.join(CACHE, f"{ticker}.csv")
 
 
+def _fetch_rows(url: str) -> list[tuple]:
+    """请求 Yahoo chart 端点,返回 [(ts,o,h,l,c,adj,v), ...](过滤空 bar)。"""
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read().decode())
+    res = data["chart"]["result"][0]
+    ts = res.get("timestamp") or []
+    q = res["indicators"]["quote"][0]
+    adj = None
+    if "adjclose" in res["indicators"]:
+        adj = res["indicators"]["adjclose"][0].get("adjclose")
+    rows = []
+    for i, t in enumerate(ts):
+        o, h, l, c = q["open"][i], q["high"][i], q["low"][i], q["close"][i]
+        if None in (o, h, l, c):
+            continue
+        ac = adj[i] if (adj and adj[i] is not None) else c
+        v = (q.get("volume") or [0])[i] or 0
+        rows.append((int(t), o, h, l, c, ac, v))
+    return rows
+
+
 def fetch_one(ticker: str, range_: str = "10y", interval: str = "1d",
               retries: int = 3, force: bool = False, max_age_hours: float = 12.0) -> int:
     """下载单只标的并写缓存,返回 bar 数;失败返回 0。
@@ -47,26 +69,23 @@ def fetch_one(ticker: str, range_: str = "10y", interval: str = "1d",
     last_err = None
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=20) as r:
-                data = json.loads(r.read().decode())
-            res = data["chart"]["result"][0]
-            ts = res.get("timestamp") or []
-            q = res["indicators"]["quote"][0]
-            # 复权收盘价(若有)用于收益计算,这里用未复权 OHLC + adjclose
-            adj = None
-            if "adjclose" in res["indicators"]:
-                adj = res["indicators"]["adjclose"][0].get("adjclose")
-            rows = []
-            for i, t in enumerate(ts):
-                o, h, l, c = q["open"][i], q["high"][i], q["low"][i], q["close"][i]
-                if None in (o, h, l, c):
-                    continue
-                ac = adj[i] if (adj and adj[i] is not None) else c
-                v = (q.get("volume") or [0])[i] or 0
-                rows.append((int(t), o, h, l, c, ac, v))
+            rows = _fetch_rows(url)
             if not rows:
                 return 0
+            # 实效性补丁:Yahoo 长区间(10y 等)接口常比短区间滞后 1 个交易日,
+            # 用 range=5d 的尾部合并补齐(审计 2026-06-10 发现)。
+            if range_ not in ("1d", "5d") and interval == "1d":
+                for host in (BASE, BASE.replace("query1", "query2")):
+                    try:
+                        tail = _fetch_rows(f"{host}{_yahoo_symbol(ticker)}?interval=1d&range=5d")
+                        have = {r0[0] for r0 in rows}
+                        new = [r0 for r0 in tail if r0[0] not in have]
+                        if new:
+                            rows += new
+                            rows.sort(key=lambda r0: r0[0])
+                            break          # 拿到更新的尾部即停(代理节点间数据可能不一致)
+                    except Exception:  # noqa: BLE001  尾部补丁失败不影响主数据
+                        pass
             os.makedirs(CACHE, exist_ok=True)
             with open(path, "w", newline="") as f:
                 w = csv.writer(f)

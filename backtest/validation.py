@@ -118,6 +118,50 @@ def max_drawdown(equity_or_returns: np.ndarray, is_returns: bool = True) -> floa
     return float(dd.min())
 
 
+def cscv_pbo(returns_matrix: np.ndarray, n_blocks: int = 8) -> dict:
+    """CSCV(组合对称交叉验证)估 PBO —— Bailey-Borwein-LdP-Zhu(2014)。
+
+    returns_matrix: (n_configs, T) 各候选配置的日收益序列(同一时间轴)。
+    把 T 日切成 n_blocks 块,取一半块作 IS、另一半作 OOS,遍历全部 C(n,n/2) 组合:
+    每个组合在 IS 上选 Sharpe 最优配置,看它在 OOS 的排名;
+    PBO = IS 最优在 OOS 落入后半段(中位数以下)的组合占比。
+    返回 {pbo, n_combos, n_configs, avg_oos_rank, is_best_oos_sharpe_mean}。
+    """
+    from itertools import combinations
+    M = np.asarray(returns_matrix, dtype=float)
+    n_cfg, T = M.shape
+    if n_cfg < 2 or T < n_blocks * 4:
+        return {"pbo": float("nan"), "n_combos": 0, "n_configs": n_cfg}
+    edges = np.linspace(0, T, n_blocks + 1, dtype=int)
+    blocks = [list(range(edges[i], edges[i + 1])) for i in range(n_blocks)]
+
+    def _sr(r):                       # 每期 Sharpe(不年化;排名用,量纲无关)
+        sd = r.std(ddof=1, axis=-1)
+        return np.where(sd > 0, r.mean(axis=-1) / np.where(sd > 0, sd, 1), -np.inf)
+
+    below_median = 0
+    oos_ranks, is_best_oos = [], []
+    combos = list(combinations(range(n_blocks), n_blocks // 2))
+    for c in combos:
+        is_idx = np.concatenate([blocks[i] for i in c])
+        oos_idx = np.concatenate([blocks[i] for i in range(n_blocks) if i not in c])
+        sr_is = _sr(M[:, is_idx])
+        sr_oos = _sr(M[:, oos_idx])
+        best = int(np.argmax(sr_is))
+        # OOS 相对排名 ∈ (0,1):1=最好
+        rank = (np.sum(sr_oos <= sr_oos[best]) - 0.5) / n_cfg
+        oos_ranks.append(rank)
+        is_best_oos.append(float(sr_oos[best]))
+        if rank <= 0.5:
+            below_median += 1
+    return {
+        "pbo": float(below_median / len(combos)),
+        "n_combos": len(combos), "n_configs": n_cfg,
+        "avg_oos_rank": float(np.mean(oos_ranks)),
+        "is_best_oos_sharpe_mean": float(np.mean(is_best_oos)),
+    }
+
+
 def ou_from_ar1(x: np.ndarray, dt: float = 1.0 / 252) -> dict | None:
     """对序列 x 拟合 AR(1): x_{t}=a+b·x_{t-1}+ζ,反解 OU 参数(Avellaneda-Lee 2010)。
 

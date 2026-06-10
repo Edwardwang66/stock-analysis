@@ -37,7 +37,7 @@ jobs:
         run: |
           rm -rf frontend/public/feed
           mkdir -p frontend/public/feed
-          cp -r feed/index.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener feed/stock-notes frontend/public/feed/ 2>/dev/null || true
+          cp -r feed/index.json feed/health.json feed/watchlist.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener feed/stock-notes frontend/public/feed/ 2>/dev/null || true
       - run: npm ci
       - name: 静态导出前剔除边缘函数目录(app/api 仅供 Vercel 部署使用)
         run: rm -rf app/api

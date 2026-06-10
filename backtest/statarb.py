@@ -88,6 +88,7 @@ class StatArbParams:
     impact_Y: float = 0.5           # 平方根冲击系数
     n_trials: int = 200             # 申报试验次数(用于 Deflated Sharpe;诚实登记,见 §6.7)
     holdout_start: str = "2025-01-01"  # 真 holdout 起点(R5):此日(含)之后只做终检,不据其调参
+    vol_target: float | None = None  # 年化波动目标(如0.04);None=关闭。开启则按近21日实现波动缩放毛杠杆(§6.3)
     factors: list[str] = field(default_factory=lambda: ["SPY", "SECTOR"])
 
 
@@ -304,11 +305,16 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     active: set = set()
     net_rets, gross_rets, turnovers, n_pos, breaker_counts = [], [], [], [], []
     ret_ts: list[int] = []          # 每条净收益对应的实现日(t+1)时间戳
-    last_diag, last_breaker, last_weights = {}, {}, {}
 
     for k in range(start_k, len(dates) - 1):
         weights, diag, breaker, active = book_for_day(
             dates, spy_ret, sector_ret, names, k, p, prev_w, active)
+        # vol-scaling(§6.3,因果:只用过去净收益):实现波动高于目标则等比降杠杆
+        if p.vol_target and len(net_rets) >= 21:
+            rv = float(np.std(net_rets[-21:], ddof=1)) * np.sqrt(252)
+            if rv > 1e-6:
+                scale = float(np.clip(p.vol_target / rv, 0.5, 1.5))
+                weights = {t: w * scale for t, w in weights.items()}
         # 实现下一日收益(t->t+1)
         gross_r = 0.0
         for t, w in weights.items():
@@ -332,15 +338,18 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
         n_pos.append(len(weights))
         breaker_counts.append(len(breaker))
         prev_w = weights
-        last_diag, last_breaker, last_weights = diag, breaker, weights
 
     net = np.array(net_rets)
     gross = np.array(gross_rets)
     rep = _summarize(net, gross, np.array(ret_ts, dtype=np.int64),
                      turnovers, n_pos, breaker_counts, dates, start_k, p)
-    rep["latest_book"] = _latest_book(last_weights, last_diag, names, dates[-2])
-    rep["latest_breaker"] = [{"ticker": t, "reason": r} for t, r in sorted(last_breaker.items())]
+    # 实时簿:在最后一根 bar(无需 t+1 实现收益)上再构一次,asof=数据最新日,消除 1 日滞后
+    live_w, live_diag, live_breaker, _ = book_for_day(
+        dates, spy_ret, sector_ret, names, len(dates) - 1, p, prev_w, active)
+    rep["latest_book"] = _latest_book(live_w, live_diag, names, dates[-1])
+    rep["latest_breaker"] = [{"ticker": t, "reason": r} for t, r in sorted(live_breaker.items())]
     rep["universe_size"] = len(names)
+    rep["_net_series"] = net.tolist()          # 日净收益全序列(供 CSCV/研究脚本;不入 feed)
     if verbose:
         _print_report(rep)
     return rep
