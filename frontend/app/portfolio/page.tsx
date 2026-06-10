@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
+import { getForex, type Forex } from "@/lib/forex";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { addHolding, getHoldings, removeHolding, type Holding } from "@/lib/portfolio";
 
@@ -15,6 +16,17 @@ export default function PortfolioPage() {
   const [qty, setQty] = useState("");
   const [cost, setCost] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [fx, setFx] = useState<Forex | null>(null);
+  const [toUSD, setToUSD] = useState(false);
+
+  useEffect(() => { getForex("USD").then(setFx).catch(() => {}); }, []);
+
+  // 货币 → USD 系数(fx.rates 为 USD→C;USDT 视为 ≈USD)
+  const usdRate = (cur: string): number | null => {
+    if (cur === "USD" || cur === "USDT") return 1;
+    const r = fx?.rates?.[cur];
+    return r ? 1 / r : null;
+  };
 
   useEffect(() => {
     const sync = () => setList(getHoldings());
@@ -118,7 +130,12 @@ export default function PortfolioPage() {
           </div>
 
           <div className="section">
-            <h2>合计(按币种)</h2>
+            <h2>合计(按币种)
+              <label style={{ marginLeft: 12, fontSize: 12, color: "var(--muted)", fontWeight: 400, cursor: "pointer" }}>
+                <input type="checkbox" checked={toUSD} onChange={(e) => setToUSD(e.target.checked)} disabled={!fx} style={{ marginRight: 4 }} />
+                折算 USD{!fx && "(汇率加载中)"}
+              </label>
+            </h2>
             <table>
               <thead><tr><th>币种</th><th>总市值</th><th>总成本</th><th>总盈亏</th><th>收益率</th></tr></thead>
               <tbody>
@@ -131,9 +148,31 @@ export default function PortfolioPage() {
                     <td className={t.pnl >= 0 ? "up" : "down"}>{t.cost ? `${t.pnl >= 0 ? "+" : ""}${((t.pnl / t.cost) * 100).toFixed(2)}%` : "—"}</td>
                   </tr>
                 ))}
+                {toUSD && fx && (() => {
+                  let mv = 0, cost = 0, skipped: string[] = [];
+                  for (const [cur, t] of totals) {
+                    const r = usdRate(cur);
+                    if (r == null) { skipped.push(cur); continue; }
+                    mv += t.mv * r; cost += t.cost * r;
+                  }
+                  const pnl = mv - cost;
+                  return (
+                    <tr style={{ borderTop: "2px solid var(--border)" }}>
+                      <td><strong>≈ USD 合计</strong>{skipped.length > 0 && <span className="src">(未含 {skipped.join("/")})</span>}</td>
+                      <td><strong>{fmt(mv)}</strong></td>
+                      <td>{fmt(cost)}</td>
+                      <td className={pnl >= 0 ? "up" : "down"}><strong>{pnl >= 0 ? "+" : ""}{fmt(pnl)}</strong></td>
+                      <td className={pnl >= 0 ? "up" : "down"}>{cost ? `${pnl >= 0 ? "+" : ""}${((pnl / cost) * 100).toFixed(2)}%` : "—"}</td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
-            <p className="src" style={{ marginTop: 8 }}>不同币种不折算合并(避免汇率口径误导);需要折算可在 /sources 查当日汇率。</p>
+            <p className="src" style={{ marginTop: 8 }}>
+              {toUSD && fx
+                ? `折算口径:${fx.source} ${fx.date} 中间价;USDT 视为 ≈1 USD。仅供参考。`
+                : "默认不跨币种合并(避免汇率口径误导);勾选「折算 USD」按 ECB 中间价估算。"}
+            </p>
           </div>
         </>
       ) : (
