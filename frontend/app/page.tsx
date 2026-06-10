@@ -11,6 +11,7 @@ import { getIndex, getIntradayLive, getRepoWatchlist, type IntradayDoc } from "@
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketLabel, useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
+import { getMarketHistory, type MarketSnapshot } from "@/lib/feed";
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
@@ -24,9 +25,34 @@ type SortMode = "default" | "gainers" | "losers";
 const LS_TAB = "ui:tab:v1";
 const LS_SORT = "ui:sort:v1";
 
+function Spark({ vals }: { vals: number[] }) {
+  if (vals.length < 5) return null;
+  const w = 56, h = 16;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const pts = vals.map((v, i) => `${((i / (vals.length - 1)) * w).toFixed(1)},${(h - ((v - min) / (max - min || 1)) * h).toFixed(1)}`).join(" ");
+  const up = vals[vals.length - 1] >= vals[0];
+  return (
+    <svg width={w} height={h} style={{ opacity: 0.85, flexShrink: 0 }} aria-hidden>
+      <polyline points={pts} fill="none" stroke={up ? "#26a69a" : "#ef5350"} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const lang = useLang();
   const night = useNightQuotes();
+  // 指数 30 天迷你走势(market/history.json,日度)
+  const [mh, setMh] = useState<MarketSnapshot[]>([]);
+  useEffect(() => { getMarketHistory().then((h) => setMh(h ?? [])).catch(() => {}); }, []);
+  const sparkOf = (sym: string): number[] => {
+    const code = sym.replace(/^IDX:/, "");
+    const byDay = new Map<string, number>();
+    for (const m of mh) {
+      const c = m.indices?.[code]?.close;
+      if (c != null) byDay.set(m.date, c);
+    }
+    return Array.from(byDay.values()).slice(-30);
+  };
   const [cloudOpen, setCloudOpen] = useState(false);
   useEffect(() => { setCloudOpen(window.localStorage.getItem("ui:cloudpool") === "open"); }, []);
   const toggleCloud = () => setCloudOpen((v) => { const n = !v; window.localStorage.setItem("ui:cloudpool", n ? "open" : "closed"); return n; });
@@ -301,6 +327,7 @@ export default function Home() {
               <span className="muted">{nameOf(s, lang)}</span>
               <strong>{q?.price != null ? q.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</strong>
               <span className={d}>{q?.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : ""}</span>
+              <Spark vals={sparkOf(s)} />
             </Link>
           );
         })}
