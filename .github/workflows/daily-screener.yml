@@ -1,6 +1,6 @@
-name: Daily screener (技术评分≥50)
+name: Daily screener (技术评分≥80)
 
-# 每个交易日美股收盘后扫描 标普500+纳指100,把评分≥50的清单:
+# 每个交易日美股收盘后扫描 标普500+纳指100,把评分≥80的清单:
 #   1) 提交到 feed/screener/(供 /screener 页面实时读取)
 #   2) 开一个 GitHub Issue 并指派给仓库所有者(GitHub 会邮件通知你)
 on:
@@ -51,6 +51,6 @@ jobs:
           DATE=$(date -u +%F)
           COUNT=$(python -c "import json;print(json.load(open('feed/screener/latest.json'))['count'])")
           gh issue create \
-            --title "📈 每日选股 技术评分≥50 · $DATE($COUNT 只)" \
+            --title "📈 每日选股 技术评分≥80 · $DATE($COUNT 只)" \
             --body-file feed/screener/issue.md \
             --assignee "${{ github.repository_owner }}" || echo "issue create failed"

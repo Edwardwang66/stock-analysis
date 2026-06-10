@@ -10,7 +10,7 @@
   python scripts/openclaw_daily.py --mode local
   # 真投递(需 GITHUB_TOKEN;量化报告另需 FEED_HMAC_SECRET)
   GITHUB_TOKEN=... FEED_HMAC_SECRET=... python scripts/openclaw_daily.py --mode github-api
-  python scripts/openclaw_daily.py --stocks-only --top 10
+  python scripts/openclaw_daily.py --stocks-only
 """
 from __future__ import annotations
 
@@ -499,7 +499,7 @@ def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["local", "github-api", "dispatch"], default="local")
-    ap.add_argument("--top", type=int, default=10, help="看多清单取前 N 只(0=全部看多清单)")
+    ap.add_argument("--top", type=int, default=0, help="看多清单取前 N 只(0=全部看多清单;默认全量覆盖 ≥80 清单)")
     ap.add_argument("--watchlist", default=os.environ.get("OPENCLAW_WATCHLIST"))
     ap.add_argument("--screener-file", default=None)
     ap.add_argument("--repo", default=os.environ.get("OPENCLAW_REPO", oc.DEFAULT_REPO))

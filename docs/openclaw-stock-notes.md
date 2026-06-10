@@ -27,7 +27,7 @@
 > 设环境变量 `OPENCLAW_MODEL=gpt-5.5`,投递时会自动写进 `model` 字段。
 
 ## OpenClaw 端怎么跑(每日)
-**输入(只分析"看多清单")**:① 当日选股清单 `feed/screener/latest.json` —— 全是评分 ≥ 50 的**强烈看多**标的(就是你的看多列表);② 你的自选 watchlist。
+**输入(只分析"看多清单")**:① 当日选股清单 `feed/screener/latest.json` —— 全是评分 ≥ 80 的多因子共振标的(就是你的精选看多列表);② 你的自选 watchlist。
 **对清单里每只股票**,用下面的 prompt 让你的 OpenClaw(GPT-5.5)产出一份 stock-note,再投递。
 
 ### stock-analyst 角色 prompt(交给你的 OpenClaw)

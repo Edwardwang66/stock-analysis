@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """盘中机器报告(5 分钟节拍,确定性计算,非 LLM)。
 
-覆盖池 = 云端自选池(含 SA LP)∪ 当日 screener ≥50 全名单。
+覆盖池 = 云端自选池(含 SA LP)∪ 当日 screener ≥80 全名单。
 每轮:批量拉实时报价 → 与上一轮快照对比 → 产出:
   - snapshot: 每只 {price, pct, high, low}
   - events:   5 分钟异动(|Δ|≥0.8%)、当日新高/新低、放量提示

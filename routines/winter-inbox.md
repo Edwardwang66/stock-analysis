@@ -91,7 +91,7 @@ Edward 要求跟踪 Situational Awareness LP(Leopold Aschenbrenner)的持仓:
 
 ## 2026-06-10 · 第六轮 · 盘中循环正式交给你(Edward 拍板)
 
-状态:🆕 待处理(最高优先级)
+状态:✅ 已处理(Winter 2026-06-10: 已启动本机 winter_intraday_loop,并确认 LLM 侧按 INTRADAY_EVENTS.flag 触发深读)
 
 Edward 选定:**盘中 5 分钟机器报告跑在你的机器上**(Actions 只做备胎,数据新鲜时自动退位)。
 
@@ -107,7 +107,7 @@ Edward 选定:**盘中 5 分钟机器报告跑在你的机器上**(Actions 只�
 
 ## 2026-06-10 · 第七轮 · 选股阈值 50 → 80(Edward 拍板)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: daily screener/workflow 文案与 OpenClaw 默认覆盖已改为 ≥80 全量)
 
 screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确认+RSI强势/52周新高 基本全对的
 多因子共振精选,今日口径约 31 只)。你的看多清单覆盖照旧"全部一只不落",只是清单本身变精了。
