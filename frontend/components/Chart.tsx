@@ -38,6 +38,8 @@ export default function Chart({
   const [showLv, setShowLv] = useState(false); // 支撑压力(周 Pivot,方法论 #6)
   const [showAv, setShowAv] = useState(false); // 锚定VWAP(52周低/高双锚,方法论二期)
   const [showSq, setShowSq] = useState(false); // TTM Squeeze(挤压=蓄势,释放=变盘)
+  const [showFib, setShowFib] = useState(false); // 自动斐波回撤(252根高低点)
+  const [showIchi, setShowIchi] = useState(false); // Ichimoku 简版(转换/基准/云)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -97,6 +99,42 @@ export default function Chart({
           priceLineVisible: false, lastValueVisible: true, title: label, crosshairMarkerVisible: false });
         series.setData(bars.flatMap((b, i) => (av[i] != null ? [{ time: b.time as any, value: av[i] as number }] : [])));
       }
+    }
+
+    // 自动斐波回撤:近 252 根 高→低 或 低→高(按时间后者为终点),0/23.6/38.2/50/61.8/78.6/100
+    if (showFib && !compare && bars.length >= 30) {
+      const lb = Math.min(bars.length, 252);
+      const seg = bars.slice(-lb);
+      let loI = 0, hiI = 0;
+      seg.forEach((b, i) => { if (b.low < seg[loI].low) loI = i; if (b.high > seg[hiI].high) hiI = i; });
+      const hi = seg[hiI].high, lo = seg[loI].low;
+      const upMove = loI < hiI; // 低点在前 = 上行段回撤
+      for (const r of [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1]) {
+        const price = upMove ? hi - (hi - lo) * r : lo + (hi - lo) * r;
+        candles.createPriceLine({ price, color: r === 0.5 ? "#f7b500" : "rgba(120,123,134,0.55)",
+          lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true,
+          title: `Fib ${(r * 100).toFixed(1).replace(".0", "")}%` });
+      }
+    }
+
+    // Ichimoku 简版:转换线(9)/基准线(26)/先行A/B(云,前移省略=同位画)
+    if (showIchi && !compare && bars.length >= 60) {
+      const hl = (p2: number, i: number) => {
+        const a = bars.slice(Math.max(0, i - p2 + 1), i + 1);
+        return (Math.max(...a.map((x) => x.high)) + Math.min(...a.map((x) => x.low))) / 2;
+      };
+      const tenkan = bars.map((_, i) => (i >= 8 ? hl(9, i) : null));
+      const kijun = bars.map((_, i) => (i >= 25 ? hl(26, i) : null));
+      const spanA = bars.map((_, i) => (tenkan[i] != null && kijun[i] != null ? ((tenkan[i] as number) + (kijun[i] as number)) / 2 : null));
+      const spanB = bars.map((_, i) => (i >= 51 ? hl(52, i) : null));
+      const mk = (data: (number | null)[], color: string, w: number, title: string) => {
+        const ser = chart.addLineSeries({ color, lineWidth: w as any, priceLineVisible: false, lastValueVisible: false, title, crosshairMarkerVisible: false });
+        ser.setData(bars.flatMap((b, i) => (data[i] != null ? [{ time: b.time as any, value: data[i] as number }] : [])));
+      };
+      mk(tenkan, "#26c6da", 1, "转换9");
+      mk(kijun, "#ab47bc", 1, "基准26");
+      mk(spanA, "rgba(38,166,154,0.5)", 1, "云A");
+      mk(spanB, "rgba(239,83,80,0.5)", 1, "云B");
     }
 
     // TTM Squeeze:挤压期黄点(蓄势),释放根▲/▼(按动量方向)
@@ -214,7 +252,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, levels, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, levels, compare]);
 
   return (
     <>
@@ -230,6 +268,12 @@ export default function Chart({
         </button>
         <button className={showSq ? "active" : ""} onClick={() => setShowSq((v) => !v)}>
           {showSq ? "✓ Squeeze" : "Squeeze"}
+        </button>
+        <button className={showFib ? "active" : ""} onClick={() => setShowFib((v) => !v)}>
+          {showFib ? "✓ 斐波" : "斐波"}
+        </button>
+        <button className={showIchi ? "active" : ""} onClick={() => setShowIchi((v) => !v)}>
+          {showIchi ? "✓ 一目" : "一目"}
         </button>
         {levels && levels.length > 0 && (
           <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
