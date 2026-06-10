@@ -125,3 +125,114 @@ export function volumeRatio(volumes: number[], p = 20): Maybe {
   const base = volumes.slice(-p - 1, -1).reduce((s, x) => s + x, 0) / p;
   return base > 0 ? recent / base : null;
 }
+
+// ---- TD9 神奇九转(仅 Setup 段,东方财富口径;见 routines/methodology.md)----
+export interface TdMark {
+  idx: number;                 // bar 下标
+  count: number;               // 1..9
+  side: "buy" | "sell";        // buy=下跌九转(将反弹) sell=上涨九转(将衰竭)
+  perfected: boolean;          // 完美 9
+  runMax: number;              // 本段最终数到几(渲染时只显示 runMax>=6 的段)
+}
+
+export function tdSetup(highs: number[], lows: number[], closes: number[]): TdMark[] {
+  const n = closes.length;
+  const out: TdMark[] = [];
+  let buyRun: TdMark[] = [];
+  let sellRun: TdMark[] = [];
+  const flush = (run: TdMark[]) => {
+    const max = run.length ? run[run.length - 1].count : 0;
+    for (const m of run) { m.runMax = max; out.push(m); }
+  };
+  for (let i = 4; i < n; i++) {
+    // 买入计数:close < close[i-4](连续;相等即断,口径见 methodology)
+    if (closes[i] < closes[i - 4]) {
+      const count = (buyRun.length ? buyRun[buyRun.length - 1].count : 0) + 1;
+      let perfected = false;
+      if (count === 9) {
+        const ref = Math.min(lows[i - 2], lows[i - 3]);     // 第7、6根
+        perfected = lows[i] <= ref || lows[i - 1] <= ref;   // 第9或第8根
+      }
+      buyRun.push({ idx: i, count, side: "buy", perfected, runMax: 0 });
+      if (count === 9) { flush(buyRun); buyRun = []; }      // 数满 9 重新数
+    } else { flush(buyRun); buyRun = []; }
+    if (closes[i] > closes[i - 4]) {
+      const count = (sellRun.length ? sellRun[sellRun.length - 1].count : 0) + 1;
+      let perfected = false;
+      if (count === 9) {
+        const ref = Math.max(highs[i - 2], highs[i - 3]);
+        perfected = highs[i] >= ref || highs[i - 1] >= ref;
+      }
+      sellRun.push({ idx: i, count, side: "sell", perfected, runMax: 0 });
+      if (count === 9) { flush(sellRun); sellRun = []; }
+    } else { flush(sellRun); sellRun = []; }
+  }
+  flush(buyRun); flush(sellRun);
+  out.sort((a, b) => a.idx - b.idx);
+  return out;
+}
+
+// ---- SuperTrend(10,3;TradingView 同款,ATR 用 Wilder RMA,final band 棘轮)----
+export function superTrend(
+  highs: number[], lows: number[], closes: number[], p = 10, mult = 3,
+): { st: Maybe[]; dir: number[] } {
+  const n = closes.length;
+  const st: Maybe[] = Array(n).fill(null);
+  const dir: number[] = Array(n).fill(1);
+  if (n <= p) return { st, dir };
+  // Wilder RMA ATR
+  const atrArr: Maybe[] = Array(n).fill(null);
+  let a = 0;
+  for (let i = 1; i < n; i++) {
+    const tr = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]));
+    if (i <= p) { a += tr; if (i === p) { a /= p; atrArr[i] = a; } }
+    else { a = (a * (p - 1) + tr) / p; atrArr[i] = a; }
+  }
+  let fu = 0, fl = 0, started = false;
+  for (let i = 0; i < n; i++) {
+    const av = atrArr[i];
+    if (av == null) continue;
+    const mid = (highs[i] + lows[i]) / 2;
+    const bu = mid + mult * av;
+    const bl = mid - mult * av;
+    if (!started) { fu = bu; fl = bl; dir[i] = -1; st[i] = fu; started = true; continue; }
+    const pc = closes[i - 1];
+    fu = (bu < fu || pc > fu) ? bu : fu;   // 下行趋势中上轨只降不升
+    fl = (bl > fl || pc < fl) ? bl : fl;   // 上行趋势中下轨只升不降
+    dir[i] = dir[i - 1];
+    if (dir[i] === -1 && closes[i] > fu) dir[i] = 1;
+    else if (dir[i] === 1 && closes[i] < fl) dir[i] = -1;
+    st[i] = dir[i] === 1 ? fl : fu;        // 上行画下轨(绿),下行画上轨(红)
+  }
+  return { st, dir };
+}
+
+// ---- Pivot Points(经典;用上一完整周期的 H/L/C)----
+export interface PivotLevels { P: number; R1: number; S1: number; R2: number; S2: number }
+export function pivotPoints(H: number, L: number, C: number): PivotLevels {
+  const P = (H + L + C) / 3, R = H - L;
+  return { P, R1: 2 * P - L, S1: 2 * P - H, R2: P + R, S2: P - R };
+}
+
+/** 从日线 bars 取「上一完整 ISO 周」的 H/L/C(不足两周返回 null)。 */
+export function prevWeekHLC(bars: { time: number; high: number; low: number; close: number }[]):
+  { H: number; L: number; C: number } | null {
+  if (bars.length < 10) return null;
+  const wk = (t: number) => {
+    const d = new Date(t * 1000);
+    // ISO 周标识:周一为界
+    const day = (d.getUTCDay() + 6) % 7;
+    const monday = new Date(d); monday.setUTCDate(d.getUTCDate() - day);
+    return `${monday.getUTCFullYear()}-${monday.getUTCMonth()}-${monday.getUTCDate()}`;
+  };
+  const groups = new Map<string, { H: number; L: number; C: number }>();
+  const order: string[] = [];
+  for (const b of bars) {
+    const k = wk(b.time);
+    const g = groups.get(k);
+    if (!g) { groups.set(k, { H: b.high, L: b.low, C: b.close }); order.push(k); }
+    else { g.H = Math.max(g.H, b.high); g.L = Math.min(g.L, b.low); g.C = b.close; }
+  }
+  if (order.length < 2) return null;
+  return groups.get(order[order.length - 2]) ?? null;
+}

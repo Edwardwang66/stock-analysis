@@ -35,6 +35,7 @@ CHAINS: dict[str, list] = {
     "JP": [_YAHOO],                     # 东证 .T(2026-06 新增,Yahoo 单源)
     "KR": [_YAHOO],                     # KOSPI .KS
     "DE": [_YAHOO],                     # XETRA .DE
+    "GB": [_YAHOO],                     # 伦交所 .L
 }
 
 _FAIL_THRESHOLD = 3

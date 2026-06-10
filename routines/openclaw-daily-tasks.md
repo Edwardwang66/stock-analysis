@@ -8,6 +8,12 @@
 
 ---
 
+## 0️⃣ 每次运行的第一步:读信箱(必做,2026-06-09 起)
+
+- [ ] **先读 [`routines/winter-inbox.md`](winter-inbox.md)**:这是看板侧 Claude 给你的协调消息
+  (口径变更/覆盖范围调整/新数据源)。把状态为 🆕 的条目执行掉,改成 ✅ 随当日投递一起 push。
+- [ ] 投递前 `git pull --rebase origin main`,避免与看板侧/Actions 的 push 撞车。
+
 ## 0. 环境准备(一次性)
 - [ ] clone 本仓到 OpenClaw workspace,`cd stock-analysis`
 - [ ] 环境变量:
@@ -15,15 +21,26 @@
   - `FEED_HMAC_SECRET` = 与仓库 Secret 同值(量化报告签名用)
   - `OPENCLAW_REPO=edwardwang66/stock-analysis`、`OPENCLAW_BRANCH=main`
   - `OPENCLAW_MODEL=gpt-5.5`(你的 OpenClaw 模型;会写进报告/解读的 `model` 字段)
-- [ ] 维护一个自选清单 `watchlist.txt`(每行一个,如 `US:AAPL`),没有就先用选股清单前 N 只
+- [ ] ~~维护本地 `watchlist.txt`~~ **已废弃(2026-06-09)**:自选清单以仓库
+  [`feed/watchlist.json`](../feed/watchlist.json) 为唯一真相源(Edward/Claude 维护,你只读)。
 
-> **本清单只分析「看多列表」**:`feed/screener/latest.json` 里全是评分 ≥ 50 的**强烈看多**标的——就是你的看多列表。
+> **评分口径 v2(2026-06-09 起)**:综合评分已重构为十因子(见 [`methodology.md`](methodology.md) 第 7 节),
+> 强趋势股 50-90 分、弱多 30-45 分,不再全是 50。note 引用分数时用 v2 实际数字。
 > 模型无关:你的 OpenClaw 用 **GPT-5.5** 即可(设 `OPENCLAW_MODEL=gpt-5.5`)。
 
-## 1. 拉取当日输入(看多清单)
-- [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
-- [ ] 要分析的标的集合 = **看多清单**(前 15 只,或全部)∪ 自选 `watchlist.txt`(去重)
-- [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`
+## 1. 拉取当日输入(每日覆盖范围,2026-06-10 版)
+- [ ] 完整必析池:`feed/watchlist.json` 的 `symbols`(**唯一真相源**,全部必做,一只不落)。
+      `daily_screener` 已把 ≥80 全名单轮换写入 `tier=screener`,SA LP 也在 `tier=salp`;
+      读取 `symbols` 即可,不用再单独并集 screener 或 SA LP。
+- [ ] 看多清单:`feed/screener/latest.json` 仅作评分/主题/行业上下文(≥80,v2+高阈值 = 多因子共振精选)。
+- [ ] SA LP:`feed/funds/situational-awareness.json` 仅作持仓背景上下文;换仓后会同步进入 watchlist。
+- [ ] **额外产出一份当日汇总报告**(给 Edward 的 report,日报 Issue 会自动嵌入):
+      写入 `feed/screener/analysis-<YYYY-MM-DD>.md`,结构:
+      ① 三池总览(自选池/看多/SA LP 各自的多空倾向统计) ② 看多清单按主题分组点评
+      ③ 最值得关注的 3-5 只(理由+风险) ④ 与昨日清单的进出变化 ⑤ 数据来源列表
+- [ ] note 的 thesis/view 须含方法论结论:TD9 当前计数、52 周位置、SuperTrend(10,3) 方向、
+      缠论笔方向与背驰迹象(口径见 [`methodology.md`](methodology.md))
+- [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`、`feed/market/history.json`
 
 ---
 
@@ -68,6 +85,7 @@
 - [ ] `/intel`「②信息量」近 24h 计数上升,来源含 `openclaw-agent:*`
 - [ ] 抽查 2 只个股页「🤖 AI 解读」为今日、有来源链接
 - [ ] 任一投递失败 → 看 GitHub Actions `feed-validate` 日志(多半是 schema/签名/边界);修正后重投
+- [ ] 如果用 SSH/local 投递,提交前先 `git pull --rebase origin main`,再 `git push`
 - [ ] 全程未输出任何投资建议措辞
 
 ---
@@ -79,3 +97,21 @@
 
 > 可执行骨架见 [`../scripts/openclaw_daily.py`](../scripts/openclaw_daily.py):已写好"拉清单→遍历→投递"的管道,
 > 只需把其中的 `analyze_stock()` / `analyze_role()` 接到你的 OpenClaw/Claude。
+
+---
+
+## 7. 盘中节拍(2026-06-10 Edward 定版,重要)
+
+分层架构:**5 分钟机器报告**(Actions/worker 自动跑 `feed/intraday/latest.json`,非 LLM)+ **你的 LLM 深读按事件触发**。
+
+- [ ] **盘前 report(硬性)**:美东 09:00 前(13:00-13:30 UTC 窗口)投递
+      `feed/screener/analysis-premarket-<date>.md`:全池(自选池∪SA LP∪昨日≥80)盘前异动、
+      隔夜新闻、今日事件窗口、按方法论给出当日关注位(Pivot/九转/SuperTrend 状态)。
+- [ ] **盘中事件驱动(每5分钟轮询,只写增量)**:轮询 live 分支 `feed/intraday/latest.json` 的
+      `events[]`;对触发 异动/新高/新低 的标的,更新该标的 stock-note 并把一句话追加到
+      `feed/screener/analysis-intraday-<date>.md`(滚动追加,不重写全文)。
+- [ ] **收盘前 report(硬性)**:美东 15:30(19:30 UTC)投递 `feed/screener/analysis-close-<date>.md`:
+      尾盘 30 分钟关注点、当日全池复盘要点、明日前瞻。
+- [ ] 收盘后照旧:全量 notes + 当日汇总(§1 的 analysis-<date>.md);纳指/标普大盘综述一天一份即可。
+
+> 注:盘中 LLM 不做全池重写 —— 5 分钟内写不完且成本不可持续;机器报告负责"快",你负责"深"。

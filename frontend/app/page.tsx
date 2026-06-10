@@ -7,10 +7,14 @@ import SearchBox from "@/components/SearchBox";
 import { checkAlerts, clearTriggered, notify, type PriceAlert } from "@/lib/alerts";
 import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
-import { getIndex } from "@/lib/feed";
+import { getIndex, getIntradayLive, getRepoWatchlist, type IntradayDoc } from "@/lib/feed";
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
+import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
 import { fngColor, getFearGreed, type FearGreed } from "@/lib/sentiment";
+import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
+import TzSelect from "@/components/TzSelect";
+import LiveClock from "@/components/LiveClock";
 import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
@@ -27,6 +31,8 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshId, setRefreshId] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const tzKey = useTz();
+  const nowTick = useNow(1000);
 
   useEffect(() => {
     const sync = () => setWatch(getWatchlist());
@@ -34,6 +40,16 @@ export default function Home() {
     window.addEventListener("watchlist-changed", sync);
     return () => window.removeEventListener("watchlist-changed", sync);
   }, []);
+
+  // 云端跟踪池(feed/watchlist.json):OpenClaw 每日全覆盖分析的标的,自动并入自选区
+  const [cloudWatch, setCloudWatch] = useState<string[]>([]);
+  useEffect(() => {
+    getRepoWatchlist().then((w) => setCloudWatch(w?.symbols ?? [])).catch(() => {});
+  }, []);
+  const watchAll = useMemo(
+    () => Array.from(new Set([...cloudWatch, ...watch])),
+    [cloudWatch, watch],
+  );
 
   // 记住上次的 tab / 排序(挂载后恢复,避免 SSR 水合不一致)
   useEffect(() => {
@@ -46,6 +62,16 @@ export default function Home() {
   }, []);
   const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
   const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 盘中事件跑马灯(live 分支,交易时段才有;90s 轮询足够轻)
+  const [liveEvents, setLiveEvents] = useState<IntradayDoc["events"]>([]);
+  useEffect(() => {
+    let alive = true;
+    const load = () => getIntradayLive().then((d) => { if (alive) setLiveEvents(d?.events ?? []); }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 90_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, []);
 
   // 加密恐惧贪婪指数(免费 CORS 源,失败静默)
   const [fng, setFng] = useState<FearGreed | null>(null);
@@ -94,10 +120,10 @@ export default function Home() {
   }, []);
 
   const baseSymbols = useMemo(() => symbolsForTab(tab), [tab]);
-  // 页面上实际渲染的全集 = 自选 + 当前 tab(看板统计也用同一个集合,保证一致)
+  // 页面上实际渲染的全集 = 自选(云端+本地)+ 当前 tab(看板统计也用同一个集合,保证一致)
   const allVisibleSymbols = useMemo(
-    () => Array.from(new Set([...watch, ...baseSymbols])),
-    [baseSymbols, watch],
+    () => Array.from(new Set([...watchAll, ...baseSymbols])),
+    [baseSymbols, watchAll],
   );
 
   useEffect(() => {
@@ -127,11 +153,21 @@ export default function Home() {
     return () => { alive = false; };
   }, [allVisibleSymbols, refreshId]);
 
-  // 30s 自动刷新;页面隐藏时暂停,回到前台立即补一次
+  // 加密实时推送:可见的加密标的合并到一条 Binance WebSocket(~1s 跳动,零轮询)
+  useEffect(() => {
+    const cryptos = allVisibleSymbols.filter((s) => s.startsWith("CRYPTO:"));
+    if (!cryptos.length) return;
+    return subscribeCryptoLive(cryptos, (q) => {
+      setQuotes((prev) => ({ ...prev, [q.symbol]: q }));
+    });
+  }, [allVisibleSymbols]);
+
+  // 10s 自动刷新(数据层分级新鲜期:加密 8s 实时跳动,股票 30s 内走缓存零外呼);
+  // 页面隐藏时暂停,回到前台立即补一次
   useEffect(() => {
     const id = window.setInterval(() => {
       if (!document.hidden) setRefreshId((x) => x + 1);
-    }, 30_000);
+    }, 10_000);
     const onVis = () => { if (!document.hidden) setRefreshId((x) => x + 1); };
     document.addEventListener("visibilitychange", onVis);
     return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
@@ -200,8 +236,10 @@ export default function Home() {
       <div className="header">
         <h1>📈 多市场股票数据看板</h1>
         <span className="tag">美股 · 港股 · A股 · 加密 · 实时行情 · 主力资金 · 非 LLM 技术分析</span>
-        <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>💼 持仓</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)", marginLeft: "auto" }}>📋 总览</Link>
+        <Link href="/portfolio/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>💼 持仓</Link>
         <Link href="/screener/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📈 每日选股</Link>
+        <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🛰️ 情报看板</Link>
         <Link href="/sources/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>🔌 数据源</Link>
       </div>
@@ -228,6 +266,19 @@ export default function Home() {
           );
         })}
       </div>
+
+      {liveEvents.length > 0 && (
+        <div className="movers" style={{ marginTop: -6 }}>
+          <span className="src">⚡ 盘中</span>
+          {liveEvents.slice(0, 6).map((e, i) => (
+            <Link key={i} href={`/symbol/?s=${encodeURIComponent(e.symbol)}`}
+              className={`mover ${e.type === "新低" ? "down" : e.type === "新高" ? "up" : ""}`}>
+              {e.type} {nameOf(e.symbol)} {e.detail.replace("5分钟 ", "")}
+            </Link>
+          ))}
+          <Link href="/desk/" className="src" style={{ color: "var(--accent)" }}>全部 →</Link>
+        </div>
+      )}
 
       {firedAlerts.length > 0 && (
         <div className="hint" style={{ borderColor: "var(--up)", background: "rgba(38,166,154,.08)" }}>
@@ -266,7 +317,9 @@ export default function Home() {
         <button className="btn subtle" onClick={() => setRefreshId((x) => x + 1)} disabled={loadingQuotes}>
           {loadingQuotes ? "刷新中" : "刷新行情"}
         </button>
-        {lastUpdated && <span className="src">更新 {lastUpdated.toLocaleTimeString()}</span>}
+        {lastUpdated && <span className="src">更新 {fmtTime(lastUpdated, tzKey)}({agoShort(lastUpdated, nowTick)})</span>}
+        <LiveClock />
+        <TzSelect />
       </div>
 
       {movers && (
@@ -286,10 +339,22 @@ export default function Home() {
         </div>
       )}
 
+      {/* 云端跟踪池:89 只用热力图压缩展示(点瓦片进个股页;表格视图在 /desk) */}
+      {cloudWatch.length > 0 && (
+        <>
+          <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            ☁ 云端跟踪池({cloudWatch.length})
+            <span className="src">OpenClaw 每日全析 · 按涨跌排序</span>
+            <Link href="/desk/" className="linklike">→ 标签/行业/评分视图</Link>
+          </h2>
+          <Heatmap symbols={cloudWatch} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
+        </>
+      )}
+
       {watch.length > 0 && (
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            ⭐ 我的自选
+            ⭐ 我的自选(本地)
             <button className="linklike" onClick={() => exportUserData()}>导出备份</button>
             <label className="linklike" style={{ cursor: "pointer" }}>
               导入
@@ -305,7 +370,10 @@ export default function Home() {
                 }} />
             </label>
           </h2>
-          {renderCards(watch)}
+          <div className="grid">{watch.map((s) => (
+            <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
+              tag={cloudWatch.includes(s) ? "☁" : undefined} onRetry={() => { void retryOne(s); }} />
+          ))}</div>
         </>
       )}
 

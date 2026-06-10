@@ -9,7 +9,7 @@
   feed/screener/issue.md        —— GitHub Issue 正文(Markdown)
 
 用法:
-  python scripts/daily_screener.py --threshold 50 [--limit N] [--concurrency 8]
+  python scripts/daily_screener.py --threshold 80 [--limit N] [--concurrency 8]
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ async def load_universe(client: httpx.AsyncClient) -> dict[str, dict]:
         r.raise_for_status()
         for row in csv.DictReader(io.StringIO(r.text)):
             sym = row["Symbol"].strip().upper().replace(".", "-")  # BRK.B -> BRK-B (Yahoo)
-            uni[sym] = {"name": row.get("Security", sym), "indices": ["SP500"]}
+            uni[sym] = {"name": row.get("Security", sym), "indices": ["SP500"], "sector": row.get("GICS Sector") or row.get("Sector") or ""}
         print(f"[universe] S&P500: {len(uni)} 只")
     except Exception as e:  # noqa: BLE001
         print(f"[universe] S&P500 CSV 拉取失败({e}),仅用 NDX100")
@@ -135,6 +135,30 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     (out_dir / "latest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / f"{today}.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
     (out_dir / "issue.md").write_text(render_issue(payload))
+    # 当日 ≥阈值 自动并入云端分析池(tier=screener,每日整体轮换;Edward 2026-06-10 要求)
+    wl_path = ROOT / "feed" / "watchlist.json"
+    try:
+        wl = json.loads(wl_path.read_text())
+        wl.setdefault("tiers", {})["screener"] = [f"US:{r['symbol']}" for r in picks]
+        flat: list[str] = []
+        for tier in ("core", "salp", "futu", "screener"):
+            for sym in wl["tiers"].get(tier, []):
+                if isinstance(sym, str) and ":" in sym and sym not in flat:
+                    flat.append(sym)
+        wl["symbols"] = flat
+        wl["updated_at"] = payload["generated_at"]
+        wl_path.write_text(json.dumps(wl, ensure_ascii=False, indent=2) + "\n")
+        print(f"[watchlist] screener tier 轮换:{len(picks)} 只,池总数 {len(flat)}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[watchlist] 更新失败(不阻断):{e}")
+
+    # 全宇宙分数表(看板分档标签用:90+/80+/70+ 等任意档位)
+    scores_path = out_dir / "scores.json"
+    scores_path.write_text(json.dumps({
+        "date": payload["date"], "generated_at": payload["generated_at"],
+        "scores": {r["symbol"]: r["score"] for r in scored},
+        "sectors": {sym: (meta.get("sector") or "") for sym, meta in uni.items() if meta.get("sector")},
+    }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"[done] 扫描 {len(scored)} / 命中 ≥{threshold}: {len(picks)} 只 -> {out_dir}/latest.json")
 
 
@@ -166,7 +190,7 @@ def render_issue(p: dict) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--threshold", type=int, default=50)
+    ap.add_argument("--threshold", type=int, default=80)
     ap.add_argument("--limit", type=int, default=0, help="0=全部;调试时可限量")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--out", default=str(ROOT / "feed" / "screener"))

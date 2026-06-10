@@ -26,7 +26,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -39,6 +39,8 @@ jobs:
           mkdir -p frontend/public/feed
           cp -r feed/index.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener feed/stock-notes frontend/public/feed/ 2>/dev/null || true
       - run: npm ci
+      - name: 静态导出前剔除边缘函数目录(app/api 仅供 Vercel 部署使用)
+        run: rm -rf app/api
       - name: Build (static export)
         env:
           # 项目站点路径 = /<repo>
@@ -47,6 +49,9 @@ jobs:
           # 新增 API_BASE = https://你的后端域名 后,前端即自动改用后端(摆脱公共代理)。
           # 未设置时为空,前端回退到浏览器直连公开 API。
           NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
+          # Vercel 边缘代理域名(仓库 Variables 设 EDGE_BASE,如 https://xxx.vercel.app):
+          # 设置后 Pages 站点的报价/K线优先走自有边缘函数,彻底摆脱公共 CORS 代理。
+          NEXT_PUBLIC_EDGE_BASE: ${{ vars.EDGE_BASE }}
           # 情报馈送实时源:指向当前分支的 feed/(raw GitHub,新 commit 即时可见,无需重建 Pages)。
           # 远端失败时前端自动回退到捆绑快照 public/feed/。
           NEXT_PUBLIC_FEED_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/feed
@@ -63,4 +68,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

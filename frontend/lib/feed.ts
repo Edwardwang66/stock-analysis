@@ -103,6 +103,67 @@ export interface ScreenerList {
 }
 export const getScreener = () => fetchJson<ScreenerList>("screener/latest.json");
 
+// 每日市场快照历史(market-snapshot.yml 工作日两次追加,保留 400 天)
+export interface MarketSnapshot {
+  date: string; at: string;
+  indices: Record<string, { close: number | null; change_pct: number | null }>;
+  fng: { value: number | null; label: string | null };
+  btc: { price: number | null; change_pct_24h: number | null };
+}
+export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
+
+// 盘中机器报告(live 分支,Winter 循环每5分钟推;Actions 备胎)
+const LIVE_REMOTE = REMOTE.replace("/main/feed", "/live/feed");
+export interface IntradayDoc {
+  at: string; pool_size: number; quoted: number;
+  summary: { up: number; down: number; median_pct: number | null;
+             top: { symbol: string; pct: number }[]; bottom: { symbol: string; pct: number }[] };
+  events: { symbol: string; type: string; detail: string; price: number }[];
+  snapshot: Record<string, { price: number; pct: number | null; high: number | null; low: number | null }>;
+}
+export async function getIntradayLive(): Promise<IntradayDoc | null> {
+  try {
+    const r = await fetch(`${LIVE_REMOTE}/intraday/latest.json?t=${Date.now()}`, { cache: "no-store" });
+    if (r.ok) return (await r.json()) as IntradayDoc;
+  } catch { /* live 分支可能还没建 */ }
+  return null;
+}
+
+// 全宇宙评分表(daily_screener 输出;看板任意分档打标签用)
+export interface ScoreTable {
+  date: string; generated_at: string;
+  scores: Record<string, number>;
+  sectors?: Record<string, string>;  // GICS Sector(标普500 全量)
+}
+export const getScores = () => fetchJson<ScoreTable>("screener/scores.json");
+
+// 个股 AI 解读索引(OpenClaw 投递;updated_at 用于判断当日覆盖)
+export interface NotesIndex {
+  updated_at: string;
+  symbols: { symbol: string; date: string; stance: string; view: string }[];
+}
+export const getNotesIndex = () => fetchJson<NotesIndex>("stock-notes/index.json");
+
+// 跟踪基金 13F 持仓(funds-13f.yml 周检自动更新)
+export interface FundPosition {
+  ticker: string; name: string; type: string; value: number; shares: number; theme?: string;
+}
+export interface FundHoldings {
+  fund: string; manager?: string; asof: string; filed: string; note?: string;
+  positions: FundPosition[];
+  summary?: { total_value: number; n_positions: number; themes?: string };
+}
+export const getFundHoldings = (slug: string) => fetchJson<FundHoldings>(`funds/${slug}.json`);
+
+// 云端自选池(Edward 重点跟踪 = OpenClaw 每日必须全覆盖)
+export interface RepoWatchlist { version: number; updated_at: string; symbols: string[] }
+export const getRepoWatchlist = () => fetchJson<RepoWatchlist>("watchlist.json");
+
+// 选股追踪历史(daily-digest.yml 每日入库;/tracker 页消费)
+export interface TrackedPick { symbol: string; name?: string; score?: number; pick_price?: number }
+export interface TrackedDay { date: string; generated_at?: string; threshold?: number; items: TrackedPick[] }
+export const getScreenerHistory = () => fetchJson<TrackedDay[]>("screener/history.json");
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");

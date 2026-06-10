@@ -33,12 +33,14 @@ def _yahoo_code(s: Symbol) -> str:
         return f"{s.code}.KS"    # KOSPI(KOSDAQ 可直接传 KR:xxxxxx.KQ)
     if s.market == "DE":
         return f"{s.code}.DE"    # XETRA
+    if s.market == "GB":
+        return f"{s.code}.L"     # 伦交所
     raise ValueError(f"yahoo 不支持市场 {s.market}")
 
 
 class YahooProvider:
     name = "Yahoo"
-    markets = {"US", "HK", "CN", "IDX", "JP", "KR", "DE"}
+    markets = {"US", "HK", "CN", "IDX", "JP", "KR", "DE", "GB"}
     commercial_redistribution = False
 
     async def _chart(self, client, s, interval, range_):
@@ -53,7 +55,8 @@ class YahooProvider:
         res = await self._chart(client, s, "1d", "1d")
         m = res["meta"]
         price = m.get("regularMarketPrice")
-        prev = m.get("chartPreviousClose") or m.get("previousClose")
+        # 优先 regularMarketPreviousClose(真·昨收);chartPreviousClose 语义随请求窗口变,仅兜底
+        prev = m.get("regularMarketPreviousClose") or m.get("chartPreviousClose") or m.get("previousClose")
         change = (price - prev) if (price is not None and prev is not None) else None
         change_pct = (change / prev * 100.0) if (change is not None and prev) else None
         return Quote(

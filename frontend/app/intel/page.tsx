@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  getIndex, getSignals, getMarket, getFactory, getReport,
-  type FeedIndex, type Signals, type MarketState, type FactoryStore, type FullReport,
+  getFundHoldings, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
+  type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
+import { fmtDateTime, useTz } from "@/lib/timefmt";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const pct = (x?: number | null, d = 1) => (x == null ? "—" : `${(x * 100).toFixed(d)}%`);
@@ -21,13 +22,18 @@ export default function IntelDashboard() {
   const [mkt, setMkt] = useState<MarketState | null>(null);
   const [fac, setFac] = useState<FactoryStore | null>(null);
   const [rep, setRep] = useState<FullReport | null>(null);
+  const [hist, setHist] = useState<MarketSnapshot[]>([]);
+  const [fund, setFund] = useState<FundHoldings | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const tzKey = useTz();
 
   async function load() {
     const i = await getIndex();
     if (!i) { setErr("无法加载 feed/index.json(远端与捆绑快照均失败)。"); return; }
     setIdx(i); setErr(null);
     setSig(await getSignals()); setMkt(await getMarket()); setFac(await getFactory());
+    setHist((await getMarketHistory()) ?? []);
+    setFund(await getFundHoldings("situational-awareness"));
     if (i.latest.report) setRep(await getReport(i.latest.report));
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
@@ -58,7 +64,7 @@ export default function IntelDashboard() {
           <Stat label="最新数据日期" value={fresh?.market_data_asof || "—"} />
           <Stat label="数据滞后" value={fresh?.data_age_days != null ? `${fresh.data_age_days.toFixed(1)} 天` : "—"} />
           <Stat label="上次报告" value={fresh?.report_age_hours != null ? `${fresh.report_age_hours.toFixed(1)} 小时前` : "—"} />
-          <Stat label="index 更新于" value={idx ? idx.updated_at.replace("T", " ").replace("Z", " UTC") : "—"} />
+          <Stat label="index 更新于" value={idx ? fmtDateTime(idx.updated_at, tzKey) : "—"} />
         </div>
       </div>
 
@@ -138,6 +144,63 @@ export default function IntelDashboard() {
         <p className="src" style={{ marginTop: 8 }}>s = OU 标准化偏离(s&lt;0 做多 / s&gt;0 做空);hl = 半衰期(交易日);H = Hurst(&gt;0.55 触发协整断裂熔断)。</p>
       </div>
 
+      {/* 每日快照历史(market-snapshot.yml 自动累积) */}
+      <div className="section">
+        <h2>⑤+ 市场历史快照(自动累积,工作日两次)</h2>
+        {hist.length < 2 ? (
+          <p className="src">数据积累中({hist.length}/2 天起绘图)。market-snapshot 工作流每个工作日
+            A股/美股收盘后各跑一次,把 8 大指数、恐惧贪婪指数、BTC 写入 feed/market/history.json(留 400 天)。</p>
+        ) : (
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 10 }}>
+            {([["^GSPC", "标普500"], ["^IXIC", "纳斯达克"], ["000001.SS", "上证指数"], ["^HSI", "恒生指数"]] as const).map(([code, label]) => (
+              <Spark key={code} label={label} values={hist.map((h) => h.indices?.[code]?.close ?? null)} last={hist[hist.length - 1]?.indices?.[code]} />
+            ))}
+            <Spark label="恐惧贪婪" values={hist.map((h) => h.fng?.value ?? null)}
+              lastText={`${hist[hist.length - 1]?.fng?.value ?? "—"} ${hist[hist.length - 1]?.fng?.label ?? ""}`} />
+            <Spark label="BTC" values={hist.map((h) => h.btc?.price ?? null)}
+              lastText={hist[hist.length - 1]?.btc?.price?.toLocaleString() ?? "—"} />
+          </div>
+        )}
+      </div>
+
+      {/* 跟踪基金 13F 持仓 */}
+      {fund && (
+        <div className="section">
+          <h2>🦅 {fund.fund} 持仓(SEC 13F)
+            <span className="src" style={{ marginLeft: 10 }}>
+              截至 {fund.asof} · 披露 {fund.filed} · 总市值 ${((fund.summary?.total_value ?? 0) / 1e9).toFixed(2)}B · {fund.positions.length} 仓位
+            </span>
+          </h2>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>#</th><th>标的</th><th>类型</th><th>市值($M)</th><th>占比</th><th>主题</th></tr></thead>
+              <tbody>
+                {fund.positions.slice(0, 15).map((p, i) => {
+                  const tot = fund.summary?.total_value || 1;
+                  const isPut = p.type.includes("Put");
+                  return (
+                    <tr key={p.ticker + i}>
+                      <td className="muted">{i + 1}</td>
+                      <td>
+                        {p.ticker.includes(":") ? (
+                          <Link href={`/symbol/?s=${encodeURIComponent(p.ticker)}`} style={{ color: "var(--accent)" }}>{p.ticker.replace(/^US:/, "")}</Link>
+                        ) : p.ticker}
+                        <span className="src" style={{ marginLeft: 6 }}>{p.name}</span>
+                      </td>
+                      <td><span className="badge" style={isPut ? { borderColor: DOWN, color: DOWN } : undefined}>{p.type}</span></td>
+                      <td>{(p.value / 1e6).toFixed(1)}</td>
+                      <td>{((p.value / tot) * 100).toFixed(1)}%</td>
+                      <td className="src">{p.theme ?? ""}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {fund.note && <p className="src" style={{ marginTop: 8 }}>{fund.note}</p>}
+        </div>
+      )}
+
       {/* LLM 假设工厂候选 */}
       <div className="section">
         <h2>⑥ LLM 假设工厂候选(受门控,LLM 不决策)</h2>
@@ -166,7 +229,7 @@ export default function IntelDashboard() {
           <tbody>
             {(idx?.contributions || []).slice(0, 12).map((c, i) => (
               <tr key={i}>
-                <td className="src">{c.at.replace("T", " ").replace("Z", "")}</td>
+                <td className="src">{fmtDateTime(c.at, tzKey)}</td>
                 <td>{c.producer}</td>
                 <td><span className="badge">{c.type}</span></td>
                 <td>{c.summary || "—"}</td>
@@ -198,6 +261,41 @@ export default function IntelDashboard() {
         <strong>流 B 条件因子统计套利残差均值回归</strong>,全程<strong>扣成本(净·压力成本为唯一计价货币)</strong>。
         当前在可得免费数据(含幸存者偏差的流动大盘)上净 alpha ≈0/为负 —— 这与设计文档第 10 章结论一致:
         真 alpha 在容量受限冷门层,免费数据触及不到。<strong>研究/演示用途,非投资建议(Not financial advice)。</strong>
+      </div>
+    </div>
+  );
+}
+
+function Spark({ label, values, last, lastText }: {
+  label: string;
+  values: (number | null)[];
+  last?: { close: number | null; change_pct: number | null };
+  lastText?: string;
+}) {
+  const pts = values.map((v, i) => [i, v] as const).filter((p): p is readonly [number, number] => p[1] != null);
+  const w = 200, h = 44;
+  let path = "";
+  if (pts.length >= 2) {
+    const vs = pts.map((p) => p[1]);
+    const min = Math.min(...vs), max = Math.max(...vs);
+    const sx = (i: number) => (i / (values.length - 1 || 1)) * w;
+    const sy = (v: number) => 4 + (1 - (v - min) / (max - min || 1)) * (h - 8);
+    path = pts.map(([i, v], j) => `${j ? "L" : "M"}${sx(i).toFixed(1)} ${sy(v).toFixed(1)}`).join(" ");
+  }
+  const up = pts.length >= 2 ? pts[pts.length - 1][1] >= pts[0][1] : true;
+  return (
+    <div className="card">
+      <div className="src">{label}</div>
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
+        {path && <path d={path} fill="none" stroke={up ? UP : DOWN} strokeWidth="1.8" />}
+      </svg>
+      <div style={{ fontSize: 13, fontWeight: 600 }}>
+        {lastText ?? (last?.close != null ? last.close.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—")}
+        {last?.change_pct != null && (
+          <span style={{ color: last.change_pct >= 0 ? UP : DOWN, marginLeft: 6, fontWeight: 400 }}>
+            {last.change_pct >= 0 ? "+" : ""}{last.change_pct.toFixed(2)}%
+          </span>
+        )}
       </div>
     </div>
   );

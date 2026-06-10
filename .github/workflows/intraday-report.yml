@@ -1,0 +1,57 @@
+name: Intraday report (盘中5分钟机器报告)
+
+# 覆盖:全球时段(亚→欧→美接力,00:00-20:00 UTC 工作日),每 5 分钟;备胎守卫仍生效。
+# ⚠️ GitHub Actions cron 为尽力而为,高频任务实际抖动 ±1-3 分钟;
+#    需要硬实时请迁移 Cloudflare Worker Cron 或常驻 worker(见 docs/realtime-reports.md)。
+# 产物提交到 live 分支(避免 78 次/日心跳污染 main 历史)。
+on:
+  schedule:
+    - cron: "*/5 0-20 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intraday-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: 取上一轮快照(live 分支,容错)
+        run: |
+          git fetch origin live:live 2>/dev/null || true
+          git checkout live -- feed/intraday/latest.json 2>/dev/null || true
+      - name: 备胎守卫:Winter 循环在干活时退位(数据 <10 分钟新鲜则跳过)
+        id: guard
+        run: |
+          AGE=99999
+          if [ -f feed/intraday/latest.json ]; then
+            AGE=$(python3 -c "import json,datetime as d; at=json.load(open('feed/intraday/latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
+          fi
+          echo "live 数据年龄:${AGE}s"
+          if [ "$AGE" -lt 600 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
+        with:
+          python-version: "3.11"
+      - name: 生成盘中报告
+        if: steps.guard.outputs.skip != 'true'
+        run: python scripts/intraday_report.py
+      - name: 提交到 live 分支
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git stash -u
+          git checkout live 2>/dev/null || git checkout -b live
+          git stash pop || true
+          git add feed/intraday/latest.json
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "intraday: $(date -u +%H:%M)"
+          git push origin live --force-with-lease || git push origin live --force

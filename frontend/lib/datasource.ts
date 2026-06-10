@@ -14,14 +14,43 @@ export interface Quote {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+// Vercel 边缘代理(自有,替代公共 CORS 代理)。优先级:
+// 构建时 NEXT_PUBLIC_EDGE_BASE > 运行在 *.vercel.app 同源 > 生产默认域名(2026-06-10 实测可用)。
+// 边缘不可用时自动落到 live 快照/公共代理,故障安全。
+const EDGE_ENV = process.env.NEXT_PUBLIC_EDGE_BASE || "";
+const EDGE_DEFAULT = "https://stock-analysis-ten-phi.vercel.app";
+function edgeBase(): string | null {
+  if (EDGE_ENV) return EDGE_ENV.replace(/\/$/, "");
+  if (typeof window !== "undefined" && /\.vercel\.app$/.test(window.location.hostname)) return "";
+  return EDGE_DEFAULT;
+}
 /** 是否配置了后端(决定股票是否走公共代理;供 UI 提示用)。 */
 export const HAS_BACKEND = Boolean(API_BASE);
-const QUOTE_CACHE_MS = 30_000;
+// 开市感知分级新鲜期(2026-06-10):加密 8s;开市中的市场 15s;休市 5min(价格不动,
+// 省下的请求预算让开市标的更"实时")。指数按全球任一关联市场开市即视为活跃。
+import { marketStatus } from "./marketstatus";
+const CRYPTO_CACHE_MS = 8_000;
+const OPEN_CACHE_MS = 15_000;
+const CLOSED_CACHE_MS = 300_000;
+function quoteTtl(symbol: string): number {
+  if (symbol.startsWith("CRYPTO:")) return CRYPTO_CACHE_MS;
+  const market = symbol.split(":")[0];
+  if (market === "IDX") {
+    return ["US", "HK", "CN", "JP", "KR", "DE", "GB"].some((m) => marketStatus(m).open)
+      ? 30_000 : CLOSED_CACHE_MS;
+  }
+  try {
+    return marketStatus(market).open ? OPEN_CACHE_MS : CLOSED_CACHE_MS;
+  } catch {
+    return OPEN_CACHE_MS;
+  }
+}
 const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
 
 // ---- localStorage 持久缓存:刷新/重开页面先用上次数据渲染(秒开),再后台更新 ----
-const LS_QUOTES = "ds:q:v2";
+// v3:清洗 v2 时代被 5d-窗口 bug 污染的涨跌幅缓存
+const LS_QUOTES = "ds:q:v3";
 const LS_BARS_PREFIX = "ds:b:v2:";
 const LS_BARS_INDEX = "ds:bidx:v2";
 const QUOTE_STALE_MAX_MS = 10 * 60_000;   // 超过 10 分钟的旧报价不再用于首屏
@@ -169,6 +198,36 @@ export async function getBackendHealth(): Promise<any | null> {
   return h ?? { ok: false };
 }
 
+// ---- 盘中机器快照(live 分支)作为免代理报价缓存 ----
+// Winter 循环/Actions 每 5 分钟产出全池快照;6 分钟内视为可用。模块级 60s 记忆防重复拉取。
+interface LiveSnap { data: Record<string, { price: number; pct: number | null; high: number | null; low: number | null }>; ageMin: number }
+let liveSnapCache: { snap: LiveSnap | null; at: number } | null = null;
+let liveSnapInflight: Promise<LiveSnap | null> | null = null;
+
+async function getLiveSnapshot(): Promise<LiveSnap | null> {
+  const now = Date.now();
+  if (liveSnapCache && now - liveSnapCache.at < 60_000) return liveSnapCache.snap;
+  if (liveSnapInflight) return liveSnapInflight;
+  liveSnapInflight = (async () => {
+    try {
+      const r = await fetchT(`https://raw.githubusercontent.com/edwardwang66/stock-analysis/live/feed/intraday/latest.json?t=${now}`, 6000);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const ageMs = now - new Date(j.at).getTime();
+      if (!isFinite(ageMs) || ageMs > 6 * 60_000) return null; // 过期快照不用(收盘后走常规路径)
+      const snap: LiveSnap = { data: j.snapshot ?? {}, ageMin: Math.max(1, Math.round(ageMs / 60_000)) };
+      return snap;
+    } catch {
+      return null;
+    } finally {
+      setTimeout(() => { liveSnapInflight = null; }, 0);
+    }
+  })();
+  const snap = await liveSnapInflight;
+  liveSnapCache = { snap, at: now };
+  return snap;
+}
+
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
   return { market: (market || "").toUpperCase(), code: (code || "").toUpperCase() };
@@ -210,6 +269,7 @@ function yahooCode(market: string, code: string): string {
   if (market === "JP") return `${code}.T`;    // 东证
   if (market === "KR") return `${code}.KS`;   // KOSPI(KOSDAQ 标的可直接写 KR:xxxxxx.KQ)
   if (market === "DE") return `${code}.DE`;   // XETRA
+  if (market === "GB") return `${code}.L`;    // 伦交所
   return code;
 }
 const Y_INTERVAL: Record<string, string> = {
@@ -241,9 +301,11 @@ async function yahooChart(ycode: string, range: string, interval: string): Promi
   throw new Error(`Yahoo 全部代理失败:${lastErr?.message || lastErr}`);
 }
 async function yahooQuote(market: string, code: string): Promise<Quote> {
-  const res = await yahooChart(yahooCode(market, code), "5d", "1d");
+  // ⚠️ range 必须 1d:chartPreviousClose 的语义是「请求窗口前一根的收盘」,
+  // 用 5d 会算成对 5 天前的涨跌幅(曾导致 AAPL 显示 -7.82% 实为 -3.64%)。
+  const res = await yahooChart(yahooCode(market, code), "1d", "1d");
   const m = res.meta;
-  const prev = m.chartPreviousClose ?? m.previousClose;
+  const prev = m.regularMarketPreviousClose ?? m.chartPreviousClose ?? m.previousClose;
   const change = m.regularMarketPrice != null && prev != null ? m.regularMarketPrice - prev : null;
   return {
     symbol: `${market}:${code}`, price: m.regularMarketPrice, change,
@@ -298,9 +360,9 @@ export async function getQuotes(
     if (cached && cached.expires > now) { out[symbol] = cached.quote; onPartial?.(cached.quote); continue; }
     // L2:上次会话 30s 内的报价同样视为新鲜(硬刷新后不重复拉)
     const p = persisted[symbol];
-    if (p && now - p.at <= QUOTE_CACHE_MS) {
+    if (p && now - p.at <= quoteTtl(symbol)) {
       out[symbol] = p.q;
-      quoteCache.set(symbol, { quote: p.q, expires: p.at + QUOTE_CACHE_MS });
+      quoteCache.set(symbol, { quote: p.q, expires: p.at + quoteTtl(symbol) });
       onPartial?.(p.q);
       continue;
     }
@@ -322,11 +384,62 @@ export async function getQuotes(
           symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
           high: d.high, low: d.low, currency: d.currency, source: d.source,
         };
-        quoteCache.set(quote.symbol, { quote, expires: now + QUOTE_CACHE_MS });
+        quoteCache.set(quote.symbol, { quote, expires: now + quoteTtl(quote.symbol) });
         out[quote.symbol] = quote;
         onPartial?.(quote);
       }
     }
+  }
+
+  // 快路径①.5:Vercel 边缘代理(自有,~100-300ms,边缘缓存 10s)——干掉公共代理依赖
+  const eb = edgeBase();
+  if (eb !== null) {
+    const edgeable = missing.filter((s) => !out[s] && !s.startsWith("CRYPTO:"));
+    if (edgeable.length) {
+      const chunks: string[][] = [];
+      for (let i = 0; i < edgeable.length; i += 40) chunks.push(edgeable.slice(i, i + 40));
+      try {
+        const results = await Promise.all(chunks.map((c) =>
+          fetchT(`${eb}/api/quote?symbols=${encodeURIComponent(c.join(","))}`, 8000).then((r) => (r.ok ? r.json() : null)),
+        ));
+        for (const rows of results) {
+          for (const d of Array.isArray(rows) ? rows : []) {
+            if (d.error || d.price == null) continue;
+            const quote: Quote = {
+              symbol: d.symbol, price: d.price, change: d.change, changePct: d.change_pct,
+              high: d.high, low: d.low, currency: d.currency ?? "", source: d.source ?? "edge",
+            };
+            quoteCache.set(quote.symbol, { quote, expires: Date.now() + quoteTtl(quote.symbol) });
+            out[quote.symbol] = quote;
+            onPartial?.(quote);
+          }
+        }
+      } catch { /* 边缘不可用 → 继续快照/公共代理 */ }
+    }
+  }
+
+  // 快路径②:盘中机器快照(live 分支,≤6 分钟新鲜)——免代理拿到池内股票报价。
+  // 这是无后端模式的源头提速:Winter/Actions 每 5 分钟算好,前端一次 fetch 全拿。
+  const stillMissing = missing.filter((s) => !out[s] && !s.startsWith("CRYPTO:"));
+  if (stillMissing.length >= 3) {
+    try {
+      const snap = await getLiveSnapshot();
+      if (snap) {
+        for (const symbol of stillMissing) {
+          const v = snap.data[symbol];
+          if (!v || v.price == null) continue;
+          const prev = v.pct != null ? v.price / (1 + v.pct / 100) : null;
+          const quote: Quote = {
+            symbol, price: v.price,
+            change: prev != null ? v.price - prev : null, changePct: v.pct,
+            high: v.high, low: v.low, currency: "", source: `快照(${snap.ageMin}分钟)`,
+          };
+          quoteCache.set(symbol, { quote, expires: Date.now() + 60_000 });
+          out[symbol] = quote;
+          onPartial?.(quote);
+        }
+      }
+    } catch { /* 快照不可用则继续走代理 */ }
   }
 
   // 批量没拿到的(后端冷启动/出错)逐个回退:加密走直连必成,股票尝试代理
@@ -338,7 +451,7 @@ export async function getQuotes(
     }
     try {
       const quote = await req;
-      quoteCache.set(symbol, { quote, expires: Date.now() + QUOTE_CACHE_MS });
+      quoteCache.set(symbol, { quote, expires: Date.now() + quoteTtl(symbol) });
       out[symbol] = quote;
       onPartial?.(quote);
     } catch {
@@ -364,6 +477,17 @@ function barsFromBackend(d: any): Bar[] | null {
 }
 
 async function fetchBars(symbol: string, range: string, interval: string): Promise<Bar[]> {
+  // 边缘代理 K线(全市场含 IDX/加密),失败回退原路径
+  const eb = edgeBase();
+  if (eb !== null) {
+    try {
+      const r = await fetchT(`${eb}/api/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`, 9000);
+      if (r.ok) {
+        const j = await r.json();
+        if (Array.isArray(j?.bars) && j.bars.length) return j.bars as Bar[];
+      }
+    } catch { /* fall through */ }
+  }
   if (API_BASE && !symbol.startsWith("IDX:")) {
     const bars = barsFromBackend(await backendJson(`/api/v1/ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`));
     if (bars) return bars;
@@ -397,4 +521,54 @@ export async function getOHLCV(symbol: string, range = "1y", interval = "1d"): P
 // 分钟级 K 线(资金流向 / 主力资金估算用)。interval ∈ 1m/5m/15m/30m/1h。
 export async function getIntraday(symbol: string, interval = "5m", range = "1d"): Promise<Bar[]> {
   return cachedBars(symbol.trim().toUpperCase(), range, interval);
+}
+
+// ---- 美股盘前/盘后(扩展时段)----
+// Yahoo chart includePrePost=true:用扩展时段最后一根 1m bar 当前价。
+// 盘前涨跌基准 = 昨收;盘后基准 = 当日常规收盘。免费源无「夜盘」(Blue Ocean 为付费通道)。
+export interface ExtendedQuote {
+  session: "盘前" | "盘后";
+  price: number;
+  change: number;
+  changePct: number;
+  at: number; // 秒级时间戳
+}
+
+export async function getExtendedQuote(symbol: string): Promise<ExtendedQuote | null> {
+  const { market, code } = parseSymbol(symbol.trim().toUpperCase());
+  if (market !== "US") return null; // 免费源仅美股有可靠扩展时段
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${code}?range=1d&interval=1m&includePrePost=true`;
+  let res: any = null;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetchT(proxy(url));
+      if (!r.ok) continue;
+      const j = await r.json();
+      res = j?.chart?.result?.[0];
+      if (res) break;
+    } catch { /* 换下一个代理 */ }
+  }
+  if (!res) return null;
+  const m = res.meta ?? {};
+  const ctp = m.currentTradingPeriod;
+  const ts: number[] = res.timestamp ?? [];
+  const closes: (number | null)[] = res.indicators?.quote?.[0]?.close ?? [];
+  let i = ts.length - 1;
+  while (i >= 0 && closes[i] == null) i--;
+  if (i < 0 || !ctp?.regular) return null;
+  const t = ts[i], price = closes[i] as number;
+  let session: "盘前" | "盘后";
+  let base: number | null;
+  if (ctp.post && t >= ctp.post.start) {
+    session = "盘后";
+    base = m.regularMarketPrice ?? null;
+  } else if (ctp.pre && t < ctp.regular.start) {
+    session = "盘前";
+    base = m.regularMarketPreviousClose ?? m.chartPreviousClose ?? m.previousClose ?? null;
+  } else {
+    return null; // 常规时段内无需扩展报价
+  }
+  if (base == null || !isFinite(base) || base === 0) return null;
+  const change = price - base;
+  return { session, price, change, changePct: (change / base) * 100, at: t };
 }

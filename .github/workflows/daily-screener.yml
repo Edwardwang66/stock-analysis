@@ -1,17 +1,20 @@
-name: Daily screener (技术评分≥50)
+name: Daily screener (技术评分≥80)
 
-# 每个交易日美股收盘后扫描 标普500+纳指100,把评分≥50的清单:
+# 每个交易日美股收盘后扫描 标普500+纳指100,把评分≥80的清单:
 #   1) 提交到 feed/screener/(供 /screener 页面实时读取)
 #   2) 开一个 GitHub Issue 并指派给仓库所有者(GitHub 会邮件通知你)
 on:
   schedule:
     # 美股收盘 16:00 ET ≈ 20:00/21:00 UTC;留富余在 22:30 UTC 周一到周五跑
     - cron: "30 22 * * 1-5"
+  push:
+    paths: ["backend/app/analysis/signals.py", "scripts/daily_screener.py"]
+    branches: [main]
   workflow_dispatch:
     inputs:
       threshold:
         description: "技术评分阈值"
-        default: "50"
+        default: "80"
 
 permissions:
   contents: write   # 提交 feed/screener
@@ -25,19 +28,19 @@ jobs:
   screen:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install -r backend/requirements.txt
       - name: 扫描并生成清单
-        run: python scripts/daily_screener.py --threshold ${{ github.event.inputs.threshold || '50' }} --concurrency 10
+        run: python scripts/daily_screener.py --threshold ${{ github.event.inputs.threshold || '80' }} --concurrency 10
 
       - name: 提交清单到 feed/screener
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/screener
+          git add feed/screener feed/watchlist.json
           git diff --cached --quiet || git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
           git push || echo "push skipped"
 
@@ -48,6 +51,6 @@ jobs:
           DATE=$(date -u +%F)
           COUNT=$(python -c "import json;print(json.load(open('feed/screener/latest.json'))['count'])")
           gh issue create \
-            --title "📈 每日选股 技术评分≥50 · $DATE($COUNT 只)" \
+            --title "📈 每日选股 技术评分≥80 · $DATE($COUNT 只)" \
             --body-file feed/screener/issue.md \
             --assignee "${{ github.repository_owner }}" || echo "issue create failed"

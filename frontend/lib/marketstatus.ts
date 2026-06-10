@@ -66,5 +66,11 @@ export function marketStatus(market: string): MarketStatus {
     if (inAny(minutes, [[H(9), H(17, 30)]])) return { open: true, label: "盘中" };
     return { open: false, label: "休市" };
   }
+  if (market === "GB") {
+    const { dow, minutes } = localParts("Europe/London");
+    if (!(dow >= 1 && dow <= 5)) return { open: false, label: "休市" };
+    if (inAny(minutes, [[H(8), H(16, 30)]])) return { open: true, label: "盘中" };
+    return { open: false, label: "休市" };
+  }
   return { open: false, label: "" };
 }

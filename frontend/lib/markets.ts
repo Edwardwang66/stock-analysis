@@ -9,6 +9,7 @@ export const MARKETS = [
   { key: "JP", label: "日股" },
   { key: "KR", label: "韩股" },
   { key: "DE", label: "德股" },
+  { key: "GB", label: "英股" },
 ] as const;
 
 // 港股代码用 4 位(Yahoo 用 0700.HK);日 .T / 韩 .KS / 德 .DE
@@ -20,6 +21,7 @@ export const DEFAULT_SYMBOLS: Record<string, string[]> = {
   JP: ["JP:7203", "JP:6758", "JP:9984"],
   KR: ["KR:005930", "KR:000660", "KR:373220"],
   DE: ["DE:SAP", "DE:SIE", "DE:VOW3"],
+  GB: ["GB:SHEL", "GB:HSBA", "GB:AZN", "GB:ULVR", "GB:RR"],
 };
 
 export function symbolsForTab(tab: string): string[] {
@@ -29,16 +31,16 @@ export function symbolsForTab(tab: string): string[] {
 
 export const MARKET_LABEL: Record<string, string> = {
   US: "美股", CN: "A股", HK: "港股", CRYPTO: "加密",
-  JP: "日股", KR: "韩股", DE: "德股", IDX: "指数",
+  JP: "日股", KR: "韩股", DE: "德股", GB: "英股", IDX: "指数",
 };
 
 // 「全部」视图分组顺序(美股/A股优先)
-export const GROUP_ORDER = ["US", "CN", "HK", "CRYPTO", "JP", "KR", "DE"];
+export const GROUP_ORDER = ["US", "CN", "HK", "CRYPTO", "JP", "KR", "DE", "GB"];
 
 // 指数概览(IDX: 前缀 → Yahoo 代码原样直传,如 ^GSPC / 000001.SS)
 export const INDEX_SYMBOLS: string[] = [
   "IDX:^GSPC", "IDX:^IXIC", "IDX:^DJI", "IDX:000001.SS", "IDX:^HSI",
-  "IDX:^N225", "IDX:^KS11", "IDX:^GDAXI",
+  "IDX:^N225", "IDX:^KS11", "IDX:^GDAXI", "IDX:^FTSE",
 ];
 
 /** 从 "US:AAPL" 取市场前缀。 */
@@ -103,6 +105,13 @@ export const LOCAL_SYMBOLS: SymInfo[] = [
   { symbol: "DE:VOW3", name: "大众汽车 Volkswagen", market: "DE" },
   { symbol: "DE:BMW", name: "宝马 BMW", market: "DE" },
   { symbol: "DE:ALV", name: "安联 Allianz", market: "DE" },
+  { symbol: "IDX:^FTSE", name: "富时100 FTSE", market: "IDX" },
+  { symbol: "GB:SHEL", name: "壳牌 Shell", market: "GB" },
+  { symbol: "GB:HSBA", name: "汇丰控股 HSBC", market: "GB" },
+  { symbol: "GB:AZN", name: "阿斯利康(伦敦) AstraZeneca", market: "GB" },
+  { symbol: "GB:ULVR", name: "联合利华 Unilever", market: "GB" },
+  { symbol: "GB:RR", name: "罗尔斯罗伊斯 RollsRoyce", market: "GB" },
+  { symbol: "GB:BP", name: "英国石油 BP", market: "GB" },
 ];
 
 export const NAMES: Record<string, string> = Object.fromEntries(

@@ -1,0 +1,40 @@
+name: Funds 13F tracker (Situational Awareness LP)
+
+# 每周一/四检查跟踪基金是否有新 13F 披露(季度+≤45天延迟是 SEC 节奏,周检足够),
+# 有新披露则更新 feed/funds/ 并提醒(开 Issue)。
+on:
+  schedule:
+    - cron: "0 10 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 检查/解析 13F
+        run: python scripts/funds_13f.py
+      - name: 提交 + 新披露开 Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/funds
+          if git diff --cached --quiet; then echo "无新披露"; exit 0; fi
+          git commit -m "funds: 13F 持仓更新 $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            sleep 5
+          done
+          ASOF=$(python3 -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
+          gh issue create --title "🦅 Situational Awareness LP 新 13F 披露(截至 $ASOF)" \
+            --assignee "${{ github.repository_owner }}" \
+            --body "新一期 13F 已解析入库 feed/funds/situational-awareness.json,情报看板已自动更新。OpenClaw 将按新持仓调整每日分析池。"

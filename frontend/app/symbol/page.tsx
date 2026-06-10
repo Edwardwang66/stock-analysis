@@ -9,8 +9,11 @@ import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
 import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
-import { getOHLCV, getQuote, type Bar, type Quote } from "@/lib/datasource";
+import { subscribeCryptoLive } from "@/lib/livePrice";
+import { getExtendedQuote, getOHLCV, getQuote, type Bar, type ExtendedQuote, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
+import { pivotPoints, prevWeekHLC } from "@/lib/indicators";
+import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
@@ -71,6 +74,55 @@ function SymbolView() {
 
   useEffect(() => { setStarred(inWatchlist(symbol)); }, [symbol]);
 
+  // 美股盘前/盘后报价(扩展时段才显示;30s 一刷,常规时段自动隐藏)
+  const [ext, setExt] = useState<ExtendedQuote | null>(null);
+  useEffect(() => {
+    if (!symbol.startsWith("US:")) { setExt(null); return; }
+    let alive = true;
+    const load = () => getExtendedQuote(symbol)
+      .then((e) => { if (alive) setExt(e); })
+      .catch(() => { if (alive) setExt(null); });
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 30_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [symbol]);
+
+  // 末根 bar 跟价(日/周线):价格、K线、指标保持同源
+  const patchLastBar = (price: number) => {
+    setBars((prev) => {
+      if (!prev.length) return prev;
+      const last = prev[prev.length - 1];
+      if (last.close === price) return prev;
+      const next = [...prev];
+      next[next.length - 1] = {
+        ...last, close: price,
+        high: Math.max(last.high, price), low: Math.min(last.low, price),
+      };
+      return next;
+    });
+  };
+
+  // 实时价:加密走 Binance WebSocket(~1s 推送,零轮询延迟);股票 5s 短轮询
+  //(免费股票源本身有交易所级延迟,这是免费数据的物理上限,UI 如实标注)
+  useEffect(() => {
+    if (symbol.startsWith("CRYPTO:")) {
+      return subscribeCryptoLive([symbol], (q) => {
+        setQuote(q);
+        if (q.price != null && (interval === "1d" || interval === "1wk")) patchLastBar(q.price);
+      });
+    }
+    const id = window.setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const q = await getQuote(symbol);
+        setQuote(q);
+        if (q?.price != null && (interval === "1d" || interval === "1wk")) patchLastBar(q.price);
+      } catch { /* 单次失败忽略,下一轮再试 */ }
+    }, 5_000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, interval]);
+
   // 动态页标题:股票名 + 实时价(标签页可当迷你行情看)
   useEffect(() => {
     const base = `${nameOf(symbol)} ${symbol}`;
@@ -106,6 +158,21 @@ function SymbolView() {
   const dir = quote && quote.changePct != null ? (quote.changePct >= 0 ? "up" : "down") : "muted";
   const ind = an?.indicators ?? {};
 
+  // 周 Pivot 支撑压力(日线才有意义;上一完整周 HLC)
+  const pivotLevels = useMemo(() => {
+    if (interval !== "1d" || bars.length < 10) return null;
+    const w = prevWeekHLC(bars);
+    if (!w) return null;
+    const p = pivotPoints(w.H, w.L, w.C);
+    return [
+      { price: p.R2, label: "周R2", color: "#ef5350" },
+      { price: p.R1, label: "周R1", color: "#ef9a9a" },
+      { price: p.P, label: "周P", color: "#9aa0aa" },
+      { price: p.S1, label: "周S1", color: "#80cbc4" },
+      { price: p.S2, label: "周S2", color: "#26a69a" },
+    ];
+  }, [bars, interval]);
+
   return (
     <div className="container">
       <div className="header">
@@ -119,11 +186,33 @@ function SymbolView() {
         {quote && (
           <>
             <span className={`price ${dir}`} style={{ fontSize: 22 }}>{fmt(quote.price)}</span>
-            <span className={dir}>{quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""}</span>
+            <span className={dir}>
+              {quote.change != null ? `${quote.change >= 0 ? "+" : ""}${fmt(quote.change)} ` : ""}
+              {quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""}
+            </span>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {symbol.startsWith("CRYPTO:") ? "24h" : "今日"} 最高 {fmt(quote.high)} · 最低 {fmt(quote.low)}
+              {!symbol.startsWith("CRYPTO:") && quote.change != null && quote.price != null && ` · 昨收 ${fmt(quote.price - quote.change)}`}
+            </span>
             <span className="muted">{quote.currency} · 来源 {quote.source}</span>
           </>
         )}
       </div>
+
+      {ext && (
+        <div className="ext-quote">
+          <span className="badge">{ext.session}</span>
+          <strong className={ext.change >= 0 ? "up" : "down"}>
+            {ext.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {" "}{ext.change >= 0 ? "+" : ""}{ext.change.toFixed(2)}
+            {" "}{ext.changePct >= 0 ? "+" : ""}{ext.changePct.toFixed(2)}%
+          </strong>
+          <span className="src">
+            {new Date(ext.at * 1000).toLocaleTimeString("zh-CN", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}(美东)
+            · {ext.session === "盘后" ? "较今日收盘" : "较昨收"} · 免费源无夜盘
+          </span>
+        </div>
+      )}
 
       {err && <div className="err">加载失败:{err}(后端首次访问可能在唤醒,约 30 秒;请稍候刷新重试)</div>}
 
@@ -175,7 +264,8 @@ function SymbolView() {
         </div>
         {compareErr && <p className="src" style={{ color: "var(--down)" }}>{compareErr}</p>}
         {loading ? <div className="loading">加载中…</div> : (
-          <Chart bars={bars} compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
+          <Chart bars={bars} levels={pivotLevels}
+            compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
         )}
       </div>
 
@@ -212,7 +302,14 @@ function SymbolView() {
 
           {ind.high_52w != null && ind.low_52w != null && quote?.price != null && (
             <div className="section">
-              <h2>52 周区间位置</h2>
+              <h2>52 周区间位置
+                {ind.high_52w != null && quote?.price != null && (
+                  <span className="badge" style={{ marginLeft: 10, fontSize: 12 }}>
+                    距 52 周高 {(((quote.price / ind.high_52w) - 1) * 100).toFixed(1)}%
+                    {quote.price / ind.high_52w >= 0.95 ? " · 接近新高(动量学术上偏强)" : ""}
+                  </span>
+                )}
+              </h2>
               <div className="range52">
                 <div className="range52-fill" style={{
                   width: `${Math.max(0, Math.min(100, ((quote.price - ind.low_52w) / (ind.high_52w - ind.low_52w)) * 100))}%`,

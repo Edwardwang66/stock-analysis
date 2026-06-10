@@ -22,8 +22,44 @@ from .providers import router as data
 
 log = logging.getLogger("store")
 
-QUOTE_TTL = 30          # 报价新鲜期
-QUOTE_STALE_MAX = 600   # 报价可接受的最大陈旧度(SWR 上限)
+QUOTE_TTL = 30          # 兜底新鲜期(未知市场)
+QUOTE_STALE_MAX = 600   # 兜底 SWR 上限
+
+# 开闭市感知(2026-06-10):开市中 旧值最多回 45s(盘中必须跳动);
+# 休市 价格不动,放宽到 1h 省外呼。zoneinfo 标准库,无新依赖。
+from datetime import datetime as _dt
+from zoneinfo import ZoneInfo as _Zi
+
+_SESS = {
+    "US": ("America/New_York", [(570, 960)]),
+    "HK": ("Asia/Hong_Kong", [(570, 720), (780, 960)]),
+    "CN": ("Asia/Shanghai", [(570, 690), (780, 900)]),
+    "JP": ("Asia/Tokyo", [(540, 690), (750, 930)]),
+    "KR": ("Asia/Seoul", [(540, 930)]),
+    "DE": ("Europe/Berlin", [(540, 1050)]),
+    "GB": ("Europe/London", [(480, 990)]),
+}
+
+def _session_open(market: str) -> bool:
+    if market == "CRYPTO":
+        return True
+    if market == "IDX":
+        return any(_session_open(m) for m in ("US", "HK", "CN", "JP", "KR", "DE", "GB"))
+    cfg = _SESS.get(market)
+    if not cfg:
+        return True
+    tz, windows = cfg
+    now = _dt.now(_Zi(tz))
+    if now.weekday() >= 5:
+        return False
+    m = now.hour * 60 + now.minute
+    return any(a <= m < b for a, b in windows)
+
+def _quote_ttl(s) -> int:
+    return 15 if _session_open(s.market) else 300
+
+def _stale_cap(s) -> int:
+    return 45 if _session_open(s.market) else 3600
 SEARCH_TTL = 86400
 
 # ---------------- 单飞合并 ----------------
@@ -58,7 +94,7 @@ def _spawn_bg(key: str, factory) -> None:
 # ---------------- 报价 ----------------
 async def _fetch_quote(client: httpx.AsyncClient, s: Symbol) -> Quote:
     q = await data.get_quote(client, s)
-    cache.set_json(f"quote:{s}", {"at": time.time(), "q": q.model_dump(mode="json")}, ttl=QUOTE_TTL)
+    cache.set_json(f"quote:{s}", {"at": time.time(), "q": q.model_dump(mode="json")}, ttl=_quote_ttl(s))
     return q
 
 
@@ -71,7 +107,7 @@ async def get_quote_cached(client: httpx.AsyncClient, s: Symbol) -> Quote:
         quote = Quote.model_validate(payload["q"])
         if fresh:
             return quote
-        if age <= QUOTE_STALE_MAX:
+        if age <= _stale_cap(s):
             # 旧值直接回,后台刷新 —— 下个轮询周期自然拿到新值
             _spawn_bg(key, lambda: _fetch_quote(client, s))
             quote.source = f"{quote.source}·stale"
@@ -92,7 +128,7 @@ async def get_quotes_cached(client: httpx.AsyncClient, syms: list[Symbol]) -> li
             if fresh:
                 out[str(s)] = payload["q"]
                 continue
-            if age <= QUOTE_STALE_MAX:
+            if age <= _stale_cap(s):
                 q = dict(payload["q"])
                 q["source"] = f"{q.get('source', '')}·stale"
                 out[str(s)] = q
@@ -106,7 +142,8 @@ async def get_quotes_cached(client: httpx.AsyncClient, syms: list[Symbol]) -> li
     async def _refresh(targets: list[Symbol]) -> dict[str, Quote]:
         quotes, errors = await data.get_quotes_batch(client, targets)
         for k, q in quotes.items():
-            cache.set_json(f"quote:{k}", {"at": time.time(), "q": q.model_dump(mode="json")}, ttl=QUOTE_TTL)
+            cache.set_json(f"quote:{k}", {"at": time.time(), "q": q.model_dump(mode="json")},
+                           ttl=15 if _session_open(k.split(":")[0]) else 300)
         for k, msg in errors.items():
             log.warning("quote %s failed: %s", k, msg)
         return quotes
@@ -119,7 +156,8 @@ async def get_quotes_cached(client: httpx.AsyncClient, syms: list[Symbol]) -> li
         quotes, errors = await data.get_quotes_batch(client, fresh_syms)
         for k, q in quotes.items():
             d = q.model_dump(mode="json")
-            cache.set_json(f"quote:{k}", {"at": time.time(), "q": d}, ttl=QUOTE_TTL)
+            cache.set_json(f"quote:{k}", {"at": time.time(), "q": d},
+                           ttl=15 if _session_open(k.split(":")[0]) else 300)
             out[k] = d
 
     results: list[dict] = []

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getStockNote, type StockNote } from "@/lib/feed";
+import { getRepoWatchlist, getStockNote, type StockNote } from "@/lib/feed";
 
 const STANCE: Record<string, string> = { "看多": "#26a69a", "看空": "#ef5350", "中性": "#f7b500" };
 
@@ -9,15 +9,30 @@ const STANCE: Record<string, string> = { "看多": "#26a69a", "看空": "#ef5350
 export default function AINote({ symbol }: { symbol: string }) {
   const [note, setNote] = useState<StockNote | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [inPool, setInPool] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    setLoaded(false); setNote(null);
+    setLoaded(false); setNote(null); setInPool(false);
     getStockNote(symbol).then((n) => { if (alive) { setNote(n); setLoaded(true); } });
+    getRepoWatchlist().then((w) => { if (alive) setInPool((w?.symbols ?? []).includes(symbol)); }).catch(() => {});
     return () => { alive = false; };
   }, [symbol]);
 
-  if (!loaded || !note) return null; // 无解读则不显示
+  if (!loaded) return null;
+  if (!note) {
+    // 在云端分析池但当日还没投递 → 显示待投递占位(而不是看起来"没有这个功能")
+    if (inPool) {
+      return (
+        <div className="section">
+          <h2>🤖 AI 解读(OpenClaw)<span className="badge" style={{ marginLeft: 8, fontSize: 11 }}>排队中</span></h2>
+          <p className="src">本标的已在云端分析池(feed/watchlist.json),等待 OpenClaw 当日投递
+            (每交易日 16:30 美西全量覆盖;盘中异动会触发增量更新)。缺投会在日报 Issue 里被点名。</p>
+        </div>
+      );
+    }
+    return null; // 不在池内则不显示
+  }
 
   return (
     <div className="section">
