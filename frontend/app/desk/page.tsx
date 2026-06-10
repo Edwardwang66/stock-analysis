@@ -70,9 +70,9 @@ export default function DeskPage() {
   const [mdIntra, setMdIntra] = useState<string | null>(null);
   const [mdClose, setMdClose] = useState<string | null>(null);
   const [heat, setHeat] = useState<EventHeatDoc | null>(null);
-  useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
+  useEffect(() => { const t = setTimeout(() => getEventHeat().then(setHeat).catch(() => {}), 1500); return () => clearTimeout(t); }, []);
   const [chanA, setChanA] = useState<{ symbol: string; kind: string; price: number }[]>([]);
-  useEffect(() => { getChanStats().then((d) => setChanA(d?.active ?? [])).catch(() => {}); }, []);
+  useEffect(() => { const t = setTimeout(() => getChanStats().then((d) => setChanA(d?.active ?? [])).catch(() => {}), 1800); return () => clearTimeout(t); }, []);
   const [hl, setHl] = useState<CryptoState | null>(null);
   useEffect(() => {
     let alive = true;
@@ -82,11 +82,11 @@ export default function DeskPage() {
     return () => { alive = false; window.clearInterval(id); };
   }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
-  useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
+  useEffect(() => { const t = setTimeout(() => getOvernight().then(setOvn).catch(() => {}), 1200); return () => clearTimeout(t); }, []);
   const [rsHist, setRsHist] = useState<{ date: string; rs: Record<string, number> }[]>([]);
-  useEffect(() => { getRsHistory().then((h) => setRsHist(h ?? [])).catch(() => {}); }, []);
+  useEffect(() => { const t = setTimeout(() => getRsHistory().then((h) => setRsHist(h ?? [])).catch(() => {}), 2200); return () => clearTimeout(t); }, []);
   const [scrHist, setScrHist] = useState<{ date: string; items: { symbol: string }[] }[]>([]);
-  useEffect(() => { getScreenerHistory().then((h) => setScrHist((h ?? []) as any)).catch(() => {}); }, []);
+  useEffect(() => { const t = setTimeout(() => getScreenerHistory().then((h) => setScrHist((h ?? []) as any)).catch(() => {}), 2500); return () => clearTimeout(t); }, []);
 
   // 📌 今日要点(纯前端聚合现有 feed)
   const briefing = useMemo(() => {
@@ -150,9 +150,9 @@ export default function DeskPage() {
       getAnalysisMd("intraday", d).then((t) => { if (alive) setMdIntra(t); });
       getAnalysisMd("close", d).then((t) => { if (alive) setMdClose(t); });
     };
-    load();
+    const t0 = setTimeout(load, 2000);
     const id = window.setInterval(() => { if (!document.hidden) load(); }, 300_000);
-    return () => { alive = false; window.clearInterval(id); };
+    return () => { alive = false; clearTimeout(t0); window.clearInterval(id); };
   }, []);
   useEffect(() => {
     let alive = true;
