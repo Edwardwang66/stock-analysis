@@ -19,6 +19,8 @@ import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
+import { SECTORS, sectorOf } from "@/lib/sectors";
+import { sectorLabel } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
 import { marketStatus as mktStatus } from "@/lib/marketstatus";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
@@ -292,6 +294,30 @@ function SymbolView() {
 
       {/* 每日 AI 解读(外部 OpenClaw 投递,无数据自隐藏) */}
       <ChanPanel bars={bars} />
+
+      {/* 同行业关联(静态行业映射内的邻居,最多 10 只) */}
+      {(() => {
+        const sec = sectorOf(symbol, null);
+        if (!sec || sec === "其他") return null;
+        const peers = Object.entries(SECTORS)
+          .filter(([sym2, s2]) => s2 === sec && sym2 !== symbol)
+          .map(([sym2]) => sym2)
+          .slice(0, 10);
+        if (!peers.length) return null;
+        return (
+          <div className="section">
+            <h2>🧩 同行业 · {sectorLabel(sec, lang)}</h2>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {peers.map((p2) => (
+                <Link key={p2} href={`/symbol/?s=${encodeURIComponent(p2)}`} className="badge"
+                  style={{ fontSize: 12, padding: "5px 10px", color: "var(--accent)" }}>
+                  {nameOf(p2, lang)}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <AINote symbol={symbol} />
 
