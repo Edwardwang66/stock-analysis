@@ -21,10 +21,13 @@ function fmtDate(t: number): string {
 export default function Chart({
   bars,
   compare = null,
+  levels = null,
 }: {
   bars: Bar[];
   /** 对比叠加:右轴切百分比模式,两边都按首值归一(TradingView 同款体验) */
   compare?: { name: string; bars: Bar[] } | null;
+  /** 支撑压力水平线组(如 周Pivot),由「支撑压力」开关控制显示 */
+  levels?: { price: number; label: string; color?: string }[] | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
@@ -32,6 +35,7 @@ export default function Chart({
   const [showChan, setShowChan] = useState(false);
   const [showTd, setShowTd] = useState(true); // 九转默认开(方法论 #1)
   const [showSt, setShowSt] = useState(false); // SuperTrend(方法论 #3)
+  const [showLv, setShowLv] = useState(false); // 支撑压力(周 Pivot,方法论 #6)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -85,6 +89,16 @@ export default function Chart({
       }
       if (upData.length) chart.addLineSeries({ color: "#26a69a", lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(upData);
       if (downData.length) chart.addLineSeries({ color: "#ef5350", lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(downData);
+    }
+
+    // 支撑压力水平线(周 Pivot 等)
+    if (showLv && levels?.length && !compare) {
+      for (const lv of levels) {
+        candles.createPriceLine({
+          price: lv.price, color: lv.color ?? "#9aa0aa", lineWidth: 1,
+          lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: lv.label,
+        });
+      }
     }
 
     // 标记合并:TD9 与 缠论 可同开,统一 setMarkers 一次
@@ -158,7 +172,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, levels, compare]);
 
   return (
     <>
@@ -169,6 +183,11 @@ export default function Chart({
         <button className={showSt ? "active" : ""} onClick={() => setShowSt((v) => !v)}>
           {showSt ? "✓ SuperTrend" : "SuperTrend"}
         </button>
+        {levels && levels.length > 0 && (
+          <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
+            {showLv ? "✓ 支撑压力" : "支撑压力"}
+          </button>
+        )}
         <button className={showChan ? "active" : ""} onClick={() => setShowChan((v) => !v)}>
           {showChan ? "✓ 缠论结构" : "缠论结构"}
         </button>

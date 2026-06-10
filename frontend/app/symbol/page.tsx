@@ -12,6 +12,8 @@ import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts"
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { getExtendedQuote, getOHLCV, getQuote, type Bar, type ExtendedQuote, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
+import { pivotPoints, prevWeekHLC } from "@/lib/indicators";
+import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
@@ -156,6 +158,21 @@ function SymbolView() {
   const dir = quote && quote.changePct != null ? (quote.changePct >= 0 ? "up" : "down") : "muted";
   const ind = an?.indicators ?? {};
 
+  // 周 Pivot 支撑压力(日线才有意义;上一完整周 HLC)
+  const pivotLevels = useMemo(() => {
+    if (interval !== "1d" || bars.length < 10) return null;
+    const w = prevWeekHLC(bars);
+    if (!w) return null;
+    const p = pivotPoints(w.H, w.L, w.C);
+    return [
+      { price: p.R2, label: "周R2", color: "#ef5350" },
+      { price: p.R1, label: "周R1", color: "#ef9a9a" },
+      { price: p.P, label: "周P", color: "#9aa0aa" },
+      { price: p.S1, label: "周S1", color: "#80cbc4" },
+      { price: p.S2, label: "周S2", color: "#26a69a" },
+    ];
+  }, [bars, interval]);
+
   return (
     <div className="container">
       <div className="header">
@@ -247,7 +264,8 @@ function SymbolView() {
         </div>
         {compareErr && <p className="src" style={{ color: "var(--down)" }}>{compareErr}</p>}
         {loading ? <div className="loading">加载中…</div> : (
-          <Chart bars={bars} compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
+          <Chart bars={bars} levels={pivotLevels}
+            compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
         )}
       </div>
 
@@ -284,7 +302,14 @@ function SymbolView() {
 
           {ind.high_52w != null && ind.low_52w != null && quote?.price != null && (
             <div className="section">
-              <h2>52 周区间位置</h2>
+              <h2>52 周区间位置
+                {ind.high_52w != null && quote?.price != null && (
+                  <span className="badge" style={{ marginLeft: 10, fontSize: 12 }}>
+                    距 52 周高 {(((quote.price / ind.high_52w) - 1) * 100).toFixed(1)}%
+                    {quote.price / ind.high_52w >= 0.95 ? " · 接近新高(动量学术上偏强)" : ""}
+                  </span>
+                )}
+              </h2>
               <div className="range52">
                 <div className="range52-fill" style={{
                   width: `${Math.max(0, Math.min(100, ((quote.price - ind.low_52w) / (ind.high_52w - ind.low_52w)) * 100))}%`,

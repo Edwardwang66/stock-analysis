@@ -206,3 +206,33 @@ export function superTrend(
   }
   return { st, dir };
 }
+
+// ---- Pivot Points(经典;用上一完整周期的 H/L/C)----
+export interface PivotLevels { P: number; R1: number; S1: number; R2: number; S2: number }
+export function pivotPoints(H: number, L: number, C: number): PivotLevels {
+  const P = (H + L + C) / 3, R = H - L;
+  return { P, R1: 2 * P - L, S1: 2 * P - H, R2: P + R, S2: P - R };
+}
+
+/** 从日线 bars 取「上一完整 ISO 周」的 H/L/C(不足两周返回 null)。 */
+export function prevWeekHLC(bars: { time: number; high: number; low: number; close: number }[]):
+  { H: number; L: number; C: number } | null {
+  if (bars.length < 10) return null;
+  const wk = (t: number) => {
+    const d = new Date(t * 1000);
+    // ISO 周标识:周一为界
+    const day = (d.getUTCDay() + 6) % 7;
+    const monday = new Date(d); monday.setUTCDate(d.getUTCDate() - day);
+    return `${monday.getUTCFullYear()}-${monday.getUTCMonth()}-${monday.getUTCDate()}`;
+  };
+  const groups = new Map<string, { H: number; L: number; C: number }>();
+  const order: string[] = [];
+  for (const b of bars) {
+    const k = wk(b.time);
+    const g = groups.get(k);
+    if (!g) { groups.set(k, { H: b.high, L: b.low, C: b.close }); order.push(k); }
+    else { g.H = Math.max(g.H, b.high); g.L = Math.min(g.L, b.low); g.C = b.close; }
+  }
+  if (order.length < 2) return null;
+  return groups.get(order[order.length - 2]) ?? null;
+}
