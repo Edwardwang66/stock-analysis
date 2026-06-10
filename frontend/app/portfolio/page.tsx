@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getForex, type Forex } from "@/lib/forex";
-import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
+import { nameOf } from "@/lib/markets";
 import { addHolding, getHoldings, removeHolding, type Holding } from "@/lib/portfolio";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 import LiveClock from "@/components/LiveClock";
