@@ -42,10 +42,11 @@
     `feed/intraday/latest.json` 的消费端(前端 /desk、/intel 等)拿到的都是过期副本,需逐一确认
     实际读取分支。
 
-16. **夜盘报价 UI 未暴露数据时点(时效性)** — 全站夜盘层(`nightquotes.ts`/QuoteCard)的 mark 来自
-    hyperliquid-monitor 2h 定时,最多滞后 ~2 小时;卡片上的「隐含高开/低开」用陈旧 mark 对比正股最新价,
-    隔夜剧烈波动时可能严重失真。`useNightQuotes` 已返回 `updatedAt`,建议:卡片标注快照时间,
-    超 3h 灰显或隐藏隐含跳空。
+16. **夜盘数据无时效防护(时效性,优先级↑)** — 全站夜盘层(`nightquotes.ts`)的 mark 来自
+    hyperliquid-monitor 2h 定时,最多滞后 ~2 小时;两处消费端都没查 `updatedAt`:
+    ① 卡片「隐含高开/低开」用陈旧 mark 对比正股价,隔夜剧烈波动时失真;
+    ② **价格提醒在闭市时直接用夜盘 mark 触发系统通知**(page.tsx 夜盘增强)——旧价可能误报/漏报。
+    建议:`useNightQuotes` 暴露 stale 标志(updatedAt > 3h),提醒触发跳过 stale 价,卡片标注快照时间。
 
 ## 👀 需确认
 
