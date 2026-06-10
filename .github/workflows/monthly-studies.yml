@@ -1,0 +1,57 @@
+name: Monthly studies (PBO + universe 下沉)
+
+# 每月 1 日收盘后跑两项研究并落库:
+#   - study_pbo: 参数网格 CSCV-PBO(防参数漂移演化成新的过拟合;§6.7)
+#   - study_downshift: D5 容量护城河下沉对照(跟踪下沉层 alpha 是否仍在/被侵蚀)
+# 产出 docs/study-*.md + feed 报告(kind=manual),commit 回仓。
+
+on:
+  schedule:
+    - cron: "0 23 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-studies
+  cancel-in-progress: false
+
+jobs:
+  studies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r scripts/requirements.txt
+      - name: 下载行情(大盘 + 行业ETF + SPY)
+        working-directory: backtest
+        run: |
+          python - <<'PY'
+          import data as d, statarb as sa
+          res = d.fetch_universe(sa.DEMO_UNIVERSE + sa.SECTOR_ETFS + ["SPY"], range_="10y", workers=12)
+          print("ok:", sum(1 for v in res.values() if v > 0))
+          PY
+      - name: PBO 参数网格研究
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+        run: python backtest/study_pbo.py --publish
+      - name: Universe 下沉对照
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+        run: python backtest/study_downshift.py --publish
+      - name: Commit 研究产出
+        run: |
+          git config user.name  "monthly-studies[bot]"
+          git config user.email "actions@github.com"
+          git add docs/study-*.md feed/ backtest/sp600_universe.json
+          if git diff --cached --quiet; then
+            echo "无变化"
+          else
+            git commit -m "studies: 月度 PBO + 下沉对照 ($(date -u +%Y-%m))"
+            git pull --rebase origin main || true
+            for i in 1 2 3 4; do git push && break || sleep $((2**i)); done
+          fi
