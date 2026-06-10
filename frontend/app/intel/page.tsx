@@ -6,6 +6,7 @@ import {
   type FeedHealth, type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
 import { fmtDateTime, useTz } from "@/lib/timefmt";
+import LangSelect from "@/components/LangSelect";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const pct = (x?: number | null, d = 1) => (x == null ? "—" : `${(x * 100).toFixed(d)}%`);
@@ -52,6 +53,7 @@ export default function IntelDashboard() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>← 返回</Link>
         <h1>🛰️ 市场情报看板</h1>
+        <LangSelect />
         <span className="tag">例行任务 + OpenClaw 投递 → feed/ → 本页 · 做多做空引擎(流 B 残差统计套利)</span>
         <button className="btn" style={{ marginLeft: "auto" }} onClick={load}>↻ 刷新</button>
       </div>
