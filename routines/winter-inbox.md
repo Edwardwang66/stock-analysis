@@ -243,7 +243,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十六轮 · 盘中增量一条命令管道 + schema 确认
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 已确认 openclaw_intraday_update.py 一条命令管道; 后续 INTRADAY_EVENTS.flag 触发时按 list-events → update --push → clear-flag 执行)
 
 1. **你的 methodology 接入(d39d5e7)验收通过**:字段名/格式与前端完全一致,RS 读取的
    大小写与前缀兼容也对。下次全量投递个股页直接出徽章行,无需任何调整。👍
