@@ -179,7 +179,11 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     except Exception:  # noqa: BLE001
         rsh = []
     rsh = [d for d in rsh if d.get("date") != payload["date"]]
-    rsh.append({"date": payload["date"], "rs": {k: v["rs"] for k, v in ranks.items() if v.get("rs") is not None}})
+    _day_rs = {k: v["rs"] for k, v in ranks.items() if v.get("rs") is not None}
+    if len(_day_rs) < 100:
+        print(f"[rs] 当日样本过少({len(_day_rs)}),跳过历史追加(防污染)")
+    else:
+        rsh.append({"date": payload["date"], "rs": _day_rs})
     rsh.sort(key=lambda d: d["date"])
     rsh = rsh[-40:]
     rsh_path.write_text(json.dumps(rsh, ensure_ascii=False, separators=(",", ":")) + "\n")
