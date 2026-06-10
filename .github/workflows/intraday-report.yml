@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # 自续链 gh workflow run 必需
 
 concurrency:
   group: intraday-report
