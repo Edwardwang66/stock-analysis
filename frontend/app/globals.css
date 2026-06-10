@@ -72,6 +72,9 @@ th { color: var(--muted); font-weight: 500; }
 .block-title { font-size: 14px; color: var(--muted); margin: 22px 0 10px; font-weight: 500; }
 .group-title { font-size: 13px; color: var(--muted); margin: 16px 0 8px; font-weight: 600;
   display: flex; align-items: baseline; gap: 8px; }
+.movers { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 14px; font-size: 12px; }
+.mover { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); }
+.mover.up { color: var(--up); } .mover.down { color: var(--down); }
 .indices { display: flex; gap: 8px; flex-wrap: wrap; margin: -10px 0 16px; }
 .index-pill { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 12px; font-size: 12px;
   background: var(--panel); border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }

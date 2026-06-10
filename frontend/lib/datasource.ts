@@ -147,6 +147,13 @@ async function backendJson(path: string, retries = 2): Promise<any | null> {
   return null;
 }
 
+/** 后端健康状态(未配置后端返回 null;配置了但拿不到返回 {ok:false})。 */
+export async function getBackendHealth(): Promise<any | null> {
+  if (!API_BASE) return null;
+  const h = await backendJson("/api/v1/health", 0);
+  return h ?? { ok: false };
+}
+
 export function parseSymbol(s: string): { market: string; code: string } {
   const [market, code] = s.split(":");
   return { market: (market || "").toUpperCase(), code: (code || "").toUpperCase() };

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SOURCES } from "@/lib/sources";
+import { getBackendHealth, HAS_BACKEND } from "@/lib/datasource";
 import { getForex, type Forex } from "@/lib/forex";
 import { getCrossExchange, type ExPrice } from "@/lib/multiprice";
 
@@ -11,10 +12,12 @@ const STATUS_C: Record<string, string> = { 已接入: UP, 可接入: "#f7b500", 
 export default function SourcesPage() {
   const [fx, setFx] = useState<Forex | null>(null);
   const [xc, setXc] = useState<ExPrice[]>([]);
+  const [health, setHealth] = useState<any | null>(null);
 
   useEffect(() => {
     getForex("USD").then(setFx).catch(() => {});
     getCrossExchange("BTCUSDT").then(setXc).catch(() => {});
+    getBackendHealth().then(setHealth).catch(() => {});
   }, []);
 
   const live = xc.filter((x) => x.price != null).map((x) => x.price as number);
@@ -29,6 +32,33 @@ export default function SourcesPage() {
         <span className="tag">
           已接入 <b style={{ color: UP }}>{counts["已接入"] || 0}</b> · 可接入 <b style={{ color: "#f7b500" }}>{counts["可接入"] || 0}</b> · 不可用 <b style={{ color: DOWN }}>{counts["不可用"] || 0}</b>(2026-06 实测)
         </span>
+      </div>
+
+      {/* 后端状态:未配置 → 全部浏览器直连;配置了 → 健康/熔断一览 */}
+      <div className="section">
+        <h2>后端状态</h2>
+        {!HAS_BACKEND ? (
+          <p className="src">未配置 <code>NEXT_PUBLIC_API_BASE</code> —— 股票经公共 CORS 代理、加密直连浏览器获取。
+            部署 FastAPI 后端后此处显示 缓存/熔断 实况。</p>
+        ) : !health ? (
+          <p className="loading">检测中…(Render 免费实例冷启动可能需 30s)</p>
+        ) : !health.ok ? (
+          <p className="src" style={{ color: DOWN }}>后端不可达(可能在唤醒中)。前端已自动回退浏览器直连,功能不受影响。</p>
+        ) : (
+          <>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))" }}>
+              <div className="card"><div className="src">状态</div><div style={{ color: UP, fontWeight: 700, marginTop: 4 }}>在线 ✓</div></div>
+              <div className="card"><div className="src">运行时长</div><div style={{ fontWeight: 700, marginTop: 4 }}>{Math.floor((health.uptime_s || 0) / 3600)}h {Math.floor(((health.uptime_s || 0) % 3600) / 60)}m</div></div>
+              <div className="card"><div className="src">缓存条目</div><div style={{ fontWeight: 700, marginTop: 4 }}>{health.cache?.entries ?? "—"}</div></div>
+              <div className="card"><div className="src">K线库</div><div style={{ fontWeight: 700, marginTop: 4 }}>{health.barstore?.symbols ?? health.barstore?.rows ?? "—"}</div></div>
+            </div>
+            {health.breakers && Object.keys(health.breakers).length > 0 && (
+              <p className="src" style={{ marginTop: 8, color: "#f7b500" }}>
+                熔断中:{Object.entries(health.breakers).map(([k, v]: [string, any]) => `${k}(${v.fails}次,冷却${v.cooling_s}s)`).join(" · ")}
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       {/* 实时演示 1:跨交易所暗号报价(多源并发 + 校验) */}

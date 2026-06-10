@@ -154,6 +154,16 @@ export default function Home() {
     else setErrors((prev) => ({ ...prev, [s]: "仍无数据,稍后再试" }));
   };
 
+  // 今日强弱:从已加载报价零成本派生(不发任何额外请求)
+  const movers = useMemo(() => {
+    const rows = allVisibleSymbols
+      .map((s) => quotes[s])
+      .filter((x): x is Quote => Boolean(x && x.changePct != null));
+    if (rows.length < 6) return null;
+    const sorted = [...rows].sort((a, b) => (b.changePct ?? 0) - (a.changePct ?? 0));
+    return { top: sorted.slice(0, 3), bottom: sorted.slice(-3).reverse() };
+  }, [quotes, allVisibleSymbols]);
+
   const renderCards = (list: string[]) => (
     <div className="grid">{list.map((s) => (
       <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
@@ -218,6 +228,23 @@ export default function Home() {
         </button>
         {lastUpdated && <span className="src">更新 {lastUpdated.toLocaleTimeString()}</span>}
       </div>
+
+      {movers && (
+        <div className="movers">
+          <span className="src">今日强弱</span>
+          {movers.top.map((q) => (
+            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover up">
+              {nameOf(q.symbol)} +{(q.changePct ?? 0).toFixed(2)}%
+            </Link>
+          ))}
+          <span className="src">|</span>
+          {movers.bottom.map((q) => (
+            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover down">
+              {nameOf(q.symbol)} {(q.changePct ?? 0).toFixed(2)}%
+            </Link>
+          ))}
+        </div>
+      )}
 
       {watch.length > 0 && (
         <>
