@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
-import { sma, tdSetup } from "@/lib/indicators";
+import { sma, superTrend, tdSetup } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 
 const MA = [
@@ -31,6 +31,7 @@ export default function Chart({
   const chartRef = useRef<IChartApi | null>(null);
   const [showChan, setShowChan] = useState(false);
   const [showTd, setShowTd] = useState(true); // 九转默认开(方法论 #1)
+  const [showSt, setShowSt] = useState(false); // SuperTrend(方法论 #3)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -72,6 +73,18 @@ export default function Chart({
         const data = bars.map((b, i) => (s[i] != null ? { time: b.time as any, value: s[i] as number } : null)).filter(Boolean) as any[];
         if (data.length) chart.addLineSeries({ color: m.color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(data);
       }
+    }
+
+    // SuperTrend(10,3):上行画绿线(下轨),下行画红线(上轨),翻转处断开
+    if (showSt && !compare) {
+      const { st, dir } = superTrend(bars.map((b) => b.high), bars.map((b) => b.low), bars.map((b) => b.close));
+      const upData: any[] = [], downData: any[] = [];
+      for (let i = 0; i < bars.length; i++) {
+        if (st[i] == null) continue;
+        (dir[i] === 1 ? upData : downData).push({ time: bars[i].time as any, value: st[i] as number });
+      }
+      if (upData.length) chart.addLineSeries({ color: "#26a69a", lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(upData);
+      if (downData.length) chart.addLineSeries({ color: "#ef5350", lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(downData);
     }
 
     // 标记合并:TD9 与 缠论 可同开,统一 setMarkers 一次
@@ -145,13 +158,16 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, compare]);
+  }, [bars, showChan, showTd, showSt, compare]);
 
   return (
     <>
       <div className="ranges" style={{ justifyContent: "flex-end" }}>
         <button className={showTd ? "active" : ""} onClick={() => setShowTd((v) => !v)}>
           {showTd ? "✓ 神奇九转" : "神奇九转"}
+        </button>
+        <button className={showSt ? "active" : ""} onClick={() => setShowSt((v) => !v)}>
+          {showSt ? "✓ SuperTrend" : "SuperTrend"}
         </button>
         <button className={showChan ? "active" : ""} onClick={() => setShowChan((v) => !v)}>
           {showChan ? "✓ 缠论结构" : "缠论结构"}

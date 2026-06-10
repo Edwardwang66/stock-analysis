@@ -171,3 +171,38 @@ export function tdSetup(highs: number[], lows: number[], closes: number[]): TdMa
   out.sort((a, b) => a.idx - b.idx);
   return out;
 }
+
+// ---- SuperTrend(10,3;TradingView 同款,ATR 用 Wilder RMA,final band 棘轮)----
+export function superTrend(
+  highs: number[], lows: number[], closes: number[], p = 10, mult = 3,
+): { st: Maybe[]; dir: number[] } {
+  const n = closes.length;
+  const st: Maybe[] = Array(n).fill(null);
+  const dir: number[] = Array(n).fill(1);
+  if (n <= p) return { st, dir };
+  // Wilder RMA ATR
+  const atrArr: Maybe[] = Array(n).fill(null);
+  let a = 0;
+  for (let i = 1; i < n; i++) {
+    const tr = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]));
+    if (i <= p) { a += tr; if (i === p) { a /= p; atrArr[i] = a; } }
+    else { a = (a * (p - 1) + tr) / p; atrArr[i] = a; }
+  }
+  let fu = 0, fl = 0, started = false;
+  for (let i = 0; i < n; i++) {
+    const av = atrArr[i];
+    if (av == null) continue;
+    const mid = (highs[i] + lows[i]) / 2;
+    const bu = mid + mult * av;
+    const bl = mid - mult * av;
+    if (!started) { fu = bu; fl = bl; dir[i] = -1; st[i] = fu; started = true; continue; }
+    const pc = closes[i - 1];
+    fu = (bu < fu || pc > fu) ? bu : fu;   // 下行趋势中上轨只降不升
+    fl = (bl > fl || pc < fl) ? bl : fl;   // 上行趋势中下轨只升不降
+    dir[i] = dir[i - 1];
+    if (dir[i] === -1 && closes[i] > fu) dir[i] = 1;
+    else if (dir[i] === 1 && closes[i] < fl) dir[i] = -1;
+    st[i] = dir[i] === 1 ? fl : fu;        // 上行画下轨(绿),下行画上轨(红)
+  }
+  return { st, dir };
+}
