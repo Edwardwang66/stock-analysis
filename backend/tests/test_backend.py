@@ -154,6 +154,18 @@ async def main():
     rows2 = await store.get_quotes_cached(None, syms)
     ok("二次请求走缓存(零外呼)", ft.batch_calls == 1)
 
+    print("== IDX 指数市场 ==")
+    si = Symbol.parse("IDX:^GSPC")
+    ok("IDX 符号可解析", si.market == "IDX" and si.code == "^GSPC")
+    ok("IDX 在降级链注册", "IDX" in router.CHAINS)
+    pidx = FakeProvider("PIDX")
+    router.CHAINS["IDX"] = [pidx]
+    router._breakers.clear()
+    qi = await router.get_quote(None, si)
+    ok("IDX 走链取报价", qi.symbol == "IDX:^GSPC")
+    from app.providers.yahoo import _yahoo_code
+    ok("IDX Yahoo 代码直传", _yahoo_code(si) == "^GSPC" and _yahoo_code(Symbol.parse("IDX:000001.SS")) == "000001.SS")
+
     print(f"\n全部通过:{PASS} 项")
 
 

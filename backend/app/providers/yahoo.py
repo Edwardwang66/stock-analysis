@@ -20,7 +20,7 @@ _RANGE = {"1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo", "6mo": "6mo", "1y"
 
 
 def _yahoo_code(s: Symbol) -> str:
-    if s.market == "US":
+    if s.market in ("US", "IDX"):  # IDX: Yahoo 代码原样直传(^GSPC / 000001.SS)
         return s.code
     if s.market == "HK":
         return f"{s.code.zfill(4)}.HK"
@@ -32,7 +32,7 @@ def _yahoo_code(s: Symbol) -> str:
 
 class YahooProvider:
     name = "Yahoo"
-    markets = {"US", "HK", "CN"}
+    markets = {"US", "HK", "CN", "IDX"}
     commercial_redistribution = False
 
     async def _chart(self, client, s, interval, range_):

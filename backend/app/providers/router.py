@@ -31,6 +31,7 @@ CHAINS: dict[str, list] = {
     "HK": [_TENCENT, _YAHOO],           # 腾讯对港股快且支持批量
     "CN": [_TENCENT, _YAHOO],
     "CRYPTO": [_BINANCE, _OKX],
+    "IDX": [_YAHOO],                    # 指数:Yahoo 代码直传(^GSPC / 000001.SS)
 }
 
 _FAIL_THRESHOLD = 3
