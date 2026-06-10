@@ -1,0 +1,41 @@
+name: Chan stats (缠论买卖点全宇宙统计)
+
+# 每周六 00:30 UTC(周五美股收盘后):全宇宙缠论买卖点胜率统计 + 进行中信号清单。
+on:
+  schedule:
+    - cron: "30 0 * * 6"
+  push:
+    paths: ["scripts/chan_engine.py"]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chan-stats
+  cancel-in-progress: false
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements.txt
+      - name: 全宇宙统计
+        run: python scripts/chan_engine.py
+      - name: 提交(rebase 防撞车)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/signals/chan-stats.json
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "signals: 缠论买卖点统计 $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep $((5*i))
+          done
+          exit 1

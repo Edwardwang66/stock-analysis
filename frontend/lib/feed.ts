@@ -229,6 +229,15 @@ export interface EventHeatItem { symbol: string; moves: number; highs: number; l
 export interface EventHeatDoc { generated_at?: string; window_days?: number; items?: EventHeatItem[] }
 export const getEventHeat = () => fetchJson<EventHeatDoc>("signals/event-heat.json");
 
+// 缠论买卖点全宇宙统计(chan-stats.yml 每周六;chan_engine.py 与前端 chan.ts 同口径)
+export interface ChanStatCell { n: number; win_rate: number | null; avg_ret: number | null }
+export interface ChanStatsDoc {
+  generated_at?: string; universe?: number;
+  stats?: Record<string, { d5: ChanStatCell; d20: ChanStatCell }>;
+  active?: { symbol: string; kind: string; price: number }[];
+}
+export const getChanStats = () => fetchJson<ChanStatsDoc>("signals/chan-stats.json");
+
 // stance 历史(daily-digest 追加维护 30 天;翻转检测与个股轨迹同源)
 export interface StanceDay { date: string; stances: Record<string, string> }
 export const getStanceHistory = () => fetchJson<StanceDay[]>("stock-notes/stance-history.json");

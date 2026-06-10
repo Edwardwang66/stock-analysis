@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
-import { getScreenerHistory, getWinrate, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
+import { getChanStats, getScreenerHistory, getWinrate, type ChanStatsDoc, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
 import TzSelect from "@/components/TzSelect";
 import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
@@ -22,6 +22,8 @@ export default function TrackerPage() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [wr, setWr] = useState<WinrateDoc | null>(null);
   useEffect(() => { getWinrate().then(setWr).catch(() => {}); }, []);
+  const [cs, setCs] = useState<ChanStatsDoc | null>(null);
+  useEffect(() => { getChanStats().then(setCs).catch(() => {}); }, []);
   const tzKey = useTz(); // 时区切换时间戳联动
   const nowTick = useNow(1000);
 
@@ -126,6 +128,53 @@ export default function TrackerPage() {
             </table>
           </div>
           <p className="src" style={{ marginTop: 8 }}>每周五美股收盘后由 Winter 从本地数据仓全量重算(picks 表),回答「≥80 体系准不准、哪个分数段最值钱」。</p>
+        </div>
+      )}
+
+      {cs?.stats && Object.keys(cs.stats).length > 0 && (
+        <div className="section">
+          <h2>☯ 缠论买卖点统计
+            <span className="src" style={{ marginLeft: 10 }}>
+              全宇宙 {cs.universe ?? "—"} 只 · {String(cs.generated_at ?? "").slice(0, 10)} · 每周六重算 · 买点胜=后涨,卖点胜=后跌
+            </span>
+          </h2>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>买卖点</th><th>样本</th><th>+5根胜率</th><th>+5根均值</th><th>+20根胜率</th><th>+20根均值</th></tr></thead>
+              <tbody>
+                {(["1B", "2B", "3B", "1S", "2S", "3S"] as const).flatMap((k) => {
+                  const v = cs.stats?.[k];
+                  if (!v) return [];
+                  const isB = k.endsWith("B");
+                  const pc = (x: number | null) => x == null ? "—" : `${(x * 100).toFixed(0)}%`;
+                  const rt = (x: number | null) => x == null ? "—" : `${x >= 0 ? "+" : ""}${x.toFixed(2)}%`;
+                  return [(
+                    <tr key={k}>
+                      <td style={{ color: isB ? "#26a69a" : "#ef5350" }}>
+                        {{ "1B": "一买(底背驰)", "2B": "二买", "3B": "三买", "1S": "一卖(顶背驰)", "2S": "二卖", "3S": "三卖" }[k]}
+                      </td>
+                      <td>{v.d5.n}</td>
+                      <td className={(v.d5.win_rate ?? 0) >= 0.5 ? "up" : "down"}>{pc(v.d5.win_rate)}</td>
+                      <td className={(v.d5.avg_ret ?? 0) >= 0 === isB ? "up" : "down"}>{rt(v.d5.avg_ret)}</td>
+                      <td className={(v.d20.win_rate ?? 0) >= 0.5 ? "up" : "down"}>{pc(v.d20.win_rate)}</td>
+                      <td className={(v.d20.avg_ret ?? 0) >= 0 === isB ? "up" : "down"}>{rt(v.d20.avg_ret)}</td>
+                    </tr>
+                  )];
+                })}
+              </tbody>
+            </table>
+          </div>
+          {!!cs.active?.length && (
+            <p className="src" style={{ marginTop: 8 }}>
+              ⚡ 进行中信号(最近3根内):{cs.active.slice(0, 15).map((a, i) => (
+                <span key={i}>{i > 0 && " · "}
+                  <Link href={`/symbol/?s=${encodeURIComponent("US:" + a.symbol)}`} style={{ color: a.kind.endsWith("B") ? "#26a69a" : "#ef5350" }}>
+                    {a.symbol} {a.kind}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       )}
 
