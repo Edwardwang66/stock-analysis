@@ -8,6 +8,7 @@ import {
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorOf } from "@/lib/sectors";
+// 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
 
 const UP = "#26a69a", DOWN = "#ef5350", MUT = "#787b86";
 const fmt = (n: number | null | undefined, d = 2) =>
@@ -76,7 +77,11 @@ export default function DeskPage() {
     const map = new Map<string, Row>();
     const ensure = (sym: string): Row => {
       let r = map.get(sym);
-      if (!r) { r = { symbol: sym, tags: [], score: null, sector: sectorOf(sym) }; map.set(sym, r); }
+      if (!r) {
+        const gics = sym.startsWith("US:") ? scores?.sectors?.[sym.slice(3)] : null;
+        r = { symbol: sym, tags: [], score: null, sector: sectorOf(sym, gics) };
+        map.set(sym, r);
+      }
       return r;
     };
     for (const s of wl) ensure(s).tags.push("watch");

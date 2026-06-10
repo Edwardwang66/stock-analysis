@@ -113,7 +113,11 @@ export interface MarketSnapshot {
 export const getMarketHistory = () => fetchJson<MarketSnapshot[]>("market/history.json");
 
 // 全宇宙评分表(daily_screener 输出;看板任意分档打标签用)
-export interface ScoreTable { date: string; generated_at: string; scores: Record<string, number> }
+export interface ScoreTable {
+  date: string; generated_at: string;
+  scores: Record<string, number>;
+  sectors?: Record<string, string>;  // GICS Sector(标普500 全量)
+}
 export const getScores = () => fetchJson<ScoreTable>("screener/scores.json");
 
 // 个股 AI 解读索引(OpenClaw 投递;updated_at 用于判断当日覆盖)

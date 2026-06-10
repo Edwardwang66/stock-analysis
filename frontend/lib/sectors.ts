@@ -7,7 +7,8 @@ export const SECTORS: Record<string, string> = {
   "IDX:000001.SS": "ETF/指数",
   // 半导体/硬件
   "US:NVDA": "半导体", "US:AMD": "半导体", "US:AVGO": "半导体", "US:INTC": "半导体",
-  "CN:688795": "半导体", "US:SNDK": "存储/硬件", "US:SMCI": "AI算力", "US:CSCO": "网络设备",
+  "CN:688795": "半导体", "US:SNDK": "存储", "US:MU": "存储", "KR:000660": "存储",
+  "KR:005930": "存储", "US:SMCI": "AI算力", "US:CSCO": "网络设备",
   "US:LITE": "光模块", "US:HOLOW": "光学/全息",
   // AI 算力/数据中心(SA LP 主题)
   "US:CRWV": "AI算力", "US:CORZ": "AI算力", "US:IREN": "AI算力", "US:APLD": "AI算力",
@@ -44,6 +45,20 @@ export const SECTORS: Record<string, string> = {
   "US:PUMP": "能源/油服", "US:BW": "工业",
 };
 
-export function sectorOf(symbol: string): string {
-  return SECTORS[symbol] ?? "其他";
+// GICS 11 大行业 → 中文(screener scores.json 自带标普500 全量 GICS,优先用它)
+const GICS_CN: Record<string, string> = {
+  "Information Technology": "信息技术", "Health Care": "医疗保健", "Financials": "金融",
+  "Consumer Discretionary": "可选消费", "Consumer Staples": "必需消费", "Industrials": "工业",
+  "Energy": "能源", "Materials": "材料", "Utilities": "公用事业",
+  "Real Estate": "房地产", "Communication Services": "通信服务",
+};
+
+export function gicsCN(sector?: string | null): string | null {
+  if (!sector) return null;
+  return GICS_CN[sector] ?? sector;
+}
+
+/** 行业判定:静态映射(自选池精细标签)优先,其次 GICS(标普500 全量),兜底"其他"。 */
+export function sectorOf(symbol: string, gics?: string | null): string {
+  return SECTORS[symbol] ?? gicsCN(gics) ?? "其他";
 }

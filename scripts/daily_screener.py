@@ -45,7 +45,7 @@ async def load_universe(client: httpx.AsyncClient) -> dict[str, dict]:
         r.raise_for_status()
         for row in csv.DictReader(io.StringIO(r.text)):
             sym = row["Symbol"].strip().upper().replace(".", "-")  # BRK.B -> BRK-B (Yahoo)
-            uni[sym] = {"name": row.get("Security", sym), "indices": ["SP500"]}
+            uni[sym] = {"name": row.get("Security", sym), "indices": ["SP500"], "sector": row.get("GICS Sector") or row.get("Sector") or ""}
         print(f"[universe] S&P500: {len(uni)} 只")
     except Exception as e:  # noqa: BLE001
         print(f"[universe] S&P500 CSV 拉取失败({e}),仅用 NDX100")
@@ -140,6 +140,7 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
     scores_path.write_text(json.dumps({
         "date": payload["date"], "generated_at": payload["generated_at"],
         "scores": {r["symbol"]: r["score"] for r in scored},
+        "sectors": {sym: (meta.get("sector") or "") for sym, meta in uni.items() if meta.get("sector")},
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"[done] 扫描 {len(scored)} / 命中 ≥{threshold}: {len(picks)} 只 -> {out_dir}/latest.json")
 
