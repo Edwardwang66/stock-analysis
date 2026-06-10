@@ -236,3 +236,20 @@ export function prevWeekHLC(bars: { time: number; high: number; low: number; clo
   if (order.length < 2) return null;
   return groups.get(order[order.length - 2]) ?? null;
 }
+
+/** 锚定 VWAP(Anchored VWAP):从 anchor 索引起累计 Σ(典型价×量)/Σ量。机构成本线。 */
+export function anchoredVwap(
+  bars: { high: number; low: number; close: number; volume: number }[], anchor: number,
+): Maybe[] {
+  const out: Maybe[] = Array(bars.length).fill(null);
+  if (anchor < 0 || anchor >= bars.length) return out;
+  let pv = 0, vv = 0;
+  for (let i = anchor; i < bars.length; i++) {
+    const b = bars[i];
+    const tp = (b.high + b.low + b.close) / 3;
+    pv += tp * (b.volume || 0);
+    vv += b.volume || 0;
+    out[i] = vv > 0 ? pv / vv : null;
+  }
+  return out;
+}

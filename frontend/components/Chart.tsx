@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
-import { sma, superTrend, tdSetup } from "@/lib/indicators";
+import { anchoredVwap, sma, superTrend, tdSetup } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 
 const MA = [
@@ -36,6 +36,7 @@ export default function Chart({
   const [showTd, setShowTd] = useState(true); // 九转默认开(方法论 #1)
   const [showSt, setShowSt] = useState(false); // SuperTrend(方法论 #3)
   const [showLv, setShowLv] = useState(false); // 支撑压力(周 Pivot,方法论 #6)
+  const [showAv, setShowAv] = useState(false); // 锚定VWAP(52周低/高双锚,方法论二期)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -76,6 +77,24 @@ export default function Chart({
         const s = sma(closes, m.period);
         const data = bars.map((b, i) => (s[i] != null ? { time: b.time as any, value: s[i] as number } : null)).filter(Boolean) as any[];
         if (data.length) chart.addLineSeries({ color: m.color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(data);
+      }
+    }
+
+    // 锚定 VWAP:52周低点锚(青)+ 52周高点锚(紫);机构成本线
+    if (showAv && !compare && bars.length >= 30) {
+      const lookback = Math.min(bars.length, 252);
+      const seg = bars.slice(-lookback);
+      const off = bars.length - lookback;
+      let loI = 0, hiI = 0;
+      seg.forEach((b, i) => {
+        if (b.low < seg[loI].low) loI = i;
+        if (b.high > seg[hiI].high) hiI = i;
+      });
+      for (const [aIdx, color, label] of [[off + loI, "#26c6da", "AVWAP·低锚"], [off + hiI, "#ab47bc", "AVWAP·高锚"]] as const) {
+        const av = anchoredVwap(bars, aIdx);
+        const series = chart.addLineSeries({ color, lineWidth: 2, lineStyle: LineStyle.Solid,
+          priceLineVisible: false, lastValueVisible: true, title: label, crosshairMarkerVisible: false });
+        series.setData(bars.flatMap((b, i) => (av[i] != null ? [{ time: b.time as any, value: av[i] as number }] : [])));
       }
     }
 
@@ -172,7 +191,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, levels, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, showAv, levels, compare]);
 
   return (
     <>
@@ -182,6 +201,9 @@ export default function Chart({
         </button>
         <button className={showSt ? "active" : ""} onClick={() => setShowSt((v) => !v)}>
           {showSt ? "✓ SuperTrend" : "SuperTrend"}
+        </button>
+        <button className={showAv ? "active" : ""} onClick={() => setShowAv((v) => !v)}>
+          {showAv ? "✓ AVWAP" : "AVWAP"}
         </button>
         {levels && levels.length > 0 && (
           <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
