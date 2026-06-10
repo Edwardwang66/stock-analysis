@@ -309,10 +309,22 @@ export default function Home() {
         </div>
       )}
 
-      {watchAll.length > 0 && (
+      {/* 云端跟踪池:89 只用热力图压缩展示(点瓦片进个股页;表格视图在 /desk) */}
+      {cloudWatch.length > 0 && (
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            ⭐ 我的自选 <span className="src">☁ = 云端跟踪池(OpenClaw 每日全面分析)</span>
+            ☁ 云端跟踪池({cloudWatch.length})
+            <span className="src">OpenClaw 每日全析 · 按涨跌排序</span>
+            <Link href="/desk/" className="linklike">→ 标签/行业/评分视图</Link>
+          </h2>
+          <Heatmap symbols={cloudWatch} quotes={quotes} loading={loadingQuotes && marketStats.loaded === 0} />
+        </>
+      )}
+
+      {watch.length > 0 && (
+        <>
+          <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            ⭐ 我的自选(本地)
             <button className="linklike" onClick={() => exportUserData()}>导出备份</button>
             <label className="linklike" style={{ cursor: "pointer" }}>
               导入
@@ -328,7 +340,7 @@ export default function Home() {
                 }} />
             </label>
           </h2>
-          <div className="grid">{watchAll.map((s) => (
+          <div className="grid">{watch.map((s) => (
             <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
               tag={cloudWatch.includes(s) ? "☁" : undefined} onRetry={() => { void retryOne(s); }} />
           ))}</div>
