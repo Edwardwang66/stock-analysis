@@ -56,7 +56,7 @@ jobs:
           # 远端失败时前端自动回退到捆绑快照 public/feed/。
           NEXT_PUBLIC_FEED_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/feed
         run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/out
 
