@@ -20,6 +20,7 @@ export default function TrackerPage() {
   const [loadingDays, setLoadingDays] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [showAllDays, setShowAllDays] = useState(false);
   const [wr, setWr] = useState<WinrateDoc | null>(null);
   useEffect(() => { getWinrate().then(setWr).catch(() => {}); }, []);
   const [cs, setCs] = useState<ChanStatsDoc | null>(null);
@@ -183,7 +184,7 @@ export default function TrackerPage() {
           还没有追踪数据。daily-digest 工作流每个交易日美股收盘后把当日达标(现行 ≥80 分)选股全量入库,
           次日起这里按「当日持仓」逐日显示表现。也可在 GitHub Actions 手动触发 <code>Daily digest</code>。
         </div>
-      ) : dayStats.map((d, di) => (
+      ) : (showAllDays ? dayStats : dayStats.slice(0, 5)).map((d, di) => (
         <div className="section" key={d.date}>
           <h2>
             {d.date} <span className="src">美东交易日 · 持仓 {d.items.length} 只</span>
@@ -222,6 +223,12 @@ export default function TrackerPage() {
           </div>
         </div>
       ))}
+
+      {!showAllDays && dayStats.length > 5 && (
+        <button className="linklike" style={{ margin: "4px 0 12px", fontSize: 13 }} onClick={() => setShowAllDays(true)}>
+          ▼ 展开更早的 {dayStats.length - 5} 个交易日
+        </button>
+      )}
 
       <div className="disclaimer">
         「选中价」= 入选当日(美东交易日)收盘价;日期均为美东交易日;收益按实时价计算,未含交易成本。历史保留 60 个交易日,每日全量(≥阈值一只不落)。
