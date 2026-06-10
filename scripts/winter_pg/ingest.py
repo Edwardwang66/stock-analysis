@@ -21,6 +21,19 @@ import psycopg2
 import psycopg2.extras
 
 ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = Path.home() / ".config/stock-analysis/openclaw.env"
+
+
+def load_local_env() -> None:
+    """Load local Winter config without requiring callers to source it first."""
+    if not ENV_FILE.exists():
+        return
+    for line in ENV_FILE.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
 def jload(p, default):
@@ -34,6 +47,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--init", action="store_true")
     args = ap.parse_args()
+    load_local_env()
     dsn = os.environ.get("WINTER_PG_DSN")
     if not dsn:
         print("缺 WINTER_PG_DSN", file=sys.stderr)

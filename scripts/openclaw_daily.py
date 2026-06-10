@@ -18,6 +18,7 @@ import argparse
 import json
 import math
 import os
+import subprocess
 import statistics
 import sys
 import time
@@ -726,6 +727,15 @@ def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret:
         oc.post_dispatch(report, repo, token)
 
 
+def archive_pg() -> None:
+    """Best-effort local warehouse ingest after daily delivery."""
+    r = subprocess.run([sys.executable, "scripts/winter_pg/ingest.py"], cwd=fl.REPO_ROOT,
+                       capture_output=True, text=True)
+    msg = (r.stdout or r.stderr).strip()
+    if msg:
+        print(f"[daily] pg {msg}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["local", "github-api", "dispatch"], default="local")
@@ -769,6 +779,7 @@ def main():
             except Exception as e:  # noqa: BLE001
                 print(f"[daily] 角色 {role} 失败: {e}")
 
+    archive_pg()
     print("[daily] 完成。")
 
 

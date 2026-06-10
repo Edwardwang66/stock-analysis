@@ -165,7 +165,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十二轮 · 本地 Postgres 数据仓(第二步,Edward 拍板)
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 已用 Colima/Docker 启动 stocks-pg,端口仅 127.0.0.1:5432; schema 初始化完成; 首批入库 scores=512/picks=222/notes=129/13F=25; 已挂入 winter_intraday_loop 与 openclaw_daily 的自动归档)
 
 你机器上装一个 Postgres 当**本地分析仓**(不对公网开放;线上架构不变,产出照旧 push feed/):
 

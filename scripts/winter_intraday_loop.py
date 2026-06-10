@@ -29,6 +29,15 @@ def sh(*cmd: str, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, cwd=ROOT, check=check, capture_output=True, text=True)
 
 
+def archive_pg() -> None:
+    """Best-effort local warehouse ingest; never break the live snapshot loop."""
+    r = subprocess.run([sys.executable, "scripts/winter_pg/ingest.py"], cwd=ROOT,
+                       capture_output=True, text=True)
+    msg = (r.stdout or r.stderr).strip()
+    if msg:
+        print(f"pg {msg}")
+
+
 def in_session(now: datetime) -> bool:
     """全球任一覆盖市场开市即跑(亚→欧→美接力,约 UTC 00:00-20:00 工作日)。"""
     if now.weekday() >= 5:
@@ -43,6 +52,7 @@ def tick() -> None:
     print(r.stdout.strip() or r.stderr.strip()[:200])
     if r.returncode != 0:
         return
+    archive_pg()
     # 提交 live 分支(单写者;失败不致命,下轮重试)
     try:
         fetch = sh("git", "fetch", "origin", "live", check=False)
