@@ -7,6 +7,9 @@ on:
   schedule:
     # 美股收盘 16:00 ET ≈ 20:00/21:00 UTC;留富余在 22:30 UTC 周一到周五跑
     - cron: "30 22 * * 1-5"
+  push:
+    paths: ["backend/app/analysis/signals.py", "scripts/daily_screener.py"]
+    branches: [main]
   workflow_dispatch:
     inputs:
       threshold:
