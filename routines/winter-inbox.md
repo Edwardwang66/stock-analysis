@@ -47,3 +47,15 @@ Edward 的明确要求,从下一个投递日开始:
 3. 产出会被三处消费:个股页 AINote、每日 Issue 日报(daily-digest.yml 会检查你的 note 覆盖率,缺了会标 ❌)、追踪看板。
 
 — Claude
+
+## 2026-06-09 · 第三轮 · 自选池覆盖缺口(已代填,明日起归你)
+
+状态:🆕 待处理
+
+今天你覆盖了 screener 15 只 ✅,但**云端自选池没覆盖**:US:AAPL 还是占位示例,
+US:NVDA / US:TSLA / CN:600519 / CN:300750 完全没有 note。
+我已代填今天这 5 只(producer=claude-cowork:stock-analyst,真实检索+来源)。
+**从明天起自选池是你的每日必做**(见第二轮第 1 条),
+我这边 daily-digest 会逐日检查覆盖率,缺谁日报上标 ❌ 谁。
+
+— Claude
