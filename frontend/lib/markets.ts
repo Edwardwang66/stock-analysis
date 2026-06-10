@@ -1,4 +1,5 @@
 // 各市场标签与默认标的(用于看板分区/热力图)。
+import { displayName, getLang, type Lang } from "./names";
 // 排序即产品重心:美股 + A股 为主,其余次之(日/韩/德为 2026-06 新增覆盖)。
 export const MARKETS = [
   { key: "ALL", label: "全部" },
@@ -13,15 +14,16 @@ export const MARKETS = [
 ] as const;
 
 // 港股代码用 4 位(Yahoo 用 0700.HK);日 .T / 韩 .KS / 德 .DE
+// 每市场代表性标的(2026-06-10 Edward 要求扩容;名称见 lib/names.ts 双语库)
 export const DEFAULT_SYMBOLS: Record<string, string[]> = {
-  US: ["US:AAPL", "US:MSFT", "US:NVDA", "US:TSLA", "US:GOOGL", "US:AMZN", "US:META"],
-  CN: ["CN:600519", "CN:000001", "CN:600036", "CN:601318", "CN:300750"],
-  HK: ["HK:0700", "HK:9988", "HK:3690", "HK:0939", "HK:1810"],
-  CRYPTO: ["CRYPTO:BTCUSDT", "CRYPTO:ETHUSDT", "CRYPTO:SOLUSDT", "CRYPTO:BNBUSDT", "CRYPTO:XRPUSDT"],
-  JP: ["JP:7203", "JP:6758", "JP:9984"],
-  KR: ["KR:005930", "KR:000660", "KR:373220"],
-  DE: ["DE:SAP", "DE:SIE", "DE:VOW3"],
-  GB: ["GB:SHEL", "GB:HSBA", "GB:AZN", "GB:ULVR", "GB:RR"],
+  US: ["US:AAPL", "US:MSFT", "US:NVDA", "US:GOOGL", "US:AMZN", "US:META", "US:TSLA", "US:AVGO", "US:BRK-B", "US:JPM", "US:V", "US:MA", "US:WMT", "US:LLY", "US:UNH", "US:XOM", "US:CVX", "US:JNJ", "US:PG", "US:KO", "US:PEP", "US:ORCL", "US:CRM", "US:ADBE", "US:NFLX", "US:AMD", "US:INTC", "US:MU", "US:QCOM", "US:TXN", "US:CSCO", "US:IBM", "US:GE", "US:CAT", "US:BA", "US:GS", "US:MS", "US:BAC", "US:WFC", "US:C", "US:DIS", "US:NKE", "US:MCD", "US:SBUX", "US:PFE", "US:MRK", "US:ABBV", "US:TMO", "US:COST", "US:HD"],
+  CN: ["CN:600519", "CN:000858", "CN:601318", "CN:600036", "CN:601398", "CN:601939", "CN:601288", "CN:600276", "CN:300750", "CN:002594", "CN:601012", "CN:600900", "CN:601888", "CN:600309", "CN:600887", "CN:000333", "CN:000651", "CN:002475", "CN:300059", "CN:600030", "CN:601628", "CN:601088", "CN:600028", "CN:601857", "CN:601668", "CN:600048", "CN:000002", "CN:600585", "CN:002415", "CN:002230", "CN:688981", "CN:688041", "CN:603501", "CN:603986", "CN:600941", "CN:601728", "CN:688111", "CN:603259", "CN:300760", "CN:300015", "CN:000725", "CN:601166", "CN:600000", "CN:601658", "CN:603288", "CN:600690", "CN:000568", "CN:600809", "CN:000001"],
+  HK: ["HK:0700", "HK:9988", "HK:3690", "HK:1810", "HK:9618", "HK:9999", "HK:9888", "HK:1024", "HK:2015", "HK:9868", "HK:1211", "HK:0175", "HK:2333", "HK:0941", "HK:0939", "HK:1398", "HK:3988", "HK:0005", "HK:1299", "HK:2318", "HK:2628", "HK:0388", "HK:0011", "HK:2382", "HK:0981", "HK:1347", "HK:0992", "HK:0285", "HK:2018", "HK:0027", "HK:1928", "HK:0066", "HK:0001", "HK:0016", "HK:1109", "HK:0960", "HK:0883", "HK:0857", "HK:0386", "HK:1088", "HK:1093", "HK:1177", "HK:2269", "HK:2359", "HK:6160", "HK:1801", "HK:0291", "HK:2020", "HK:2331", "HK:6862"],
+  CRYPTO: ["CRYPTO:BTCUSDT", "CRYPTO:ETHUSDT", "CRYPTO:SOLUSDT", "CRYPTO:BNBUSDT", "CRYPTO:XRPUSDT", "CRYPTO:DOGEUSDT", "CRYPTO:ADAUSDT", "CRYPTO:AVAXUSDT", "CRYPTO:LINKUSDT", "CRYPTO:DOTUSDT", "CRYPTO:LTCUSDT", "CRYPTO:BCHUSDT", "CRYPTO:UNIUSDT", "CRYPTO:ATOMUSDT", "CRYPTO:NEARUSDT", "CRYPTO:APTUSDT", "CRYPTO:ARBUSDT", "CRYPTO:OPUSDT", "CRYPTO:FILUSDT", "CRYPTO:TRXUSDT", "CRYPTO:ETCUSDT", "CRYPTO:XLMUSDT", "CRYPTO:ICPUSDT", "CRYPTO:SUIUSDT", "CRYPTO:PEPEUSDT"],
+  JP: ["JP:7203", "JP:6758", "JP:9984", "JP:8306", "JP:6861", "JP:9983", "JP:8035", "JP:6954", "JP:6501", "JP:7974", "JP:4063", "JP:6098", "JP:8316", "JP:8411", "JP:7267", "JP:7201", "JP:6902", "JP:4502", "JP:6273", "JP:6920"],
+  KR: ["KR:005930", "KR:000660", "KR:373220", "KR:207940", "KR:005380", "KR:000270", "KR:035420", "KR:035720", "KR:051910", "KR:006400", "KR:005490", "KR:105560", "KR:055550", "KR:012330", "KR:066570"],
+  DE: ["DE:SAP", "DE:SIE", "DE:VOW3", "DE:BMW", "DE:MBG", "DE:ALV", "DE:DTE", "DE:BAS", "DE:BAYN", "DE:ADS", "DE:AIR", "DE:IFX", "DE:MUV2", "DE:RWE", "DE:DBK"],
+  GB: ["GB:SHEL", "GB:HSBA", "GB:AZN", "GB:ULVR", "GB:RR", "GB:BP", "GB:GSK", "GB:RIO", "GB:GLEN", "GB:BARC", "GB:LLOY", "GB:VOD", "GB:BT-A", "GB:TSCO", "GB:REL"],
 };
 
 export function symbolsForTab(tab: string): string[] {
@@ -118,6 +120,6 @@ export const NAMES: Record<string, string> = Object.fromEntries(
   LOCAL_SYMBOLS.map((s) => [s.symbol, s.name.split(" ")[0]])
 );
 
-export function nameOf(symbol: string): string {
-  return NAMES[symbol] || symbol.split(":")[1] || symbol;
+export function nameOf(symbol: string, lang?: Lang): string {
+  return displayName(symbol, lang ?? getLang(), NAMES[symbol] || null);
 }

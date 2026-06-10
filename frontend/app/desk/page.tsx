@@ -7,8 +7,10 @@ import {
   type EventHeatDoc, type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
+import { sectorLabel, useLang } from "@/lib/names";
 import { sectorOf } from "@/lib/sectors";
 import TzSelect from "@/components/TzSelect";
+import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 // 行业:自选池静态精标 > 标普500 GICS(scores.json) > 其他
@@ -47,6 +49,7 @@ function ago(iso?: string | null): string {
 }
 
 export default function DeskPage() {
+  const lang = useLang();
   const [wl, setWl] = useState<string[]>([]);
   const [scr, setScr] = useState<ScreenerList | null>(null);
   const [scores, setScores] = useState<ScoreTable | null>(null);
@@ -216,6 +219,7 @@ export default function DeskPage() {
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
+        <LangSelect />
         <LiveClock />
         <TzSelect />
       </div>
@@ -239,7 +243,7 @@ export default function DeskPage() {
                         <span className="badge" style={{ marginRight: 8, fontSize: 11,
                           color: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500",
                           borderColor: e.type === "新低" ? DOWN : e.type === "新高" ? UP : "#f7b500" }}>{e.type}</span>
-                        {nameOf(e.symbol)} <span className="src">{e.symbol.replace(/^US:/, "")}</span>
+                        {nameOf(e.symbol, lang)} <span className="src">{e.symbol.replace(/^US:/, "")}</span>
                       </span>
                       <span className="src">{e.detail} @ {fmt(e.price)}</span>
                     </Link>
@@ -311,7 +315,7 @@ export default function DeskPage() {
             </div>
             <select value={sector} onChange={(e) => setSector(e.target.value)}
               style={{ background: "var(--panel)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 10px", fontSize: 12 }}>
-              {sectors.map((s) => <option key={s} value={s}>{s === "全部" ? "行业:全部" : s}</option>)}
+              {sectors.map((s) => <option key={s} value={s}>{s === "全部" ? (lang === "en" ? "Sector: All" : "行业:全部") : sectorLabel(s, lang)}</option>)}
             </select>
             <div className="segmented">
               <button className={sort === "tag" ? "active" : ""} onClick={() => setSort("tag")}>默认</button>
@@ -333,7 +337,7 @@ export default function DeskPage() {
                   return (
                     <tr key={r.symbol}>
                       <td>
-                        <Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol)}</Link>
+                        <Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol, lang)}</Link>
                         <span className="src" style={{ marginLeft: 6 }}>{r.symbol.replace(/^US:/, "")}</span>
                       </td>
                       <td>

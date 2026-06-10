@@ -16,6 +16,7 @@ import { pivotPoints, prevWeekHLC } from "@/lib/indicators";
 import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
+import { useLang } from "@/lib/names";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 const RANGES = ["6mo", "1y", "2y", "5y"];
@@ -38,6 +39,7 @@ function exportCSV(symbol: string, range: string, interval: string, bars: Bar[])
 }
 
 function SymbolView() {
+  const lang = useLang();
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
   const [range, setRange] = useState("2y");
@@ -177,7 +179,7 @@ function SymbolView() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <h1>{nameOf(symbol)}</h1>
+        <h1>{nameOf(symbol, lang)}</h1>
         <span className="muted">{symbol}</span>
         <button className="btn" style={{ background: starred ? "var(--accent)" : "transparent", border: "1px solid var(--border)" }}
           onClick={() => { toggleWatchlist(symbol); setStarred(inWatchlist(symbol)); }}>
@@ -265,7 +267,7 @@ function SymbolView() {
         {compareErr && <p className="src" style={{ color: "var(--down)" }}>{compareErr}</p>}
         {loading ? <div className="loading">加载中…</div> : (
           <Chart bars={bars} levels={pivotLevels}
-            compare={compareBars.length ? { name: nameOf(compareSym), bars: compareBars } : null} />
+            compare={compareBars.length ? { name: nameOf(compareSym, lang), bars: compareBars } : null} />
         )}
       </div>
 
