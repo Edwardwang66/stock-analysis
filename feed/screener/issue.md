@@ -40,5 +40,5 @@
 | 34 | `SPG` | Simon Property Group | **80** | 强烈看多 | 207.34 | -1.41 | 57.0 | 标普500 |
 
 > 评分为**规则化技术指标**(均线/RSI/MACD/布林,-100..100),**非 LLM、非投资建议**(Not financial advice)。
-> 数据源 Yahoo Finance · 生成 2026-06-10T10:55:50.801403+00:00
+> 数据源 Yahoo Finance · 生成 2026-06-10T11:09:21.644469+00:00
 > 在线看板:https://edwardwang66.github.io/stock-analysis/screener/
