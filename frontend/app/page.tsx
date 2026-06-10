@@ -93,7 +93,13 @@ export default function Home() {
     let alive = true;
     getQuotes(syms).then((m) => {
       if (!alive) return;
-      const prices = Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v?.price]));
+      const prices: Record<string, number | null | undefined> =
+        Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v?.price]));
+      // 🌙 夜盘增强:闭市标的若有 HIP-3 永续映射,用夜盘价参与触发(夜里突破也能报)
+      for (const sym of syms) {
+        const nq = night.map[sym];
+        if (nq && !marketStatus(sym.split(":")[0]).open) prices[sym] = nq.mark;
+      }
       const fired = checkAlerts(prices);
       if (fired.length) {
         setFiredAlerts((prev) => [...prev, ...fired]);
@@ -101,7 +107,7 @@ export default function Home() {
       }
     }).catch(() => {});
     return () => { alive = false; };
-  }, [refreshId]);
+  }, [refreshId, night]);
 
   // 情报 feed 新鲜度:陈旧时在首页轻提示(与情报看板同一判定)
   const [feedStale, setFeedStale] = useState<{ asof: string | null } | null>(null);
