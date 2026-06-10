@@ -205,6 +205,11 @@ export interface WinrateDoc {
 }
 export const getWinrate = () => fetchJson<WinrateDoc>("screener/winrate.json");
 
+// 事件热度榜(Winter PG intraday_events 近7天聚合,每日收盘后投递)
+export interface EventHeatItem { symbol: string; moves: number; highs: number; lows: number; total: number }
+export interface EventHeatDoc { generated_at?: string; window_days?: number; items?: EventHeatItem[] }
+export const getEventHeat = () => fetchJson<EventHeatDoc>("signals/event-heat.json");
+
 // stance 历史(daily-digest 追加维护 30 天;翻转检测与个股轨迹同源)
 export interface StanceDay { date: string; stances: Record<string, string> }
 export const getStanceHistory = () => fetchJson<StanceDay[]>("stock-notes/stance-history.json");

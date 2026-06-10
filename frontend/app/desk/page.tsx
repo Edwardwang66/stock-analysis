@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
-  type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
+  getAnalysisMd, getEventHeat, getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  type EventHeatDoc, type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorOf } from "@/lib/sectors";
@@ -63,6 +63,8 @@ export default function DeskPage() {
   const [mdPre, setMdPre] = useState<string | null>(null);
   const [mdIntra, setMdIntra] = useState<string | null>(null);
   const [mdClose, setMdClose] = useState<string | null>(null);
+  const [heat, setHeat] = useState<EventHeatDoc | null>(null);
+  useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
@@ -275,6 +277,29 @@ export default function DeskPage() {
               </details>
             )}
           </div>
+
+          {/* 事件热度榜(Winter PG 近7天聚合;未投递时隐藏) */}
+          {!!heat?.items?.length && (
+            <div className="section" style={{ marginTop: 4 }}>
+              <h2>🔥 高波动榜
+                <span className="src" style={{ marginLeft: 10 }}>
+                  近 {heat.window_days ?? 7} 天盘中事件(异动≥0.8%/新高/新低)次数 · Winter·Postgres
+                </span>
+              </h2>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {heat.items.slice(0, 20).map((h) => (
+                  <Link key={h.symbol} href={`/symbol/?s=${encodeURIComponent(h.symbol)}`} className="badge"
+                    title={`异动${h.moves} · 新高${h.highs} · 新低${h.lows}`}
+                    style={{ fontSize: 12, padding: "5px 10px",
+                             color: h.lows > h.highs ? DOWN : h.highs > h.lows ? UP : "var(--text)" }}>
+                    {h.symbol.replace(/^US:/, "")} ×{h.total}
+                    {h.highs > 0 && <span style={{ color: UP }}> ↑{h.highs}</span>}
+                    {h.lows > 0 && <span style={{ color: DOWN }}> ↓{h.lows}</span>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 过滤 + 排序工具条 */}
           <div className="toolbar" style={{ marginTop: 4 }}>
