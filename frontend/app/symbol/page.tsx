@@ -14,7 +14,7 @@ import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts"
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { getExtendedQuote, getOHLCV, getQuote, type Bar, type ExtendedQuote, type Quote } from "@/lib/datasource";
 import { analyze, type Analysis } from "@/lib/analysis";
-import { pivotPoints, prevWeekHLC } from "@/lib/indicators";
+import { pivotPoints, prevWeekHLC, prevMonthHLC } from "@/lib/indicators";
 import { useMemo } from "react";
 import { computeChan } from "@/lib/chan";
 import { LOCAL_SYMBOLS, nameOf } from "@/lib/markets";
@@ -173,13 +173,23 @@ function SymbolView() {
     const w = prevWeekHLC(bars);
     if (!w) return null;
     const p = pivotPoints(w.H, w.L, w.C);
-    return [
+    const out = [
       { price: p.R2, label: "周R2", color: "#ef5350" },
       { price: p.R1, label: "周R1", color: "#ef9a9a" },
       { price: p.P, label: "周P", color: "#9aa0aa" },
       { price: p.S1, label: "周S1", color: "#80cbc4" },
       { price: p.S2, label: "周S2", color: "#26a69a" },
     ];
+    const mo = prevMonthHLC(bars);
+    if (mo) {
+      const mp = pivotPoints(mo.H, mo.L, mo.C);
+      out.push(
+        { price: mp.R1, label: "月R1", color: "#b71c1c" },
+        { price: mp.P, label: "月P", color: "#6b7280" },
+        { price: mp.S1, label: "月S1", color: "#0b8043" },
+      );
+    }
+    return out;
   }, [bars, interval]);
 
   return (

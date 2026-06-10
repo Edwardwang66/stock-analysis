@@ -312,3 +312,23 @@ export function vsaSignals(
   }
   return out;
 }
+
+/** 上一完整月 HLC(月 Pivot 用)。 */
+export function prevMonthHLC(bars: { time: number; high: number; low: number; close: number }[]):
+  { H: number; L: number; C: number } | null {
+  if (bars.length < 25) return null;
+  const mk2 = (t: number) => {
+    const d = new Date(t * 1000);
+    return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+  };
+  const groups = new Map<string, { H: number; L: number; C: number }>();
+  const order: string[] = [];
+  for (const b of bars) {
+    const k = mk2(b.time);
+    const g = groups.get(k);
+    if (!g) { groups.set(k, { H: b.high, L: b.low, C: b.close }); order.push(k); }
+    else { g.H = Math.max(g.H, b.high); g.L = Math.min(g.L, b.low); g.C = b.close; }
+  }
+  if (order.length < 2) return null;
+  return groups.get(order[order.length - 2]) ?? null;
+}
