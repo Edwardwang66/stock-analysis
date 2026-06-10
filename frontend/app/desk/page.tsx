@@ -343,7 +343,13 @@ export default function DeskPage() {
           {/* 📌 今日要点(聚合卡) */}
           {briefing.length > 0 && (
             <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
-              <h2>📌 今日要点</h2>
+              <h2>📌 今日要点
+                <button className="linklike" style={{ marginLeft: 10, fontSize: 12 }}
+                  onClick={() => {
+                    const txt = `【${today()} 看板要点】\n` + briefing.map((b) => `${b.icon} ${b.text}`).join("\n");
+                    navigator.clipboard?.writeText(txt).then(() => alert("已复制,可直接粘贴分享")).catch(() => {});
+                  }}>📋 复制</button>
+              </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {briefing.map((b, i) => (
                   <div key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>
