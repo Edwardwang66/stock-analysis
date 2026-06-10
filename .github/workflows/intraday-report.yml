@@ -9,6 +9,9 @@ name: Intraday report (盘中5分钟机器报告)
 on:
   schedule:
     - cron: "*/15 0-20 * * 1-5"
+  push:
+    paths: ["scripts/intraday_report.py"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
