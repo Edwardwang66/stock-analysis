@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getEventHeat, getFundHoldings, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
-  type EventHeatDoc, type FeedIndex, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
+  getAnalysisMd, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
 import { sectorLabel, useLang } from "@/lib/names";
@@ -68,6 +68,8 @@ export default function DeskPage() {
   const [mdClose, setMdClose] = useState<string | null>(null);
   const [heat, setHeat] = useState<EventHeatDoc | null>(null);
   useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
+  const [ovn, setOvn] = useState<OvernightDoc | null>(null);
+  useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
@@ -262,6 +264,13 @@ export default function DeskPage() {
               <a href={`https://github.com/Edwardwang66/stock-analysis/tree/main/feed/screener`} target="_blank" rel="noreferrer"
                 className="src" style={{ marginLeft: 10, color: "var(--accent)" }}>原文 →</a>
             </h2>
+            {ovn?.futures && ovn.date === today() && (
+              <p className="src" style={{ margin: "4px 0 8px" }}>
+                盘前要素:{Object.values(ovn.futures).map((f) => `${f.name} ${f.pct >= 0 ? "+" : ""}${f.pct}%`).join(" · ")}
+                {ovn.asia && <> ｜ 亚洲 {Object.values(ovn.asia).map((f) => `${f.name} ${f.pct >= 0 ? "+" : ""}${f.pct}%`).join(" · ")}</>}
+                {ovn.crypto?.BTCUSDT && <> ｜ BTC {ovn.crypto.BTCUSDT.pct >= 0 ? "+" : ""}{ovn.crypto.BTCUSDT.pct.toFixed(1)}%</>}
+              </p>
+            )}
             {mdIntra && (
               <details>
                 <summary style={{ cursor: "pointer", fontSize: 13 }} className="src">盘中事件解读滚动(最新在下,点开看全部)</summary>

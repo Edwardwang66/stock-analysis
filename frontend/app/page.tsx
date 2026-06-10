@@ -230,12 +230,32 @@ export default function Home() {
     return { top: sorted.slice(0, 3), bottom: sorted.slice(-3).reverse() };
   }, [quotes, allVisibleSymbols]);
 
-  const renderCards = (list: string[]) => (
-    <div className="grid">{list.map((s) => (
-      <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
-        onRetry={() => { void retryOne(s); }} />
-    ))}</div>
-  );
+  // 大分组默认 12 张卡,可展开全部(250 代表票时代的页面长度控制)
+  const [expandedMkts, setExpandedMkts] = useState<Set<string>>(new Set());
+  const renderCards = (list: string[], collapseKey?: string) => {
+    const isExp = !collapseKey || expandedMkts.has(collapseKey) || list.length <= 14;
+    const shown = isExp ? list : list.slice(0, 12);
+    return (
+      <>
+        <div className="grid">{shown.map((s) => (
+          <QuoteCard key={s} symbol={s} quote={quotes[s] ?? null} error={errors[s]} loading={loadingQuotes}
+            onRetry={() => { void retryOne(s); }} />
+        ))}</div>
+        {!isExp && (
+          <button className="linklike" style={{ margin: "10px 0 4px", fontSize: 13 }}
+            onClick={() => setExpandedMkts((prev) => new Set(prev).add(collapseKey))}>
+            ▼ 展开全部 {list.length} 只
+          </button>
+        )}
+        {isExp && collapseKey && list.length > 14 && expandedMkts.has(collapseKey) && (
+          <button className="linklike" style={{ margin: "10px 0 4px", fontSize: 13 }}
+            onClick={() => setExpandedMkts((prev) => { const n = new Set(prev); n.delete(collapseKey); return n; })}>
+            ▲ 收起(显示前 12)
+          </button>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="container">
@@ -417,7 +437,7 @@ export default function Home() {
                 </span>
               )}
             </h3>
-            {renderCards(g.symbols)}
+            {renderCards(g.symbols, g.mkt)}
           </div>
         );
       }) : (
@@ -427,7 +447,7 @@ export default function Home() {
               市场状态:<span className={marketStatus(tab).open ? "up" : "muted"}>{marketStatus(tab).label}</span>(本地推算,不含节假日)
             </p>
           )}
-          {renderCards(symbols)}
+          {renderCards(symbols, tab)}
         </>
       )}
 
