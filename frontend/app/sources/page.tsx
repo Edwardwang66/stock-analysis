@@ -5,6 +5,7 @@ import { SOURCES } from "@/lib/sources";
 import { getBackendHealth, HAS_BACKEND } from "@/lib/datasource";
 import { getForex, type Forex } from "@/lib/forex";
 import { getCrossExchange, type ExPrice } from "@/lib/multiprice";
+import LangSelect from "@/components/LangSelect";
 
 const UP = "#26a69a", DOWN = "#ef5350";
 const STATUS_C: Record<string, string> = { 已接入: UP, 可接入: "#f7b500", 不可用: DOWN };
@@ -29,6 +30,7 @@ export default function SourcesPage() {
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
         <h1>🔌 免费数据源接入</h1>
+        <LangSelect />
         <span className="tag">
           已接入 <b style={{ color: UP }}>{counts["已接入"] || 0}</b> · 可接入 <b style={{ color: "#f7b500" }}>{counts["可接入"] || 0}</b> · 不可用 <b style={{ color: DOWN }}>{counts["不可用"] || 0}</b>(2026-06 实测)
         </span>
