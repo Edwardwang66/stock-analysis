@@ -123,3 +123,14 @@ export const NAMES: Record<string, string> = Object.fromEntries(
 export function nameOf(symbol: string, lang?: Lang): string {
   return displayName(symbol, lang ?? getLang(), NAMES[symbol] || null);
 }
+
+/** A股涨跌停判定:主板 ±10%,创业板(300/301)/科创板(688/689) ±20%(ST 不细分)。 */
+export function cnLimitTag(symbol: string, pct: number | null | undefined): "涨停" | "跌停" | null {
+  if (!symbol.startsWith("CN:") || pct == null) return null;
+  const code = symbol.slice(3);
+  const wide = code.startsWith("30") || code.startsWith("68");
+  const lim = wide ? 19.9 : 9.9;
+  if (pct >= lim) return "涨停";
+  if (pct <= -lim) return "跌停";
+  return null;
+}

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type Quote } from "@/lib/datasource";
-import { marketOf, nameOf } from "@/lib/markets";
+import { cnLimitTag, marketOf, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
 import { marketStatus } from "@/lib/marketstatus";
@@ -63,7 +63,14 @@ export default function QuoteCard({
         <div className="src">{symbol}</div>
         {q ? (
           <>
-            <div className={`price ${dir} ${flash}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+            <div className={`price ${dir} ${flash}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {(() => {
+                const lt = cnLimitTag(symbol, q.changePct);
+                return lt ? <span className="badge" style={{ marginLeft: 6, fontSize: 10, padding: "1px 6px",
+                  color: lt === "涨停" ? "#fff" : "#fff", background: lt === "涨停" ? "#ef5350" : "#26a69a",
+                  borderColor: "transparent" }}>{lt}</span> : null;
+              })()}
+            </div>
             <div className={dir}>
               {q.change != null && `${q.change >= 0 ? "+" : ""}${q.change.toLocaleString(undefined, { maximumFractionDigits: 2 })} `}
               {q.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : "—"}
