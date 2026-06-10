@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import AINote from "@/components/AINote";
 import ChanPanel from "@/components/ChanPanel";
+import SignalRadar from "@/components/SignalRadar";
 import News from "@/components/News";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
@@ -281,8 +282,11 @@ function SymbolView() {
         </div>
         {compareErr && <p className="src" style={{ color: "var(--down)" }}>{compareErr}</p>}
         {loading ? <div className="loading">加载中…</div> : (
-          <Chart bars={bars} levels={pivotLevels}
-            compare={compareBars.length ? { name: nameOf(compareSym, lang), bars: compareBars } : null} />
+          <>
+            <SignalRadar symbol={symbol} bars={bars} />
+            <Chart bars={bars} levels={pivotLevels}
+              compare={compareBars.length ? { name: nameOf(compareSym, lang), bars: compareBars } : null} />
+          </>
         )}
       </div>
 
