@@ -53,7 +53,8 @@ class YahooProvider:
         res = await self._chart(client, s, "1d", "1d")
         m = res["meta"]
         price = m.get("regularMarketPrice")
-        prev = m.get("chartPreviousClose") or m.get("previousClose")
+        # 优先 regularMarketPreviousClose(真·昨收);chartPreviousClose 语义随请求窗口变,仅兜底
+        prev = m.get("regularMarketPreviousClose") or m.get("chartPreviousClose") or m.get("previousClose")
         change = (price - prev) if (price is not None and prev is not None) else None
         change_pct = (change / prev * 100.0) if (change is not None and prev) else None
         return Quote(

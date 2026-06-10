@@ -45,11 +45,17 @@ export default function QuoteCard({
           <>
             <div className={`price ${dir}`}>{q.price?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
             <div className={dir}>
+              {q.change != null && `${q.change >= 0 ? "+" : ""}${q.change.toLocaleString(undefined, { maximumFractionDigits: 2 })} `}
               {q.changePct != null ? `${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%` : "—"}
               {q.changePct != null && <span className="muted" style={{ fontSize: 11 }}>{isCrypto ? " 24h" : " 当日"}</span>}
               <span className="muted"> {q.currency}</span>
             </div>
-            <div className="src" style={{ marginTop: 8 }}>来源 {q.source} · 点击看分析 →</div>
+            {(q.high != null || q.low != null) && (
+              <div className="src" style={{ marginTop: 4 }}>
+                最高 {q.high?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"} · 最低 {q.low?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"}
+              </div>
+            )}
+            <div className="src" style={{ marginTop: 6 }}>来源 {q.source} · 点击看分析 →</div>
           </>
         ) : error ? (
           <div className="err" style={{ fontSize: 12 }}>

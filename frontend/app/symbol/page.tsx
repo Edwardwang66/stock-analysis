@@ -119,7 +119,14 @@ function SymbolView() {
         {quote && (
           <>
             <span className={`price ${dir}`} style={{ fontSize: 22 }}>{fmt(quote.price)}</span>
-            <span className={dir}>{quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""}</span>
+            <span className={dir}>
+              {quote.change != null ? `${quote.change >= 0 ? "+" : ""}${fmt(quote.change)} ` : ""}
+              {quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""}
+            </span>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {symbol.startsWith("CRYPTO:") ? "24h" : "今日"} 最高 {fmt(quote.high)} · 最低 {fmt(quote.low)}
+              {!symbol.startsWith("CRYPTO:") && quote.change != null && quote.price != null && ` · 昨收 ${fmt(quote.price - quote.change)}`}
+            </span>
             <span className="muted">{quote.currency} · 来源 {quote.source}</span>
           </>
         )}

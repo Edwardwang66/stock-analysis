@@ -21,7 +21,8 @@ const quoteCache = new Map<string, { quote: Quote; expires: number }>();
 const quoteInflight = new Map<string, Promise<Quote>>();
 
 // ---- localStorage 持久缓存:刷新/重开页面先用上次数据渲染(秒开),再后台更新 ----
-const LS_QUOTES = "ds:q:v2";
+// v3:清洗 v2 时代被 5d-窗口 bug 污染的涨跌幅缓存
+const LS_QUOTES = "ds:q:v3";
 const LS_BARS_PREFIX = "ds:b:v2:";
 const LS_BARS_INDEX = "ds:bidx:v2";
 const QUOTE_STALE_MAX_MS = 10 * 60_000;   // 超过 10 分钟的旧报价不再用于首屏
@@ -241,9 +242,11 @@ async function yahooChart(ycode: string, range: string, interval: string): Promi
   throw new Error(`Yahoo 全部代理失败:${lastErr?.message || lastErr}`);
 }
 async function yahooQuote(market: string, code: string): Promise<Quote> {
-  const res = await yahooChart(yahooCode(market, code), "5d", "1d");
+  // ⚠️ range 必须 1d:chartPreviousClose 的语义是「请求窗口前一根的收盘」,
+  // 用 5d 会算成对 5 天前的涨跌幅(曾导致 AAPL 显示 -7.82% 实为 -3.64%)。
+  const res = await yahooChart(yahooCode(market, code), "1d", "1d");
   const m = res.meta;
-  const prev = m.chartPreviousClose ?? m.previousClose;
+  const prev = m.regularMarketPreviousClose ?? m.chartPreviousClose ?? m.previousClose;
   const change = m.regularMarketPrice != null && prev != null ? m.regularMarketPrice - prev : null;
   return {
     symbol: `${market}:${code}`, price: m.regularMarketPrice, change,
