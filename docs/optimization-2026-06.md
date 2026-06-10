@@ -84,3 +84,14 @@ cd ../frontend && npx tsc --noEmit && npx next build   # 编译通过
 
 ### 验证
 - `python tests/test_backend.py` 19 项(新增 IDX 4 项)、`python tests/test_api.py` 13 项、`tsc --noEmit` + `next build` 通过。
+
+### 2026-06-09 第 5-13 轮(同日追加)
+- 行情卡片 ★ 一键自选、失败单卡重试;「全部」视图组内涨/跌/均值统计;
+- 今日强弱 Top3 涨跌榜(报价派生,零请求);指数概览行;开闭市徽标;
+- ⏰ 价格提醒:lib/alerts.ts 纯前端,30s 循环检查,Notification + 横幅,一次性触发;
+- K线对比叠加(PriceScaleMode.Percentage 归一);ATR/KDJ/量比展示指标(不动评分);
+- 📰 个股新闻:Yahoo RSS(fetchTextViaProxy),全市场代码映射,失败静默;
+- 自选+提醒 JSON 导入导出;PWA manifest;移动端 @640px;搜索 / 快捷键;个股页动态标题;
+- 热力图按市场分区;IDX 页隐藏微观模块;sources 页后端健康面板;feed 陈旧首页提示;
+- 修复:getQuotes 后端批量按 50 分块(screener 60 只整批 422);
+- 协作流程:远端被 Actions 推进时 rebase + 解冲突再推(AINote 与本地新模块共存先例)。
