@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { type Quote } from "@/lib/datasource";
-import { marketOf, nameOf } from "@/lib/markets";
+import { cnLimitTag, marketOf, nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
 import { marketStatus } from "@/lib/marketstatus";
@@ -38,7 +38,8 @@ function Tiles({ symbols, quotes }: { symbols: string[]; quotes: Record<string, 
         <Link key={t.symbol} href={`/symbol/?s=${encodeURIComponent(t.symbol)}`}>
           <div
             className="tile"
-            style={{ background: color(t.pct) }}
+            style={{ background: color(t.pct),
+              ...(cnLimitTag(t.symbol, t.pct) ? { border: "1.5px solid #f7b500", boxShadow: "0 0 6px rgba(247,181,0,.4)" } : {}) }}
             title={`${nameOf(t.symbol, lang)} ${t.price ?? "—"} · ${t.pct == null ? "—" : `${t.pct >= 0 ? "+" : ""}${t.pct.toFixed(2)}%`}${t.night ? "(🌙夜盘24h)" : marketOf(t.symbol) === "CRYPTO" ? "(24h)" : "(当日)"}`}
           >
             <div className="tile-name">{t.night ? "🌙" : ""}{nameOf(t.symbol, lang)}</div>

@@ -6,7 +6,7 @@ import {
   getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getPreipoHistory, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsHistory, getRsRanks, getScores, getScreener, getScreenerHistory,
   type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
-import { nameOf } from "@/lib/markets";
+import { cnLimitTag, nameOf } from "@/lib/markets";
 import { sectorLabel, useLang } from "@/lib/names";
 import { sectorOf } from "@/lib/sectors";
 import TzSelect from "@/components/TzSelect";
@@ -711,6 +711,7 @@ export default function DeskPage() {
                       <td>{fmt(q?.price)}</td>
                       <td className={pc == null ? "muted" : pc >= 0 ? "up" : "down"}>
                         {pc == null ? "…" : `${pc >= 0 ? "+" : ""}${pc.toFixed(2)}%`}
+                        {(() => { const lt = cnLimitTag(r.symbol, pc); return lt ? <span style={{ marginLeft: 4, fontSize: 10, color: "#f7b500" }}>{lt}</span> : null; })()}
                       </td>
                       {night.usClosed && Object.keys(night.map).length > 0 && (() => {
                         const nq = night.map[r.symbol];
