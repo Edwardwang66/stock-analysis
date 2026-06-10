@@ -1,0 +1,47 @@
+name: Hyperliquid monitor (衍生品情报 2h)
+
+# 每 2 小时拉 Hyperliquid 公开接口:
+#   主 DEX 230 永续持仓面(funding/OI/premium,拥挤监控 §7.2)
+#   + HIP-3 builder DEX 合成美股/指数/私有公司永续(24/7 盘后价格发现)
+#   + 跨所预测资金费错位(HL vs Binance/Bybit)
+# 写 feed/crypto/state.json + 发布 feed 报告,commit 回仓。加密 24/7,周末照跑。
+
+on:
+  schedule:
+    - cron: "10 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hyperliquid-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r scripts/requirements.txt
+      - name: 运行监控
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python scripts/hyperliquid_monitor.py --publish
+      - name: Commit + push
+        run: |
+          git config user.name  "hl-monitor[bot]"
+          git config user.email "actions@github.com"
+          git add feed/
+          if git diff --cached --quiet; then
+            echo "无变化"
+          else
+            git commit -m "hl: 衍生品情报快照 ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git pull --rebase origin main || true
+            for i in 1 2 3 4; do git push && break || sleep $((2**i)); done
+          fi

@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  getFundHoldings, getHealth, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
-  type FeedHealth, type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
+  getCryptoState, getFundHoldings, getHealth, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
+  type CryptoState, type FeedHealth, type FeedIndex, type FundHoldings, type Signals, type MarketState, type FactoryStore, type FullReport, type MarketSnapshot,
 } from "@/lib/feed";
 import { fmtDateTime, useTz } from "@/lib/timefmt";
 import LangSelect from "@/components/LangSelect";
@@ -26,6 +26,7 @@ export default function IntelDashboard() {
   const [hist, setHist] = useState<MarketSnapshot[]>([]);
   const [fund, setFund] = useState<FundHoldings | null>(null);
   const [health, setHealth] = useState<FeedHealth | null>(null);
+  const [hl, setHl] = useState<CryptoState | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const tzKey = useTz();
 
@@ -37,6 +38,7 @@ export default function IntelDashboard() {
     setHist((await getMarketHistory()) ?? []);
     setFund(await getFundHoldings("situational-awareness"));
     setHealth(await getHealth());
+    setHl(await getCryptoState());
     if (i.latest.report) setRep(await getReport(i.latest.report));
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
@@ -75,7 +77,8 @@ export default function IntelDashboard() {
         {health?.sources && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {([["signals_book", "持仓簿"], ["market_state", "市场状态"], ["screener", "选股"], ["rs_ranks", "RS排名"],
-               ["stock_notes", "AI解读"], ["intraday", "盘中"], ["market_history", "快照史"], ["funds_13f", "13F"]] as const).map(([k, label]) => {
+               ["stock_notes", "AI解读"], ["intraday", "盘中"], ["market_history", "快照史"], ["funds_13f", "13F"],
+               ["crypto_state", "HL衍生品"]] as const).map(([k, label]) => {
               const s = health.sources[k];
               const bad = !s?.exists || (s.age_days != null && s.age_days > 3 && k !== "funds_13f");
               return (
@@ -225,6 +228,58 @@ export default function IntelDashboard() {
           </div>
         )}
       </div>
+
+      {/* Hyperliquid 衍生品情报:24/7 美股代理 + 加密持仓面 + 跨所错位 */}
+      {hl && (
+        <div className="section">
+          <h2>🧲 衍生品情报(Hyperliquid · 24/7)
+            <span className="src" style={{ marginLeft: 10 }}>
+              更新 {fmtDateTime(hl.updated_at, tzKey)} · HIP-3 资产 {hl.equity_perps?.n_assets ?? "—"} · 永续 {hl.crypto?.n_perps ?? "—"}
+              {hl.crypto?.crowding_flag && <span className="badge" style={{ marginLeft: 8, borderColor: DOWN, color: DOWN }}>持仓拥挤</span>}
+            </span>
+          </h2>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 16 }}>
+            {/* 24/7 美股/指数/私有公司永续(盘后价格发现) */}
+            <div>
+              <div className="src" style={{ fontWeight: 600, marginBottom: 6 }}>美股盘后代理(合成永续 mark 价)</div>
+              <table>
+                <thead><tr><th>资产</th><th>mark</th><th>24h</th><th>日成交</th></tr></thead>
+                <tbody>
+                  {[...(hl.equity_perps?.indices ?? []).slice(0, 3),
+                    ...(hl.equity_perps?.stocks ?? []).slice(0, 4),
+                    ...(hl.equity_perps?.private ?? []).slice(0, 3)].map((a) => (
+                    <tr key={a.symbol}>
+                      <td style={{ fontWeight: 600 }}>{a.symbol}<span className="src" style={{ marginLeft: 4 }}>{a.kind === "private" ? "私有" : a.dex}</span></td>
+                      <td>{a.mark.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                      <td style={{ color: (a.chg24h ?? 0) >= 0 ? UP : DOWN }}>{a.chg24h == null ? "—" : `${(a.chg24h * 100).toFixed(2)}%`}</td>
+                      <td className="src">${((a.vol24h_usd || 0) / 1e6).toFixed(0)}M</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* 加密持仓面 + 跨所错位 */}
+            <div>
+              <div className="src" style={{ fontWeight: 600, marginBottom: 6 }}>加密持仓面(funding/OI)与跨所错位</div>
+              <table>
+                <tbody>
+                  <tr><td>BTC funding(年化)</td><td style={{ color: (hl.crypto?.btc?.funding_apr ?? 0) >= 0 ? UP : DOWN }}>{hl.crypto?.btc ? `${(hl.crypto.btc.funding_apr * 100).toFixed(1)}%` : "—"}</td>
+                      <td>OI</td><td>{hl.crypto?.btc ? `$${(hl.crypto.btc.oi_usd / 1e9).toFixed(2)}B` : "—"}</td></tr>
+                  <tr><td>ETH funding(年化)</td><td style={{ color: (hl.crypto?.eth?.funding_apr ?? 0) >= 0 ? UP : DOWN }}>{hl.crypto?.eth ? `${(hl.crypto.eth.funding_apr * 100).toFixed(1)}%` : "—"}</td>
+                      <td>OI</td><td>{hl.crypto?.eth ? `$${(hl.crypto.eth.oi_usd / 1e9).toFixed(2)}B` : "—"}</td></tr>
+                  <tr><td>多头资金费占比</td><td>{hl.crypto ? (hl.crypto.pct_positive_funding * 100).toFixed(0) + "%" : "—"}</td>
+                      <td>总 OI 变化</td><td>{hl.crypto?.oi_change_since_last == null ? "—" : `${(hl.crypto.oi_change_since_last * 100).toFixed(1)}%`}</td></tr>
+                  <tr><td>跨所错位(HL vs 币安)</td><td colSpan={3}>{hl.venues ? `${hl.venues.n_dislocated}/${hl.venues.n_compared} 个 > ${(hl.venues.threshold_apr * 100).toFixed(0)}% APR` : "—"}</td></tr>
+                  {(hl.venues?.top ?? []).slice(0, 2).map((v) => (
+                    <tr key={v.coin}><td className="src">↳ {v.coin}</td><td colSpan={3} className="src">HL {(v.hl_apr * 100).toFixed(1)}% vs 币安 {(v.binance_apr * 100).toFixed(1)}%(差 {(v.spread_apr * 100).toFixed(1)}%)</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="src" style={{ marginTop: 8 }}>{hl.equity_perps?.note}</p>
+        </div>
+      )}
 
       {/* 跟踪基金 13F 持仓 */}
       {fund && (

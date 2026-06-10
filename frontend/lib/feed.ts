@@ -256,3 +256,28 @@ export interface FeedHealth {
   issues: HealthIssue[]; sources: Record<string, SourceFreshness>;
 }
 export const getHealth = () => fetchJson<FeedHealth>("health.json");
+
+// Hyperliquid 衍生品情报(scripts/hyperliquid_monitor.py,2h 定时)
+export interface HlAsset {
+  symbol: string; dex?: string; kind?: string; mark: number;
+  chg24h?: number | null; vol24h_usd: number; funding_apr?: number;
+}
+export interface HlCoinBrief {
+  coin: string; funding_apr: number; oi_usd: number; premium: number;
+  chg24h?: number | null; vol24h_usd: number;
+}
+export interface CryptoState {
+  updated_at: string; source: string;
+  crypto?: {
+    n_perps: number; n_liquid: number; btc?: HlCoinBrief; eth?: HlCoinBrief;
+    pct_positive_funding: number; total_oi_usd: number;
+    oi_change_since_last?: number | null; funding_extremes: HlCoinBrief[];
+    crowding_flag: boolean;
+  } | null;
+  venues?: { n_compared: number; n_dislocated: number; threshold_apr: number;
+             top: { coin: string; hl_apr: number; binance_apr: number; spread_apr: number }[] } | null;
+  equity_perps?: { dexes_alive: string[]; n_assets: number; indices: HlAsset[];
+                   stocks: HlAsset[]; commodities: HlAsset[]; private: HlAsset[]; note: string } | null;
+  errors?: string[];
+}
+export const getCryptoState = () => fetchJson<CryptoState>("crypto/state.json");

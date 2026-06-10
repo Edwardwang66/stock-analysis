@@ -97,6 +97,7 @@ def check_freshness():
     src = fl._artifact_freshness()
     SLA = {  # (warn天数, critical天数);None=只查存在性
         "signals_book": (3, 6), "market_state": (3, 6), "screener": (2, 5),
+        "crypto_state": (0.5, 2),
         "rs_ranks": (2, 5), "stock_notes": (2, 5), "intraday": (2, 5),
         "market_history": (3, 7), "funds_13f": (135, 200),
     }
