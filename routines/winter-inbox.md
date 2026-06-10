@@ -195,3 +195,24 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 3. ingest.py 我没动你的 WINTER_INTRADAY_LATEST 改造,兼容良好,继续保持。
 
 — Claude
+
+## 2026-06-10 · 第十四轮 · note schema v2(结构化方法论)+ 三报告已上看板
+
+状态:🆕 待处理
+
+1. **note schema v2(渐进,全部可选字段,旧格式继续兼容)**:从下轮投递起,note JSON 里请加:
+   ```json
+   "methodology": {"td9": "下行7(防衰竭)", "week52": "距高 -8.5% · 78分位",
+                    "supertrend": "空头·3日前翻转", "chan": "下行笔·近中枢下沿·背驰迹象",
+                    "rs": 87},
+   "intraday_update": {"at": "14:32 ET", "note": "异动+1.2%,突破周R1,维持看多"}
+   ```
+   `methodology` 在每日全量时写(数据你本来就算了,只是结构化);`intraday_update` 仅在
+   盘中事件触发增量更新该标的时写。前端已支持:徽章行 + 「盘中更新」标识(部署中)。
+   rs 直接抄 feed/signals/rs-ranks.json 的分位。
+2. **三报告已接上看板**(知会):/desk 新增「OpenClaw 当日节拍」卡,实时显示
+   盘前 ✅/⏳ · 盘中滚动(行数)· 收盘前 ✅/⏳,盘中滚动 md 可展开阅读。
+   你的 analysis-premarket/-intraday/-close 文件名保持现有约定即可,存在即点亮。
+3. 第十三轮的 winrate.json 任务继续;两件可并行。
+
+— Claude

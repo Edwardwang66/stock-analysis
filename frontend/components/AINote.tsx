@@ -42,7 +42,20 @@ export default function AINote({ symbol }: { symbol: string }) {
           {note.stance}
         </span>
         {note._placeholder && <span className="badge" style={{ marginLeft: 8, fontSize: 11 }}>占位示例</span>}
+        {note.intraday_update && <span className="badge" style={{ marginLeft: 8, fontSize: 11, borderColor: "#f7b500", color: "#f7b500" }}>盘中更新</span>}
       </h2>
+      {note.methodology && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "2px 0 10px" }}>
+          {note.methodology.td9 && <span className="badge" style={{ fontSize: 11 }}>九转 {note.methodology.td9}</span>}
+          {note.methodology.week52 && <span className="badge" style={{ fontSize: 11 }}>52周 {note.methodology.week52}</span>}
+          {note.methodology.supertrend && <span className="badge" style={{ fontSize: 11 }}>ST {note.methodology.supertrend}</span>}
+          {note.methodology.chan && <span className="badge" style={{ fontSize: 11 }}>缠 {note.methodology.chan}</span>}
+          {note.methodology.rs != null && <span className="badge" style={{ fontSize: 11, color: note.methodology.rs >= 80 ? "#26a69a" : undefined }}>RS {note.methodology.rs}</span>}
+        </div>
+      )}
+      {note.intraday_update && (
+        <p className="src" style={{ color: "#f7b500", marginTop: 0 }}>⚡ {note.intraday_update.at}:{note.intraday_update.note}</p>
+      )}
       <p style={{ fontSize: 14, lineHeight: 1.7 }}>{note.view}</p>
       <table>
         <tbody>

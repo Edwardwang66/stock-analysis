@@ -86,7 +86,31 @@ export interface StockNote {
   symbol: string; date: string; model?: string; producer?: string;
   stance: string; thesis: string; earnings?: string; news?: string;
   risks?: string; view: string; sources?: { title: string; url: string }[];
+  // schema v2(2026-06-10 起,OpenClaw 渐进投递;全部可选,向后兼容)
+  methodology?: {
+    td9?: string;          // 如 "下行7(防衰竭)"
+    week52?: string;       // 如 "距高 -8.5% · 78分位"
+    supertrend?: string;   // 如 "空头·3日前翻转"
+    chan?: string;         // 如 "下行笔·近中枢下沿·背驰迹象"
+    rs?: number | null;    // RS 1-99
+  };
+  intraday_update?: { at: string; note: string };  // 盘中事件触发的增量更新
   _placeholder?: boolean;
+}
+
+// OpenClaw 盘中三报告(markdown 文本;存在性=投递状态)
+export async function getAnalysisMd(kind: "premarket" | "intraday" | "close" | "", date: string): Promise<string | null> {
+  const name = kind ? `analysis-${kind}-${date}.md` : `analysis-${date}.md`;
+  for (const base of [REMOTE, LOCAL]) {
+    try {
+      const r = await fetch(`${base}/screener/${name}?t=${Date.now()}`, { cache: "no-store" });
+      if (r.ok) {
+        const t = await r.text();
+        if (t && !t.startsWith("<!DOCTYPE") && !t.startsWith("404")) return t;
+      }
+    } catch { /* next */ }
+  }
+  return null;
 }
 export const getStockNote = (symbol: string) =>
   fetchJson<StockNote>(`stock-notes/${symbol.replace(":", "-")}.json`);
