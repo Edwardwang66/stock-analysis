@@ -107,7 +107,7 @@ export default function ScreenerPage() {
           <div className="section" style={{ overflowX: "auto" }}>
             <table>
               <thead>
-                <tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>结论</th><th>价格</th><th>涨跌%</th><th>RSI</th><th>指数</th></tr>
+                <tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>RS</th><th>距52周高</th><th>结论</th><th>价格</th><th>涨跌%</th><th>RSI</th><th>指数</th></tr>
               </thead>
               <tbody>
                 {items.map((r, i) => {
@@ -120,6 +120,17 @@ export default function ScreenerPage() {
                       <td><Link href={`/symbol/?s=US:${r.symbol}`} style={{ color: "var(--accent)" }}>{r.symbol}</Link></td>
                       <td>{r.name}</td>
                       <td><strong>{r.score}</strong></td>
+                      {(() => {
+                        const k = rsT?.ranks?.[r.symbol];
+                        return (
+                          <>
+                            <td className={k?.rs != null && k.rs >= 80 ? "up" : undefined}>{k?.rs ?? "—"}</td>
+                            <td className={k?.w52dd != null && k.w52dd >= -3 ? "up" : undefined}>
+                              {k?.w52dd == null ? "—" : k.w52dd >= 0 ? "新高" : `${k.w52dd}%`}
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td><span className="badge">{r.verdict}</span></td>
                       <td>{typeof price === "number" ? price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : price}{lq ? <span className="muted" style={{ fontSize: 10 }}> 实时</span> : null}</td>
                       <td className={pct >= 0 ? "up" : "down"}>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}</td>
