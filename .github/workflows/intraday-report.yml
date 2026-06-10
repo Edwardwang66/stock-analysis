@@ -49,7 +49,8 @@ jobs:
               mkdir -p /tmp/live/feed/intraday
               INTRADAY_OUT=/tmp/live/feed/intraday/latest.json python scripts/intraday_report.py || true
               cd /tmp/live
-              git add feed/intraday/latest.json
+              # -f:live 分支基点的 .gitignore 拦 feed/intraday/,文件未跟踪时裸 add 退出码 1(首跑实测)
+              git add -f feed/intraday/latest.json
               if ! git diff --cached --quiet; then
                 git commit -m "intraday: $(date -u +%H:%M)"
                 git push origin live || { git pull --rebase origin live && git push origin live; } || true
