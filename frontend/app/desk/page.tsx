@@ -482,6 +482,45 @@ export default function DeskPage() {
             </div>
           )}
 
+          {/* 🌗 夜盘→开盘修复表(美股开盘后显示;Cycle8 结论的每日活体验证) */}
+          {!night.usClosed && ovn?.date === today() && !!ovn?.perp_movers?.length && (() => {
+            const rows2 = (ovn.perp_movers ?? [])
+              .filter((x) => x.kind === "stock" && Math.abs(x.chg24h) >= 4)
+              .map((x) => {
+                const local = x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`;
+                const q = quotes[local];
+                const open_ = q?.changePct ?? null;
+                const repair = open_ != null && x.chg24h !== 0 ? Math.max(0, Math.min(2, 1 - open_ / x.chg24h)) : null;
+                return { sym: x.symbol, local, nightPct: x.chg24h, openPct: open_, repair };
+              })
+              .filter((r) => r.openPct != null);
+            if (!rows2.length) return null;
+            return (
+              <div className="section" style={{ marginTop: 4 }}>
+                <h2>🌗 夜盘→开盘修复
+                  <span className="src" style={{ marginLeft: 10 }}>
+                    永续夜盘预警 vs 开盘实况 · 修复率高=恐慌未兑现(Cycle8:开盘价吸收隔夜信息)
+                  </span>
+                </h2>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {rows2.map((r) => (
+                    <Link key={r.sym} href={`/symbol/?s=${encodeURIComponent(r.local)}`} className="badge"
+                      style={{ fontSize: 12, padding: "5px 10px" }}>
+                      {nameOf(r.local, lang)}
+                      <span className="down"> 夜{r.nightPct.toFixed(1)}%</span>
+                      <span className={r.openPct! >= 0 ? "up" : "down"}> → 开{r.openPct! >= 0 ? "+" : ""}{r.openPct!.toFixed(1)}%</span>
+                      {r.repair != null && r.nightPct < 0 && (
+                        <span style={{ marginLeft: 4, color: r.repair >= 0.7 ? "#26a69a" : r.repair >= 0.3 ? "#f7b500" : "#ef5350" }}>
+                          修复{(r.repair * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 事件热度榜(Winter PG 近7天聚合;未投递时隐藏) */}
           {!!heat?.items?.length && (
             <div className="section" style={{ marginTop: 4 }}>
