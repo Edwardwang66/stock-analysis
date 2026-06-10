@@ -63,3 +63,15 @@ jobs:
             curl -fsS --max-time 20 "${{ vars.API_BASE }}/api/v1/health" >/dev/null 2>&1 || true
             [ "$i" -lt 2 ] && sleep 265 || true
           done
+      - name: 自续链:调起下一棒(GITHUB_TOKEN 实验;失败则靠 cron/watchdog 重新点火)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 仅交易时段自续(00:00-20:00 UTC 工作日),避免夜里空转
+          H=$(date -u +%H); DOW=$(date -u +%u)
+          if [ "$DOW" -le 5 ] && [ "$H" -lt 20 ]; then
+            gh workflow run intraday-report.yml --ref main               && echo "下一棒已调起" || echo "自续失败(GITHUB_TOKEN 可能无权;靠 cron/watchdog 点火)"
+          else
+            echo "非交易时段,链止"
+          fi
