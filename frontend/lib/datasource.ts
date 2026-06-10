@@ -116,6 +116,21 @@ export async function fetchT(url: string, ms = 8000): Promise<Response> {
   }
 }
 
+// 通用:经公共 CORS 代理取纯文本(XML/RSS 等非 JSON 源)。
+export async function fetchTextViaProxy(url: string): Promise<string> {
+  let lastErr: any;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetchT(proxy(url));
+      if (!r.ok) { lastErr = new Error(`proxy HTTP ${r.status}`); continue; }
+      const t = await r.text();
+      if (t && t.length > 50) return t;
+      lastErr = new Error("empty body");
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`代理全部失败:${lastErr?.message || lastErr}`);
+}
+
 // 通用:经公共 CORS 代理取 JSON(给无 CORS 的源用,如 Yahoo search / SEC ticker 映射)。
 export async function fetchViaProxy(url: string): Promise<any> {
   let lastErr: any;

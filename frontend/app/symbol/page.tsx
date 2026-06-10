@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import AINote from "@/components/AINote";
+import News from "@/components/News";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
@@ -180,6 +181,9 @@ function SymbolView() {
 
       {/* 每日 AI 解读(外部 OpenClaw 投递,无数据自隐藏) */}
       <AINote symbol={symbol} />
+
+      {/* 相关新闻(Yahoo RSS,失败自隐藏) */}
+      <News symbol={symbol} />
 
       {/* 富途式看板:主力资金 + 筹码分布 + 基本面(指数无个股微观结构,不展示) */}
       {!symbol.startsWith("IDX:") && (
