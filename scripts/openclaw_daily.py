@@ -34,6 +34,13 @@ import openclaw_client as oc  # noqa: E402
 SCREENER_URL = "https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json"
 UA = {"User-Agent": "Mozilla/5.0 (compatible; OpenClaw stock-analysis/1.0)"}
 SEC_UA = {"User-Agent": "OpenClaw stock-analysis edwardwang66/stock-analysis"}
+DEFAULT_DAILY_STOCK_NOTES = [
+    ("CN:600519", "贵州茅台"),
+    ("CN:000001", "平安银行"),
+    ("CN:600036", "招商银行"),
+    ("CN:601318", "中国平安"),
+    ("CN:300750", "宁德时代"),
+]
 
 
 # ======================================================================
@@ -133,6 +140,21 @@ def _rss_news(symbol: str) -> list[dict]:
         return []
 
 
+def _market_data_symbol(symbol: str) -> str:
+    market, code = symbol.upper().split(":", 1)
+    if market == "CN":
+        return code if "." in code else f"{code}.{'SS' if code.startswith('6') else 'SZ'}"
+    if market == "HK":
+        return code if code.endswith(".HK") else f"{code.zfill(4)}.HK"
+    if market == "JP":
+        return code if code.endswith(".T") else f"{code}.T"
+    if market == "KR":
+        return code if code.endswith((".KS", ".KQ")) else f"{code}.KS"
+    if market == "DE":
+        return code if code.endswith(".DE") else f"{code}.DE"
+    return code
+
+
 _CIK_MAP = None
 
 
@@ -183,12 +205,13 @@ def _stock_metrics(symbol: str) -> dict:
 
 
 def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
-    """基于公开行情、SEC companyfacts 与 Yahoo 新闻生成每日个股解读。"""
-    code = symbol.split(":", 1)[1]
+    """基于公开行情、SEC companyfacts(美股)与 Yahoo 新闻生成每日个股解读。"""
+    market = symbol.split(":", 1)[0].upper()
+    code = _market_data_symbol(symbol)
     metrics = _stock_metrics(code)
     search = _yahoo_search(code)
     quote = (search.get("quotes") or [{}])[0]
-    sec = _latest_sec_fact(code)
+    sec = _latest_sec_fact(code) if market == "US" else None
     news = (search.get("news") or [])[:3] or _rss_news(code)[:3]
 
     note = oc.stock_note_template(symbol)
@@ -198,7 +221,10 @@ def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
     above50 = bool(price and metrics["sma50"] and price > metrics["sma50"])
     above200 = bool(price and metrics["sma200"] and price > metrics["sma200"])
     extended = bool(rsi and rsi >= 68)
-    note["stance"] = "看多" if (score or 0) >= 50 and above50 and not extended else ("中性" if (score or 0) >= 50 else "看空")
+    if score is None:
+        note["stance"] = "看多" if above50 and not extended else "中性"
+    else:
+        note["stance"] = "看多" if score >= 50 and above50 and not extended else ("中性" if score >= 50 else "看空")
 
     sector = quote.get("sectorDisp") or quote.get("sector") or "unknown sector"
     industry = quote.get("industryDisp") or quote.get("industry") or "unknown industry"
@@ -223,7 +249,8 @@ def analyze_stock(symbol: str, name: str, screener_item: dict | None) -> dict:
             parts.append(f"diluted/basic EPS={_fmt(float(eps.get('val')))}")
         note["earnings"] = "；".join(parts) + "。SEC companyfacts 口径可能混合 10-Q/10-K，作为事实摘录而非盈利预测。"
     else:
-        note["earnings"] = "本轮未从 SEC companyfacts 可靠取得最近 10-Q/10-K 核心字段；不编造财报数字。"
+        filing_hint = "SEC companyfacts" if market == "US" else f"{market} 交易所/公司公告源"
+        note["earnings"] = f"本轮未从 {filing_hint} 可靠取得最近一季核心字段；不编造财报数字。"
     if news:
         items = []
         for n in news:
@@ -374,6 +401,8 @@ def load_universe(top: int, watchlist: str | None, screener_file: str | None) ->
     for it in items:
         sym = f"US:{it['symbol']}"
         uni[sym] = (it.get("name", it["symbol"]), it)
+    for sym, name in DEFAULT_DAILY_STOCK_NOTES:
+        uni.setdefault(sym, (name, None))
     if watchlist and os.path.exists(watchlist):
         for line in open(watchlist):
             s = line.strip().upper()

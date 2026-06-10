@@ -22,7 +22,7 @@
 
 ## 1. 拉取当日输入(看多清单)
 - [ ] 看多清单:`curl -s https://raw.githubusercontent.com/edwardwang66/stock-analysis/main/feed/screener/latest.json -o screener.json`
-- [ ] 要分析的标的集合 = **看多清单**(前 15 只,或全部)∪ 自选 `watchlist.txt`(去重)
+- [ ] 要分析的标的集合 = **美股看多清单**(前 15 只,或全部)∪ **默认 A 股五只**(`CN:600519`, `CN:000001`, `CN:600036`, `CN:601318`, `CN:300750`)∪ 自选 `watchlist.txt`(去重)
 - [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`
 
 ---
@@ -68,6 +68,7 @@
 - [ ] `/intel`「②信息量」近 24h 计数上升,来源含 `openclaw-agent:*`
 - [ ] 抽查 2 只个股页「🤖 AI 解读」为今日、有来源链接
 - [ ] 任一投递失败 → 看 GitHub Actions `feed-validate` 日志(多半是 schema/签名/边界);修正后重投
+- [ ] 如果用 SSH/local 投递,提交前先 `git pull --rebase origin main`,再 `git push`
 - [ ] 全程未输出任何投资建议措辞
 
 ---
