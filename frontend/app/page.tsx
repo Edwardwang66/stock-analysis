@@ -5,6 +5,7 @@ import QuoteCard from "@/components/QuoteCard";
 import Heatmap from "@/components/Heatmap";
 import SearchBox from "@/components/SearchBox";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
+import { getIndex } from "@/lib/feed";
 import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketStatus } from "@/lib/marketstatus";
 import { getWatchlist } from "@/lib/watchlist";
@@ -42,6 +43,16 @@ export default function Home() {
   }, []);
   const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
   const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 情报 feed 新鲜度:陈旧时在首页轻提示(与情报看板同一判定)
+  const [feedStale, setFeedStale] = useState<{ asof: string | null } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getIndex().then((i) => {
+      if (alive && i?.freshness?.stale) setFeedStale({ asof: i.freshness.market_data_asof });
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // 指数概览:独立加载(不计入看板涨跌统计),60s 自刷新
   const [idxQuotes, setIdxQuotes] = useState<Record<string, Quote | null>>({});
@@ -167,6 +178,13 @@ export default function Home() {
         })}
       </div>
 
+      {feedStale && (
+        <div className="hint">
+          🛰️ 情报 feed 数据已陈旧{feedStale.asof ? `(最新数据 ${feedStale.asof})` : ""},
+          策略/选股结论可能滞后 —— 详见 <Link href="/intel/" style={{ color: "var(--accent)" }}>情报看板</Link>。行情卡片不受影响(实时拉取)。
+        </div>
+      )}
+
       {!HAS_BACKEND && tab !== "CRYPTO" && (
         <div className="hint">
           ⚠️ 美股 / 港股 / A股 当前经<strong>公共代理</strong>获取,代理不稳时可能较慢或失败(已渐进加载:先到先显示)。
@@ -211,10 +229,20 @@ export default function Home() {
       <h2 className="block-title">行情卡片</h2>
       {groups ? groups.map((g) => {
         const st = marketStatus(g.mkt);
+        const rows = g.symbols.map((s) => quotes[s]).filter((x): x is Quote => Boolean(x));
+        const up = rows.filter((x) => (x.changePct ?? 0) > 0).length;
+        const down = rows.filter((x) => (x.changePct ?? 0) < 0).length;
+        const avg = rows.length ? rows.reduce((sum, x) => sum + (x.changePct ?? 0), 0) / rows.length : null;
         return (
           <div key={g.mkt}>
             <h3 className="group-title">{g.label} <span className="src">{g.symbols.length} 只</span>
               {st.label && <span className={`badge ${st.open ? "up" : "muted"}`} style={{ fontSize: 11 }}>{st.label}</span>}
+              {rows.length > 0 && (
+                <span className="src">涨 <span className="up">{up}</span> / 跌 <span className="down">{down}</span>
+                  {avg != null && <> · 均值 <span className={avg >= 0 ? "up" : "down"}>{avg >= 0 ? "+" : ""}{avg.toFixed(2)}%</span></>}
+                  {g.mkt === "CRYPTO" ? "(24h)" : ""}
+                </span>
+              )}
             </h3>
             {renderCards(g.symbols)}
           </div>

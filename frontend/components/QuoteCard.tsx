@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { type Quote } from "@/lib/datasource";
 import { marketOf, nameOf } from "@/lib/markets";
+import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 
 // 纯展示组件:报价一律由父级统一拉取下发(单一数据源,卡片间/看板间不会出现
 // 各自拉取导致的数值漂移)。技术分析/缠论放在个股详情页。
@@ -19,9 +21,22 @@ export default function QuoteCard({
   const q = quote;
   const isCrypto = marketOf(symbol) === "CRYPTO";
   const dir = q && q.changePct != null ? (q.changePct >= 0 ? "up" : "down") : "muted";
+  const [starred, setStarred] = useState(false);
+  useEffect(() => {
+    const sync = () => setStarred(inWatchlist(symbol));
+    sync();
+    window.addEventListener("watchlist-changed", sync);
+    return () => window.removeEventListener("watchlist-changed", sync);
+  }, [symbol]);
   return (
     <Link href={`/symbol/?s=${encodeURIComponent(symbol)}`}>
       <div className="card">
+        <button
+          className={`star ${starred ? "on" : ""}`}
+          title={starred ? "移出自选" : "加入自选"}
+          aria-label={starred ? "移出自选" : "加入自选"}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWatchlist(symbol); }}
+        >{starred ? "★" : "☆"}</button>
         <div className="sym">{nameOf(symbol)}</div>
         <div className="src">{symbol}</div>
         {q ? (

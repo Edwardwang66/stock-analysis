@@ -20,6 +20,18 @@ function fmt(n: number | null | undefined, d = 2): string {
   return n == null ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: d });
 }
 
+function exportCSV(symbol: string, range: string, interval: string, bars: Bar[]) {
+  const head = "time,open,high,low,close,volume";
+  const lines = bars.map((b) =>
+    `${new Date(b.time * 1000).toISOString()},${b.open},${b.high},${b.low},${b.close},${b.volume}`);
+  const blob = new Blob(["﻿" + [head, ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${symbol.replace(/[:^.]/g, "_")}_${range}_${interval}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function SymbolView() {
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
@@ -90,6 +102,8 @@ function SymbolView() {
           {RANGES.map((r) => (
             <button key={r} className={r === range ? "active" : ""} onClick={() => setRange(r)}>{r}</button>
           ))}
+          <button style={{ marginLeft: "auto" }} disabled={!bars.length}
+            onClick={() => exportCSV(symbol, range, interval, bars)} title="导出当前K线为 CSV">⬇ CSV</button>
         </div>
         {loading ? <div className="loading">加载中…</div> : <Chart bars={bars} />}
       </div>

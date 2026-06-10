@@ -45,7 +45,11 @@ a { color: inherit; text-decoration: none; }
 .segmented button:last-child { border-right: 0; }
 .segmented button.active { color: #fff; background: rgba(76,141,255,.18); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; position: relative; }
+.card .star { position: absolute; top: 8px; right: 10px; background: transparent; border: 0; cursor: pointer;
+  color: var(--muted); font-size: 15px; line-height: 1; padding: 4px; }
+.card .star.on { color: #f7b500; }
+.card .star:hover { color: #f7b500; }
 .card .sym { font-weight: 600; font-size: 15px; }
 .card .src { font-size: 11px; color: var(--muted); }
 .price { font-size: 22px; font-weight: 700; margin: 6px 0 2px; }
