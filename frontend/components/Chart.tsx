@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
-import { anchoredVwap, sma, superTrend, tdSetup } from "@/lib/indicators";
+import { anchoredVwap, sma, superTrend, tdSetup, ttmSqueeze } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
 
 const MA = [
@@ -37,6 +37,7 @@ export default function Chart({
   const [showSt, setShowSt] = useState(false); // SuperTrend(方法论 #3)
   const [showLv, setShowLv] = useState(false); // 支撑压力(周 Pivot,方法论 #6)
   const [showAv, setShowAv] = useState(false); // 锚定VWAP(52周低/高双锚,方法论二期)
+  const [showSq, setShowSq] = useState(false); // TTM Squeeze(挤压=蓄势,释放=变盘)
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -95,6 +96,27 @@ export default function Chart({
         const series = chart.addLineSeries({ color, lineWidth: 2, lineStyle: LineStyle.Solid,
           priceLineVisible: false, lastValueVisible: true, title: label, crosshairMarkerVisible: false });
         series.setData(bars.flatMap((b, i) => (av[i] != null ? [{ time: b.time as any, value: av[i] as number }] : [])));
+      }
+    }
+
+    // TTM Squeeze:挤压期黄点(蓄势),释放根▲/▼(按动量方向)
+    if (showSq && !compare && bars.length >= 25) {
+      const sq = ttmSqueeze(bars.map((b) => b.high), bars.map((b) => b.low), bars.map((b) => b.close));
+      const markers: any[] = [];
+      bars.forEach((b, j) => {
+        if (sq.fired[j]) {
+          const up = (sq.mom[j] ?? 0) >= 0;
+          markers.push({ time: b.time as any, position: up ? "belowBar" : "aboveBar",
+                         color: up ? "#26a69a" : "#ef5350", shape: up ? "arrowUp" : "arrowDown", text: "SQZ释放" });
+        } else if (sq.on[j]) {
+          markers.push({ time: b.time as any, position: "belowBar", color: "#f7b500", shape: "circle", text: "" });
+        }
+      });
+      if (markers.length) {
+        const host = chart.addLineSeries({ color: "transparent", priceLineVisible: false, lastValueVisible: false });
+        host.setData(bars.map((b) => ({ time: b.time as any, value: b.close })));
+        host.applyOptions({ visible: false } as any);
+        host.setMarkers(markers.slice(-180));
       }
     }
 
@@ -191,7 +213,7 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, showAv, levels, compare]);
+  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, levels, compare]);
 
   return (
     <>
@@ -204,6 +226,9 @@ export default function Chart({
         </button>
         <button className={showAv ? "active" : ""} onClick={() => setShowAv((v) => !v)}>
           {showAv ? "✓ AVWAP" : "AVWAP"}
+        </button>
+        <button className={showSq ? "active" : ""} onClick={() => setShowSq((v) => !v)}>
+          {showSq ? "✓ Squeeze" : "Squeeze"}
         </button>
         {levels && levels.length > 0 && (
           <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>

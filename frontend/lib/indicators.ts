@@ -253,3 +253,35 @@ export function anchoredVwap(
   }
   return out;
 }
+
+/** TTM Squeeze:布林(20,2)完全收进 Keltner(20,1.5×ATR)= 波动挤压(蓄势);
+ *  释放 = 挤压解除首根;方向参考 12-26 动量。返回每根状态。 */
+export function ttmSqueeze(
+  highs: number[], lows: number[], closes: number[],
+): { on: boolean[]; fired: boolean[]; mom: Maybe[] } {
+  const n = closes.length;
+  const on: boolean[] = Array(n).fill(false);
+  const fired: boolean[] = Array(n).fill(false);
+  const basis = sma(closes, 20);
+  // 布林带宽
+  const dev: Maybe[] = Array(n).fill(null);
+  for (let i = 19; i < n; i++) {
+    const m = basis[i];
+    if (m == null) continue;
+    let s2 = 0;
+    for (let j = i - 19; j <= i; j++) s2 += (closes[j] - m) ** 2;
+    dev[i] = Math.sqrt(s2 / 20);
+  }
+  // Keltner:EMA20 ± 1.5×ATR20(简化用 SMA 中轨,与布林同基准更可比)
+  const tr: number[] = closes.map((c, i) =>
+    i === 0 ? highs[0] - lows[0] : Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+  const atr20 = sma(tr, 20);
+  for (let i = 19; i < n; i++) {
+    const m = basis[i], d = dev[i], a = atr20[i];
+    if (m == null || d == null || a == null) continue;
+    on[i] = m + 2 * d < m + 1.5 * a && m - 2 * d > m - 1.5 * a; // 布林上下轨都在 Keltner 内
+    if (i > 0 && !on[i] && on[i - 1]) fired[i] = true;
+  }
+  const mom: Maybe[] = macd(closes).line;
+  return { on, fired, mom };
+}
