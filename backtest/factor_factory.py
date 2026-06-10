@@ -79,7 +79,7 @@ def load_pit():
         return None
 
 
-def build_panel(start_year=2021, pit_filter: bool = True):
+def build_panel(start_year=2021, pit_filter: bool = True, tickers: list | None = None):
     """月度重平衡面板:dates(rebal 时间戳)、每期 {terminal: 矩阵列}、未来 H 日收益、基因子。
 
     pit_filter=True:每个 rebal 日只保留**当日确实在 S&P500 里**的票(membership_asof),
@@ -94,7 +94,7 @@ def build_panel(start_year=2021, pit_filter: bool = True):
     rebal_idx = list(range(260, len(cal) - H, H))
 
     panel = {}
-    for tk in sa.DEMO_UNIVERSE:
+    for tk in (tickers or sa.DEMO_UNIVERSE):
         d = datamod.load(tk)
         if not d or len(d.get("adjclose", [])) < 400:
             continue
