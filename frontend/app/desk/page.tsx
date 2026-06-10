@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
-  getAnalysisMd, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
+  getAnalysisMd, getChanStats, getEventHeat, getFundHoldings, getOvernight, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsRanks, getScores, getScreener,
   type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { nameOf } from "@/lib/markets";
@@ -68,6 +68,8 @@ export default function DeskPage() {
   const [mdClose, setMdClose] = useState<string | null>(null);
   const [heat, setHeat] = useState<EventHeatDoc | null>(null);
   useEffect(() => { getEventHeat().then(setHeat).catch(() => {}); }, []);
+  const [chanA, setChanA] = useState<{ symbol: string; kind: string; price: number }[]>([]);
+  useEffect(() => { getChanStats().then((d) => setChanA(d?.active ?? [])).catch(() => {}); }, []);
   const [ovn, setOvn] = useState<OvernightDoc | null>(null);
   useEffect(() => { getOvernight().then(setOvn).catch(() => {}); }, []);
   useEffect(() => {
@@ -312,6 +314,21 @@ export default function DeskPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* 缠论进行中信号(chan-stats 周更) */}
+          {chanA.length > 0 && (
+            <p className="src" style={{ margin: "4px 2px 8px" }}>
+              ☯ 缠论进行中:{chanA.slice(0, 14).map((a, i) => (
+                <span key={i}>{i > 0 && " · "}
+                  <Link href={`/symbol/?s=${encodeURIComponent("US:" + a.symbol)}`}
+                    style={{ color: a.kind.endsWith("B") ? UP : DOWN }}>
+                    {a.symbol} {({ "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" } as Record<string, string>)[a.kind] ?? a.kind}
+                  </Link>
+                </span>
+              ))}
+              <Link href="/tracker/" style={{ marginLeft: 8, color: "var(--accent)" }}>胜率表 →</Link>
+            </p>
           )}
 
           {/* 过滤 + 排序工具条 */}

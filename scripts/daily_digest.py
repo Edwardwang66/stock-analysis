@@ -224,6 +224,21 @@ def main() -> int:
         lines.append(f"## 🏆 ≥80 选股胜率(Winter·PG,{str(wr.get('generated_at', ''))[:10]})\n")
         lines.append(" · ".join(_wv(k) for k in ("d1", "d5", "d20")) + "\n")
 
+    # 3.8) 缠论进行中信号(chan-stats.json,每周六全历史重算)
+    chs = jload(ROOT / "feed" / "signals" / "chan-stats.json", None)
+    if chs and chs.get("active"):
+        kinds = {"1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖"}
+        buys = [a for a in chs["active"] if a["kind"].endswith("B")][:10]
+        sells = [a for a in chs["active"] if a["kind"].endswith("S")][:10]
+        lines.append("## ☯ 缠论进行中信号(最近3根内)\n")
+        if buys:
+            lines.append("买点:" + " · ".join(f"**{a['symbol']}** {kinds.get(a['kind'], a['kind'])}@{a['price']}" for a in buys))
+        if sells:
+            lines.append("卖点:" + " · ".join(f"**{a['symbol']}** {kinds.get(a['kind'], a['kind'])}@{a['price']}" for a in sells))
+        st3b = (chs.get("stats") or {}).get("3B", {}).get("d20", {})
+        if st3b.get("win_rate") is not None:
+            lines.append(f"\n_历史参考:三买 +20根胜率 {st3b['win_rate']*100:.0f}%(n={st3b['n']});全表见 /tracker。非投资建议。_\n")
+
     # 4) 市场快照
     mh = jload(MARKET_HIST, [])
     if mh:
