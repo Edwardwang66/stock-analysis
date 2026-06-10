@@ -7,7 +7,7 @@ import SearchBox from "@/components/SearchBox";
 import { checkAlerts, clearTriggered, notify, type PriceAlert } from "@/lib/alerts";
 import { getAlerts } from "@/lib/alerts";
 import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
-import { getIndex, getRepoWatchlist } from "@/lib/feed";
+import { getIndex, getIntradayLive, getRepoWatchlist, type IntradayDoc } from "@/lib/feed";
 import { GROUP_ORDER, INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { marketStatus } from "@/lib/marketstatus";
@@ -57,6 +57,16 @@ export default function Home() {
   }, []);
   const pickTab = (t: string) => { setTab(t); try { localStorage.setItem(LS_TAB, t); } catch { /* ignore */ } };
   const pickSort = (s: SortMode) => { setSortMode(s); try { localStorage.setItem(LS_SORT, s); } catch { /* ignore */ } };
+
+  // 盘中事件跑马灯(live 分支,交易时段才有;90s 轮询足够轻)
+  const [liveEvents, setLiveEvents] = useState<IntradayDoc["events"]>([]);
+  useEffect(() => {
+    let alive = true;
+    const load = () => getIntradayLive().then((d) => { if (alive) setLiveEvents(d?.events ?? []); }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 90_000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, []);
 
   // 加密恐惧贪婪指数(免费 CORS 源,失败静默)
   const [fng, setFng] = useState<FearGreed | null>(null);
@@ -251,6 +261,19 @@ export default function Home() {
           );
         })}
       </div>
+
+      {liveEvents.length > 0 && (
+        <div className="movers" style={{ marginTop: -6 }}>
+          <span className="src">⚡ 盘中</span>
+          {liveEvents.slice(0, 6).map((e, i) => (
+            <Link key={i} href={`/symbol/?s=${encodeURIComponent(e.symbol)}`}
+              className={`mover ${e.type === "新低" ? "down" : e.type === "新高" ? "up" : ""}`}>
+              {e.type} {nameOf(e.symbol)} {e.detail.replace("5分钟 ", "")}
+            </Link>
+          ))}
+          <Link href="/desk/" className="src" style={{ color: "var(--accent)" }}>全部 →</Link>
+        </div>
+      )}
 
       {firedAlerts.length > 0 && (
         <div className="hint" style={{ borderColor: "var(--up)", background: "rgba(38,166,154,.08)" }}>

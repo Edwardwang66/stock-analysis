@@ -44,6 +44,17 @@ export default function ScreenerPage() {
         <span className="tag">标普500 + 纳指100 · 非 LLM 规则化评分</span>
       </div>
 
+      {data?.date && (
+        <div className="hint" style={{ background: "rgba(76,141,255,.08)", borderColor: "rgba(76,141,255,.35)" }}>
+          🤖 当日 OpenClaw 汇总报告:
+          <a href={`https://github.com/Edwardwang66/stock-analysis/blob/main/feed/screener/analysis-${data.date}.md`}
+            target="_blank" rel="noreferrer" style={{ color: "var(--accent)", marginLeft: 6 }}>
+            analysis-{data.date}.md →
+          </a>
+          <span className="src" style={{ marginLeft: 8 }}>(同步嵌入每日 Issue 日报;盘前/收盘前版本同目录)</span>
+        </div>
+      )}
+
       {loading ? <div className="loading">加载中…</div> : !data || !data.items.length ? (
         <div className="hint">暂无清单。每个交易日美股收盘后(约北京时间次日 06:30)自动生成;也可在 GitHub Actions 手动触发 <code>Daily screener</code>。</div>
       ) : (
