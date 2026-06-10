@@ -10,7 +10,7 @@ import { getCachedQuotesSync, getQuotes, HAS_BACKEND, type Quote } from "@/lib/d
 import { getIndex } from "@/lib/feed";
 import { INDEX_SYMBOLS, MARKETS, MARKET_LABEL, marketOf, nameOf, symbolsForTab } from "@/lib/markets";
 import { marketStatus } from "@/lib/marketstatus";
-import { getWatchlist } from "@/lib/watchlist";
+import { exportUserData, getWatchlist, importUserData } from "@/lib/watchlist";
 
 type SortMode = "default" | "gainers" | "losers";
 const LS_TAB = "ui:tab:v1";
@@ -276,7 +276,23 @@ export default function Home() {
 
       {watch.length > 0 && (
         <>
-          <h2 className="block-title">⭐ 我的自选</h2>
+          <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            ⭐ 我的自选
+            <button className="linklike" onClick={() => exportUserData()}>导出备份</button>
+            <label className="linklike" style={{ cursor: "pointer" }}>
+              导入
+              <input type="file" accept="application/json" style={{ display: "none" }}
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  try {
+                    const n = importUserData(await f.text());
+                    alert(`导入成功,新增 ${n} 只自选`);
+                  } catch (err: any) { alert(`导入失败:${err?.message || err}`); }
+                  e.target.value = "";
+                }} />
+            </label>
+          </h2>
           {renderCards(watch)}
         </>
       )}
