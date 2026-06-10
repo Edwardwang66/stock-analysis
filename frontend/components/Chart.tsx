@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createChart, ColorType, LineStyle, CrosshairMode, PriceScaleMode, type IChartApi } from "lightweight-charts";
 import type { Bar } from "@/lib/datasource";
 import { anchoredVwap, sma, superTrend, tdSetup, ttmSqueeze, vsaSignals } from "@/lib/indicators";
 import { computeChan } from "@/lib/chan";
+import { usePref } from "@/lib/prefs";
 
 const MA = [
   { period: 20, color: "#4c8dff" },
@@ -32,15 +33,15 @@ export default function Chart({
   const ref = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const [showChan, setShowChan] = useState(false);
-  const [showTd, setShowTd] = useState(true); // 九转默认开(方法论 #1)
-  const [showSt, setShowSt] = useState(false); // SuperTrend(方法论 #3)
-  const [showLv, setShowLv] = useState(false); // 支撑压力(周 Pivot,方法论 #6)
-  const [showAv, setShowAv] = useState(false); // 锚定VWAP(52周低/高双锚,方法论二期)
-  const [showSq, setShowSq] = useState(false); // TTM Squeeze(挤压=蓄势,释放=变盘)
-  const [showFib, setShowFib] = useState(false); // 自动斐波回撤(252根高低点)
-  const [showIchi, setShowIchi] = useState(false); // Ichimoku 简版(转换/基准/云)
-  const [showVsa, setShowVsa] = useState(false); // VSA 量价信号(四类)
+  // 指标开关持久化:刷新/下次访问保持上次组合(Hyperliquid 式偏好记忆)。
+  // td=九转(默认开,方法论 #1) st=SuperTrend lv=支撑压力(周Pivot) av=锚定VWAP
+  // sq=TTM Squeeze fib=自动斐波 ichi=Ichimoku简版 vsa=量价信号 chan=缠论结构
+  const [flags, setFlags] = usePref("chart:overlays:v1", {
+    chan: false, td: true, st: false, lv: false, av: false, sq: false, fib: false, ichi: false, vsa: false,
+  });
+  const toggle = (k: keyof typeof flags) => setFlags((f) => ({ ...f, [k]: !f[k] }));
+  const { chan: showChan, td: showTd, st: showSt, lv: showLv, av: showAv,
+          sq: showSq, fib: showFib, ichi: showIchi, vsa: showVsa } = flags;
 
   useEffect(() => {
     if (!ref.current || !bars.length) return;
@@ -275,38 +276,38 @@ export default function Chart({
 
     chart.timeScale().fitContent();
     return () => { chart.remove(); chartRef.current = null; };
-  }, [bars, showChan, showTd, showSt, showLv, showAv, showSq, showFib, showIchi, showVsa, levels, compare]);
+  }, [bars, flags, levels, compare]);
 
   return (
     <>
       <div className="ranges" style={{ justifyContent: "flex-end" }}>
-        <button className={showTd ? "active" : ""} onClick={() => setShowTd((v) => !v)}>
+        <button className={showTd ? "active" : ""} onClick={() => toggle("td")}>
           {showTd ? "✓ 神奇九转" : "神奇九转"}
         </button>
-        <button className={showSt ? "active" : ""} onClick={() => setShowSt((v) => !v)}>
+        <button className={showSt ? "active" : ""} onClick={() => toggle("st")}>
           {showSt ? "✓ SuperTrend" : "SuperTrend"}
         </button>
-        <button className={showAv ? "active" : ""} onClick={() => setShowAv((v) => !v)}>
+        <button className={showAv ? "active" : ""} onClick={() => toggle("av")}>
           {showAv ? "✓ AVWAP" : "AVWAP"}
         </button>
-        <button className={showSq ? "active" : ""} onClick={() => setShowSq((v) => !v)}>
+        <button className={showSq ? "active" : ""} onClick={() => toggle("sq")}>
           {showSq ? "✓ Squeeze" : "Squeeze"}
         </button>
-        <button className={showFib ? "active" : ""} onClick={() => setShowFib((v) => !v)}>
+        <button className={showFib ? "active" : ""} onClick={() => toggle("fib")}>
           {showFib ? "✓ 斐波" : "斐波"}
         </button>
-        <button className={showIchi ? "active" : ""} onClick={() => setShowIchi((v) => !v)}>
+        <button className={showIchi ? "active" : ""} onClick={() => toggle("ichi")}>
           {showIchi ? "✓ 一目" : "一目"}
         </button>
-        <button className={showVsa ? "active" : ""} onClick={() => setShowVsa((v) => !v)}>
+        <button className={showVsa ? "active" : ""} onClick={() => toggle("vsa")}>
           {showVsa ? "✓ VSA" : "VSA"}
         </button>
         {levels && levels.length > 0 && (
-          <button className={showLv ? "active" : ""} onClick={() => setShowLv((v) => !v)}>
+          <button className={showLv ? "active" : ""} onClick={() => toggle("lv")}>
             {showLv ? "✓ 支撑压力" : "支撑压力"}
           </button>
         )}
-        <button className={showChan ? "active" : ""} onClick={() => setShowChan((v) => !v)}>
+        <button className={showChan ? "active" : ""} onClick={() => toggle("chan")}>
           {showChan ? "✓ 缠论结构" : "缠论结构"}
         </button>
       </div>

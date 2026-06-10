@@ -121,6 +121,58 @@ th { color: var(--muted); font-weight: 500; }
 .range52-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
 .err { color: var(--down); padding: 12px; background: rgba(239,83,80,.1); border-radius: 8px; }
 
+/* ---- Hyperliquid 式交互组件 ---- */
+/* 全站常驻自选行情条 */
+.tickerbar { display: flex; align-items: center; gap: 10px; padding: 7px 14px; background: var(--panel);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+.tb-label { font-size: 11px; color: var(--muted); white-space: nowrap; flex: none; }
+.tb-scroll { display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none; }
+.tb-scroll::-webkit-scrollbar { display: none; }
+.tb-item { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-size: 12px; }
+.tb-item:hover .tb-name { color: var(--accent); }
+.tb-name { color: var(--text); }
+.tb-price, .tb-pct { font-variant-numeric: tabular-nums; }
+.tb-pct { font-size: 11px; }
+
+/* 个股页标的切换器(标题即入口) */
+.symswitch { position: relative; }
+.symswitch-h1 { font-size: 20px; margin: 0; }
+.symswitch-title { background: transparent; border: 0; color: var(--text); font: inherit; font-weight: 700;
+  cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 6px; }
+.symswitch-title:hover { color: var(--accent); }
+.symswitch-title .caret { font-size: 11px; color: var(--muted); }
+.symswitch-drop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 60; width: 360px; max-width: calc(100vw - 32px);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.5); overflow: hidden; }
+.symswitch-drop input { width: 100%; background: var(--bg); border: 0; border-bottom: 1px solid var(--border);
+  color: var(--text); padding: 11px 13px; font-size: 13px; outline: none; }
+.symswitch-list { max-height: 330px; overflow-y: auto; }
+.symswitch-group { font-size: 11px; color: var(--muted); padding: 8px 13px 3px; }
+.symswitch-row { display: flex; align-items: center; gap: 8px; padding: 8px 13px; cursor: pointer; font-size: 13px; }
+.symswitch-row.hi { background: rgba(76,141,255,.15); }
+.symswitch-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.symswitch-row .cd { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.symswitch-row .pc { font-variant-numeric: tabular-nums; font-size: 12px; white-space: nowrap; }
+
+/* 一行统计条 */
+.statbar { display: flex; gap: 22px; align-items: stretch; flex-wrap: wrap; padding: 10px 14px; margin-top: 10px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+.stat-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; justify-content: center; }
+.stat-item .lbl { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.stat-item .val { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-item.price .val { font-size: 21px; font-weight: 700; line-height: 1.1; }
+.stat-item.up .val { color: var(--up); }
+.stat-item.down .val { color: var(--down); }
+.mini52 { display: inline-flex; align-items: center; gap: 7px; }
+.mini52-track { position: relative; width: 64px; height: 5px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--down), #f7b500, var(--up)); opacity: .9; }
+.mini52-dot { position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+  background: #fff; border: 1px solid var(--bg); transform: translate(-50%, -50%); }
+@media (max-width: 640px) {
+  .statbar { flex-wrap: nowrap; overflow-x: auto; gap: 16px; scrollbar-width: none; }
+  .statbar::-webkit-scrollbar { display: none; }
+}
+
 /* 骨架屏(加载占位,替代文字"加载中") */
 .skeleton {
   border-radius: 6px;

@@ -9,6 +9,8 @@ import News from "@/components/News";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
 import Fundamentals from "@/components/Fundamentals";
+import StatBar from "@/components/StatBar";
+import SymbolSwitcher from "@/components/SymbolSwitcher";
 import { addAlert, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
 import { subscribeCryptoLive } from "@/lib/livePrice";
 import { getExtendedQuote, getOHLCV, getQuote, type Bar, type ExtendedQuote, type Quote } from "@/lib/datasource";
@@ -21,6 +23,7 @@ import { useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
 import { marketStatus as mktStatus } from "@/lib/marketstatus";
 import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
+import { usePref } from "@/lib/prefs";
 
 const RANGES = ["6mo", "1y", "2y", "5y"];
 const INTERVALS = [{ k: "1d", label: "日线" }, { k: "1wk", label: "周线" }, { k: "1h", label: "小时" }];
@@ -46,8 +49,9 @@ function SymbolView() {
   const night = useNightQuotes();
   const params = useSearchParams();
   const symbol = (params.get("s") || "US:AAPL").toUpperCase();
-  const [range, setRange] = useState("2y");
-  const [interval, setInterval] = useState("1d");
+  // 周期/范围持久化:上次看周线这次还是周线(Hyperliquid 式偏好记忆)
+  const [range, setRange] = usePref("symbol:range", "2y");
+  const [interval, setInterval] = usePref("symbol:interval", "1d");
   const [bars, setBars] = useState<Bar[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [an, setAn] = useState<Analysis | null>(null);
@@ -183,53 +187,24 @@ function SymbolView() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <h1>{nameOf(symbol, lang)}</h1>
-        {(() => {
-          const nq = night.map[symbol];
-          if (!nq || mktStatus(symbol.split(":")[0]).open) return null;
-          return (
-            <span className="badge" title={`Hyperliquid 永续 ${nq.hlSymbol} · 实证 corr 0.965 · 资金费率 ${nq.fundingApr != null ? (nq.fundingApr * 100).toFixed(0) + "%" : "—"}`}
-              style={{ marginLeft: 10, fontSize: 12, color: (nq.chg24h ?? 0) >= 0 ? "#26a69a" : "#ef5350" }}>
-              🌙 夜盘 {nq.mark.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              {nq.chg24h != null && ` ${nq.chg24h >= 0 ? "+" : ""}${(nq.chg24h * 100).toFixed(2)}% (24h)`}
-            </span>
-          );
-        })()}
+        <SymbolSwitcher symbol={symbol} />
         <span className="muted">{symbol}</span>
         <button className="btn" style={{ background: starred ? "var(--accent)" : "transparent", border: "1px solid var(--border)" }}
           onClick={() => { toggleWatchlist(symbol); setStarred(inWatchlist(symbol)); }}>
           {starred ? "★ 已自选" : "☆ 加入自选"}
         </button>
-        {quote && (
-          <>
-            <span className={`price ${dir}`} style={{ fontSize: 22 }}>{fmt(quote.price)}</span>
-            <span className={dir}>
-              {quote.change != null ? `${quote.change >= 0 ? "+" : ""}${fmt(quote.change)} ` : ""}
-              {quote.changePct != null ? `${quote.changePct >= 0 ? "+" : ""}${quote.changePct.toFixed(2)}%` : ""}
-            </span>
-            <span className="muted" style={{ fontSize: 13 }}>
-              {symbol.startsWith("CRYPTO:") ? "24h" : "今日"} 最高 {fmt(quote.high)} · 最低 {fmt(quote.low)}
-              {!symbol.startsWith("CRYPTO:") && quote.change != null && quote.price != null && ` · 昨收 ${fmt(quote.price - quote.change)}`}
-            </span>
-            <span className="muted">{quote.currency} · 来源 {quote.source}</span>
-          </>
-        )}
       </div>
 
-      {ext && (
-        <div className="ext-quote">
-          <span className="badge">{ext.session}</span>
-          <strong className={ext.change >= 0 ? "up" : "down"}>
-            {ext.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-            {" "}{ext.change >= 0 ? "+" : ""}{ext.change.toFixed(2)}
-            {" "}{ext.changePct >= 0 ? "+" : ""}{ext.changePct.toFixed(2)}%
-          </strong>
-          <span className="src">
-            {new Date(ext.at * 1000).toLocaleTimeString("zh-CN", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}(美东)
-            · {ext.session === "盘后" ? "较今日收盘" : "较昨收"} · 免费源无夜盘
-          </span>
-        </div>
-      )}
+      {/* Hyperliquid 式一行统计条:现价/涨跌/高低/昨收/量/52周/盘前盘后/夜盘 */}
+      <StatBar
+        symbol={symbol} quote={quote} ext={ext}
+        night={(() => {
+          const nq = night.map[symbol];
+          return nq && !mktStatus(symbol.split(":")[0]).open ? nq : null;
+        })()}
+        volume={interval === "1d" && bars.length ? bars[bars.length - 1].volume : null}
+        high52={ind.high_52w ?? null} low52={ind.low_52w ?? null}
+      />
 
       {err && <div className="err">加载失败:{err}(后端首次访问可能在唤醒,约 30 秒;请稍候刷新重试)</div>}
 
