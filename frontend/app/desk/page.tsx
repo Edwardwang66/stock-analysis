@@ -7,6 +7,7 @@ import {
   type CryptoState, type EventHeatDoc, type FeedIndex, type OvernightDoc, type FundHoldings, type IntradayDoc, type MarketSnapshot, type NotesIndex, type RsTable, type ScoreTable, type ScreenerList,
 } from "@/lib/feed";
 import { cnLimitTag, nameOf } from "@/lib/markets";
+import { inWatchlist, toggleWatchlist } from "@/lib/watchlist";
 import { sectorLabel, useLang } from "@/lib/names";
 import { sectorOf } from "@/lib/sectors";
 import TzSelect from "@/components/TzSelect";
@@ -54,6 +55,7 @@ export default function DeskPage() {
   const lang = useLang();
   const night = useNightQuotes();
   const [wl, setWl] = useState<string[]>([]);
+  const [localWl, setLocalWl] = useState<Set<string>>(new Set());
   const [scr, setScr] = useState<ScreenerList | null>(null);
   const [scores, setScores] = useState<ScoreTable | null>(null);
   const [rs, setRs] = useState<RsTable | null>(null);
@@ -251,6 +253,13 @@ export default function DeskPage() {
     return () => { alive = false; window.clearInterval(id); };
   }, [rows]);
 
+  useEffect(() => {
+    const sync = () => setLocalWl(new Set(rows.filter((r) => inWatchlist(r.symbol)).map((r) => r.symbol)));
+    sync();
+    window.addEventListener("watchlist-changed", sync);
+    return () => window.removeEventListener("watchlist-changed", sync);
+  }, [rows]);
+
   const noteMap = useMemo(() => {
     const m = new Map<string, { date: string; stance: string }>();
     for (const n of notes?.symbols ?? []) m.set(n.symbol, { date: n.date, stance: n.stance });
@@ -321,6 +330,7 @@ export default function DeskPage() {
         <a href="https://github.com/Edwardwang66/stock-analysis/issues?q=is%3Aissue+label%3Adaily-digest" target="_blank" rel="noreferrer"
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
         <Link href="/reports/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>📜 报告</Link>
+        <Link href="/alerts/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>⏰</Link>
         <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
         <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
         <LangSelect />
@@ -679,6 +689,11 @@ export default function DeskPage() {
                   return (
                     <tr key={r.symbol}>
                       <td>
+                        <button className="linklike" title={localWl.has(r.symbol) ? "移出本地自选" : "加入本地自选"}
+                          style={{ marginRight: 4, color: localWl.has(r.symbol) ? "#f7b500" : MUT, fontSize: 13 }}
+                          onClick={() => { toggleWatchlist(r.symbol); }}>
+                          {localWl.has(r.symbol) ? "★" : "☆"}
+                        </button>
                         <Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{nameOf(r.symbol, lang)}</Link>
                         <span className="src" style={{ marginLeft: 6 }}>{r.symbol.replace(/^US:/, "")}</span>
                       </td>
