@@ -117,6 +117,30 @@ export default function PortfolioPage() {
 
       {rows.length > 0 ? (
         <>
+          {/* 持仓占比横条(按市值,跨币种未折算仅示意) */}
+          {(() => {
+            const withMv = rows.filter((r) => r.mv != null && r.mv > 0);
+            if (withMv.length < 2) return null;
+            const total = withMv.reduce((s2, r) => s2 + (r.mv as number), 0);
+            const palette = ["#4c8dff", "#26a69a", "#f7b500", "#ab47bc", "#26c6da", "#ef5350", "#9ccc65", "#ff8a65", "#7986cb", "#787b86"];
+            const sorted = [...withMv].sort((a, b) => (b.mv as number) - (a.mv as number));
+            return (
+              <div className="section" style={{ marginBottom: 12 }}>
+                <h2>占比<span className="src" style={{ marginLeft: 8 }}>按市值 · 跨币种未折算</span></h2>
+                <div style={{ display: "flex", height: 14, borderRadius: 7, overflow: "hidden", border: "1px solid var(--border)" }}>
+                  {sorted.map((r, i) => (
+                    <div key={r.id} title={`${nameOf(r.symbol, lang)} ${((r.mv as number) / total * 100).toFixed(1)}%`}
+                      style={{ width: `${(r.mv as number) / total * 100}%`, background: palette[i % palette.length] }} />
+                  ))}
+                </div>
+                <div className="src" style={{ fontSize: 11, marginTop: 5, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {sorted.slice(0, 8).map((r, i) => (
+                    <span key={r.id}><span style={{ color: palette[i % palette.length] }}>■</span> {nameOf(r.symbol, lang)} {((r.mv as number) / total * 100).toFixed(0)}%</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           <div className="section" style={{ overflowX: "auto" }}>
             <h2>持仓明细</h2>
             <table>
