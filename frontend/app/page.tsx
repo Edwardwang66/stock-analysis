@@ -346,6 +346,27 @@ export default function Home() {
         </div>
       )}
 
+      {liveEvents.length === 0 && night.usClosed && Object.keys(night.map).length > 0 && (() => {
+        const movers = Object.entries(night.map)
+          .filter(([, v]) => v.chg24h != null && Math.abs(v.chg24h) >= 0.04)
+          .sort((a, b) => Math.abs(b[1].chg24h!) - Math.abs(a[1].chg24h!))
+          .slice(0, 6);
+        if (!movers.length) return null;
+        return (
+          <div className="movers" style={{ marginTop: -6 }}>
+            <span className="src">🌙 夜盘异动</span>
+            {movers.map(([sym, v]) => (
+              <Link key={sym} href={`/symbol/?s=${encodeURIComponent(sym)}`}
+                className={`mover ${v.chg24h! >= 0 ? "up" : "down"}`}>
+                {nameOf(sym, lang)} {v.chg24h! >= 0 ? "+" : ""}{(v.chg24h! * 100).toFixed(1)}%
+              </Link>
+            ))}
+            <span className="src">24h · HIP-3 永续</span>
+            <Link href="/desk/" className="src" style={{ color: "var(--accent)" }}>全部 →</Link>
+          </div>
+        );
+      })()}
+
       {firedAlerts.length > 0 && (
         <div className="hint" style={{ borderColor: "var(--up)", background: "rgba(38,166,154,.08)" }}>
           ⏰ 价格提醒触发:{firedAlerts.map((a) => `${nameOf(a.symbol, lang)} ${a.dir === "above" ? "≥" : "≤"} ${a.target}(现 ${a.triggeredPrice})`).join(" · ")}
