@@ -64,8 +64,16 @@
   → 偏差可测了;现有「净alpha≈0/负」结论消偏差后只会更差,方向稳健
 - 缓存 pit_sp500.json 可复现;membership_asof() 供后续横截面研究换时点 universe
 
+## Cycle 10(2026-06-10)— 因子工厂接入时点成分(PIT)
+- factor_factory.build_panel(pit_filter=True):每个 rebal 日剔除「当日不在 S&P500」的票
+  (消指数成员前视/未来赢家泄漏);剔除统计入日志
+- 修一个被宽 except 吞掉的真 bug:load_pit 缺 import json → NameError 被吞返回 None
+  (教训:窄化异常捕获,不吞 NameError)
+- **诚实阴性发现:当前 DEMO 面板剔除 0/7360**(老牌大盘股全程在指数)→ 过滤器已装好,
+  咬合点在含近年新增成分的广 universe(ABNB/APP 等)
+
 ## 待办池(按优先级)
-1. 横截面研究接入时点成分(membership_asof,缺失率入报告)
+1. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
