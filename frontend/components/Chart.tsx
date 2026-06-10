@@ -113,9 +113,10 @@ export default function Chart({
         }
       });
       if (markers.length) {
-        const host = chart.addLineSeries({ color: "transparent", priceLineVisible: false, lastValueVisible: false });
+        // 注:series 不能 visible:false(markers 会被一并隐藏);用全透明线承载标记
+        const host = chart.addLineSeries({ color: "rgba(0,0,0,0)",
+          priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
         host.setData(bars.map((b) => ({ time: b.time as any, value: b.close })));
-        host.applyOptions({ visible: false } as any);
         host.setMarkers(markers.slice(-180));
       }
     }
