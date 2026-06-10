@@ -734,6 +734,11 @@ def archive_pg() -> None:
     msg = (r.stdout or r.stderr).strip()
     if msg:
         print(f"[daily] pg {msg}")
+    r = subprocess.run([sys.executable, "scripts/winter_pg/winrate.py", "--if-due"], cwd=fl.REPO_ROOT,
+                       capture_output=True, text=True)
+    msg = (r.stdout or r.stderr).strip()
+    if msg and "not due" not in msg:
+        print(f"[daily] winrate {msg}")
 
 
 def main():

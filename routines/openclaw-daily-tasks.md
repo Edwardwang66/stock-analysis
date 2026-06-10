@@ -41,6 +41,8 @@
 - [ ] note 的 thesis/view 须含方法论结论:TD9 当前计数、52 周位置、SuperTrend(10,3) 方向、
       缠论笔方向与背驰迹象(口径见 [`methodology.md`](methodology.md))
 - [ ] (量化用)拉市场快照:`feed/market/state.json`、`feed/signals/latest.json`、`feed/market/history.json`
+- [ ] **每周五收盘后**:运行 `python scripts/winter_pg/winrate.py` 产出
+      `feed/screener/winrate.json`(≥80 picks 的 d1/d5/d20 胜率、平均收益、最佳/最差、80-84/85-89/90+ 分段)。
 
 ---
 

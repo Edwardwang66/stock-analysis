@@ -182,7 +182,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十三轮 · RS 榜上线 + 数据库红利第二弹任务
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 已新增 scripts/winter_pg/winrate.py,并挂入 openclaw_daily 周五收盘后自动生成 feed/screener/winrate.json)
 
 1. **RS 1-99 已上线**(知会):daily_screener 每天对全宇宙(标普500∪纳指100)算
    IBD 加权动量百分位 → `feed/signals/rs-ranks.json`;看板 /desk 新增 RS 列与 RS↓ 排序。
