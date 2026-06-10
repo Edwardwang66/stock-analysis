@@ -8,7 +8,20 @@ export interface Fractal { time: number; price: number; type: "top" | "bottom"; 
 export interface Stroke { from: Fractal; to: Fractal; dir: "up" | "down"; area: number }
 export interface Pivot { zg: number; zd: number; startTime: number; endTime: number }
 export interface BSPoint { time: number; price: number; kind: "1B" | "2B" | "3B" | "1S" | "2S" | "3S"; detail: string }
-export interface ChanResult { fractals: Fractal[]; strokes: Stroke[]; pivots: Pivot[]; points: BSPoint[]; note: string }
+/** 背驰度(原文 24 课口径,methodology §4):A、C 同向笔对比,B 段 |DIF| 须回拉。 */
+export interface Divergence {
+  side: "top" | "bottom";        // 顶背驰 / 底背驰
+  degree: number;                // 1 − 面积(C)/面积(A),≥0.3 显著
+  priceExtended: boolean;        // C 创新高/新低
+  difPull: boolean;              // B 段 min|DIF| < 0.25 × A∪C 峰值(回拉确认)
+  difPeakShrink: boolean;        // C 段 |DIF| 峰值 < A 段(动能衰竭)
+  significant: boolean;          // 全条件成立且 degree ≥ 0.3
+  text: string;
+}
+export interface ChanResult {
+  fractals: Fractal[]; strokes: Stroke[]; pivots: Pivot[]; points: BSPoint[];
+  divergence: Divergence | null; note: string;
+}
 
 interface MK { time: number; high: number; low: number; idx: number } // 合并后K线
 
@@ -119,6 +132,55 @@ function buySellPoints(bars: Bar[], st: Stroke[], pivots: Pivot[]): BSPoint[] {
     .sort((a, b) => a.time - b.time);
 }
 
+// 背驰度(methodology §4,原文 24 课):A、C 同向两笔,B 为其间反向笔。
+// degree = 1 − |面积C|/|面积A|;确认:C 创新高/低 且 B 段 |DIF| 回拉 且 C 段 |DIF| 峰值缩。
+function computeDivergence(
+  st: Stroke[], dif: (number | null)[], idxByTime: Map<number, number>,
+): Divergence | null {
+  if (st.length < 3) return null;
+  const C = st[st.length - 1];
+  // 找上一笔同向的 A(中间隔着反向 B)
+  let A: Stroke | null = null, B: Stroke | null = null;
+  for (let i = st.length - 2; i >= 1; i--) {
+    if (st[i].dir !== C.dir) { B = st[i]; continue; }
+    A = st[i]; break;
+  }
+  if (!A || !B || Math.abs(A.area) < 1e-9) return null;
+
+  const side: "top" | "bottom" = C.dir === "up" ? "top" : "bottom";
+  const priceExtended = C.dir === "up" ? C.to.price > A.to.price : C.to.price < A.to.price;
+  const degree = 1 - Math.abs(C.area) / Math.abs(A.area);
+
+  const absDif = (s: Stroke, fn: (vals: number[]) => number): number => {
+    const a = idxByTime.get(s.from.time) ?? 0, b = idxByTime.get(s.to.time) ?? 0;
+    const vals: number[] = [];
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) {
+      const d = dif[i];
+      if (d != null) vals.push(Math.abs(d));
+    }
+    return vals.length ? fn(vals) : 0;
+  };
+  const peakA = absDif(A, (v) => Math.max(...v));
+  const peakC = absDif(C, (v) => Math.max(...v));
+  const minB = absDif(B, (v) => Math.min(...v));
+  const peak = Math.max(peakA, peakC);
+  const difPull = peak > 0 && minB < 0.25 * peak;
+  const difPeakShrink = peakC < peakA;
+  const significant = degree >= 0.3 && priceExtended && difPull && difPeakShrink;
+
+  const label = side === "top" ? "顶背驰" : "底背驰";
+  let text: string;
+  if (significant) {
+    text = `${label}显著(背驰度 ${(degree * 100).toFixed(0)}%):进入背驰段,关注其后次级别回试。`;
+  } else if (degree > 0 && priceExtended) {
+    const miss = [!difPull && "B段DIF未回拉", !difPeakShrink && "DIF峰值未缩", degree < 0.3 && "面积缩幅不足"].filter(Boolean).join("、");
+    text = `${label}迹象(背驰度 ${(degree * 100).toFixed(0)}%,未确认:${miss})。`;
+  } else {
+    text = `当前${C.dir === "up" ? "上涨" : "下跌"}笔动能${degree <= 0 ? "未衰竭" : "衰竭中"},无背驰。`;
+  }
+  return { side, degree: Math.round(degree * 1000) / 1000, priceExtended, difPull, difPeakShrink, significant, text };
+}
+
 // 4) 中枢:连续 3 笔的重叠区间
 function pivots(st: Stroke[]): Pivot[] {
   const ps: Pivot[] = [];
@@ -135,21 +197,29 @@ function pivots(st: Stroke[]): Pivot[] {
 }
 
 export function computeChan(bars: Bar[]): ChanResult {
-  if (bars.length < 8) return { fractals: [], strokes: [], pivots: [], points: [], note: "数据不足,无法识别缠论结构" };
+  if (bars.length < 8) return { fractals: [], strokes: [], pivots: [], points: [], divergence: null, note: "数据不足,无法识别缠论结构" };
   const mk = mergeInclusion(bars);
   const fs = fractals(mk);
   const st = strokes(fs, mk);
 
-  // 计算每笔的 MACD 能量面积(供背驰判定)
+  // 计算每笔的 MACD 能量面积(原文口径:上涨段只累计红柱、下跌段只累计绿柱,按笔端点截取)
   const closes = bars.map((b) => b.close);
-  const { hist } = macd(closes);
+  const { hist, line: dif } = macd(closes);
   const idxByTime = new Map(bars.map((b, i) => [b.time, i]));
   for (const s of st) {
     const a = idxByTime.get(s.from.time) ?? 0, b = idxByTime.get(s.to.time) ?? 0;
     let sum = 0;
-    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { const h = hist[i]; if (h != null) sum += h; }
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) {
+      const h = hist[i];
+      if (h == null) continue;
+      if (s.dir === "up" && h > 0) sum += h;        // 红柱
+      else if (s.dir === "down" && h < 0) sum += h; // 绿柱
+    }
     s.area = sum;
   }
+
+  // 背驰度(笔对笔,带 B 段 |DIF| 回拉验证)
+  const divergence = computeDivergence(st, dif, idxByTime);
 
   const ps = pivots(st);
   const points = buySellPoints(bars, st, ps);
@@ -168,6 +238,7 @@ export function computeChan(bars: Bar[]): ChanResult {
     const last = points[points.length - 1];
     note += `最近买卖点:${last.kind}(${last.detail})。`;
   }
+  if (divergence) note += divergence.text;
   note += " 简化缠论,仅供参考,非投资建议。";
-  return { fractals: fs, strokes: st, pivots: ps, points, note };
+  return { fractals: fs, strokes: st, pivots: ps, points, divergence, note };
 }

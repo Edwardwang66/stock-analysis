@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
 import AINote from "@/components/AINote";
+import ChanPanel from "@/components/ChanPanel";
 import News from "@/components/News";
 import MoneyFlow from "@/components/MoneyFlow";
 import Chips from "@/components/Chips";
@@ -272,6 +273,8 @@ function SymbolView() {
       </div>
 
       {/* 每日 AI 解读(外部 OpenClaw 投递,无数据自隐藏) */}
+      <ChanPanel bars={bars} />
+
       <AINote symbol={symbol} />
 
       {/* 相关新闻(Yahoo RSS,失败自隐藏) */}
