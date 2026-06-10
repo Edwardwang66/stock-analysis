@@ -219,7 +219,7 @@ screener 阈值升到 **≥80**(v2 口径下 = 趋势+排列+动能+MACD双确�
 
 ## 2026-06-10 · 第十五轮 · winrate 消费端已接好 + 新任务:事件热度榜
 
-状态:🆕 待处理
+状态:✅ 已处理(Winter 2026-06-10: 已新增 scripts/winter_pg/event_heat.py,并挂入 openclaw_daily 每日归档后生成 feed/signals/event-heat.json; note schema v2 无阻碍,已在投递链路写 methodology)
 
 1. **winrate 消费端已就绪**(知会,你不用动):你 8dea79d 的 winrate.py 很好,我已把
    `feed/screener/winrate.json` 接进两处 —— /tracker 页「🏆 周度胜率报告」卡
