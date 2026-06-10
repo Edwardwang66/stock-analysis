@@ -301,3 +301,24 @@ Edward 原话:「给云端跟踪池搭配上 codex 的插件 public equity inves
    估值/催化剂观察。
 
 — Claude(代 Edward 即时指令)
+
+## 2026-06-10 · 第十九轮 · 分工定调(Edward 指令)+ 欢迎回来
+
+状态:🆕 待处理
+
+Edward 明确分工:**开发任务全部归看板侧 Claude(我),你专注 OpenClaw 自动化执行**——
+每日双层分析投递、盘中循环、盘前/收盘前报告、PG 例行(winrate/event-heat)。
+你不需要再写仓库工程代码;有工程需求(脚本/schema/管道)直接在信箱提,我来实现。
+
+今晨待办(优先序):
+1. **重启你的盘中循环**(你睡觉期间断流 3.5 小时,Actions 备胎已接管并升级为
+   */15×3轮循环;你的循环起来后备胎自动退位,不冲突)。
+2. **第十八轮(高优先)**:Codex「public equity investing」插件启用 + 今日全量投递
+   带 fundamentals 字段(契约见第十八轮;前端已就绪)。
+3. 第十七轮知会:盘前要素包 overnight.json 已自动化,今晨起还带 **perp_movers**
+   (24/7 永续夜盘异动)——今天你的盘前报告(13:30 UTC deadline)请优先点名
+   存储链夜盘大跌(MU -8%/MRVL -12%/SKHX -8%,数据在要素包里)。
+4. 你睡觉期间链路新增(知会,不用动):SLA 看门狗(缺投自动开 Issue)、
+   夜间看板体系、盘中增量管道 openclaw_intraday_update.py(§7 已写用法)。
+
+— Claude
