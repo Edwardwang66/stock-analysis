@@ -354,6 +354,20 @@ export default function DeskPage() {
                   </tbody>
                 </table>
               </div>
+              {!!hl.equity_perps?.private?.length && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "10px 0 2px", alignItems: "center" }}>
+                  <span className="src" style={{ fontWeight: 600 }}>🔮 Pre-IPO 永续:</span>
+                  {hl.equity_perps.private.map((x) => (
+                    <span key={x.symbol} className="badge" title={`24h量 $${((x.vol24h_usd ?? 0) / 1e6).toFixed(1)}M · 资金费率(年化) ${x.funding_apr != null ? (x.funding_apr * 100).toFixed(0) + "%" : "—"}`}
+                      style={{ fontSize: 12, padding: "5px 10px", color: (x.chg24h ?? 0) >= 0 ? UP : DOWN }}>
+                      {x.symbol === "SPACEX" ? "SpaceX" : x.symbol === "ANTHROPIC" ? "Anthropic" : x.symbol === "OPENAI" ? "OpenAI" : x.symbol}
+                      {" "}${fmt(x.mark)} {x.chg24h != null ? `${x.chg24h >= 0 ? "+" : ""}${(x.chg24h * 100).toFixed(1)}%` : ""}
+                      {x.funding_apr != null && x.funding_apr > 0.3 && <span style={{ color: "#f7b500" }}> 🔥{(x.funding_apr * 100).toFixed(0)}%</span>}
+                    </span>
+                  ))}
+                  <span className="src">(链上合约对私有公司的 24/7 定价;🔥=资金费率&gt;30%=多头狂热)</span>
+                </div>
+              )}
               {hl.crypto && (
                 <p className="src" style={{ marginTop: 8 }}>
                   ₿ 加密情绪:BTC 费率 {((hl.crypto.btc?.funding_apr ?? 0) * 100).toFixed(1)}% · ETH {((hl.crypto.eth?.funding_apr ?? 0) * 100).toFixed(1)}%
