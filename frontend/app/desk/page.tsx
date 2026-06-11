@@ -362,6 +362,46 @@ export default function DeskPage() {
             </div>
           )}
 
+          {/* 行业风向(池内各行业平均涨跌 · ≥3 只才计) */}
+          {(() => {
+            const agg = new Map<string, { sum: number; n: number }>();
+            for (const r of rows) {
+              const pc = quotes[r.symbol]?.changePct;
+              if (pc == null || r.sector === "其他") continue;
+              const g = agg.get(r.sector) ?? { sum: 0, n: 0 };
+              g.sum += pc; g.n++;
+              agg.set(r.sector, g);
+            }
+            const arr = Array.from(agg.entries())
+              .filter(([, g]) => g.n >= 3)
+              .map(([sec, g]) => ({ sec, avg: g.sum / g.n, n: g.n }))
+              .sort((a, b) => b.avg - a.avg);
+            if (arr.length < 4) return null;
+            const mx = Math.max(...arr.map((x) => Math.abs(x.avg)), 0.5);
+            return (
+              <div className="src" style={{ display: "flex", gap: 12, flexWrap: "wrap", margin: "0 2px 8px", fontSize: 11, alignItems: "center" }}>
+                <span>行业风向:</span>
+                {arr.slice(0, 5).map((x) => (
+                  <span key={x.sec} title={`${x.n} 只均值`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {sectorLabel(x.sec, lang)}
+                    <span style={{ display: "inline-block", width: Math.max(6, Math.abs(x.avg) / mx * 36), height: 6,
+                      background: x.avg >= 0 ? UP : DOWN, borderRadius: 3 }} />
+                    <span className={x.avg >= 0 ? "up" : "down"}>{x.avg >= 0 ? "+" : ""}{x.avg.toFixed(1)}%</span>
+                  </span>
+                ))}
+                {arr.length > 5 && <span>…</span>}
+                {arr.slice(-2).filter((x) => !arr.slice(0, 5).includes(x)).map((x) => (
+                  <span key={x.sec} title={`${x.n} 只均值`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {sectorLabel(x.sec, lang)}
+                    <span style={{ display: "inline-block", width: Math.max(6, Math.abs(x.avg) / mx * 36), height: 6,
+                      background: x.avg >= 0 ? UP : DOWN, borderRadius: 3 }} />
+                    <span className={x.avg >= 0 ? "up" : "down"}>{x.avg >= 0 ? "+" : ""}{x.avg.toFixed(1)}%</span>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* 评分结构(70-100 五桶) */}
           {(() => {
             const scoresArr = rows.map((r) => r.score).filter((x): x is number => x != null && x >= 70);

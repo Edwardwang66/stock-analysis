@@ -181,7 +181,12 @@ def main() -> int:
         nd = jload(NOTES_DIR / f"{s.replace(':', '-')}.json", None)
         ref_date = (latest.get("date") if latest else None) or today
         (covered if (nd and nd.get("date") in (today, ref_date)) else missing).append(s)
-    lines.append(f"## ✅ AI 解读覆盖率:{len(covered)}/{len(expect)}\n")
+    fund_n = 0
+    for s2 in expect:
+        nd2 = jload(NOTES_DIR / f"{s2.replace(':', '-')}.json", None)
+        if nd2 and nd2.get("fundamentals"):
+            fund_n += 1
+    lines.append(f"## ✅ AI 解读覆盖率:{len(covered)}/{len(expect)}(其中基本面层 {fund_n})\n")
     if missing:
         lines.append(f"❌ 缺:{', '.join(missing[:40])}{' …' if len(missing) > 40 else ''}\n")
 
