@@ -434,7 +434,7 @@ export default function Home() {
       {cloudWatch.length > 0 && (
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            ☁ 云端跟踪池({cloudWatch.length})
+            ☁ {lang === "en" ? "Cloud Pool" : "云端跟踪池"}({cloudWatch.length})
             <button className="linklike" onClick={toggleCloud}>{cloudOpen ? "▲ 收起" : "▼ 展开"}</button>
             <span className="src">OpenClaw 每日全析 · 按涨跌排序</span>
             <Link href="/desk/" className="linklike">→ 标签/行业/评分视图</Link>
@@ -446,7 +446,7 @@ export default function Home() {
       {watch.length > 0 && (
         <>
           <h2 className="block-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            ⭐ 我的自选(本地)
+            ⭐ {lang === "en" ? "My Watchlist (local)" : "我的自选(本地)"}
             <button className="linklike" onClick={() => exportUserData()}>导出备份</button>
             <label className="linklike" style={{ cursor: "pointer" }}>
               导入
@@ -475,7 +475,7 @@ export default function Home() {
         ))}
       </div>
 
-      <h2 className="block-title">涨跌热力图</h2>
+      <h2 className="block-title">{lang === "en" ? "Heatmap" : "涨跌热力图"}</h2>
       <Heatmap
         symbols={symbols}
         quotes={quotes}
@@ -483,7 +483,7 @@ export default function Home() {
         sections={groups?.map((g) => ({ label: `${g.label}${g.mkt === "CRYPTO" ? "(24h)" : ""}`, symbols: g.symbols }))}
       />
 
-      <h2 className="block-title">行情卡片</h2>
+      <h2 className="block-title">{lang === "en" ? "Quotes" : "行情卡片"}</h2>
       {groups ? groups.map((g) => {
         const st = marketStatus(g.mkt);
         const rows = g.symbols.map((s) => quotes[s]).filter((x): x is Quote => Boolean(x));
