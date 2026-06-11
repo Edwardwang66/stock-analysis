@@ -67,6 +67,7 @@ export default function DeskPage() {
   const [loading, setLoading] = useState(true);
   // 盘中机器流(live 分支,60s 轮询;非交易时段自动为 null)
   const [live, setLiveDoc] = useState<IntradayDoc | null>(null);
+  const [evFilter, setEvFilter] = useState<"全部" | "异动" | "新高" | "新低">("全部");
   // OpenClaw 三报告状态(盘前/盘中滚动/收盘前;5 分钟轮询)
   const [mdPre, setMdPre] = useState<string | null>(null);
   const [mdIntra, setMdIntra] = useState<string | null>(null);
@@ -481,8 +482,19 @@ export default function DeskPage() {
                 </span>
               </h2>
               {live.events.length ? (
+                <>
+                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  {(["全部", "异动", "新高", "新低"] as const).map((k) => (
+                    <button key={k} className="linklike" style={{ fontSize: 12,
+                      color: evFilter === k ? "var(--accent)" : "var(--muted)",
+                      textDecoration: evFilter === k ? "underline" : "none" }}
+                      onClick={() => setEvFilter(k)}>
+                      {k}{k !== "全部" && `(${live.events.filter((e) => e.type === k).length})`}
+                    </button>
+                  ))}
+                </div>
                 <div className="signal-list">
-                  {live.events.slice(0, 12).map((e, i) => (
+                  {live.events.filter((e) => evFilter === "全部" || e.type === evFilter).slice(0, 12).map((e, i) => (
                     <Link key={i} href={`/symbol/?s=${encodeURIComponent(e.symbol)}`} className="signal" style={{ alignItems: "baseline" }}>
                       <span>
                         <span className="badge" style={{ marginRight: 8, fontSize: 11,
@@ -494,6 +506,7 @@ export default function DeskPage() {
                     </Link>
                   ))}
                 </div>
+                </>
               ) : <p className="src">本轮无触发事件(异动≥0.8%/5分钟、当日新高新低)。</p>}
             </div>
           )}
