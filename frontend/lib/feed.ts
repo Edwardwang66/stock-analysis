@@ -71,15 +71,32 @@ export interface FullReport {
   factory_candidates?: Candidate[]; alerts?: Alert[]; contribution?: any; notes?: string;
 }
 
+// 模块级 30s 内存缓存 + 单飞:同页多组件请求同一 feed 时只发一次网络请求
+const _mem = new Map<string, { at: number; data: unknown }>();
+const _inflight = new Map<string, Promise<unknown>>();
+const FEED_TTL = 30_000;
+
 async function fetchJson<T>(rel: string): Promise<T | null> {
-  const bust = `?t=${Date.now()}`;
-  for (const base of [REMOTE, LOCAL]) {
-    try {
-      const r = await fetch(`${base}/${rel}${bust}`, { cache: "no-store" });
-      if (r.ok) return (await r.json()) as T;
-    } catch { /* try next source */ }
-  }
-  return null;
+  const hit = _mem.get(rel);
+  if (hit && Date.now() - hit.at < FEED_TTL) return hit.data as T;
+  const fly = _inflight.get(rel);
+  if (fly) return fly as Promise<T | null>;
+  const p = (async () => {
+    const bust = `?t=${Date.now()}`;
+    for (const base of [REMOTE, LOCAL]) {
+      try {
+        const r = await fetch(`${base}/${rel}${bust}`, { cache: "no-store" });
+        if (r.ok) {
+          const data = (await r.json()) as T;
+          _mem.set(rel, { at: Date.now(), data });
+          return data;
+        }
+      } catch { /* try next source */ }
+    }
+    return null;
+  })().finally(() => _inflight.delete(rel));
+  _inflight.set(rel, p);
+  return p as Promise<T | null>;
 }
 
 export interface StockNote {
