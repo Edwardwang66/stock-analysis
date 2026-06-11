@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
 import {
   getAnalysisMd, getChanStats, getCryptoState, getEventHeat, getFundHoldings, getOvernight, getPreipoHistory, getIndex, getIntradayLive, getMarketHistory, getNotesIndex, getRepoWatchlist, getRsHistory, getRsRanks, getScores, getScreener, getScreenerHistory,
@@ -52,6 +53,7 @@ function ago(iso?: string | null): string {
 }
 
 export default function DeskPage() {
+  const router = useRouter();
   const lang = useLang();
   const night = useNightQuotes();
   const [wl, setWl] = useState<string[]>([]);
@@ -796,7 +798,7 @@ export default function DeskPage() {
                       onClick={(e) => {
                         const t = e.target as HTMLElement;
                         if (t.closest("a") || t.closest("button")) return; // 星标/链接自身不拦
-                        window.location.href = `/symbol/?s=${encodeURIComponent(r.symbol)}`;
+                        router.push(`/symbol/?s=${encodeURIComponent(r.symbol)}`);
                       }}>
                       <td>
                         <button className="linklike" title={localWl.has(r.symbol) ? "移出本地自选" : "加入本地自选"}
