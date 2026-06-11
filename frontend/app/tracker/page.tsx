@@ -99,6 +99,11 @@ export default function TrackerPage() {
         </div>
       )}
 
+      {!wr?.windows && !loading && (
+        <p className="src" style={{ margin: "0 2px 8px" }}>
+          🏆 周度胜率报告每周五美股收盘后由数据仓自动重算(d1/d5/d20 窗口 + 分数段),首份出炉后在此显示。
+        </p>
+      )}
       {wr?.windows && (
         <div className="section">
           <h2>🏆 周度胜率报告
