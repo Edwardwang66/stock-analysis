@@ -792,7 +792,12 @@ export default function DeskPage() {
                   const q = quotes[r.symbol];
                   const pc = q?.changePct ?? null;
                   return (
-                    <tr key={r.symbol}>
+                    <tr key={r.symbol} style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        const t = e.target as HTMLElement;
+                        if (t.closest("a") || t.closest("button")) return; // 星标/链接自身不拦
+                        window.location.href = `/symbol/?s=${encodeURIComponent(r.symbol)}`;
+                      }}>
                       <td>
                         <button className="linklike" title={localWl.has(r.symbol) ? "移出本地自选" : "加入本地自选"}
                           style={{ marginRight: 4, color: localWl.has(r.symbol) ? "#f7b500" : MUT, fontSize: 13 }}

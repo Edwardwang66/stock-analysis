@@ -74,13 +74,18 @@ export default function Heatmap({
   sections?: { label: string; symbols: string[] }[] | null;
 }) {
   const [mode, setMode] = useState<"pct" | "rs">("pct");
+  useEffect(() => {
+    const m0 = window.localStorage.getItem("heatmap:mode");
+    if (m0 === "rs") setMode("rs");
+  }, []);
+  const pickMode = (k: "pct" | "rs") => { setMode(k); try { window.localStorage.setItem("heatmap:mode", k); } catch { /* */ } };
   if (loading || (!symbols.length && !sections?.length)) return <div className="loading">热力图加载中…</div>;
   const chips = (
     <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
       {(["pct", "rs"] as const).map((k) => (
         <button key={k} className="linklike" style={{ fontSize: 12,
           color: mode === k ? "var(--accent)" : "var(--muted)", textDecoration: mode === k ? "underline" : "none" }}
-          onClick={() => setMode(k)}>{k === "pct" ? "涨跌" : "RS 强弱"}</button>
+          onClick={() => pickMode(k)}>{k === "pct" ? "涨跌" : "RS 强弱"}</button>
       ))}
     </div>
   );
