@@ -76,6 +76,7 @@ export default function HelpPage() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>❓ 功能地图</h1>
         <span className="tag">全站能力一页速查 · 口径细节见 routines/methodology.md</span>
         <span style={{ marginLeft: "auto" }} />

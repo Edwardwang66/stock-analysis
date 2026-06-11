@@ -57,6 +57,7 @@ export default function ReportsPage() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>📜 报告中心</h1>
         <span className="tag">OpenClaw 四类报告 · 最近 5 个交易日 · 即投即读(raw 直连)</span>
         <span style={{ marginLeft: "auto" }} />

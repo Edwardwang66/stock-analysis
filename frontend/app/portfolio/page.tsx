@@ -92,6 +92,7 @@ export default function PortfolioPage() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>💼 模拟持仓</h1>
         <LangSelect />
         <span className="tag">本地存储 · 实时估值与首页同源 · 非真实账户</span>

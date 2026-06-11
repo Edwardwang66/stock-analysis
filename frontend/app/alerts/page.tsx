@@ -89,6 +89,7 @@ export default function AlertsPage() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>⏰ 告警中心</h1>
         <span className="tag">价格提醒 · 30s 轮询 · 闭市时夜盘永续价也触发 · 数据存本机</span>
         <span style={{ marginLeft: "auto" }} />

@@ -82,6 +82,7 @@ export default function TrackerPage() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>🎯 选股追踪</h1>
         <span className="tag">每日达标选股全量入库 = 当日持仓 · 逐日回看「选中后涨没涨」</span>
         <span style={{ marginLeft: "auto" }}><LiveClock /></span>

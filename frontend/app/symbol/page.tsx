@@ -196,6 +196,7 @@ function SymbolView() {
     <div className="container">
       <div className="header">
         <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
+        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>{nameOf(symbol, lang)}</h1>
         {(() => {
           const nq = night.map[symbol];
