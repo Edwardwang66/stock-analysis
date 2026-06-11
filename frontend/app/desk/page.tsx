@@ -107,6 +107,15 @@ export default function DeskPage() {
     if (pm.length) {
       out.push({ icon: "🌙", text: `自选夜盘异动:${pm.map((x) => `${nameOf(x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`, lang)} ${x.chg24h >= 0 ? "+" : ""}${x.chg24h}%`).join(" · ")}` });
     }
+    // 2.5) 盘中自选大动(任意市场 |当日|≥4%)
+    const big = rows.filter((r) => r.tags.includes("watch"))
+      .map((r) => ({ r, pc: quotes[r.symbol]?.changePct }))
+      .filter((x): x is { r: typeof rows[number]; pc: number } => x.pc != null && Math.abs(x.pc) >= 4)
+      .sort((a, b) => Math.abs(b.pc) - Math.abs(a.pc))
+      .slice(0, 4);
+    if (big.length) {
+      out.push({ icon: "⚡", text: `自选大动:${big.map((x) => `${nameOf(x.r.symbol, lang)} ${x.pc >= 0 ? "+" : ""}${x.pc.toFixed(1)}%`).join(" · ")}` });
+    }
     // 3) 缠论信号 ∩ 自选池
     const K: Record<string, string> = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
     const ca = chanA.filter((a) => wlCodes.has(a.symbol)).slice(0, 5);
@@ -145,7 +154,7 @@ export default function DeskPage() {
     // 7) OpenClaw 节拍
     out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
     return out;
-  }, [ovn, wl, chanA, scrHist, heat, rs, mdPre, mdIntra, mdClose, lang]);
+  }, [ovn, wl, rows, quotes, chanA, scrHist, heat, rs, mdPre, mdIntra, mdClose, lang]);
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
