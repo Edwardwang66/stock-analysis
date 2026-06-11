@@ -92,69 +92,7 @@ export default function DeskPage() {
   const [scrHist, setScrHist] = useState<{ date: string; items: { symbol: string }[] }[]>([]);
   useEffect(() => { const t = setTimeout(() => getScreenerHistory().then((h) => setScrHist((h ?? []) as any)).catch(() => {}), 2500); return () => clearTimeout(t); }, []);
 
-  // 📌 今日要点(纯前端聚合现有 feed)
-  const briefing = useMemo(() => {
-    const out: { icon: string; text: string; href?: string }[] = [];
-    // 1) 宏观:期货 + 亚洲最大异动
-    if (ovn?.futures && ovn.date === today()) {
-      const f = Object.values(ovn.futures).map((x) => `${x.name.replace("期货", "")} ${x.pct >= 0 ? "+" : ""}${x.pct}%`).join(" / ");
-      const asia = Object.values(ovn.asia ?? {}).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))[0];
-      out.push({ icon: "🌐", text: `期货 ${f}${asia ? ` · 亚洲最大异动 ${asia.name} ${asia.pct >= 0 ? "+" : ""}${asia.pct}%` : ""}` });
-    }
-    // 2) 夜盘预警:perp_movers ∩ 自选池
-    const wlCodes = new Set(wl.filter((x) => x.startsWith("US:")).map((x) => x.slice(3)).concat(wl.includes("KR:000660") ? ["SKHX"] : []));
-    const pm = (ovn?.perp_movers ?? []).filter((x) => wlCodes.has(x.symbol)).slice(0, 4);
-    if (pm.length) {
-      out.push({ icon: "🌙", text: `自选夜盘异动:${pm.map((x) => `${nameOf(x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`, lang)} ${x.chg24h >= 0 ? "+" : ""}${x.chg24h}%`).join(" · ")}` });
-    }
-    // 2.5) 盘中自选大动(任意市场 |当日|≥4%)
-    const big = rows.filter((r) => r.tags.includes("watch"))
-      .map((r) => ({ r, pc: quotes[r.symbol]?.changePct }))
-      .filter((x): x is { r: typeof rows[number]; pc: number } => x.pc != null && Math.abs(x.pc) >= 4)
-      .sort((a, b) => Math.abs(b.pc) - Math.abs(a.pc))
-      .slice(0, 4);
-    if (big.length) {
-      out.push({ icon: "⚡", text: `自选大动:${big.map((x) => `${nameOf(x.r.symbol, lang)} ${x.pc >= 0 ? "+" : ""}${x.pc.toFixed(1)}%`).join(" · ")}` });
-    }
-    // 3) 缠论信号 ∩ 自选池
-    const K: Record<string, string> = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
-    const ca = chanA.filter((a) => wlCodes.has(a.symbol)).slice(0, 5);
-    if (ca.length) {
-      out.push({ icon: "☯", text: `自选缠论信号:${ca.map((a) => `${nameOf(`US:${a.symbol}`, lang)} ${K[a.kind] ?? a.kind}`).join(" · ")}`, href: "/tracker/" });
-    }
-    // 4) 选股名单变动(今日 vs 上一交易日)
-    if (scrHist.length >= 2) {
-      const cur = new Set(scrHist[scrHist.length - 1].items.map((x) => x.symbol));
-      const prev = new Set(scrHist[scrHist.length - 2].items.map((x) => x.symbol));
-      const added = [...cur].filter((x) => !prev.has(x));
-      const dropped = [...prev].filter((x) => !cur.has(x));
-      if (added.length || dropped.length) {
-        out.push({ icon: "📈", text: `≥80 名单:新进 ${added.length} 只${added.length ? `(${added.slice(0, 3).map((x) => nameOf(x, lang)).join("/")}${added.length > 3 ? "…" : ""})` : ""} · 掉出 ${dropped.length} 只`, href: "/screener/" });
-      }
-    }
-    // 4.5) 领涨且动量加速(RS≥85 且 r63-r126≥25pp)
-    if (rs?.ranks) {
-      const acc = Object.entries(rs.ranks)
-        .filter(([, v]) => (v.rs ?? 0) >= 85 && v.r63 != null && v.r126 != null && v.r63 - v.r126 >= 25)
-        .sort((a, b) => (b[1].r63! - b[1].r126!) - (a[1].r63! - a[1].r126!))
-        .slice(0, 4);
-      if (acc.length) {
-        out.push({ icon: "🚀", text: `领涨且加速:${acc.map(([k, v]) => `${nameOf(`US:${k}`, lang)}(RS${v.rs}·+${(v.r63! - v.r126!).toFixed(0)}pp)`).join(" · ")}` });
-      }
-    }
-    // 5) 高波动 top
-    const h0 = heat?.items?.[0];
-    if (h0) out.push({ icon: "🔥", text: `本周最躁动:${nameOf(h0.symbol, lang)}(${h0.total} 次事件${h0.lows > h0.highs ? ",偏新低" : h0.highs > h0.lows ? ",偏新高" : ""})` });
-    // 6) Winter 盘前观点(报告已投时抽首两行)
-    if (mdPre) {
-      const lines = mdPre.split("\n").map((x) => x.replace(/^#+\s*/, "").trim()).filter((x) => x && !x.startsWith("---"));
-      const gist = lines.slice(0, 2).join(" / ").slice(0, 120);
-      if (gist) out.push({ icon: "🌅", text: `Winter 盘前:${gist}…`, href: "/reports/" });
-    }
-    // 7) OpenClaw 节拍
-    out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
-    return out;
-  }, [ovn, wl, rows, quotes, chanA, scrHist, heat, rs, mdPre, mdIntra, mdClose, lang]);
+
   useEffect(() => {
     let alive = true;
     const d = new Date().toISOString().slice(0, 10);
@@ -268,6 +206,70 @@ export default function DeskPage() {
     window.addEventListener("watchlist-changed", sync);
     return () => window.removeEventListener("watchlist-changed", sync);
   }, [rows]);
+
+  // 📌 今日要点(纯前端聚合现有 feed)
+  const briefing = useMemo(() => {
+    const out: { icon: string; text: string; href?: string }[] = [];
+    // 1) 宏观:期货 + 亚洲最大异动
+    if (ovn?.futures && ovn.date === today()) {
+      const f = Object.values(ovn.futures).map((x) => `${x.name.replace("期货", "")} ${x.pct >= 0 ? "+" : ""}${x.pct}%`).join(" / ");
+      const asia = Object.values(ovn.asia ?? {}).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))[0];
+      out.push({ icon: "🌐", text: `期货 ${f}${asia ? ` · 亚洲最大异动 ${asia.name} ${asia.pct >= 0 ? "+" : ""}${asia.pct}%` : ""}` });
+    }
+    // 2) 夜盘预警:perp_movers ∩ 自选池
+    const wlCodes = new Set(wl.filter((x) => x.startsWith("US:")).map((x) => x.slice(3)).concat(wl.includes("KR:000660") ? ["SKHX"] : []));
+    const pm = (ovn?.perp_movers ?? []).filter((x) => wlCodes.has(x.symbol)).slice(0, 4);
+    if (pm.length) {
+      out.push({ icon: "🌙", text: `自选夜盘异动:${pm.map((x) => `${nameOf(x.symbol === "SKHX" ? "KR:000660" : `US:${x.symbol}`, lang)} ${x.chg24h >= 0 ? "+" : ""}${x.chg24h}%`).join(" · ")}` });
+    }
+    // 2.5) 盘中自选大动(任意市场 |当日|≥4%)
+    const big = rows.filter((r) => r.tags.includes("watch"))
+      .map((r) => ({ r, pc: quotes[r.symbol]?.changePct }))
+      .filter((x): x is { r: typeof rows[number]; pc: number } => x.pc != null && Math.abs(x.pc) >= 4)
+      .sort((a, b) => Math.abs(b.pc) - Math.abs(a.pc))
+      .slice(0, 4);
+    if (big.length) {
+      out.push({ icon: "⚡", text: `自选大动:${big.map((x) => `${nameOf(x.r.symbol, lang)} ${x.pc >= 0 ? "+" : ""}${x.pc.toFixed(1)}%`).join(" · ")}` });
+    }
+    // 3) 缠论信号 ∩ 自选池
+    const K: Record<string, string> = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
+    const ca = chanA.filter((a) => wlCodes.has(a.symbol)).slice(0, 5);
+    if (ca.length) {
+      out.push({ icon: "☯", text: `自选缠论信号:${ca.map((a) => `${nameOf(`US:${a.symbol}`, lang)} ${K[a.kind] ?? a.kind}`).join(" · ")}`, href: "/tracker/" });
+    }
+    // 4) 选股名单变动(今日 vs 上一交易日)
+    if (scrHist.length >= 2) {
+      const cur = new Set(scrHist[scrHist.length - 1].items.map((x) => x.symbol));
+      const prev = new Set(scrHist[scrHist.length - 2].items.map((x) => x.symbol));
+      const added = [...cur].filter((x) => !prev.has(x));
+      const dropped = [...prev].filter((x) => !cur.has(x));
+      if (added.length || dropped.length) {
+        out.push({ icon: "📈", text: `≥80 名单:新进 ${added.length} 只${added.length ? `(${added.slice(0, 3).map((x) => nameOf(x, lang)).join("/")}${added.length > 3 ? "…" : ""})` : ""} · 掉出 ${dropped.length} 只`, href: "/screener/" });
+      }
+    }
+    // 4.5) 领涨且动量加速(RS≥85 且 r63-r126≥25pp)
+    if (rs?.ranks) {
+      const acc = Object.entries(rs.ranks)
+        .filter(([, v]) => (v.rs ?? 0) >= 85 && v.r63 != null && v.r126 != null && v.r63 - v.r126 >= 25)
+        .sort((a, b) => (b[1].r63! - b[1].r126!) - (a[1].r63! - a[1].r126!))
+        .slice(0, 4);
+      if (acc.length) {
+        out.push({ icon: "🚀", text: `领涨且加速:${acc.map(([k, v]) => `${nameOf(`US:${k}`, lang)}(RS${v.rs}·+${(v.r63! - v.r126!).toFixed(0)}pp)`).join(" · ")}` });
+      }
+    }
+    // 5) 高波动 top
+    const h0 = heat?.items?.[0];
+    if (h0) out.push({ icon: "🔥", text: `本周最躁动:${nameOf(h0.symbol, lang)}(${h0.total} 次事件${h0.lows > h0.highs ? ",偏新低" : h0.highs > h0.lows ? ",偏新高" : ""})` });
+    // 6) Winter 盘前观点(报告已投时抽首两行)
+    if (mdPre) {
+      const lines = mdPre.split("\n").map((x) => x.replace(/^#+\s*/, "").trim()).filter((x) => x && !x.startsWith("---"));
+      const gist = lines.slice(0, 2).join(" / ").slice(0, 120);
+      if (gist) out.push({ icon: "🌅", text: `Winter 盘前:${gist}…`, href: "/reports/" });
+    }
+    // 7) OpenClaw 节拍
+    out.push({ icon: "🤖", text: `报告:盘前 ${mdPre ? "✅" : "⏳"} · 盘中滚动 ${mdIntra ? "✅" : "⏳"} · 收盘前 ${mdClose ? "✅" : "⏳"}`, href: "/reports/" });
+    return out;
+  }, [ovn, wl, rows, quotes, chanA, scrHist, heat, rs, mdPre, mdIntra, mdClose, lang]);
 
   const noteMap = useMemo(() => {
     const m = new Map<string, { date: string; stance: string }>();
