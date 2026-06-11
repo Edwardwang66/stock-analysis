@@ -720,10 +720,10 @@ export default function DeskPage() {
               {sectors.map((s) => <option key={s} value={s}>{s === "全部" ? (lang === "en" ? "Sector: All" : "行业:全部") : sectorLabel(s, lang)}</option>)}
             </select>
             <div className="segmented">
-              <button className={sort === "tag" ? "active" : ""} onClick={() => setSort("tag")}>默认</button>
-              <button className={sort === "pctDesc" ? "active" : ""} onClick={() => setSort("pctDesc")}>涨幅↓</button>
-              <button className={sort === "pctAsc" ? "active" : ""} onClick={() => setSort("pctAsc")}>跌幅↑</button>
-              <button className={sort === "scoreDesc" ? "active" : ""} onClick={() => setSort("scoreDesc")}>评分↓</button>
+              <button className={sort === "tag" ? "active" : ""} onClick={() => setSort("tag")}>{lang === "en" ? "Default" : "默认"}</button>
+              <button className={sort === "pctDesc" ? "active" : ""} onClick={() => setSort("pctDesc")}>{lang === "en" ? "Gain↓" : "涨幅↓"}</button>
+              <button className={sort === "pctAsc" ? "active" : ""} onClick={() => setSort("pctAsc")}>{lang === "en" ? "Loss↑" : "跌幅↑"}</button>
+              <button className={sort === "scoreDesc" ? "active" : ""} onClick={() => setSort("scoreDesc")}>{lang === "en" ? "Score↓" : "评分↓"}</button>
               <button className={sort === "rsDesc" ? "active" : ""} onClick={() => setSort("rsDesc")}>RS↓</button>
             </div>
             <span className="src">{view.length} 只</span>
@@ -749,7 +749,12 @@ export default function DeskPage() {
 
           <div className="section" style={{ overflowX: "auto", marginTop: 8 }}>
             <table>
-              <thead><tr><th>标的</th><th>标签</th><th>行业</th><th>评分</th><th>RS</th><th>现价</th><th>当日</th>{night.usClosed && Object.keys(night.map).length > 0 && <th>🌙 夜盘</th>}<th>AI</th></tr></thead>
+              <thead><tr>
+                <th>{lang === "en" ? "Symbol" : "标的"}</th><th>{lang === "en" ? "Tags" : "标签"}</th>
+                <th>{lang === "en" ? "Sector" : "行业"}</th><th>{lang === "en" ? "Score" : "评分"}</th>
+                <th>RS</th><th>{lang === "en" ? "Price" : "现价"}</th><th>{lang === "en" ? "Day" : "当日"}</th>
+                {night.usClosed && Object.keys(night.map).length > 0 && <th>🌙 {lang === "en" ? "Night" : "夜盘"}</th>}
+                <th>AI</th></tr></thead>
               <tbody>
                 {view.map((r) => {
                   const q = quotes[r.symbol];
