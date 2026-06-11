@@ -630,7 +630,15 @@ export default function DeskPage() {
                   {!!hl.crypto.funding_extremes?.length && (
                     <> · 极端费率:{hl.crypto.funding_extremes.slice(0, 3).map((c) => `${c.coin} ${((c.funding_apr ?? 0) * 100).toFixed(0)}%`).join(" / ")}</>
                   )}
-                  {hl.venues?.n_dislocated != null && <> · 跨所错位 {hl.venues.n_dislocated} 个</>}
+                  {hl.venues?.n_dislocated != null && (
+                    <> · 跨所错位 {hl.venues.n_dislocated} 个
+                      {!!hl.venues.top?.length && (
+                        <span title="HL 与币安预测资金费率差(年化);套利者视角的拥挤信号">
+                          (最大:{hl.venues.top.slice(0, 3).map((v) => `${v.coin} ${(v.spread_apr * 100).toFixed(0)}%`).join(" / ")})
+                        </span>
+                      )}
+                    </>
+                  )}
                 </p>
               )}
               <p className="src" style={{ marginTop: 4 }}>
