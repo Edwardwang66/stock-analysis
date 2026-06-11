@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
-import { getChanStats, getScreenerHistory, getWinrate, type ChanStatsDoc, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
+import { getChanStats, getRsRanks, getScreenerHistory, getWinrate, type ChanStatsDoc, type RsTable, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
 import TzSelect from "@/components/TzSelect";
 import LangSelect from "@/components/LangSelect";
 import LiveClock from "@/components/LiveClock";
@@ -23,6 +23,8 @@ export default function TrackerPage() {
   const [showAllDays, setShowAllDays] = useState(false);
   const [wr, setWr] = useState<WinrateDoc | null>(null);
   useEffect(() => { getWinrate().then(setWr).catch(() => {}); }, []);
+  const [rsT, setRsT] = useState<RsTable | null>(null);
+  useEffect(() => { getRsRanks().then(setRsT).catch(() => {}); }, []);
   const [cs, setCs] = useState<ChanStatsDoc | null>(null);
   useEffect(() => { getChanStats().then(setCs).catch(() => {}); }, []);
   const tzKey = useTz(); // 时区切换时间戳联动
@@ -203,7 +205,7 @@ export default function TrackerPage() {
           </h2>
           <div style={{ overflowX: "auto" }}>
             <table>
-              <thead><tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>选中价</th><th>现价</th><th>收益</th></tr></thead>
+              <thead><tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>RS</th><th>选中价</th><th>现价</th><th>收益</th></tr></thead>
               <tbody>
                 {d.rows.slice().sort((a, b) => (b.ret ?? -999) - (a.ret ?? -999)).map((r, i) => (
                   <tr key={r.symbol}>
@@ -211,6 +213,7 @@ export default function TrackerPage() {
                     <td><Link href={`/symbol/?s=${encodeURIComponent(r.symbol)}`} style={{ color: "var(--accent)" }}>{r.symbol.replace(/^US:/, "")}</Link></td>
                     <td>{r.name ?? ""}</td>
                     <td>{r.score ?? "—"}</td>
+                    <td>{(() => { const v = rsT?.ranks?.[r.symbol.replace(/^US:/, "")]?.rs; return v == null ? "—" : <span className={v >= 80 ? "up" : v < 40 ? "down" : undefined}>{v}</span>; })()}</td>
                     <td>{fmt(r.pick_price)}</td>
                     <td>{fmt(r.price)}</td>
                     <td className={r.ret == null ? "muted" : r.ret >= 0 ? "up" : "down"}>
