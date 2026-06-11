@@ -2,11 +2,12 @@
 // ⏰ 告警中心:价格提醒统一管理(纯前端 localStorage;闭市时夜盘永续价也参与触发)。
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { addAlert, clearTriggered, getAlerts, removeAlert, type PriceAlert } from "@/lib/alerts";
+import { addAlert, checkAlerts, clearTriggered, getAlerts, notify, removeAlert, type PriceAlert } from "@/lib/alerts";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { nameOf } from "@/lib/markets";
 import { useLang } from "@/lib/names";
 import { useNightQuotes } from "@/lib/nightquotes";
+import { marketStatus } from "@/lib/marketstatus";
 import LangSelect from "@/components/LangSelect";
 
 export default function AlertsPage() {
@@ -28,8 +29,27 @@ export default function AlertsPage() {
   useEffect(() => {
     const syms = Array.from(new Set(list.map((a) => a.symbol)));
     if (!syms.length) return;
-    getQuotes(syms, (q) => setQuotes((prev) => ({ ...prev, [q.symbol]: q }))).catch(() => {});
+    let alive = true;
+    const load = () => getQuotes(syms, (q) => { if (alive) setQuotes((prev) => ({ ...prev, [q.symbol]: q })); }).catch(() => {});
+    load();
+    const id = window.setInterval(() => { if (!document.hidden) load(); }, 30_000);
+    return () => { alive = false; window.clearInterval(id); };
   }, [list]);
+  // 本页也参与触发检查(开着告警页守盘的场景;与首页 30s 循环互不冲突,一次性触发有 triggeredAt 防重)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      const prices: Record<string, number | null | undefined> = {};
+      for (const [k, v] of Object.entries(quotes)) prices[k] = v?.price;
+      for (const a of getAlerts()) {
+        const nq = night.map[a.symbol];
+        if (nq && !marketStatus(a.symbol.split(":")[0]).open) prices[a.symbol] = nq.mark;
+      }
+      const fired = checkAlerts(prices);
+      if (fired.length) notify(fired, (s2: string) => nameOf(s2, lang));
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [quotes, night, lang]);
 
   const active = useMemo(() => list.filter((a) => !a.triggeredAt), [list]);
   const fired = useMemo(() => list.filter((a) => a.triggeredAt).sort((a, b) => (b.triggeredAt ?? 0) - (a.triggeredAt ?? 0)), [list]);
