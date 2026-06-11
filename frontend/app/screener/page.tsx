@@ -6,12 +6,14 @@ import { getScreener, type ScreenerList } from "@/lib/feed";
 import { getRsHistory, getRsRanks, type RsHistoryDay, type RsTable } from "@/lib/feed";
 import { fmtDateTime, fmtTime, useTz } from "@/lib/timefmt";
 import LangSelect from "@/components/LangSelect";
+import { useLang } from "@/lib/names";
 
 const IDX_LABEL: Record<string, string> = { SP500: "标普500", NDX100: "纳指100" };
 type Filter = "ALL" | "SP500" | "NDX100";
 const LIVE_MAX = 60; // 控制公共代理压力上限
 
 export default function ScreenerPage() {
+  const lang = useLang();
   const [rsT, setRsT] = useState<RsTable | null>(null);
   useEffect(() => { getRsRanks().then(setRsT).catch(() => {}); }, []);
   const [rsH, setRsH] = useState<RsHistoryDay[]>([]);
@@ -156,14 +158,14 @@ export default function ScreenerPage() {
           <div className="section" style={{ overflowX: "auto" }}>
             <table>
               <thead>
-                <tr><th>#</th><th>代码</th><th>名称</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("score")}>评分{arrow("score")}</th>
+                <tr><th>#</th><th>{lang === "en" ? "Code" : "代码"}</th><th>{lang === "en" ? "Name" : "名称"}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("score")}>{lang === "en" ? "Score" : "评分"}{arrow("score")}</th>
                   <th style={{ cursor: "pointer" }} onClick={() => clickSort("rs")}>RS{arrow("rs")}</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("w52")}>距52周高{arrow("w52")}</th>
-                  <th>结论</th><th>价格</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("pct")}>涨跌%{arrow("pct")}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("w52")}>{lang === "en" ? "vs 52wH" : "距52周高"}{arrow("w52")}</th>
+                  <th>{lang === "en" ? "Verdict" : "结论"}</th><th>{lang === "en" ? "Price" : "价格"}</th>
+                  <th style={{ cursor: "pointer" }} onClick={() => clickSort("pct")}>{lang === "en" ? "Chg%" : "涨跌%"}{arrow("pct")}</th>
                   <th style={{ cursor: "pointer" }} onClick={() => clickSort("rsi")}>RSI{arrow("rsi")}</th>
-                  <th>指数</th></tr>
+                  <th>{lang === "en" ? "Index" : "指数"}</th></tr>
               </thead>
               <tbody>
                 {items.map((r, i) => {

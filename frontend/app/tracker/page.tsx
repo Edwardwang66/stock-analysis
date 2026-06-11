@@ -5,6 +5,7 @@ import { getQuotes, type Quote } from "@/lib/datasource";
 import { getChanStats, getRsRanks, getScreenerHistory, getWinrate, type ChanStatsDoc, type RsTable, type TrackedDay, type WinrateCell, type WinrateDoc } from "@/lib/feed";
 import TzSelect from "@/components/TzSelect";
 import LangSelect from "@/components/LangSelect";
+import { useLang } from "@/lib/names";
 import LiveClock from "@/components/LiveClock";
 import { agoShort, fmtTime, useNow, useTz } from "@/lib/timefmt";
 
@@ -14,6 +15,7 @@ const fmt = (n: number | null | undefined, d = 2) =>
   n == null || !isFinite(n as number) ? "—" : (n as number).toLocaleString(undefined, { maximumFractionDigits: d });
 
 export default function TrackerPage() {
+  const lang = useLang();
   const [hist, setHist] = useState<TrackedDay[]>([]);
   const [live, setLive] = useState<Record<string, Quote>>({});
   const [valuedDays, setValuedDays] = useState<Set<string>>(new Set());
@@ -210,7 +212,7 @@ export default function TrackerPage() {
           </h2>
           <div style={{ overflowX: "auto" }}>
             <table>
-              <thead><tr><th>#</th><th>代码</th><th>名称</th><th>评分</th><th>RS</th><th>选中价</th><th>现价</th><th>收益</th></tr></thead>
+              <thead><tr><th>#</th><th>{lang === "en" ? "Code" : "代码"}</th><th>{lang === "en" ? "Name" : "名称"}</th><th>{lang === "en" ? "Score" : "评分"}</th><th>RS</th><th>{lang === "en" ? "Pick" : "选中价"}</th><th>{lang === "en" ? "Now" : "现价"}</th><th>{lang === "en" ? "Ret" : "收益"}</th></tr></thead>
               <tbody>
                 {d.rows.slice().sort((a, b) => (b.ret ?? -999) - (a.ret ?? -999)).map((r, i) => (
                   <tr key={r.symbol}>
