@@ -357,7 +357,7 @@ export default function DeskPage() {
           {/* 📌 今日要点(聚合卡) */}
           {briefing.length > 0 && (
             <div className="section" style={{ marginTop: 4, borderColor: "var(--accent)" }}>
-              <h2>📌 今日要点
+              <h2>📌 {lang === "en" ? "Today" : "今日要点"}
                 <button className="linklike" style={{ marginLeft: 10, fontSize: 12 }}
                   onClick={() => {
                     const txt = `【${today()} 看板要点】\n` + briefing.map((b) => `${b.icon} ${b.text}`).join("\n");
@@ -515,7 +515,7 @@ export default function DeskPage() {
 
           {/* OpenClaw 三报告状态(盘前 → 盘中滚动 → 收盘前) */}
           <div className="section" style={{ marginTop: 4 }}>
-            <h2>🤖 OpenClaw 当日节拍
+            <h2>🤖 {lang === "en" ? "OpenClaw Cadence" : "OpenClaw 当日节拍"}
               <span className="src" style={{ marginLeft: 10 }}>
                 盘前 {mdPre ? "✅" : "⏳"} · 盘中滚动 {mdIntra ? `✅(${mdIntra.split("\n").filter(Boolean).length} 行)` : "⏳"} · 收盘前 {mdClose ? "✅" : "⏳"}
               </span>
@@ -551,7 +551,7 @@ export default function DeskPage() {
           {/* 24/7 夜盘代理 + 加密情绪(Hyperliquid,Cycle7/8) */}
           {hl?.equity_perps?.stocks && hl.equity_perps.stocks.length > 0 && (
             <div className="section" style={{ marginTop: 4 }}>
-              <h2>🌙 24/7 夜盘代理
+              <h2>🌙 {lang === "en" ? "24/7 Overnight Proxy" : "24/7 夜盘代理"}
                 <span className="src" style={{ marginLeft: 10 }}>
                   Hyperliquid 永续 · 全天候定价 · 实证 corr 0.965/方向命中 96%(Cycle8)· {agoShort(hl.updated_at ?? "", nowTick)}
                 </span>
@@ -691,7 +691,7 @@ export default function DeskPage() {
           {/* 事件热度榜(Winter PG 近7天聚合;未投递时隐藏) */}
           {!!heat?.items?.length && (
             <div className="section" style={{ marginTop: 4 }}>
-              <h2>🔥 高波动榜
+              <h2>🔥 {lang === "en" ? "Most Volatile" : "高波动榜"}
                 <span className="src" style={{ marginLeft: 10 }}>
                   近 {heat.window_days ?? 7} 天盘中事件(异动≥0.8%/新高/新低)次数 · Winter·Postgres
                 </span>
