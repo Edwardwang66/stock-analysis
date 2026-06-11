@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo } from "react";
+import { useLang } from "@/lib/names";
 
 // 轮动象限图(RRG 近似):x = RS 分位(1-99,全宇宙相对强度),y = 63日动量(%)。
 // 右上=领涨(强+动量),右下=高位转弱,左下=落后,左上=底部改善。
@@ -11,6 +12,7 @@ export interface RrgItem { symbol: string; name: string; rs: number; r63: number
 const W = 720, H = 420, PAD = 42;
 
 export default function RrgChart({ items }: { items: RrgItem[] }) {
+  const lang = useLang();
   const pts = useMemo(() => {
     const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
     return items
@@ -43,12 +45,12 @@ export default function RrgChart({ items }: { items: RrgItem[] }) {
         {/* 轴与中线 */}
         <line x1={PAD} y1={midY} x2={W - PAD} y2={midY} stroke="var(--border)" strokeDasharray="4 4" />
         <line x1={midX} y1={PAD} x2={midX} y2={H - PAD} stroke="var(--border)" strokeDasharray="4 4" />
-        <text x={W - PAD - 4} y={PAD + 14} textAnchor="end" fontSize={12} fill="#26a69a">领涨(强·升)</text>
-        <text x={W - PAD - 4} y={H - PAD - 6} textAnchor="end" fontSize={12} fill="#f7b500">高位转弱</text>
-        <text x={PAD + 4} y={H - PAD - 6} fontSize={12} fill="#ef5350">落后(弱·跌)</text>
-        <text x={PAD + 4} y={PAD + 14} fontSize={12} fill="#4c8dff">底部改善</text>
-        <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={11} fill="var(--muted)">RS 相对强度分位(0-100)→</text>
-        <text x={12} y={H / 2} fontSize={11} fill="var(--muted)" transform={`rotate(-90 12 ${H / 2})`} textAnchor="middle">63日动量 % →</text>
+        <text x={W - PAD - 4} y={PAD + 14} textAnchor="end" fontSize={12} fill="#26a69a">{lang === "en" ? "Leading" : "领涨(强·升)"}</text>
+        <text x={W - PAD - 4} y={H - PAD - 6} textAnchor="end" fontSize={12} fill="#f7b500">{lang === "en" ? "Weakening" : "高位转弱"}</text>
+        <text x={PAD + 4} y={H - PAD - 6} fontSize={12} fill="#ef5350">{lang === "en" ? "Lagging" : "落后(弱·跌)"}</text>
+        <text x={PAD + 4} y={PAD + 14} fontSize={12} fill="#4c8dff">{lang === "en" ? "Improving" : "底部改善"}</text>
+        <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={11} fill="var(--muted)">{lang === "en" ? "RS percentile (0-100) →" : "RS 相对强度分位(0-100)→"}</text>
+        <text x={12} y={H / 2} fontSize={11} fill="var(--muted)" transform={`rotate(-90 12 ${H / 2})`} textAnchor="middle">{lang === "en" ? "63d momentum % →" : "63日动量 % →"}</text>
         {/* 散点 */}
         {pts.map((p) => {
           const accel = p.r126 != null ? p.r63 - p.r126 : null; // 短期动量 vs 中期:>0 加速
