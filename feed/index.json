@@ -1,78 +1,78 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-12T18:17:44Z",
+  "updated_at": "2026-06-12T19:27:05Z",
   "freshness": {
-    "last_report_at": "2026-06-12T18:17:44Z",
+    "last_report_at": "2026-06-12T19:27:05Z",
     "market_data_asof": "2026-06-12",
     "report_age_hours": 0.0,
-    "data_age_days": 0.76,
+    "data_age_days": 0.81,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-06-12",
-        "age_days": 0.76
+        "age_days": 0.81
       },
       "market_state": {
         "exists": true,
         "asof": "2026-06-12",
-        "age_days": 0.76
+        "age_days": 0.81
       },
       "screener": {
         "exists": true,
         "asof": "2026-06-12",
-        "age_days": 0.76
+        "age_days": 0.81
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-06-12",
-        "age_days": 0.76
+        "age_days": 0.81
       },
       "stock_notes": {
         "exists": true,
         "asof": "2026-06-10T20:07:20Z",
-        "age_days": 1.92
+        "age_days": 1.97
       },
       "intraday": {
         "exists": true,
         "asof": "2026-06-12T15:50:08+00:00",
-        "age_days": 0.1
+        "age_days": 0.15
       },
       "market_history": {
         "exists": true,
         "asof": "2026-06-12T11:12:54+00:00",
-        "age_days": 0.3
+        "age_days": 0.34
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 25.76
+        "age_days": 25.81
       },
       "crypto_state": {
         "exists": true,
         "asof": "2026-06-12T18:17:40Z",
-        "age_days": 0.0
+        "age_days": 0.05
       }
     }
   },
   "latest": {
-    "report": "reports/routine-2026-06-12T1719Z.json",
+    "report": "reports/routine-2026-06-12T1927Z.json",
     "signals": "signals/latest.json",
     "market": "market/state.json",
     "factory": "factory/candidates.json",
-    "net_sharpe": -0.287432918015483,
+    "net_sharpe": -0.2874329180154828,
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.47≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.29≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 56,
+    "total_reports": 57,
     "by_kind": {
-      "routine": 35,
+      "routine": 36,
       "manual": 10,
       "openclaw": 11
     },
     "by_producer": {
+      "github-actions-routine": 21,
       "hyperliquid-monitor": 15,
-      "github-actions-routine": 20,
       "factor-factory-local": 5,
       "study-pit-bite": 1,
       "study-pit-membership": 1,
@@ -85,8 +85,8 @@
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 11,
-    "last_7d": 56
+    "last_24h": 12,
+    "last_7d": 57
   },
   "timeline": {
     "2026-06-06": 2,
@@ -94,9 +94,24 @@
     "2026-06-09": 13,
     "2026-06-10": 22,
     "2026-06-11": 8,
-    "2026-06-12": 7
+    "2026-06-12": 8
   },
   "reports": [
+    {
+      "id": "routine-2026-06-12T1927Z",
+      "kind": "routine",
+      "produced_at": "2026-06-12T19:27:05Z",
+      "asof_data": "2026-06-12",
+      "producer": "github-actions-routine",
+      "agent_role": "engine",
+      "net_sharpe": -0.2874329180154828,
+      "verdict": "holdout(2025-01-01起)净 Sharpe=-0.47≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.29≤0(净成本是唯一货币 R4)",
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "signal_refresh",
+      "contribution_summary": "刷新做多做空簿(多 31/空 22),净 Sharpe -0.29;市场 risk_on、广度 0.609、拥挤 0.109。",
+      "path": "reports/routine-2026-06-12T1927Z.json"
+    },
     {
       "id": "hl-monitor-2026-06-12T1817Z",
       "kind": "routine",
@@ -939,6 +954,16 @@
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-12T19:27:05Z",
+      "producer": "github-actions-routine",
+      "id": "routine-2026-06-12T1927Z",
+      "type": "signal_refresh",
+      "summary": "刷新做多做空簿(多 31/空 22),净 Sharpe -0.29;市场 risk_on、广度 0.609、拥挤 0.109。",
+      "candidates_proposed": 0,
+      "candidates_accepted": 0,
+      "net_sharpe_delta": 0.0
+    },
     {
       "at": "2026-06-12T18:17:44Z",
       "producer": "hyperliquid-monitor",
