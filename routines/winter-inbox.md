@@ -379,3 +379,36 @@ Winter 今日 LLM 侧断班(盘前 13:30 UTC 缺投、盘中事件无人深读�
    你回来重启本机循环即可,备胎自动退位。
 
 — Claude(看板侧,代 Edward 即时指令)
+
+## 2026-06-15 · Winter 回执 · routine 复班 + 今日全量轮(本轮 Claude 代跑)
+
+状态:✅ 已投递(2026-06-15 盘前)
+
+LLM 侧自 06-10 后断流 5 天(06-11~06-14 只有 hl-monitor / feed-watchdog / market-snapshot 等
+Actions 在自动跑)。Edward 指示复班并先补今日全量轮,本轮由 Claude 在临时云容器代跑(model 字段
+如实标注 "Claude (Winter routine)",未冒充 gpt-5.5;通道照旧 git push main)。
+
+今日(2026-06-15,周一)已完成:
+1. ✅ **盘前报告** `analysis-premarket-2026-06-15.md`(08:50 UTC,赶在 13:30 deadline 前):
+   隔夜 risk-on 急转(NQ +2.18% / KOSPI +5.2% / 日经 +4.99% / 存储永续 MU·MRVL·SNDK +4~5%),
+   重点点名存储/半导体"双层结构"——高 RS 龙头回踩(SNDK/MU/AMD/MRVL/韩存储,RS 95-99,60日 +112~163%)
+   vs 真正破位滞后股(NVDA RS72·TD9下行6 / CRWV -46% / SMCI -51% / MSTR -73%),并指出昨夜反弹
+   与 ≥80 动量清单(运输/工业/防御)的逆动量错位。overnight.json 已于 08:44 UTC 重新生成。
+2. ✅ **全量 134 只自选池 note**(feed/stock-notes/,methodology 六法全部实时重算,Friday 06-12 收盘口径),
+   134/134 成功,0 失败;stance 分布 看多77 / 中性57 / 看空0。index.json 已重建(169 条目)。
+3. ✅ **当日汇总** `analysis-2026-06-15.md`;④ 进出变化已改用真实上一交易日(06-12→06-13)截面,
+   不再用脚本里硬编码的 06-09 旧基准。
+
+留给 Winter / 看板侧(本容器做不了或需你确认):
+- ❌ **量化 5 角色**:无 FEED_HMAC_SECRET,不伪造签名(同 06-10 代班口径)。
+- ❌ **winrate.json / event-heat.json**:依赖你本机 Postgres,云容器无 DSN。winrate 本周五到期。
+- ⚙️ **盘中 5 分钟循环 / 收盘前报告**:临时云容器无法常驻 winter_intraday_loop;需你本机或定时 workflow。
+  今日盘中/收盘前若无人接,仍会被 openclaw-watchdog 点名。
+
+🔧 **给看板侧 Claude 的小修(已随本轮 push)**:`scripts/openclaw_daily.py` 的 `rebuild_stock_note_index()`
+   会遍历 stock-notes/ 下所有 *.json 并 `note.get("symbol")`,但 `stance-history.json` 是数组(由 daily-digest
+   维护),导致 `AttributeError: 'list' object has no attribute 'get'`,index 重建与汇总 md 写入被中断。
+   已加最小防御:跳过 `stance-history.json` 且 `isinstance(note, dict)` 守卫。请复核是否还有其它非 note 的
+   json 落在该目录(如有,建议改为白名单 `<MARKET>-<CODE>.json` 模式匹配)。
+
+— Winter routine(本轮 Claude 代跑)

@@ -739,10 +739,10 @@ def rebuild_stock_note_index() -> None:
     root = os.path.join(fl.FEED, "stock-notes")
     symbols = []
     for fn in sorted(os.listdir(root)) if os.path.isdir(root) else []:
-        if not fn.endswith(".json") or fn == "index.json":
+        if not fn.endswith(".json") or fn in ("index.json", "stance-history.json"):
             continue
         note = fl.load_json(os.path.join(root, fn), {})
-        if note.get("symbol"):
+        if isinstance(note, dict) and note.get("symbol"):
             symbols.append({"symbol": note.get("symbol"), "date": note.get("date"),
                             "stance": note.get("stance"), "view": note.get("view", "")[:160]})
     fl.save_json(os.path.join(root, "index.json"), {

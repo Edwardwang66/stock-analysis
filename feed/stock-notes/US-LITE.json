@@ -1,14 +1,14 @@
 {
   "symbol": "US:LITE",
-  "date": "2026-06-10",
-  "model": "Claude (看板侧代班)",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: LITE 属于 Technology/Communication Equipment，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 853.26，20/50/200日均线约 916.87/893.86/489.51；TD9 下行4；52周位置 距高 -21.4%、77分位；SuperTrend(10,3) 多头·约 55 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -14.0%/36.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "date": "2026-06-15",
+  "model": "Claude (Winter routine)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "看多",
+  "thesis": "多头: LITE 属于 Technology/Communication Equipment，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 921.56，20/50/200日均线约 905.82/900.74/497.33；TD9 上行2；52周位置 距高 -15.1%、84分位；SuperTrend(10,3) 多头·约 57 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -8.0%/31.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Applied Optoelectronics Jumps 7%, Lumentum Climbs 5%, Coherent Rises 2% as Optics Stocks Ride the AI Boom(24/7 Wall St.)；Wall Street dumped nearly $1 trillion in tech stocks by midday—then clawed it back and bought peanut butter and paint(Fortune)；Here’s What Analysts Are Saying About Lumentum Holdings (LITE)(Insider Monkey)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Lumentum (LITE): JPMorgan Pushback Helps Keep the AI Optical Networking Case Intact(Insider Monkey)；Lumentum Nvidia Deal Highlights AI Optics Growth And Valuation Opportunity(Simply Wall St.)；Is Now The Time To Look At Buying Lumentum Holdings Inc. (NASDAQ:LITE)?(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行4；52周位置 距高 -21.4%、77分位；SuperTrend(10,3) 多头·约 55 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行2；52周位置 距高 -15.1%、84分位；SuperTrend(10,3) 多头·约 57 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: LITE",
@@ -19,42 +19,19 @@
       "url": "https://finance.yahoo.com/quote/LITE/news/"
     },
     {
-      "title": "Applied Optoelectronics Jumps 7%, Lumentum Climbs 5%, Coherent Rises 2% as Optics Stocks Ride the AI Boom",
-      "url": "https://finance.yahoo.com/m/bae786ce-eb00-33e8-9aa2-fbd253d033c1/applied-optoelectronics-jumps.html"
+      "title": "Lumentum (LITE): JPMorgan Pushback Helps Keep the AI Optical Networking Case Intact",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/lumentum-lite-jpmorgan-pushback-helps-193000476.html"
     },
     {
-      "title": "Wall Street dumped nearly $1 trillion in tech stocks by midday—then clawed it back and bought peanut butter and paint",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/wall-street-dumped-nearly-1-214320003.html"
-    },
-    {
-      "title": "Lumentum FQ3 2026 Results (SEC 8-K)",
-      "url": "https://www.sec.gov/Archives/edgar/data/0001633978/000162828026030530/lite_ex991xq3fy26.htm"
-    },
-    {
-      "title": "Lumentum Forward PE - GuruFocus",
-      "url": "https://www.gurufocus.com/term/forward-pe-ratio/LITE"
-    },
-    {
-      "title": "Lumentum Q3 2026 Earnings Transcript - Motley Fool",
-      "url": "https://www.fool.com/earnings/call-transcripts/2026/05/06/lumentum-lite-q3-2026-earnings-transcript/"
-    },
-    {
-      "title": "Lumentum Earnings Dates - TipRanks",
-      "url": "https://www.tipranks.com/stocks/lite/earnings"
+      "title": "Lumentum Nvidia Deal Highlights AI Optics Growth And Valuation Opportunity",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/lumentum-nvidia-deal-highlights-ai-111244938.html"
     }
   ],
   "methodology": {
-    "td9": "下行4",
-    "week52": "距高 -21.4% · 77分位",
-    "supertrend": "多头·约 55 个交易日前翻转",
-    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
-    "rs": 99
-  },
-  "fundamentals": {
-    "valuation": "前瞻PE约52x(GuruFocus,6/4),约为硬件行业中位25.5x的两倍",
-    "quality": "FQ3营收8.08亿美元+90%,非GAAP毛利率47.9%、营业利润率32.2%,云光模块环比+40%",
-    "catalysts": "8/18发FQ4财报,指引营收中值9.85亿创新高;1.6T放量、自产CW激光占比升至约20%增厚毛利",
-    "peers": "增速90%居Coherent等光模块同业前列,自产激光芯片垂直整合是差异点,估值溢价行业一倍",
-    "verdict": "基本面强:营收创纪录、利润率扩张且指引续创新高,增长由出货而非纯叙事驱动"
+    "td9": "上行2",
+    "week52": "距高 -15.1% · 84分位",
+    "supertrend": "多头·约 57 个交易日前翻转",
+    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 98
   }
 }

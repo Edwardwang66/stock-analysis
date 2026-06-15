@@ -1,14 +1,14 @@
 {
   "symbol": "US:MAS",
-  "date": "2026-06-09",
-  "model": "gpt-5.5",
+  "date": "2026-06-15",
+  "model": "Claude (Winter routine)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: Masco 属于 Industrials/Building Products & Equipment，当前进入看多清单，技术评分 50、RSI14 61.7；最新价约 72.35，20/50/200日均线约 68.48/67.67/67.57；近20/60交易日收益约 2.5%/17.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
-  "earnings": "本轮未从 SEC companyfacts 可靠取得最近 10-Q/10-K 核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Is Analyst Support For Masco’s Data‑Driven Margin Push (MAS) Altering Its Investment Case?(Simply Wall St.)；Goldman Sachs Keeps Buy Rating on Masco (MAS) Stock(Insider Monkey)；Is FGI's Brands, Products and Channels Strategy Starting to Pay Off?(Zacks)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "thesis": "多头: Masco 属于 Industrials/Building Products & Equipment，当前进入看多清单，技术评分 85、RSI14 63.9；最新价约 74.03，20/50/200日均线约 69.14/68.45/67.54；TD9 上行4；52周位置 距高 -6.5%、75分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 8.5%/23.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
+  "news": "近端公开新闻标题: Forget ARKK: This Buffett-Style ETF Beat It Over 5 Years With Half the Volatility(24/7 Wall St.)；Is Argan (AGX) Stock Outpacing Its Construction Peers This Year?(Zacks)；Is Analyst Support For Masco’s Data‑Driven Margin Push (MAS) Altering Its Investment Case?(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: 规则化技术面偏强，但只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行4；52周位置 距高 -6.5%、75分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: MAS",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/MAS/news/"
     },
     {
-      "title": "Is Analyst Support For Masco’s Data‑Driven Margin Push (MAS) Altering Its Investment Case?",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/analyst-support-masco-data-driven-020353718.html"
+      "title": "Forget ARKK: This Buffett-Style ETF Beat It Over 5 Years With Half the Volatility",
+      "url": "https://finance.yahoo.com/m/9094313e-7797-3fe3-9531-7ae866d34e17/forget-arkk%3A-this.html"
     },
     {
-      "title": "Goldman Sachs Keeps Buy Rating on Masco (MAS) Stock",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/goldman-sachs-keeps-buy-rating-120046888.html"
+      "title": "Is Argan (AGX) Stock Outpacing Its Construction Peers This Year?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/argan-agx-stock-outpacing-construction-134003384.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "上行4",
+    "week52": "距高 -6.5% · 75分位",
+    "supertrend": "多头·约 4 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，有背驰迹象",
+    "rs": 67
+  }
 }

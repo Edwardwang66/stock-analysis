@@ -1,14 +1,14 @@
 {
   "symbol": "US:SNDK",
-  "date": "2026-06-10",
-  "model": "Claude (看板侧代班)",
-  "producer": "claude-cowork:stock-analyst",
+  "date": "2026-06-15",
+  "model": "Claude (Winter routine)",
+  "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: SANDISK CORP 属于 Technology/Computer Hardware，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 1643.23，20/50/200日均线约 1572.18/1242.68/554.22；TD9 下行4；52周位置 距高 -11.7%、88分位；SuperTrend(10,3) 多头·约 44 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: Call+股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 13.2%/133.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: SANDISK CORP 属于 Technology/Computer Hardware，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 1980.10，20/50/200日均线约 1623.76/1293.35/573.06；TD9 上行2；52周位置 距高 -2.1%、98分位；SuperTrend(10,3) 多头·约 46 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: Call+股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 43.2%/162.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Up 500% in 2026: 1 Deeply Concerning Reason to Stand Pat on SanDisk Stock Despite the June Rebound(24/7 Wall St.)；The Market Is Giddy. Is Your Portfolio at Risk?(Barrons.com)；Investors Are Ditching the Magnificent 7 For a New Group of Stocks: The MANGOS(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Why Did ROKU, SNDK, C Stocks Hit 52-Week Highs Last Week?(Stocktwits)；Adobe CFO Quits to Join a Chipmaker. You Shouldn’t Quit ADBE Stock.(Barchart)；Up 600% in 2026, Is Sandisk Stock Still a Buy?(Motley Fool)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行4；52周位置 距高 -11.7%、88分位；SuperTrend(10,3) 多头·约 44 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行2；52周位置 距高 -2.1%、98分位；SuperTrend(10,3) 多头·约 46 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SNDK",
@@ -19,38 +19,19 @@
       "url": "https://finance.yahoo.com/quote/SNDK/news/"
     },
     {
-      "title": "Up 500% in 2026: 1 Deeply Concerning Reason to Stand Pat on SanDisk Stock Despite the June Rebound",
-      "url": "https://finance.yahoo.com/m/23090abc-18c2-3733-b850-dbf6be8f76ea/up-500%25-in-2026%3A-1-deeply.html"
+      "title": "Why Did ROKU, SNDK, C Stocks Hit 52-Week Highs Last Week?",
+      "url": "https://finance.yahoo.com/m/2194b65c-6276-3a5e-9ab8-0c8f11e1ab2d/why-did-roku%2C-sndk%2C-c-stocks.html"
     },
     {
-      "title": "The Market Is Giddy. Is Your Portfolio at Risk?",
-      "url": "https://finance.yahoo.com/m/a08d8125-81e2-3a97-a62a-3a470ba56ec9/the-market-is-giddy.-is-your.html"
-    },
-    {
-      "title": "Sandisk Q3 FY2026 Press Release (Form 8-K)",
-      "url": "https://www.sec.gov/Archives/edgar/data/0002023554/000162828026028879/sndkq3-26ex991xpressrelease.htm"
-    },
-    {
-      "title": "Why Sandisk, Micron stock are plunging up to 9% on Tuesday",
-      "url": "https://www.tradingview.com/news/invezz:27051d02a094b:0-why-sandisk-micron-stock-are-plunging-upto-9-on-tuesday/"
-    },
-    {
-      "title": "SanDisk (SNDK) - Stock Analysis",
-      "url": "https://stockanalysis.com/stocks/sndk/"
+      "title": "Adobe CFO Quits to Join a Chipmaker. You Shouldn’t Quit ADBE Stock.",
+      "url": "https://finance.yahoo.com/m/87cb1fd7-7c3c-333b-b4b9-d50bf302ff9e/adobe-cfo-quits-to-join-a.html"
     }
   ],
   "methodology": {
-    "td9": "下行4",
-    "week52": "距高 -11.7% · 88分位",
-    "supertrend": "多头·约 44 个交易日前翻转",
-    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "td9": "上行2",
+    "week52": "距高 -2.1% · 98分位",
+    "supertrend": "多头·约 46 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
     "rs": 99
-  },
-  "fundamentals": {
-    "valuation": "市值约2440亿美元,TTM PE约55倍,远期PE约9.9倍,年内涨约552%",
-    "quality": "FQ3营收59.5亿美元环比+97%,数据中心+233%,GAAP净利36.2亿,NAND量价齐升",
-    "catalysts": "FQ4指引营收77.5-82.5亿、EPS 30-33美元;NAND合约价走向是关键;近日板块获利了结回调",
-    "peers": "NAND纯标的,年内涨幅超美光(+179%)与西数(+200%),周期弹性最大、见顶争议也最大",
-    "verdict": "基本面强:量价齐升盈利爆发,但处NAND周期高位,需跟踪ASP见顶风险"
   }
 }

@@ -1,14 +1,14 @@
 {
   "symbol": "US:BE",
-  "date": "2026-06-10",
-  "model": "Claude (看板侧代班)",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: BLOOM ENERGY CORP 属于 Industrials/Electrical Equipment & Parts，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 234.22，20/50/200日均线约 280.96/244.18/147.23；TD9 下行4；52周位置 距高 -27.4%、71分位；SuperTrend(10,3) 多头·约 42 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: Call+股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 -16.6%/52.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "date": "2026-06-15",
+  "model": "Claude (Winter routine)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "看多",
+  "thesis": "多头: BLOOM ENERGY CORP 属于 Industrials/Electrical Equipment & Parts，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 260.22，20/50/200日均线约 276.75/249.00/149.28；TD9 上行1；52周位置 距高 -19.4%、79分位；SuperTrend(10,3) 多头·约 44 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；SA LP 持仓背景: Call+股票，主题 n/a，13F asof 2026-03-31。；近20/60交易日收益约 -14.2%/66.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Why Bloom Energy Stock Plunged Over 10% Today(Motley Fool)；Should You Buy the Bloom Energy Stock Dip?(Motley Fool)；Stock Market Today: Nasdaq, Chip Stocks Get Pummeled. Trump Threatens Iran. (Live Coverage)(Investor's Business Daily)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: 2 Best Stocks to Buy in the Market Right Now(Motley Fool)；Bloom Energy’s S&P 500 Buzz Meets Renewed Wyoming AI Project Progress(Simply Wall St.)；Viking, Bloom Energy Lead Five Stocks Making Bullish Moves As Market Rebounds(Investor's Business Daily)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行4；52周位置 距高 -27.4%、71分位；SuperTrend(10,3) 多头·约 42 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行1；52周位置 距高 -19.4%、79分位；SuperTrend(10,3) 多头·约 44 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: BE",
@@ -19,41 +19,18 @@
       "url": "https://finance.yahoo.com/quote/BE/news/"
     },
     {
-      "title": "Why Bloom Energy Stock Plunged Over 10% Today",
-      "url": "https://finance.yahoo.com/m/68708356-c268-3fd8-9f8c-f4a096a85de4/why-bloom-energy-stock.html"
+      "title": "2 Best Stocks to Buy in the Market Right Now",
+      "url": "https://finance.yahoo.com/m/ea9b59fd-7846-35ec-8975-8257b887de16/2-best-stocks-to-buy-in-the.html"
     },
     {
-      "title": "Should You Buy the Bloom Energy Stock Dip?",
-      "url": "https://finance.yahoo.com/m/f511b86d-0fe2-3a1e-bf1c-276931feb6c2/should-you-buy-the-bloom.html"
-    },
-    {
-      "title": "Bloom Energy Q1 2026 Results (SEC 8-K)",
-      "url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026027913/ex991_q126financialresults.htm"
-    },
-    {
-      "title": "Bloom Energy Forward PE - GuruFocus",
-      "url": "https://www.gurufocus.com/term/forward-pe-ratio/BE"
-    },
-    {
-      "title": "Bloom Energy Q1 2026 Earnings Transcript - Motley Fool",
-      "url": "https://www.fool.com/earnings/call-transcripts/2026/04/28/bloom-energy-be-q1-2026-earnings-transcript/"
-    },
-    {
-      "title": "Bloom Energy Earnings Dates - MarketBeat",
-      "url": "https://www.marketbeat.com/stocks/NYSE/BE/earnings/"
+      "title": "Bloom Energy’s S&P 500 Buzz Meets Renewed Wyoming AI Project Progress",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/bloom-energy-p-500-buzz-200938721.html"
     }
   ],
   "methodology": {
-    "td9": "下行4",
-    "week52": "距高 -27.4% · 71分位",
-    "supertrend": "多头·约 42 个交易日前翻转",
-    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰"
-  },
-  "fundamentals": {
-    "valuation": "前瞻PE约135x(GuruFocus,6/5),EV/EBITDA约320x,刚盈利但估值极高",
-    "quality": "Q1营收7.51亿美元同比+130%,毛利率31.5%,营业利润率17.3%,全年指引上调至34-38亿美元",
-    "catalysts": "7/30发Q2财报;Oracle/Brookfield合作落地与产能爬坡;管理层称Q2营收不低于Q1",
-    "peers": "增速与盈利兑现领先燃料电池同业,但前瞻PE较工业板块中位20.8x溢价逾5倍",
-    "verdict": "基本面强:营收翻倍、转正盈利且上调指引,财务质量实打实,惟估值已计入多年高增长"
+    "td9": "上行1",
+    "week52": "距高 -19.4% · 79分位",
+    "supertrend": "多头·约 44 个交易日前翻转",
+    "chan": "下行笔，位于中枢内部，暂未见明显 MACD 面积背驰"
   }
 }
