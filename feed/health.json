@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-06-15T12:47:49Z",
+  "checked_at": "2026-06-15T15:22:24Z",
   "ok": true,
   "critical": 0,
   "warn": 5,
@@ -7,74 +7,74 @@
     {
       "level": "warn",
       "code": "aging",
-      "message": "signals_book 已 3.5 天未更新(SLA 3d)"
+      "message": "signals_book 已 3.6 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "market_state 已 3.5 天未更新(SLA 3d)"
+      "message": "market_state 已 3.6 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "screener 已 2.5 天未更新(SLA 2d)"
+      "message": "screener 已 2.6 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "rs_ranks 已 2.5 天未更新(SLA 2d)"
+      "message": "rs_ranks 已 2.6 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "intraday 已 2.9 天未更新(SLA 2d)"
+      "message": "intraday 已 3.0 天未更新(SLA 2d)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-06-12",
-      "age_days": 3.53
+      "age_days": 3.64
     },
     "market_state": {
       "exists": true,
       "asof": "2026-06-12",
-      "age_days": 3.53
+      "age_days": 3.64
     },
     "screener": {
       "exists": true,
       "asof": "2026-06-13",
-      "age_days": 2.53
+      "age_days": 2.64
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-06-13",
-      "age_days": 2.53
+      "age_days": 2.64
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-06-15T08:49:53Z",
-      "age_days": 0.17
+      "age_days": 0.27
     },
     "intraday": {
       "exists": true,
       "asof": "2026-06-12T15:50:08+00:00",
-      "age_days": 2.87
+      "age_days": 2.98
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-06-13T00:04:42+00:00",
-      "age_days": 2.53
+      "asof": "2026-06-15T13:30:09+00:00",
+      "age_days": 0.08
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 28.53
+      "age_days": 28.64
     },
     "crypto_state": {
       "exists": true,
       "asof": "2026-06-15T12:38:46Z",
-      "age_days": 0.01
+      "age_days": 0.11
     }
   }
 }
