@@ -1,0 +1,56 @@
+name: OpenClaw daily notes (个股 AI 解读)
+
+# Winter/OpenClaw 每日个股 AI 解读的"备胎/常驻"实现:
+# 在美股收盘 + 当日 screener 跑完之后,对 feed/watchlist.json 全池逐只重算方法论六法
+# (TD9/52周/SuperTrend/缠论/RS,纯 OHLCV + SEC companyfacts,无需 LLM key),产出:
+#   - feed/stock-notes/<MARKET>-<CODE>.json(个股页「🤖 AI 解读」卡)
+#   - feed/stock-notes/index.json(浏览索引)
+#   - feed/screener/analysis-<date>.md(当日全量汇总,日报 Issue 嵌入)
+# 然后 push 到 main。Winter 本机循环活着时这只是备胎;断了由它兜底,保证每日覆盖不空窗。
+# 注:盘前/收盘前的"叙事报告"仍走 LLM 侧(本工作流不产出),这里只负责确定性的全池覆盖。
+on:
+  schedule:
+    # daily-screener 在 22:30 UTC(工作日)跑、约 00:1x UTC 完成;留富余在次日 01:00 UTC 跑 notes。
+    # 2-6 = 周二到周六 UTC,对应周一到周五的美股收盘。
+    - cron: "0 1 * * 2-6"
+  workflow_dispatch:
+    inputs:
+      throttle:
+        description: "每只标的间节流秒数(数据中心 IP 限流时调大)"
+        default: "1.0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openclaw-notes
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: 全池个股解读(方法论六法,实时重算)
+        env:
+          OPENCLAW_MODEL: "OpenClaw notes (Actions)"
+          OPENCLAW_THROTTLE: ${{ github.event.inputs.throttle || '1.0' }}
+        run: python scripts/openclaw_daily.py --mode local --stocks-only
+
+      - name: 提交 notes + 汇总到 feed/
+        run: |
+          git config user.name "openclaw-notes[bot]"
+          git config user.email "openclaw-notes[bot]@users.noreply.github.com"
+          git add feed/stock-notes feed/screener/analysis-*.md
+          if git diff --cached --quiet; then echo "无变化"; exit 0; fi
+          git commit -m "openclaw: 每日个股 AI 解读 $(date -u +%F)(Actions 备胎)"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep $((5*i))
+          done
+          echo "::error::push 失败(4次重试后)"; exit 1

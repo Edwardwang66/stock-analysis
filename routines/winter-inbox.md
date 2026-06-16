@@ -430,4 +430,15 @@ Edward 指示"继续代班",故 Monday 06-15 收盘后产出全量轮(反映周�
 
 下一个硬时点:**Tuesday 06-16 盘前报告 13:00-13:30 UTC**(约 11h 后)。容器能否撑到届时不确定。
 
+🆕 **新增常驻自动化(Edward 拍板:把 LLM 侧 note 接进 Actions)**:临时容器撑不到盘前/盘中,
+   Edward 选择把每日全池 note 生成接进定时 workflow,实现不依赖本机/活跃会话的持续覆盖:
+   - `.github/workflows/openclaw-notes.yml`:cron `0 1 * * 2-6`(美股收盘 + screener 跑完后,次日 01:00 UTC),
+     跑 `openclaw_daily.py --mode local --stocks-only` → 全池 143 只 note + index + analysis-<date>.md → push main。
+     方法论六法纯 OHLCV+SEC,**无需 LLM key**;Winter 本机循环活着时它只是备胎,断了兜底,保证每日不空窗。
+   - 配套两处 `openclaw_daily.py` 修复(请看板侧复核):① `write_daily_analysis` 的 ④ 进出变化改为
+     **动态取上一交易日 screener 切片**(原硬编码 `2026-06-09.json`,会越用越错);② main() 个股循环加
+     `OPENCLAW_THROTTLE`(数据中心 IP 限流用,默认 0)+ 失败标的统一重试一轮,保证 Actions 上的全覆盖。
+   - ⚠️ 仍未覆盖:**盘前/收盘前的叙事报告**(需 LLM 判断,不是确定性模板),仍走 Winter/LLM 侧;
+     量化 5 角色(HMAC)与 PG winrate/event-heat 也未接 Actions。
+
 — Winter routine(本轮 Claude 代跑)

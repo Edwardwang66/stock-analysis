@@ -460,6 +460,22 @@ def _stance_counts(notes: list[dict]) -> str:
     return " / ".join(f"{k} {v}" for k, v in counts.items())
 
 
+def _prev_screener_snapshot(date: str) -> tuple[str | None, dict]:
+    """找出严格早于 date 的最近一个 feed/screener/<YYYY-MM-DD>.json 日切片(给 ④ 进出变化用)。"""
+    import glob
+    import re
+    root = os.path.join(fl.FEED, "screener")
+    dates = []
+    for p in glob.glob(os.path.join(root, "*.json")):
+        stem = os.path.basename(p)[:-5]
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", stem) and stem < date:
+            dates.append(stem)
+    if not dates:
+        return None, {"items": []}
+    prev = max(dates)
+    return prev, fl.load_json(os.path.join(root, f"{prev}.json"), {"items": []})
+
+
 def write_daily_analysis(date: str, universe: list[tuple[str, str, dict | None]]) -> None:
     latest = fl.load_json(os.path.join(fl.FEED, "screener", "latest.json"), {"items": []})
     scores = fl.load_json(os.path.join(fl.FEED, "screener", "scores.json"), {"sectors": {}})
@@ -488,11 +504,11 @@ def write_daily_analysis(date: str, universe: list[tuple[str, str, dict | None]]
         f"RSI14 {it.get('rsi14', 'n/a')}，bullish_signals {it.get('bullish_signals', 'n/a')}。"
         for it in top_items
     ]
-    prev = fl.load_json(os.path.join(fl.FEED, "screener", "2026-06-09.json"), {"items": []})
+    prev_date, prev = _prev_screener_snapshot(date)
     prev_set = {f"US:{it['symbol']}" for it in prev.get("items", [])}
     cur_set = set(screener_symbols)
-    entered = sorted(cur_set - prev_set)[:20]
-    exited = sorted(prev_set - cur_set)[:20]
+    entered = sorted(cur_set - prev_set)[:25]
+    exited = sorted(prev_set - cur_set)[:25]
 
     lines = [
         f"# OpenClaw 全量投递汇总 {date}",
@@ -516,7 +532,7 @@ def write_daily_analysis(date: str, universe: list[tuple[str, str, dict | None]]
         "",
         "这些标的只是多因子共振最强的观察对象；事件窗口、拥挤与财报风险仍需逐日复核，非投资建议。",
         "",
-        "## ④ 与昨日清单的进出变化",
+        f"## ④ 与上一交易日({prev_date or 'n/a'} → {date})≥80 清单的进出变化",
         f"- 新进入: {', '.join(entered) if entered else '无'}",
         f"- 离开: {', '.join(exited) if exited else '无'}",
         "",
@@ -803,13 +819,31 @@ def main():
     # 任务 A:个股解读
     if not args.roles_only:
         uni = load_universe(args.top, args.watchlist, args.screener_file)
-        print(f"[daily] 个股解读 {len(uni)} 只(mode={args.mode})")
-        for sym, name, item in uni:
-            try:
-                note = analyze_stock(sym, name, item)
-                dispatch_stock(note, args.mode, args.repo, token)
-            except Exception as e:  # noqa: BLE001
-                print(f"[daily] {sym} 失败: {e}")
+        # 数据源(Yahoo/SEC)在数据中心 IP 上会限流;OPENCLAW_THROTTLE 给每只之间加节流(秒),
+        # 默认 0 保持原行为(本机/residential IP 无需节流)。失败的标的最后统一重试一轮补齐覆盖。
+        throttle = float(os.environ.get("OPENCLAW_THROTTLE", "0") or "0")
+        print(f"[daily] 个股解读 {len(uni)} 只(mode={args.mode}, throttle={throttle}s)")
+
+        def _run(items: list[tuple[str, str, dict | None]]) -> list[tuple[str, str, dict | None]]:
+            failed: list[tuple[str, str, dict | None]] = []
+            for sym, name, item in items:
+                try:
+                    note = analyze_stock(sym, name, item)
+                    dispatch_stock(note, args.mode, args.repo, token)
+                except Exception as e:  # noqa: BLE001
+                    failed.append((sym, name, item))
+                    print(f"[daily] {sym} 失败: {e}")
+                if throttle:
+                    time.sleep(throttle)
+            return failed
+
+        failed = _run(uni)
+        if failed:
+            print(f"[daily] 首轮失败 {len(failed)} 只,20s 后重试一轮")
+            time.sleep(20)
+            failed = _run(failed)
+            if failed:
+                print(f"[daily] 最终失败 {len(failed)} 只: {[s for s, _, _ in failed]}")
         if args.mode == "local":
             rebuild_stock_note_index()
             scr = fl.load_json(args.screener_file) if args.screener_file else fl.load_json(os.path.join(fl.FEED, "screener", "latest.json"), {})
