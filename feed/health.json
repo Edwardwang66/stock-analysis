@@ -1,75 +1,54 @@
 {
-  "checked_at": "2026-06-15T18:07:03Z",
+  "checked_at": "2026-06-16T05:43:34Z",
   "ok": true,
   "critical": 0,
-  "warn": 4,
-  "issues": [
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "signals_book 已 3.8 天未更新(SLA 3d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "market_state 已 3.8 天未更新(SLA 3d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "screener 已 2.8 天未更新(SLA 2d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "rs_ranks 已 2.8 天未更新(SLA 2d)"
-    }
-  ],
+  "warn": 0,
+  "issues": [],
   "sources": {
     "signals_book": {
       "exists": true,
-      "asof": "2026-06-12",
-      "age_days": 3.75
+      "asof": "2026-06-15",
+      "age_days": 1.24
     },
     "market_state": {
       "exists": true,
-      "asof": "2026-06-12",
-      "age_days": 3.75
+      "asof": "2026-06-15",
+      "age_days": 1.24
     },
     "screener": {
       "exists": true,
-      "asof": "2026-06-13",
-      "age_days": 2.75
+      "asof": "2026-06-16",
+      "age_days": 0.24
     },
     "rs_ranks": {
       "exists": true,
-      "asof": "2026-06-13",
-      "age_days": 2.75
+      "asof": "2026-06-16",
+      "age_days": 0.24
     },
     "stock_notes": {
       "exists": true,
-      "asof": "2026-06-15T08:49:53Z",
-      "age_days": 0.39
+      "asof": "2026-06-16T02:39:49Z",
+      "age_days": 0.13
     },
     "intraday": {
       "exists": true,
       "asof": "2026-06-15T17:33:26+00:00",
-      "age_days": 0.02
+      "age_days": 0.51
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-06-15T13:30:09+00:00",
-      "age_days": 0.19
+      "asof": "2026-06-16T00:15:46+00:00",
+      "age_days": 0.23
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 28.75
+      "age_days": 29.24
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-06-15T12:38:46Z",
-      "age_days": 0.23
+      "asof": "2026-06-16T05:25:52Z",
+      "age_days": 0.01
     }
   }
 }
