@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-06-16T1130Z",
+  "kind": "routine",
+  "produced_at": "2026-06-16T11:30:50Z",
+  "asof_data": "2026-06-16",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/27614384992"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "HYPE 资金费年化 108%(OI $1597M)——挤压/单边持仓信号。",
+      "tickers": [
+        "HYPE"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "TRUMP 资金费年化 -70%(OI $12M)——挤压/单边持仓信号。",
+      "tickers": [
+        "TRUMP"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h +0.39% (mark 7564.3,$415M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:34 流动永续持仓面,跨所错位 58,HIP-3 24/7 资产 96。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "fca2acbe6cd6939492b7337d1a843e4a2de7e9571efd90c0f43d3672e05e16fb"
+  }
+}
