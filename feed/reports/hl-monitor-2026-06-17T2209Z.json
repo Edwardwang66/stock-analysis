@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-06-17T2209Z",
+  "kind": "routine",
+  "produced_at": "2026-06-17T22:09:04Z",
+  "asof_data": "2026-06-17",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/27722915307"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "XMR 资金费年化 82%(OI $44M)——挤压/单边持仓信号。",
+      "tickers": [
+        "XMR"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ONDO 资金费年化 -55%(OI $9M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ONDO"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -1.04% (mark 7442.9,$396M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:31 流动永续持仓面,跨所错位 53,HIP-3 24/7 资产 92。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "37deb932f95ddd27d28a6e6c6a2711ec2360b548a26a3e0319340b0568920877"
+  }
+}
