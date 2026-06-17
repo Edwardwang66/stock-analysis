@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-06-17T2349Z",
+  "kind": "routine",
+  "produced_at": "2026-06-17T23:49:08Z",
+  "asof_data": "2026-06-17",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/27727114314"
+  },
+  "alerts": [
+    {
+      "level": "warning",
+      "code": "crypto-crowding",
+      "message": "加密持仓面拥挤:多头资金费占比 0.879,OI 变化 0.0167(§7.2 尾部风险信号,先于人群减杠杆 R7)。",
+      "tickers": []
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ASTER 资金费年化 131%(OI $46M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ASTER"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ADA 资金费年化 -70%(OI $21M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ADA"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.71% (mark 7468.3,$400M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:33 流动永续持仓面,跨所错位 62,HIP-3 24/7 资产 91。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "cc50f52af4d1100a549aeb9d26ac996588ea424a17a5867d184007b75fa5cc1d"
+  }
+}
