@@ -79,7 +79,20 @@
 - /intel 新增「🗂 报告浏览」:近 20 份报告点行展开(裁决/告警/候选/贡献/notes)
 - factor_factory.build_panel 支持 tickers 参数(任意 universe)
 
+## Cycle 12(2026-06-18)— 长期投资系统:24-agent 深度调研 + 系统设计
+- **24 个并行 agent** 各跑一路 fan-out 调研,产出 `research/long-term/` 24 篇报告(价值/质量/低波/
+  股东收益/盈余质量/动量趋势/因子择时/资产配置/宏观/EDGAR-PIT/免费数据/加密链上/内部人13F/
+  板块轮动/组合构建/回测陷阱/LLM-agent/情绪逆向/回撤风控/国际EM/DCF/主题成长/复利机器/多因子整合)
+- **横向综合** `research/long-term/README.md`:20 条元结论(质量是低换手存活因子 / EDGAR 是唯一真免费
+  PIT 源 / LLM 不进决策链 / 波动目标只作用总敞口 / 长期≠更可靠 n_eff≈n/H / integrated 骨架+温和暴露…)
+- **系统设计** `docs/long-term-investment-system.md`(LIS v0.1):L0 数据底座→L1 因子库→L2 合成 LongScore
+  →L3 组合→L4 风险叠加→L5 七关验证→L6 feed/看板;分期路线图 L-1..L-6,与既有红线 R4-R9 一致
+- 诚实定位:长期腿是与中频 stat-arb **互补的第二引擎**(多头为主、容量大、低换手),靠广度×合成×纪律
+  而非单因子准;任何"跑赢"须过七关验证(2022 必入 holdout),否则只当展示
+- 全程仅调研 + 文档,**未改任何引擎/前端代码**;落地从 L-1(EDGAR PIT 面板)起按路线图推进
+
 ## 待办池(按优先级)
+0. **LIS L-1**:`scripts/edgar_fundamentals.py`(PIT 基本面面板)+ `scripts/macro_fred.py`(宏观拨盘)
 1. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)

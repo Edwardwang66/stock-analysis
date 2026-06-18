@@ -145,6 +145,9 @@ final = base_score * (1 + clamp(Σ confirm − Σ reverse, 0, 0.20))
 - 用 submissions API 找 `13F-HR`(修正 `13F-HR/A`;`13F-NT`=通知无持仓)→ 取 information table XML。本系统 `scripts/funds_13f.py` 已正确实现此路径(submissions → index.json → infotable XML,命名空间 `…/thirteenf/informationtable`,字段 `nameOfIssuer/cusip/value/shrsOrPrnAmt/sshPrnamt/putCall`)。
 - **注意 value 单位切换:** 2023 起 13F 以**整美元**申报,此前为**千美元** —— 跨期回测需归一化(中可信度,需对历史样本实测)。
 - **批量:** 季度 13F 数据集 `…/form-13f-data-sets/{YYYY}q{N}_form13f.zip`(`INFOTABLE/COVERPAGE/...`;**确切 zip 名未核实,需实测**)。
+- **本系统已就绪部分:** `scripts/funds_13f.py` 已实现 submissions→index.json→infotable XML 的完整链路、UA、CUSIP→ticker 映射、期权拆行聚合与"45 天滞后/仅多头"免责注释 —— 内部人侧 `insiders_form4.py` 应直接复用其 `get()`/UA/索引发现范式,只换解析架构(ownershipDocument)与过滤(code=P)。
+
+> **EDGAR 端点诚实标注:** 速率限制、UA 要求、submissions/Archives 路径、ownershipDocument 与 informationtable 架构字段均为 SEC 官方文档可核(高可信度)。**待实测项:** EFTS `ciks`/`entityName`/`size` 上限;Form 345 与 13F 数据集的确切 zip 文件名;Form 345 readme 列拼写;13F value 千美元↔整美元(2023 起)切换的历史归一化。这些在写入解析代码前须逐一实测。
 
 ### 5.3 免费聚合器(便利,但作辅助,凡 load-bearing 必回 EDGAR 核对)
 - **openinsider.com:** 免费、近实时、爬 Form 4。screener URL 参数:`s`=ticker、`o`=内部人名、`xp=1`(含买入)、`xs=1`(含卖出)、`fd`=申报日窗口天数(或 `fd=-1`+`fdr={start}+-+{end}`)、`vl/vh`=金额、角色旗标 `isceo/iscfo/isdirector=1`、`cnt` 行数、CSV 下载链接。**Latest Cluster Buys** 视图直接给集群。**警告:非官方、无 API 契约、HTML 脆弱、无 SLA。**
