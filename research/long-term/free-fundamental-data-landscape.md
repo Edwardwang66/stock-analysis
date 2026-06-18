@@ -168,6 +168,27 @@
 - **回测**:只准 `true_pit` 源(EDGAR-vintage 或 Sharadar)。Yahoo/SimFin/FMP 的重述值进回测会高估因子(survivorship + look-ahead)。
 - **成本上限**:零预算 → EDGAR + Finnhub + Tushare 即可覆盖"美股 PIT + 美股点查 + A股";加 ~$30/月 → Sharadar 让 PIT 工程量骤降。
 
+**EDGAR 真·PIT 落地配方(可直接照做)**
+1. **拉数据**:夜间下载 `companyfacts.zip`(全公司 facts)+ 季度 **Financial Statement Data Sets**(`num.txt`/`sub.txt`/`tag.txt`),后者每季冻结 = 天然 vintage。优先 FSDS 而非逐 CIK 调 JSON。
+2. **建 vintage 表**:对每条 fact 记 `(cik, tag, period_end, value, filed_date, form, adsh)`;**以 `filed_date` 为 PIT 锚** —— 因子在日期 `t` 只能看到 `filed_date <= t` 的最新一条;同一 `period_end` 的后续 amendment 作为**新 vintage 行**追加,不覆盖。
+3. **修正处理**:保留 original 与每次 restatement 两条,因子默认用"截至 t 已申报"的值;研究 restatement 信号时再对比 vintage。
+4. **对齐脏活**:custom extension tag 映射到标准概念(自建 tag→concept 字典);单位(`us-gaap` unit)与 quarterly/TTM 口径统一。
+5. **校验**:抽样用 Sharadar AR 维度或 10-K 原文交叉核对 N 家公司,锁定解析误差后再上回测。
+6. **限频礼仪**:批量走 ZIP;API 仅做增量,严格 ≤10 req/s + 带 `User-Agent: <app> <email>`,否则 403/429。
+
+**逐源"内部 vs 对外"落地标志(适配器层填 `commercial_redistribution` / `pit_grade`)**
+
+| 源 | `commercial_redistribution` | `pit_grade` | 系统内角色 |
+|---|:--:|:--:|---|
+| SEC EDGAR | `true` | `true_pit`(走 FSDS vintage) | 对外看板 + 回测底座 |
+| Sharadar SF1 | `false`(需单独协议) | `true_pit` | 内部回测校验 |
+| SimFin | `false` | `restated`(PIT 未核实) | 内部补洞 |
+| FMP / Tiingo / AV | `false` | `restated` | 内部点查/原型 |
+| Finnhub Basic | `false` | `restated` | 内部点查(限频宽) |
+| Yahoo / yfinance | `false` | `restated` | 原型/非美兜底 |
+| AkShare / Tushare | `false` | `restated` / `approx`(Tushare `ann_date`) | 内部 A股/港股 |
+| Norgate | `false` | 成分=`true_pit`;基本面=n/a | 内部回测 universe(价格) |
+
 ---
 
 ## 6) 反方 / 局限
