@@ -1,57 +1,57 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-06-18T17:35:31Z",
+  "updated_at": "2026-06-18T18:35:33Z",
   "freshness": {
-    "last_report_at": "2026-06-18T17:35:31Z",
+    "last_report_at": "2026-06-18T18:35:33Z",
     "market_data_asof": "2026-06-18",
     "report_age_hours": 0.0,
-    "data_age_days": 0.73,
+    "data_age_days": 0.77,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-06-18",
-        "age_days": 0.73
+        "age_days": 0.77
       },
       "market_state": {
         "exists": true,
         "asof": "2026-06-18",
-        "age_days": 0.73
+        "age_days": 0.77
       },
       "screener": {
         "exists": true,
         "asof": "2026-06-17",
-        "age_days": 1.73
+        "age_days": 1.77
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-06-17",
-        "age_days": 1.73
+        "age_days": 1.77
       },
       "stock_notes": {
         "exists": true,
         "asof": "2026-06-18T05:29:59Z",
-        "age_days": 0.5
+        "age_days": 0.55
       },
       "intraday": {
         "exists": true,
         "asof": "2026-06-18T15:59:47+00:00",
-        "age_days": 0.07
+        "age_days": 0.11
       },
       "market_history": {
         "exists": true,
         "asof": "2026-06-18T11:35:48+00:00",
-        "age_days": 0.25
+        "age_days": 0.29
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 31.73
+        "age_days": 31.77
       },
       "crypto_state": {
         "exists": true,
-        "asof": "2026-06-18T15:49:08Z",
-        "age_days": 0.07
+        "asof": "2026-06-18T18:35:30Z",
+        "age_days": 0.0
       }
     }
   },
@@ -64,15 +64,15 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.43≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.27≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 110,
+    "total_reports": 111,
     "by_kind": {
-      "routine": 85,
+      "routine": 86,
       "manual": 14,
       "openclaw": 11
     },
     "by_producer": {
+      "hyperliquid-monitor": 52,
       "github-actions-routine": 34,
-      "hyperliquid-monitor": 51,
       "factor-factory-local": 9,
       "study-pit-bite": 1,
       "study-pit-membership": 1,
@@ -100,9 +100,24 @@
     "2026-06-15": 6,
     "2026-06-16": 11,
     "2026-06-17": 11,
-    "2026-06-18": 4
+    "2026-06-18": 5
   },
   "reports": [
+    {
+      "id": "hl-monitor-2026-06-18T1835Z",
+      "kind": "routine",
+      "produced_at": "2026-06-18T18:35:33Z",
+      "asof_data": "2026-06-18",
+      "producer": "hyperliquid-monitor",
+      "agent_role": "crowding-monitor",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 3,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "HL 衍生品情报:31 流动永续持仓面,跨所错位 90,HIP-3 24/7 资产 89。",
+      "path": "reports/hl-monitor-2026-06-18T1835Z.json"
+    },
     {
       "id": "routine-2026-06-18T1735Z",
       "kind": "routine",
@@ -987,24 +1002,16 @@
       "contribution_type": "regime_update",
       "contribution_summary": "HL 衍生品情报:21 流动永续持仓面,跨所错位 54,HIP-3 24/7 资产 97。",
       "path": "reports/hl-monitor-2026-06-12T0458Z.json"
-    },
-    {
-      "id": "factory-local-2026-06-12T0002Z",
-      "kind": "manual",
-      "produced_at": "2026-06-12T00:02:20Z",
-      "asof_data": "2026-06-11",
-      "producer": "factor-factory-local",
-      "agent_role": "factor-factory",
-      "net_sharpe": null,
-      "verdict": null,
-      "n_alerts": 0,
-      "n_candidates": 8,
-      "contribution_type": "new_factor",
-      "contribution_summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。",
-      "path": "reports/factory-local-2026-06-12T0002Z.json"
     }
   ],
   "contributions": [
+    {
+      "at": "2026-06-18T18:35:33Z",
+      "producer": "hyperliquid-monitor",
+      "id": "hl-monitor-2026-06-18T1835Z",
+      "type": "regime_update",
+      "summary": "HL 衍生品情报:31 流动永续持仓面,跨所错位 90,HIP-3 24/7 资产 89。"
+    },
     {
       "at": "2026-06-18T17:35:31Z",
       "producer": "github-actions-routine",
@@ -1638,15 +1645,6 @@
       "id": "study-pitbite-2026-06-10T0808Z",
       "type": "regime_update",
       "summary": "指数成员前视量化:咬合 3604/32832(11.0%);过门差 +0。"
-    },
-    {
-      "at": "2026-06-10T07:39:06Z",
-      "producer": "factor-factory-local",
-      "id": "factory-local-2026-06-10T0739Z",
-      "type": "new_factor",
-      "candidates_proposed": 304,
-      "candidates_accepted": 0,
-      "summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。"
     }
   ]
 }
