@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-06-18T20:41:52Z",
-  "source_report": "routine-2026-06-18T2041Z",
+  "updated_at": "2026-06-18T23:13:34Z",
+  "source_report": "routine-2026-06-18T2313Z",
   "asof": "2026-06-18",
   "n_long": 33,
   "n_short": 22,
@@ -138,16 +138,6 @@
       "sector": "Utilities"
     },
     {
-      "ticker": "MS",
-      "side": "SHORT",
-      "weight": -0.006,
-      "s_score": 1.446,
-      "halflife_days": 5.3,
-      "kappa": 33.12,
-      "hurst": 0.482,
-      "sector": "Financials"
-    },
-    {
       "ticker": "MPC",
       "side": "SHORT",
       "weight": -0.006,
@@ -156,6 +146,16 @@
       "kappa": 30.27,
       "hurst": 0.261,
       "sector": "Energy"
+    },
+    {
+      "ticker": "MS",
+      "side": "SHORT",
+      "weight": -0.006,
+      "s_score": 1.446,
+      "halflife_days": 5.3,
+      "kappa": 33.12,
+      "hurst": 0.482,
+      "sector": "Financials"
     },
     {
       "ticker": "IBM",
@@ -228,14 +228,14 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "LMT",
+      "ticker": "FCX",
       "side": "LONG",
       "weight": 0.0014,
-      "s_score": 0.207,
-      "halflife_days": 11.9,
-      "kappa": 14.64,
-      "hurst": 0.598,
-      "sector": "Industrials"
+      "s_score": 0.484,
+      "halflife_days": 10.6,
+      "kappa": 16.45,
+      "hurst": 0.568,
+      "sector": "Materials"
     },
     {
       "ticker": "TGT",
@@ -248,23 +248,13 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "FCX",
+      "ticker": "LMT",
       "side": "LONG",
       "weight": 0.0014,
-      "s_score": 0.484,
-      "halflife_days": 10.6,
-      "kappa": 16.45,
-      "hurst": 0.568,
-      "sector": "Materials"
-    },
-    {
-      "ticker": "HON",
-      "side": "LONG",
-      "weight": 0.0017,
-      "s_score": 0.59,
-      "halflife_days": 10.8,
-      "kappa": 16.18,
-      "hurst": 0.534,
+      "s_score": 0.207,
+      "halflife_days": 11.9,
+      "kappa": 14.64,
+      "hurst": 0.598,
       "sector": "Industrials"
     },
     {
@@ -278,14 +268,14 @@
       "sector": "Consumer Discretionary"
     },
     {
-      "ticker": "DHR",
+      "ticker": "HON",
       "side": "LONG",
-      "weight": 0.0018,
-      "s_score": 0.436,
-      "halflife_days": 8.7,
-      "kappa": 20.15,
-      "hurst": 0.533,
-      "sector": "Health Care"
+      "weight": 0.0017,
+      "s_score": 0.59,
+      "halflife_days": 10.8,
+      "kappa": 16.18,
+      "hurst": 0.534,
+      "sector": "Industrials"
     },
     {
       "ticker": "SPGI",
@@ -298,6 +288,16 @@
       "sector": "Financials"
     },
     {
+      "ticker": "DHR",
+      "side": "LONG",
+      "weight": 0.0018,
+      "s_score": 0.436,
+      "halflife_days": 8.7,
+      "kappa": 20.15,
+      "hurst": 0.533,
+      "sector": "Health Care"
+    },
+    {
       "ticker": "PEP",
       "side": "LONG",
       "weight": 0.0019,
@@ -306,16 +306,6 @@
       "kappa": 19.19,
       "hurst": 0.458,
       "sector": "Consumer Staples"
-    },
-    {
-      "ticker": "SHW",
-      "side": "LONG",
-      "weight": 0.002,
-      "s_score": 0.836,
-      "halflife_days": 5.3,
-      "kappa": 32.91,
-      "hurst": 0.228,
-      "sector": "Materials"
     },
     {
       "ticker": "CAT",
@@ -328,6 +318,16 @@
       "sector": "Industrials"
     },
     {
+      "ticker": "SHW",
+      "side": "LONG",
+      "weight": 0.002,
+      "s_score": 0.836,
+      "halflife_days": 5.3,
+      "kappa": 32.91,
+      "hurst": 0.228,
+      "sector": "Materials"
+    },
+    {
       "ticker": "JPM",
       "side": "LONG",
       "weight": 0.0022,
@@ -338,16 +338,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "META",
-      "side": "LONG",
-      "weight": 0.0025,
-      "s_score": 0.17,
-      "halflife_days": 3.7,
-      "kappa": 47.7,
-      "hurst": 0.403,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "GILD",
       "side": "LONG",
       "weight": 0.0025,
@@ -356,6 +346,16 @@
       "kappa": 53.82,
       "hurst": 0.196,
       "sector": "Health Care"
+    },
+    {
+      "ticker": "META",
+      "side": "LONG",
+      "weight": 0.0025,
+      "s_score": 0.17,
+      "halflife_days": 3.7,
+      "kappa": 47.7,
+      "hurst": 0.403,
+      "sector": "Communication Services"
     },
     {
       "ticker": "TMO",
@@ -418,16 +418,6 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "PFE",
-      "side": "LONG",
-      "weight": 0.0055,
-      "s_score": -1.072,
-      "halflife_days": 1.8,
-      "kappa": 94.46,
-      "hurst": -0.028,
-      "sector": "Health Care"
-    },
-    {
       "ticker": "MSFT",
       "side": "LONG",
       "weight": 0.0055,
@@ -436,6 +426,16 @@
       "kappa": 29.56,
       "hurst": 0.347,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "PFE",
+      "side": "LONG",
+      "weight": 0.0055,
+      "s_score": -1.072,
+      "halflife_days": 1.8,
+      "kappa": 94.46,
+      "hurst": -0.028,
+      "sector": "Health Care"
     },
     {
       "ticker": "APD",
