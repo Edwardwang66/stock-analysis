@@ -50,6 +50,20 @@
 - 季度披露,**季末后最多 45 天**;仅美股多头与期权,**不含空头/现金/非美/债券**;按 CUSIP 报,无 ticker(本系统已在 `funds_13f.py` 注释中正确标注此限制)。
 - **可用子信号:** ① "最佳点子"= 经理最大权重仓(Cohen-Polk-Silli:best ideas 比组合其余高 ~2.8-4.5%/年,但**这是报告日口径、毛收益,非扣 45 天滞后**);② **共识/多机构增持**(多个选定经理同时持同一名);③ 高信念(仓位权重大、连续多季加仓)。
 
+### 2.3 Form 4 vs 13F —— 信号特性对照(决定用法)
+
+| 维度 | Form 4(内部人) | 13F(机构) |
+|------|------------------|------------|
+| 申报滞后 | 交易后 **2 个工作日** | 季末后**最多 45 天**(实际位置平均陈旧 ~3 个月) |
+| 信息源 | 公司内部人(信息优势最大) | 外部机构(信息优势较小) |
+| 标的标识 | 含 ticker(友好) | 仅 CUSIP/名称(需映射) |
+| 信号方向 | 买入有信息、卖出弱 | 增持/best idea 有信息、整体组合弱 |
+| 容量 | 偏小盘、低容量 | 偏大中盘、容量较高 |
+| 盲点 | 仅个人持仓变动 | 无空头/现金/非美/盘中进出 |
+| 最佳用法 | 集群 + 机会型 + 高管的**二次确认** | 长持有期经理共识的**二次确认** |
+
+→ **两者互补:Form 4 更及时、信息含量更高但容量小;13F 更滞后但覆盖大票。本系统两路并取交集时置信最高。**
+
 ---
 
 ## 3. 净 alpha 证据与滞后衰减(按可信度)
@@ -58,6 +72,8 @@
 - **Lakonishok & Lee,《Are Insider Trades Informative?》(RFS 2001):** 聚合内部人交易可预测市场;**买入比卖出更有信息**;效应**集中在小公司**;**累计买入 > 单笔**。重度内部人买入股 12 个月平均超额 ~4.8%(中-高可信度;一手 SSRN 页面 403 未能直接读全文,数字来自二手综述,**精确数字未核实**)[SSRN 253079 abstract]。
 - **Cohen-Malloy-Pomorski,《Decoding Inside Information》(JF 2012):** 机会型组合 **82 bps/月(价值加权)/180 bps/月(等权)≈10%/年**;常规交易者 ≈0;机会型内部人**预测未来公司新闻、盈利与管理层指引**(高可信度,1986-2007)[CMP, Harvard CorpGov; NBER w16454]。
 - **诚实折扣:** 上述多为**毛收益、偏小盘、容量有限**;2012 后该信号被广泛商品化(openinsider 等),近年实盘 alpha 应假设已被压缩。小盘集群买入的近期再现(如某些 2024-2026 二手回测称 12 个月 ~7.4% 异常收益)**未经同行评审,未核实**。
+
+**为什么内部人买入优先于 13F 跟单(机制):** ① 内部人有**最大信息优势**且**自掏腰包**(委托代理成本最低);② 滞后仅 2 天 vs 45 天;③ 学术效应(CMP 82bps/月)远大于跟单净 alpha(~省费打平)。代价是容量小、偏小盘。→ 两者间**内部人集群买入是更优先的确认信号**,13F 共识为补充。
 
 ### 3.2 13F 跟单 —— 净 alpha 与滞后
 - **Frank, McNichols, Bhattacharya & Stanford,《Copycat Funds》(J. Law & Economics 2004):** 主动基金**费前**高于 copycat,但**费后两者统计上无法区分**——跟单的价值**主要是省费,非新 alpha**;未确立扣成本跑赢大盘。样本窄(1990s 高费基金)(高可信度,同行评审)[uchicago DOI 10.1086/422982]。
@@ -80,6 +96,25 @@
 4. **方向一致性:** 内部人买入 + 13F 增持 + 价值/质量初筛三者**同向**时,信号最可信;任一相反则降级。
 5. **明确定位:** 这些信号**不产生独立 alpha 预期**;它们降低"价值陷阱/基本面恶化"误选概率(类似 F-Score 在便宜股池里的过滤角色)。把历史毛收益默认打 3-5 折后,作为**置信加权**而非收益预测。
 
+### 4.1 组合决策逻辑(示意,本系统建议)
+
+```
+候选股已通过 价值/质量 初筛 → base_score
+confirm_flags = {
+  insider_cluster_opportunistic_buy : +强   # Form4: ≥2 owner, 14d, code=P, 机会型, 含高管, ≥$100k
+  insider_single_exec_buy           : +中   # 单一高管大额机会型 P
+  13f_longhorizon_consensus_bestidea: +中   # ≥N 名长持有期经理同持 且 属其权重前列
+  direction_consistent              : +小   # 三者同向
+}
+reverse_flags = {
+  exec_cluster_sell + 13f_big_trim  : 降级/剔除   # 强反向
+}
+final = base_score * (1 + clamp(Σ confirm − Σ reverse, 0, 0.20))
+# 确认层加成封顶 ~20%,不允许由确认信号单独决定建仓
+```
+
+要点:① 确认是**乘性小幅加成**,不喧宾夺主;② **无信号 ≠ 负信号**(集群买入稀有,多数候选无信号属正常);③ 仅**强反向**才触发剔除;④ 全部以申报日对齐,杜绝前视。
+
 ---
 
 ## 5. 数据与可得性(免费 EDGAR Form4 / 13F 端点)
@@ -97,6 +132,14 @@
   - **解析规则(核心):保留 `transactionCode=='P'` 且 `transactionAcquiredDisposedCode=='A'` 的非衍生交易;其余全部丢弃。** 每件 Form 4 可含多行,逐行过滤后按 (issuer, owner, 日期) 聚合。
 - **全文检索(发现用):** `https://efts.sec.gov/LATEST/search-index?q=...&forms=4&startdt=YYYY-MM-DD&enddt=YYYY-MM-DD`(仅索引 2001+);`ciks`/`entityName`/`size` 上限**未核实,需实测**。"列某公司/某人全部 Form 4" 用 submissions API 更可靠。
 - **批量(回测/全市场):** **Insider Transactions Data Sets(Form 345)季度 TSV 压缩包**——`https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/{YYYY}q{N}_form345.zip`(例 `2025q1_form345.zip`)。含 `SUBMISSION/REPORTINGOWNER/NONDERIV_TRANS(含 TRANS_CODE,TRANS_ACQUIRED_DISP_CD,TRANS_SHARES,TRANS_PRICEPERSHARE)/...`。**精确列拼写按 `insider_transactions_readme.pdf`(未核实,需对 readme 确认)。** 用它做全市场回测,请求量远小于逐件抓取。
+
+**端到端取数配方(单标的 Form 4,纯标准库可实现):**
+1. 由 ticker → issuer CIK(用 `https://www.sec.gov/files/company_tickers.json` 一次性映射,缓存)。
+2. `GET https://data.sec.gov/submissions/CIK{10位填充}.json`,过滤 `form=="4"`,取近 N 天 `accessionNumber/primaryDocument`。
+3. 对每件:`GET https://www.sec.gov/Archives/edgar/data/{CIK不填充}/{acc无横线}/{primaryDocument}` 取 XML;若 primaryDocument 非 xml,退回 `index.json` 找 `.xml`(类比现有 `funds_13f.py` 的 `info_table_url`)。
+4. 解析 ownershipDocument,保留 `code=P & A/D=A`,聚合到标的级。
+5. 全程带 `User-Agent`,sleep 限速 ≤8 req/s;失败指数退避。
+**回测全市场时不要走步骤 2-3 逐件抓取**,改用 §5.1 的 Form 345 季度包一次性载入。
 
 ### 5.2 13F(机构)
 - 用 submissions API 找 `13F-HR`(修正 `13F-HR/A`;`13F-NT`=通知无持仓)→ 取 information table XML。本系统 `scripts/funds_13f.py` 已正确实现此路径(submissions → index.json → infotable XML,命名空间 `…/thirteenf/informationtable`,字段 `nameOfIssuer/cusip/value/shrsOrPrnAmt/sshPrnamt/putCall`)。
@@ -118,7 +161,20 @@
    - 输入:本系统候选股的 issuer CIK 列表(或反向:扫 Form 345 季度包按 CUSIP/ticker 命中候选)。
    - 用 submissions API 拉 `form=="4"` → 解析 ownershipDocument XML → **只留 code=P & A/D=A**。
    - 输出每标的近 90 天:买入内部人数(去重)、是否含 CEO/CFO(用 `reportingOwnerRelationship`)、合计金额、是否构成集群(≥2-3 人 / 14 天)、各 owner "常规度"标签(历史同月交易频率)。
-   - 写 `feed/insiders/<ticker>.json`,字段含 `cluster:bool, n_buyers, has_exec, total_value, opportunistic:bool, asof`。
+   - 写 `feed/insiders/<ticker>.json`,字段示例:
+     ```json
+     {
+       "ticker": "US:XXXX", "issuer_cik": "0000000000",
+       "window_days": 90, "asof": "2026-06-18",
+       "cluster": true, "n_buyers": 3, "has_exec": true,
+       "buyers": [{"name": "...", "title": "CEO", "code": "P",
+                   "shares": 10000, "price": 12.3, "value": 123000,
+                   "trade_date": "2026-05-30", "filed": "2026-06-01",
+                   "opportunistic": true}],
+       "total_value": 250000, "opportunistic_any": true,
+       "source": "SEC Form 4 (ownershipDocument)"
+     }
+     ```
 2. **回测/初始化用 Form 345 批量包**(`{YYYY}q{N}_form345.zip`)做全市场扫描,避免逐件请求触发限速;周更用 submissions API 增量。
 3. **feed/看板:** 复用现有 funds feed 模式,新增"内部人确认"徽章:在候选股卡片上显示 `集群买入 ✓ / 高管买入 ✓ / 机会型 ✓`,以及 13F 共识(几位长持有期超投同持)。**仅作置信加权与排序提示,不触发自动建仓。**
 4. **共识层:** 在 `funds_13f.py` 的多基金 JSON 上做交集,标出"≥N 名长持有期经理同持 + 属其 best idea(权重前列)"的标的,与内部人集群求交。
@@ -141,6 +197,9 @@
 - **内部人卖出几乎无信息**,不要据卖出做空。
 - **聚合器不可靠:** openinsider/Dataroma 无 SLA、HTML 脆弱、无审计业绩;load-bearing 决策必回 EDGAR。
 - **过拟合:** 这些公开信号被全网回测,极易过拟合历史窗口;无独立 OOS + 扣成本复证前,不计入收益预期。
+- **10b5-1 与误读:** 部分卖出/甚至买入受预定 10b5-1 计划驱动,非即时信息;Form 4 不总能区分,降低单笔可读性 —— 集群与机会型过滤部分缓解。
+- **稀有性与覆盖:** 集群机会型买入是稀有事件,多数候选股任一时点**无**确认信号;确认层只能"加分一小部分候选",不能覆盖全宇宙,避免把"无信号"误当"负信号"。
+- **信号商品化:** openinsider/Dataroma 让该信号几乎零成本可得,意味着任何易得 alpha 已被部分套利;近年实盘预期应比 2012 前学术值更低。
 - **诚实底线:** 同行评审共识是"跟单 ≈ 省费打平",**不是**独立 alpha。本系统据此把它定位为**二次确认**,符合证据。
 
 ---
