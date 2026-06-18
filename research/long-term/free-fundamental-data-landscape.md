@@ -200,6 +200,14 @@
 - **SimFin 的 PIT 未核实**:若它实际非 PIT 却被当 PIT 用,会污染回测;在证实前**按重述对待**。
 - **Sharadar 2026 价 / 起始年(1990 vs 1998)未核实**:订阅前需 NDL 登录确认。
 - **AkShare/Tushare 数据许可**:即便"内部用",爬取/积分源的合规边界在不同法域不同;A股数据出境另有限制(见 compliance.md §3)。
+- **聚合器不是银弹**:OpenBB 统一了**接口**,没统一**许可、PIT、限频与数据质量** —— 这些仍逐源各异。把 OpenBB 当"省接线工作量"的工具,而非"省合规/PIT 判断"的工具。
+- **限频与全市场扫描的现实**:AV 25/日、EDGAR 10 req/s,做"全美股每日扫描"必须走 bulk(EDGAR ZIP)而非逐符号 API;把 AV/Finnhub 当"全市场源"会在数小时内撞墙。
+- **防过拟合视角**:免费源历史浅(Yahoo ~4 年、FMP/AV ~5 年)→ 样本期短、跨周期不足,容易在少数牛市年份上过拟合因子;**长期投资因子需要 EDGAR(2009→)或 Sharadar(1998→)的长样本**才有统计意义。
+
+**预期数据的几条"次优但诚实"出路(若坚持不付费)**
+- **用申报内含的前瞻替代 consensus**:8-K/10-Q 管理层 guidance、EDGAR 全文检索(EFTS)抽取 —— 免费、PIT、但稀疏且非结构化。
+- **用已实现 surprise 近似修正**:EDGAR 实际 EPS vs. 上一期申报趋势,构造"自带 PIT"的盈利动量,绕开外部 consensus。
+- **明确标注缺口**:在因子库里把"修正类因子"标 `requires_paid_estimates=true` 并默认禁用,避免团队误用 Yahoo 快照造前视。
 
 ---
 
@@ -238,3 +246,19 @@
 ---
 
 > **未核实清单(落地前必复核):** FMP 是否新关基本面付费墙;FMP/AV 免费基本面历史深度精确值;Tiingo/SimFin 基本面 PIT 状态;Sharadar SF1 的 2026 确切价与起始年(1990 vs 1998);Norgate 2026 价;Tushare 2026 积分阈值/会员价;Stockanalysis Pro 精确价。
+
+---
+
+## 附:一页速查(决策树)
+
+- **需要免费 + PIT + 可对外/商用?** → **只有 SEC EDGAR**(走 FSDS vintage,非 frames JSON)。其余皆不满足。
+- **有 ~$30/月,想省 PIT 工程?** → **Sharadar SF1**(AR 维度开箱 PIT,~1998 起,但不可重分发)。
+- **只要美股当前值/比率做原型?** → **Finnhub Basic Financials(60/分)**,次选 AV(25/日)。均内部、非 PIT。
+- **要 A股/港股基本面?** → **Tushare**(`ann_date` 近似 PIT)> AkShare(爬取易碎)。均内部、非商用。
+- **要分析师预期/盈利修正且要 PIT?** → **没有免费解**;预算 I/B/E/S / FactSet / Zacks / Visible Alpha;否则用 EDGAR 自带 surprise 近似(§6)。
+- **要无幸存者偏差的回测 universe(美/澳价格)?** → **Norgate**($),与 EDGAR 基本面互补。
+- **想用一套接口接多源?** → **OpenBB Platform**(AGPLv3),但许可/PIT 仍逐源判断。
+
+**最小可行栈(零预算):** EDGAR(美股 PIT 底座,对外可用)+ Finnhub(美股点查)+ Tushare(A股)。
+**推荐栈(~$30/月):** 上面 + Sharadar SF1(PIT 校验/兜底,省工程)。
+**预期数据缺口:** 始终是付费项;不要用免费快照伪造历史 consensus。
