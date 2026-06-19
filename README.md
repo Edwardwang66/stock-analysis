@@ -63,9 +63,26 @@ K线再叠加**自动斐波回撤 / Ichimoku 简版 / VSA 量价异动标记**(�
   高波动榜消费端 + **投递 SLA 看门狗**(`openclaw-watchdog.yml`,缺投自动开 Issue);盘前隔夜要素包(`premarket-pack.yml`);
   Codex public-equity-investing 插件接入。
 
-**🔧 自动化运维**:17 个 GitHub Actions 工作流无人值守 —— 13 个定时任务(screener/digest/intraday/市场快照/13F/
-缠论周报/盘前要素包/月度研究/Hyperliquid 2h 情报/双看门狗/keep-warm/alpha-routine)+ Pages 部署 + 投递校验闸门
-+ **单元测试闸门**(`tests.yml`:后端冒烟 + 缠论引擎/投递闸门单测,push 与 PR 都跑)
+## 🏛️ 长期投资腿(LIS · 持有期数月-数年,与中频引擎互补)
+
+按 24 个并行 agent 的深度调研落成的**长期投资系统**(总览 [`docs/long-term-investment-system.md`](docs/long-term-investment-system.md),
+调研合集 [`research/long-term/`](research/long-term/README.md))。**全程诚实、可证伪、净·扣成本、防过拟合**:
+
+- **数据底座(L-1)**:[`scripts/edgar_fundamentals.py`](scripts/edgar_fundamentals.py) 用 SEC EDGAR XBRL 构建**点时(PIT)基本面**
+  (`filed≤as_of` 切片 + 防重述 + 财年两期 + 防拆股股数);[`scripts/macro_fred.py`](scripts/macro_fred.py) FRED keyless **宏观风险拨盘**。
+- **因子 + 剔除闸(L-2)**:质量(毛利率/现金经营/ROIC)+ 价值(E/P、EBIT/EV、净股东收益)+ **下行剔除闸**
+  (Altman Z'' / Beneish M / Piotroski F,**双确认纪律**);合成 **LongScore**(横截面 rank-z 等权 integrated)。
+- **看板(L-6)**:**`/longterm`** 页 —— LongScore 排行(点行看因子分解)+ 宏观拨盘 + **验证裁决卡**。
+- **验证(L-5)**:[`backtest/study_longscore.py`](backtest/study_longscore.py) 跨 3 个 universe(NDX100 / 价值均衡+PIT 成分 / 小盘 S&P600)
+  测 Rank-IC + 对动量/规模正交增量 + 剔除闸功效。
+
+> **诚实裁决(已归档,见设计文档 §9.1)**:当前免费数据上 **LongScore IC 不显著(t<1.2)、对动量/规模正交后增量≈0**;
+> 价值腿强 universe 依赖;剔除闸下行保护**无法在免费数据上检验**(缺退市票)。**因此 `/longterm` 仅候选展示,不宣称 alpha、不进交易层**
+> —— 这是验证 harness 拦住「把噪声当 alpha」的**预期设计**(R5/R10),负面结果也是结果。
+
+**🔧 自动化运维**:19 个 GitHub Actions 工作流无人值守 —— 14 个定时任务(screener/digest/intraday/市场快照/13F/
+缠论周报/盘前要素包/月度研究/**长期腿月度筛选**/Hyperliquid 2h 情报/双看门狗/keep-warm/alpha-routine)+ Pages 部署 + 投递校验闸门
++ **单元测试闸门**(`tests.yml`:后端冒烟 + 缠论引擎/投递闸门 + **长期腿 4 套单测**(EDGAR PIT/剔除闸/质量价值合成/宏观拨盘),push 与 PR 都跑)
 + **Dependabot 自动合并**(`dependabot-automerge.yml`:月度 minor/patch 自动合,major 拦截留人工)。
 已知问题与技术债持续记录在 [`docs/need-to-fix.md`](docs/need-to-fix.md)。
 
