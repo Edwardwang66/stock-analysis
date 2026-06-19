@@ -119,10 +119,14 @@ def neutralize(scores: list[float | None], controls: list[list[float | None]]) -
 
 
 def quintile_spread(scores: list[float | None], fwd: list[float | None]) -> float | None:
-    """顶 quintile 平均未来收益 − 底 quintile(分层单调性的粗测)。"""
+    """顶 quintile 平均未来收益 − 底 quintile(分层单调性的粗测)。
+    未来收益先 winsorize 到 [p5,p95] —— 否则小盘单只 +300% 异常票会主导(2020 COVID 反弹活例)。"""
     xs = [(s, f) for s, f in zip(scores, fwd) if s is not None and f is not None]
     if len(xs) < 10:
         return None
+    fs = sorted(f for _, f in xs)
+    lo, hi = fs[max(0, int(0.05 * len(fs)))], fs[min(len(fs) - 1, int(0.95 * len(fs)))]
+    xs = [(s, min(hi, max(lo, f))) for s, f in xs]
     xs.sort(key=lambda t: t[0])
     k = max(1, len(xs) // 5)
     bot = sum(f for _, f in xs[:k]) / k
