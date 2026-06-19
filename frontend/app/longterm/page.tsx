@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getLongScore, getMacro, type LongScore, type LongRow, type MacroDial } from "@/lib/feed";
+import { getLongScore, getMacro, getLongValidation, type LongScore, type LongRow, type MacroDial, type LongValidation } from "@/lib/feed";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const num = (x?: number | null, d = 2) => (x == null ? "—" : x.toFixed(d));
@@ -23,6 +23,7 @@ const zc = (z?: number | null) => (z == null ? MUT : z > 0.3 ? UP : z < -0.3 ? D
 export default function LongTermDashboard() {
   const [ls, setLs] = useState<LongScore | null>(null);
   const [macro, setMacro] = useState<MacroDial | null>(null);
+  const [val, setVal] = useState<LongValidation | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ export default function LongTermDashboard() {
     if (!d) { setErr("无法加载 feed/longterm/longscore.json(远端与捆绑快照均失败)。"); return; }
     setLs(d); setErr(null);
     setMacro(await getMacro());
+    setVal(await getLongValidation());
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
 
@@ -56,6 +58,33 @@ export default function LongTermDashboard() {
       </p>
 
       {err && <div style={{ color: DOWN, padding: 12, border: `1px solid ${DOWN}`, borderRadius: 8 }}>{err}</div>}
+
+      {/* 验证裁决(诚实优先,放最前)*/}
+      {val && (() => {
+        const ic = val.summary.ic_long, iv = val.summary.ic_value;
+        const sig = ic.t != null && Math.abs(ic.t) >= 2;
+        const col = sig ? UP : WARN;
+        return (
+          <div style={{ border: `1px solid ${col}`, borderRadius: 10, padding: 14, margin: "12px 0", background: "rgba(247,181,0,0.06)" }}>
+            <b>🔬 验证裁决(L-5,{val.n_periods} 期 {val.periods[0]?.as_of}…{val.periods[val.periods.length - 1]?.as_of})</b>
+            <div style={{ display: "flex", gap: 18, marginTop: 8, flexWrap: "wrap", fontSize: 13 }}>
+              <div>LongScore IC <b style={{ color: (ic.mean || 0) > 0 ? UP : DOWN }}>{num(ic.mean, 3)}</b> (t={num(ic.t, 2)}, 命中 {pct(ic.hit, 0)})</div>
+              <div>质量 IC <b>{num(val.summary.ic_quality.mean, 3)}</b></div>
+              <div>价值 IC <b style={{ color: (iv.mean || 0) < 0 ? DOWN : MUT }}>{num(iv.mean, 3)}</b></div>
+              <div>Q5−Q1 <b style={{ color: (val.summary.qspread_long.mean || 0) < 0 ? DOWN : UP }}>{num(val.summary.qspread_long.mean, 3)}</b></div>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: sig ? UP : WARN, fontWeight: 600 }}>
+              {sig
+                ? "IC t≥2,但仍须经正交化 + 净·扣成本检验(幸存者偏差/小样本未除)。"
+                : "未达统计显著(|t|<2)+ 幸存者偏差 + 小样本 → 不宣称 alpha,仅候选展示。"}
+              {(iv.mean || 0) < 0 && " 价值腿在该成长型 universe 中 IC 为负(反而拖累)。"}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 11, color: MUT }}>
+              下一步:消幸存者偏差(PIT 成分史)· 对 HML/RMW/UMD 正交化 · 净·扣成本组合回测(2022 入 holdout)。
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 宏观风险拨盘 */}
       {macro && (

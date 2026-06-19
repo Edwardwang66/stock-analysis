@@ -336,3 +336,14 @@ export interface MacroDial {
   risk_dial: number | null; regime: string; components: Record<string, MacroComponent>;
 }
 export const getMacro = () => fetchJson<MacroDial>("macro/latest.json");
+
+export interface ICStat { mean: number | null; std: number | null; icir: number | null; t: number | null; n: number; hit: number | null }
+export interface LongValidation {
+  schema_version: string; kind: string; generated_at: string;
+  universe_size: number; with_value: boolean; n_periods: number;
+  caveats: string[];
+  periods: { as_of: string; n: number; ic_long: number | null; ic_quality: number | null;
+             ic_value: number | null; qspread_long: number | null; mean_fwd: number }[];
+  summary: { ic_long: ICStat; ic_quality: ICStat; ic_value: ICStat; qspread_long: ICStat };
+}
+export const getLongValidation = () => fetchJson<LongValidation>("longterm/validation.json");
