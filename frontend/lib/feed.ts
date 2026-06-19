@@ -307,3 +307,32 @@ export interface CryptoState {
   errors?: string[];
 }
 export const getCryptoState = () => fetchJson<CryptoState>("crypto/state.json");
+
+// ───────────────────────── 长期投资腿(LIS)─────────────────────────
+// docs/long-term-investment-system.md · scripts/longterm_screen.py + macro_fred.py
+export interface LongRow {
+  ticker: string; cik?: string; rank: number;
+  long_score: number | null; quality_score: number | null;
+  buckets?: Record<string, number | null>;
+  z?: Record<string, number | null>;
+  exclude?: boolean; reasons?: string[]; flags?: string[];
+  scores?: Record<string, number | string | boolean | null>;
+  valuation?: Record<string, number>;
+  price?: number | null; shares_src?: string | null;
+  period_end?: string | null; n_factors?: number;
+}
+export interface LongScore {
+  schema_version: string; kind: string; as_of: string; with_value?: boolean;
+  note: string; buckets: Record<string, string[]>;
+  universe_size: number; n_scored: number; n_excluded: number;
+  missing: string[]; rows: LongRow[];
+}
+export const getLongScore = () => fetchJson<LongScore>("longterm/longscore.json");
+
+export interface MacroComponent { value: number; score: number; w: number }
+export interface MacroDial {
+  schema_version: string; kind: string; updated_at: string; asof_data: string | null;
+  source: string; note: string; series: Record<string, string>;
+  risk_dial: number | null; regime: string; components: Record<string, MacroComponent>;
+}
+export const getMacro = () => fetchJson<MacroDial>("macro/latest.json");

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "kind": "macro_risk_dial",
+  "updated_at": "2026-06-19T05:36:57Z",
+  "asof_data": "2026-06-18",
+  "source": "FRED fredgraph.csv (keyless)",
+  "note": "温和风险拨盘,非择时/非投资建议。risk_dial∈[0,1](1=risk-on)。用最新值(温度计);回测须改 ALFRED vintage 防前视。",
+  "series": {
+    "credit": "BAMLH0A0HYM2",
+    "curve": "T10Y3M",
+    "fci": "NFCI",
+    "unrate": "UNRATE"
+  },
+  "risk_dial": 0.878,
+  "regime": "risk_on",
+  "components": {
+    "credit": {
+      "value": 2.63,
+      "score": 1.0,
+      "w": 0.4
+    },
+    "curve": {
+      "value": 0.63,
+      "score": 0.753,
+      "w": 0.25
+    },
+    "fci": {
+      "value": -0.505,
+      "score": 1.0,
+      "w": 0.2
+    },
+    "labor": {
+      "value": 0.2,
+      "score": 0.6,
+      "w": 0.15
+    }
+  }
+}
