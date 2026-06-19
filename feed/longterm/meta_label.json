@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "kind": "meta_label_study",
+  "generated_at": "2026-06-19T16:00:18Z",
+  "features": [
+    "abs_s",
+    "halflife",
+    "kappa",
+    "hurst",
+    "sigma_eq",
+    "abs_beta",
+    "sigma_d"
+  ],
+  "n_samples": 9406,
+  "base_rate": 0.5102062513289389,
+  "horizon_days": 10,
+  "step": 5,
+  "oos_auc": 0.47873894573126874,
+  "fold_aucs": [
+    0.46191166206844286,
+    0.4885696156635243,
+    0.4885530462244282,
+    0.47242319043795866,
+    0.5051576709044021
+  ],
+  "n_scored": 9406,
+  "auc_single_abs_s": 0.5003720884076448,
+  "verdict": "AUC≤0.52,与抛硬币无异 → 诚实否定,meta-label 不接入下注层",
+  "caveats": [
+    "残差未来收益用市场 beta 代理(未含行业 ETF beta),标签有近似",
+    "可预测性(AUC)≠净·扣成本可盈利;主信号本身净 alpha≈0/负",
+    "purged K 折已消重叠标签泄漏;但 universe 为当前成分(幸存者偏差)"
+  ]
+}
