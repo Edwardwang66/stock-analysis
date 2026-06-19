@@ -154,7 +154,8 @@ def main():
         "market_state": ms,
         "engine": {
             "name": rep["engine"], "period": rep["period"], "net": rep["net"], "gross": rep["gross"],
-            "cost_drag_ann": rep["cost_drag_ann"], "turnover": rep["turnover"],
+            "cost_drag_ann": rep["cost_drag_ann"], "borrow_cost_ann": rep.get("borrow_cost_ann", 0),
+            "turnover": rep["turnover"],
             "deflated_sharpe": rep["deflated_sharpe"], "verdict": rep["verdict"],
             "train": rep.get("train"), "holdout": rep.get("holdout"),
             "equity_curve": rep.get("equity_curve", []),

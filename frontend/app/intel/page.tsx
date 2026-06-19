@@ -157,6 +157,9 @@ export default function IntelDashboard() {
                 <Stat label="年化(净)" value={pct(rep.engine.net?.ann_return)} />
                 <Stat label="最大回撤" value={pct(rep.engine.net?.max_drawdown)} color={DOWN} />
                 <Stat label="成本拖累/年" value={pct(rep.engine.cost_drag_ann)} color={WARN} />
+                {rep.engine.borrow_cost_ann != null && (
+                  <Stat label="借券费/年" value={pct(rep.engine.borrow_cost_ann, 2)} color={WARN} />
+                )}
                 <Stat label="Deflated SR" value={num(rep.engine.deflated_sharpe?.dsr, 3)} />
               </div>
               {/* 真 holdout 切分(R5):裁决以从未据其调参的终检段为准 */}
