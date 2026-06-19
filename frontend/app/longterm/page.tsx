@@ -69,6 +69,9 @@ export default function LongTermDashboard() {
             <b>🔬 验证裁决(L-5,{val.n_periods} 期 {val.periods[0]?.as_of}…{val.periods[val.periods.length - 1]?.as_of})</b>
             <div style={{ display: "flex", gap: 18, marginTop: 8, flexWrap: "wrap", fontSize: 13 }}>
               <div>LongScore IC <b style={{ color: (ic.mean || 0) > 0 ? UP : DOWN }}>{num(ic.mean, 3)}</b> (t={num(ic.t, 2)}, 命中 {pct(ic.hit, 0)})</div>
+              {val.summary.ic_long_orth?.mean != null && (
+                <div title="对价格动量+规模正交化后的增量 IC">⊥动量/规模 <b style={{ color: MUT }}>{num(val.summary.ic_long_orth.mean, 3)}</b> (t={num(val.summary.ic_long_orth.t, 2)})</div>
+              )}
               <div>质量 IC <b>{num(val.summary.ic_quality.mean, 3)}</b></div>
               <div>价值 IC <b style={{ color: (iv.mean || 0) < 0 ? DOWN : MUT }}>{num(iv.mean, 3)}</b></div>
               <div>Q5−Q1 <b style={{ color: (val.summary.qspread_long.mean || 0) < 0 ? DOWN : UP }}>{num(val.summary.qspread_long.mean, 3)}</b></div>

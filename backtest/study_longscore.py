@@ -95,6 +95,29 @@ def rank_ic(scores: list[float | None], fwd: list[float | None]) -> float | None
     return spearman(a, b)
 
 
+def neutralize(scores: list[float | None], controls: list[list[float | None]]) -> list[float | None]:
+    """横截面把 scores 对 controls(各一列)做 OLS,返回残差(正交化分);
+    只在 scores 与全部 controls 均非缺失的名上回归,其余 None。用于测对动量/规模的增量。"""
+    nC = len(controls)
+    idx = [i for i in range(len(scores))
+           if scores[i] is not None and all(controls[c][i] is not None for c in range(nC))]
+    if len(idx) < 10:
+        return [None] * len(scores)
+    y = np.array([scores[i] for i in idx], dtype=float)
+    cols = [np.ones(len(idx))]
+    for c in range(nC):
+        v = np.array([controls[c][i] for i in idx], dtype=float)
+        sd = v.std(ddof=1)
+        cols.append((v - v.mean()) / sd if sd > 0 else np.zeros(len(idx)))
+    X = np.column_stack(cols)
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+    resid = y - X @ beta
+    out: list[float | None] = [None] * len(scores)
+    for k, i in enumerate(idx):
+        out[i] = float(resid[k])
+    return out
+
+
 def quintile_spread(scores: list[float | None], fwd: list[float | None]) -> float | None:
     """顶 quintile 平均未来收益 − 底 quintile(分层单调性的粗测)。"""
     xs = [(s, f) for s, f in zip(scores, fwd) if s is not None and f is not None]
@@ -126,10 +149,18 @@ def panel_at(as_of: str, tickers: list[str], facts_map: dict, with_value: bool) 
                 row[f] = ratios.get(f) if f in ratios else screen["scores"].get(f)
             if with_value:
                 sh, _, _ = ef.shares_outstanding(facts, as_of)
-                px = price_asof(pricedata.load(t), as_of)
+                bars = pricedata.load(t)
+                px = price_asof(bars, as_of)
                 vf = value_factors({**cur, "shares": sh}, px)
                 for f in VALUE_FACTORS:
                     row[f] = vf.get(f)
+                # 正交化控制项:价格动量(12-1)+ 规模(log 市值)
+                a = date.fromisoformat(as_of)
+                p_skip = price_asof(bars, date.fromordinal(a.toordinal() - 30).isoformat())
+                p_12 = price_asof(bars, date.fromordinal(a.toordinal() - 365).isoformat())
+                row["_mom"] = (p_skip / p_12 - 1.0) if p_skip and p_12 and p_12 > 0 else None
+                mc = vf.get("market_cap")
+                row["_size"] = (float(np.log(mc)) if mc and mc > 0 else None)
             feats.append(row)
         except Exception:  # noqa: BLE001
             continue
@@ -218,9 +249,17 @@ def main() -> int:
         for i in range(len(feats)):
             bs = [b for b in (qz[i], vz[i]) if b is not None]
             long_s.append(sum(bs) / len(bs) if bs else None)
+        # 对动量(12-1)+ 规模正交化后的 LongScore 增量 IC
+        ic_orth = None
+        if with_value:
+            mom = [f.get("_mom") for f in feats]
+            size = [f.get("_size") for f in feats]
+            long_orth = neutralize(long_s, [mom, size])
+            ic_orth = rank_ic(long_orth, fwd_list)
         rec = {
             "as_of": as_of, "n": len(feats), "n_fwd": n_fwd,
             "ic_long": rank_ic(long_s, fwd_list),
+            "ic_long_orth": ic_orth,
             "ic_quality": rank_ic(qz, fwd_list),
             "ic_value": rank_ic(vz, fwd_list) if with_value else None,
             "qspread_long": quintile_spread(long_s, fwd_list),
@@ -228,6 +267,7 @@ def main() -> int:
         }
         periods.append(rec)
         print(f"  {as_of}: n={rec['n']} IC_long={_f(rec['ic_long'])} "
+              f"IC_⊥(动量/规模){_f(rec['ic_long_orth'])} "
               f"IC_Q={_f(rec['ic_quality'])} IC_V={_f(rec['ic_value'])} "
               f"Q5-Q1={_f(rec['qspread_long'])} mkt={rec['mean_fwd']:+.1%}")
 
@@ -271,13 +311,15 @@ def _aggregate(periods: list[dict]) -> dict:
         t = (m / sd * (len(vals) ** 0.5)) if sd > 0 else None
         hit = float(np.mean([1.0 if v > 0 else 0.0 for v in vals]))
         return {"mean": m, "std": sd, "icir": icir, "t": t, "n": len(vals), "hit": hit}
-    return {"ic_long": stats("ic_long"), "ic_quality": stats("ic_quality"),
+    return {"ic_long": stats("ic_long"), "ic_long_orth": stats("ic_long_orth"),
+            "ic_quality": stats("ic_quality"),
             "ic_value": stats("ic_value"), "qspread_long": stats("qspread_long")}
 
 
 def _print_summary(s: dict):
     print("=" * 56)
-    for k, lbl in [("ic_long", "LongScore IC"), ("ic_quality", "Quality IC"),
+    for k, lbl in [("ic_long", "LongScore IC"), ("ic_long_orth", "  ⊥动量/规模"),
+                   ("ic_quality", "Quality IC"),
                    ("ic_value", "Value IC"), ("qspread_long", "Q5-Q1 spread")]:
         st = s[k]
         if st["mean"] is None:
@@ -300,7 +342,8 @@ def _markdown(doc: dict) -> str:
              f"as_of 网格 {doc['as_of_grid'][0]}…{doc['as_of_grid'][-1]}", "",
              "## 聚合 IC", "", "| 指标 | mean | std | ICIR | t | 命中 | n |",
              "|---|---|---|---|---|---|---|"]
-    for k, lbl in [("ic_long", "LongScore"), ("ic_quality", "Quality"),
+    for k, lbl in [("ic_long", "LongScore"), ("ic_long_orth", "LongScore⊥动量/规模"),
+                   ("ic_quality", "Quality"),
                    ("ic_value", "Value"), ("qspread_long", "Q5-Q1")]:
         st = s[k]
         if st["mean"] is None:

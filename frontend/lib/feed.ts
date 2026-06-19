@@ -344,6 +344,6 @@ export interface LongValidation {
   caveats: string[];
   periods: { as_of: string; n: number; ic_long: number | null; ic_quality: number | null;
              ic_value: number | null; qspread_long: number | null; mean_fwd: number }[];
-  summary: { ic_long: ICStat; ic_quality: ICStat; ic_value: ICStat; qspread_long: ICStat };
+  summary: { ic_long: ICStat; ic_long_orth?: ICStat; ic_quality: ICStat; ic_value: ICStat; qspread_long: ICStat };
 }
 export const getLongValidation = () => fetchJson<LongValidation>("longterm/validation.json");
