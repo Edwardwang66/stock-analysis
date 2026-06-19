@@ -43,3 +43,5 @@ jobs:
           python scripts/tests/test_factors_fundamental.py
           python scripts/tests/test_longterm_screen.py
           python scripts/tests/test_macro_fred.py
+      - name: PIT 成分过滤单测(消前视性成员偏差)
+        run: pip install numpy >/dev/null 2>&1; python scripts/tests/test_pit_membership.py

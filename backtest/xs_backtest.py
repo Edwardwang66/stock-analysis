@@ -7,11 +7,16 @@
   - 因子合成两种:① 等权 z-score;② 滚动 IC 加权(权重只用"当前日之前"的 IC,无未来函数)。
   - Purged + Embargo:滚动 IC 估计时,跳过标签窗口会探入当前的近 H 个 rebalance 日(embargo)。
   - 无未来函数:rebalance 日 d 的因子只用 ≤d 数据;未来收益用 d..d+H 复权价。
+  - **PIT 成分过滤(默认开)**:每个 rebalance 日只保留当日真正在 S&P500 的票(membership_asof),
+    消「前视性成员偏差」(把后来才纳入的赢家提前算进早年)。无 S&P500 变更史的 NDX-only 名不过滤。
+    `--no-pit` 可关闭对照(实测 |IC| 偏大,印证偏差方向)。
 
-诚实声明:universe = 当前成分股 -> 存在幸存者偏差(高估);未计交易成本/换手。
+诚实声明:PIT 过滤只消「前视性成员」偏差;universe = 当前可得票,仍缺**已退市**名 → 残留幸存者偏差
+(需含退市行情才能全消);未计交易成本/换手。
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 
@@ -19,9 +24,14 @@ import numpy as np
 
 import data as datamod
 import factors_xs as fx
+import pit_membership as pm
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FACTORS = ["mom_12_1", "reversal", "hi52", "lowvol"]
+
+
+def _daystr(d: int) -> str:
+    return dt.datetime.utcfromtimestamp(d).strftime("%Y-%m-%d")
 
 
 def load_panel():
@@ -47,11 +57,15 @@ def rebalance_dates(panel, step=21):
     return [int(ts[i]) for i in idx]
 
 
-def cross_section(panel, d: int, horizon: int):
-    """在 rebalance 日 d 收集横截面:每因子值数组 + 未来 H 日收益数组(对齐)。"""
+def cross_section(panel, d: int, horizon: int, pit_allowed=None):
+    """在 rebalance 日 d 收集横截面:每因子值数组 + 未来 H 日收益数组(对齐)。
+    pit_allowed(tk, date_str)->bool:PIT 成分过滤器(消前视性成员偏差),None=不过滤。"""
     cols = {f: [] for f in FACTORS}
     fwd = []
+    day = _daystr(d) if pit_allowed is not None else None
     for tk, (ts, adj, m) in panel.items():
+        if pit_allowed is not None and not pit_allowed(tk, day):
+            continue
         i = m.get(d)
         if i is None or i + horizon >= len(adj):
             continue
@@ -105,17 +119,27 @@ def decile_spread(score: np.ndarray, fwd: np.ndarray, n=10):
     return means, means[-1] - means[0]
 
 
-def run(step=21, horizons=(5, 21, 63), embargo_periods=3):
+def run(step=21, horizons=(5, 21, 63), embargo_periods=3, pit_filter=True):
     print("加载面板 ...")
     panel = load_panel()
     dates = rebalance_dates(panel, step)
+    pit_allowed = None
+    if pit_filter:
+        db = pm.load_db()
+        if db is not None:
+            pit_allowed = pm.make_pit_filter(db)
+            print("PIT 成分过滤:开(S&P500 时点成分;无变更史的 NDX-only 名不过滤)")
+        else:
+            print("PIT 成分过滤:请求开但缺 pit_sp500.json,降级为关")
+    else:
+        print("PIT 成分过滤:关(⚠ 含前视性成员偏差,IC 偏高)")
     print(f"标的 {len(panel)} 只,rebalance 日 {len(dates)} 个(每 {step} 交易日)\n")
 
     for H in horizons:
         # 预扫所有 rebalance 日的横截面
         css = []
         for d in dates:
-            cs = cross_section(panel, d, H)
+            cs = cross_section(panel, d, H, pit_allowed)
             if cs is not None:
                 css.append((d, cs))
         # 单因子 Rank-IC
@@ -173,4 +197,5 @@ def run(step=21, horizons=(5, 21, 63), embargo_periods=3):
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+    run(pit_filter=("--no-pit" not in sys.argv))

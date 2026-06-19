@@ -88,6 +88,53 @@ def membership_asof(date: str, db: dict) -> set[str]:
     return members
 
 
+def _norm_ticker(s: str) -> str:
+    return s.upper().replace(".", "").replace("-", "")
+
+
+def ever_in_index(db: dict) -> set[str]:
+    """曾经在 S&P500 出现过的全部 ticker(current ∪ 所有 added ∪ removed),归一化。
+    用于区分「受 PIT 约束的 S&P500 名」与「无变更史、不该被过滤的名(如 NDX-only)」。"""
+    s = {_norm_ticker(t) for t in db["current"]}
+    for c in db["changes"]:
+        if c.get("added"):
+            s.add(_norm_ticker(c["added"]))
+        if c.get("removed"):
+            s.add(_norm_ticker(c["removed"]))
+    return s
+
+
+def make_pit_filter(db: dict):
+    """返回判定器 allowed(ticker, date_str)->bool,按日期缓存成分集。
+
+    纪律(对齐 Cycle 11 study_pit_bite):
+      - ticker 曾在 S&P500 出现过 → 仅当 date 时点是成分才允许(消前视性成员偏差)。
+      - ticker 从未在 S&P500 出现(NDX-only 等无变更史)→ 始终允许(诚实:无 PIT 史不强行过滤)。
+    """
+    ever = ever_in_index(db)
+    cache: dict[str, set] = {}
+
+    def allowed(ticker: str, date_str: str) -> bool:
+        nt = _norm_ticker(ticker)
+        if nt not in ever:
+            return True  # 无 S&P500 变更史 → 不过滤
+        ms = cache.get(date_str)
+        if ms is None:
+            ms = {_norm_ticker(m) for m in membership_asof(date_str, db)}
+            cache[date_str] = ms
+        return nt in ms
+
+    return allowed
+
+
+def load_db(path: str | None = None) -> dict | None:
+    """加载 pit_sp500.json 缓存(不存在返回 None)。"""
+    p = path or CACHE
+    if os.path.exists(p):
+        return json.load(open(p))
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--publish", action="store_true")

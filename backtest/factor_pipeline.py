@@ -14,9 +14,13 @@
 
 市值说明:Yahoo 市值端点需鉴权(401),故用 log(60日均美元成交额)作 size 代理(业界标准的
 流动性/规模控制变量)。诚实标注:这是代理,非精确流通市值。
+
+PIT 成分过滤(默认开,`--no-pit` 关):每个 rebalance 日只保留当日真正在 S&P500 的票
+(消前视性成员偏差);NDX-only 等无变更史的名不过滤。仍缺已退市名 → 残留幸存者偏差。
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 
@@ -24,9 +28,14 @@ import numpy as np
 
 import data as datamod
 import factors_xs as fx
+import pit_membership as pm
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SECTORS = json.load(open(os.path.join(HERE, "sector_map.json")))
+
+
+def _daystr(d: int) -> str:
+    return dt.datetime.utcfromtimestamp(d).strftime("%Y-%m-%d")
 
 
 # ---------------- 预处理 ----------------
@@ -83,9 +92,12 @@ def load_panel():
 SECTOR_TO_ID = {s: i for i, s in enumerate(sorted(set(SECTORS.values()) | {"Unknown"}))}
 
 
-def cross_section(panel, d, horizon, factor_fn):
+def cross_section(panel, d, horizon, factor_fn, pit_allowed=None):
     raw, sec, size, fwd = [], [], [], []
+    day = _daystr(d) if pit_allowed is not None else None
     for tk, p in panel.items():
+        if pit_allowed is not None and not pit_allowed(tk, day):
+            continue
         i = p["m"].get(d)
         if i is None or i + horizon >= len(p["adj"]) or i < 252:
             continue
@@ -131,14 +143,14 @@ def max_drawdown(cum: np.ndarray) -> float:
 
 
 def evaluate(panel, factor_fn, dates, horizon=21, n_layers=5, do_neutralize=True,
-             hold_dates=None):
+             hold_dates=None, pit_allowed=None):
     """对给定 factor 跑 IC/IR + 分层 + 多空。hold_dates 限定用哪些 rebalance 日(用于训练/holdout 切分)。"""
     use = hold_dates if hold_dates is not None else dates
     ics, raw_ics = [], []
     layer_rets = [[] for _ in range(n_layers)]
     ls_rets = []
     for d in use:
-        cs = cross_section(panel, d, horizon, factor_fn)
+        cs = cross_section(panel, d, horizon, factor_fn, pit_allowed)
         if cs is None:
             continue
         raw, sec, size, fwd = cs
@@ -192,10 +204,21 @@ def print_report(name, r):
 
 
 def main():
+    import sys
     print("加载面板 ...")
     panel = load_panel()
     dates = rebalance_dates(panel, step=21)
     H = 21
+    pit_allowed = None
+    if "--no-pit" not in sys.argv:
+        db = pm.load_db()
+        if db is not None:
+            pit_allowed = pm.make_pit_filter(db)
+            print("PIT 成分过滤:开(S&P500 时点成分;NDX-only 名不过滤)")
+        else:
+            print("PIT 成分过滤:缺 pit_sp500.json,降级为关")
+    else:
+        print("PIT 成分过滤:关(⚠ 含前视性成员偏差)")
 
     # holdout 切分:选"最近一个已走完完整 21 日"的 rebalance 月做验证,其余更早的为训练
     spy0 = datamod.load("SPY")
@@ -213,7 +236,7 @@ def main():
 
     results = {}
     for name, fn in FACTORS.items():
-        r = evaluate(panel, fn, train_dates, H, n_layers=5, do_neutralize=True)
+        r = evaluate(panel, fn, train_dates, H, n_layers=5, do_neutralize=True, pit_allowed=pit_allowed)
         results[name] = r
         print_report(name + "(中性化后)", r)
 
@@ -224,7 +247,7 @@ def main():
     print("\n" + "=" * 78)
     print(f"第 4 步:1 个月持有验证 —— 无未来函数 (holdout 月初仅用当时可得数据建仓,持有 {H} 日)")
     print("=" * 78)
-    cs = cross_section(panel, holdout_date, H, FACTORS[pick])
+    cs = cross_section(panel, holdout_date, H, FACTORS[pick], pit_allowed)
     raw, sec, size, fwd = cs
     proc = preprocess(raw, sec, size, True)
     order = np.argsort(proc)
@@ -248,7 +271,7 @@ def main():
     roll = complete[-12:]
     ls_list, l5_list, spy_list = [], [], []
     for d in roll:
-        cs = cross_section(panel, d, H, FACTORS[pick])
+        cs = cross_section(panel, d, H, FACTORS[pick], pit_allowed)
         if cs is None:
             continue
         raw, sec, size, fwd = cs
