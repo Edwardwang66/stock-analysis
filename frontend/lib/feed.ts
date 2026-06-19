@@ -347,3 +347,16 @@ export interface LongValidation {
   summary: { ic_long: ICStat; ic_long_orth?: ICStat; ic_quality: ICStat; ic_value: ICStat; qspread_long: ICStat };
 }
 export const getLongValidation = () => fetchJson<LongValidation>("longterm/validation.json");
+
+// ───────────────────────── 预测市场事件概率(Polymarket,只读)─────────────────────────
+// scripts/polymarket_events.py · 外部事件/不确定性因子,非下注信号
+export interface EventMarket {
+  question: string; outcome: string; prob: number; prob_pct: number;
+  longshot: boolean; volume_usd: number | null; liquidity_usd: number | null;
+  end_date: string | null; slug: string | null;
+}
+export interface EventProbs {
+  schema_version: string; kind: string; updated_at: string; source: string;
+  note: string; n_markets: number; markets: EventMarket[];
+}
+export const getEventProbs = () => fetchJson<EventProbs>("events/latest.json");

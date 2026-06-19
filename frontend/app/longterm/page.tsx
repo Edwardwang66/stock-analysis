@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getLongScore, getMacro, getLongValidation, type LongScore, type LongRow, type MacroDial, type LongValidation } from "@/lib/feed";
+import { getLongScore, getMacro, getLongValidation, getEventProbs, type LongScore, type LongRow, type MacroDial, type LongValidation, type EventProbs } from "@/lib/feed";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const num = (x?: number | null, d = 2) => (x == null ? "—" : x.toFixed(d));
@@ -24,6 +24,7 @@ export default function LongTermDashboard() {
   const [ls, setLs] = useState<LongScore | null>(null);
   const [macro, setMacro] = useState<MacroDial | null>(null);
   const [val, setVal] = useState<LongValidation | null>(null);
+  const [events, setEvents] = useState<EventProbs | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [showPeriods, setShowPeriods] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export default function LongTermDashboard() {
     setLs(d); setErr(null);
     setMacro(await getMacro());
     setVal(await getLongValidation());
+    setEvents(await getEventProbs());
   }
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
 
@@ -139,6 +141,40 @@ export default function LongTermDashboard() {
             ))}
           </div>
           <div style={{ color: MUT, fontSize: 11, marginTop: 6 }}>温和拨盘,非择时;喂 L-4 总敞口软开关。</div>
+        </div>
+      )}
+
+      {/* 预测市场事件概率(Polymarket,只读)*/}
+      {events && events.markets.length > 0 && (
+        <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14, margin: "12px 0" }}>
+          <b>🔮 预测市场事件概率(Polymarket)</b>
+          <span style={{ color: MUT, fontSize: 12, marginLeft: 8 }}>
+            外部事件/不确定性因子 · 隐含概率=市场价格 · ⚠longshot 偏差 · 非下注信号
+          </span>
+          <div style={{ overflowX: "auto", marginTop: 8 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <tbody>
+                {events.markets.slice(0, 14).map((m, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ padding: "3px 8px", textAlign: "right", width: 56,
+                      fontWeight: 700, color: m.prob >= 0.6 ? UP : m.prob <= 0.4 ? DOWN : WARN }}>
+                      {m.prob_pct}%
+                    </td>
+                    <td style={{ padding: "3px 6px" }}>
+                      {m.question}
+                      {m.longshot && <span style={{ color: MUT }}> ⚠</span>}
+                    </td>
+                    <td style={{ padding: "3px 8px", textAlign: "right", color: MUT, whiteSpace: "nowrap" }}>
+                      ${m.volume_usd ? (m.volume_usd / 1e6).toFixed(1) + "M" : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ color: MUT, fontSize: 11, marginTop: 6 }}>
+            数据 {events.updated_at?.slice(0, 10)} · 免费只读(不下注)· 可作 meta-labeling 外部因子。
+          </div>
         </div>
       )}
 

@@ -39,6 +39,8 @@ jobs:
           python scripts/tests/test_macro_fred.py
       - name: 宏观风险拨盘(FRED keyless)
         run: python scripts/macro_fred.py
+      - name: 预测市场事件概率(Polymarket keyless,只读)
+        run: python scripts/polymarket_events.py --limit 2000 --top 25 || echo "events 抓取失败,跳过"
       - name: 长期腿质量筛选(NDX100 universe)
         run: |
           AS_OF="${{ github.event.inputs.as_of }}"
@@ -49,7 +51,7 @@ jobs:
         run: |
           git config user.name  "longterm-screen[bot]"
           git config user.email "actions@github.com"
-          git add feed/longterm/ feed/macro/
+          git add feed/longterm/ feed/macro/ feed/events/
           if git diff --cached --quiet; then
             echo "无变化"
           else
