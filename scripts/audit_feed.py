@@ -100,6 +100,8 @@ def check_freshness():
         "crypto_state": (0.5, 2),
         "rs_ranks": (2, 5), "stock_notes": (2, 5), "intraday": (2, 5),
         "market_history": (3, 7), "funds_13f": (135, 200),
+        # LIS 长期腿:月度刷新(longterm-screen.yml),宽松 SLA 仅防月度任务长期停摆
+        "longterm_score": (40, 70), "macro_dial": (40, 70),
     }
     for key, lim in SLA.items():
         s = src.get(key, {})
