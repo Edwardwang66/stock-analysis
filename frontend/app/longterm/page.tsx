@@ -25,6 +25,7 @@ export default function LongTermDashboard() {
   const [macro, setMacro] = useState<MacroDial | null>(null);
   const [val, setVal] = useState<LongValidation | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [showPeriods, setShowPeriods] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function load() {
@@ -85,6 +86,36 @@ export default function LongTermDashboard() {
             <div style={{ marginTop: 4, fontSize: 11, color: MUT }}>
               下一步:消幸存者偏差(PIT 成分史)· 对 HML/RMW/UMD 正交化 · 净·扣成本组合回测(2022 入 holdout)。
             </div>
+            <button onClick={() => setShowPeriods((v) => !v)}
+              style={{ marginTop: 8, background: "transparent", border: `1px solid ${MUT}`, color: MUT, borderRadius: 6, fontSize: 11, padding: "2px 8px", cursor: "pointer" }}>
+              {showPeriods ? "▾ 收起逐期" : "▸ 逐期 IC(看噪声)"}
+            </button>
+            {showPeriods && (
+              <div style={{ overflowX: "auto", marginTop: 8 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead><tr style={{ color: MUT, textAlign: "right" }}>
+                    <th style={{ textAlign: "left", padding: "2px 6px" }}>as_of</th>
+                    <th>n</th><th>IC_long</th><th>IC_Q</th><th>IC_V</th><th>Q5−Q1</th><th>市场</th>
+                  </tr></thead>
+                  <tbody>
+                    {val.periods.map((p) => (
+                      <tr key={p.as_of} style={{ textAlign: "right", borderTop: "1px solid var(--border)" }}>
+                        <td style={{ textAlign: "left", padding: "2px 6px", color: MUT }}>{p.as_of}</td>
+                        <td style={{ color: MUT }}>{p.n}</td>
+                        <td style={{ color: (p.ic_long || 0) > 0 ? UP : DOWN }}>{num(p.ic_long, 3)}</td>
+                        <td>{num(p.ic_quality, 3)}</td>
+                        <td style={{ color: (p.ic_value || 0) < 0 ? DOWN : MUT }}>{num(p.ic_value, 3)}</td>
+                        <td>{num(p.qspread_long, 3)}</td>
+                        <td style={{ color: MUT }}>{pct(p.mean_fwd, 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 11, color: MUT, marginTop: 4 }}>
+                  逐期 IC 在 ±0.2 间剧烈跳动(2018 负 / 多数年正)——正是「均值为正但 t 不显著」的来源。
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
