@@ -43,6 +43,12 @@ jobs:
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
         run: python backtest/study_downshift.py --publish
+      - name: LongScore 验证(L-5:价值均衡 universe + PIT 成分,刷新诚实裁决)
+        run: |
+          python backtest/study_longscore.py --universe backtest/lt_universe_demo.json \
+            --start 2016 --end 2024 --pit-sp500 --force-prices \
+            --md docs/study-longscore-$(date -u +%F).md \
+            --out feed/longterm/validation.json
       - name: Commit 研究产出
         run: |
           git config user.name  "monthly-studies[bot]"
