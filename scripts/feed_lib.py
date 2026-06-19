@@ -180,6 +180,8 @@ def _artifact_freshness() -> dict:
     _put("market_history", "market/history.json", "at", "date")
     _put("funds_13f", "funds/situational-awareness.json", "filed")
     _put("crypto_state", "crypto/state.json", "updated_at")
+    _put("longterm_score", "longterm/longscore.json", "as_of")     # LIS 月度,仅展示新鲜度
+    _put("macro_dial", "macro/latest.json", "asof_data", "updated_at")
     return out
 
 
