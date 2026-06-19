@@ -115,10 +115,16 @@
 - 关键:harness 拦住了把噪声当 alpha(20 mega-cap IC +0.17 漂亮,全 NDX 现原形)——正是 R5/R10 目的
 - 全 LIS L-1→L-6 + L-5 打通;设计文档 §9.1 记录负面裁决(负面结果也是结果,诚实归档)
 
+## Cycle 15(2026-06-18)— xs_backtest/factor_pipeline 接 PIT 成分过滤(清待办 #2)
+- `pit_membership` 加 `make_pit_filter`/`ever_in_index`/`load_db`:按 as_of 判成分,NDX-only(无 S&P500
+  变更史)不误杀;ticker 归一化。`xs_backtest`/`factor_pipeline` 的 cross_section 接 `pit_allowed`(默认开,
+  `--no-pit` 对照)。实测 137 名子集:PIT 开使 |IC| 向 0 收(H63 -0.036→-0.025,H5 翻号)——印证偏差方向
+- 诚实:只消前视性成员偏差,仍缺退市票→残留幸存者偏差(需含退市行情才全消)
+- `test_pit_membership` 14 断言接入 tests.yml;全 6 套长期/PIT 单测绿
+
 ## 待办池(按优先级)
 1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
-2. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
-3. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
+2. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
