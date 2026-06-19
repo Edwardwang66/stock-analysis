@@ -122,9 +122,19 @@
 - 诚实:只消前视性成员偏差,仍缺退市票→残留幸存者偏差(需含退市行情才全消)
 - `test_pit_membership` 14 断言接入 tests.yml;全 6 套长期/PIT 单测绿
 
+## Cycle 16(2026-06-18)— meta-labeling L2 下注层(清待办 #2)
+- `backtest/meta_label.py`:纯 numpy L2 逻辑回归 + purged K 折(消重叠标签泄漏)+ Mann-Whitney AUC + cv_auc。
+  分离方向(主信号给)与下注(副模型 P 缩放),副模型不改方向(R6 精神)
+- `study_meta_label.py`:从 statarb OU/s-score 特征(|s|/halflife/kappa/hurst/sigma_eq/beta/sigma_d)建标签
+  (bet·残差未来收益>0),purged OOS 评估
+- **诚实裁决**:9406 样本,OOS AUC=0.479(<0.5)、单特征|s| AUC=0.50 → OU 特征对「哪笔反转会赚」**零预测力**
+  → 否定,不接入下注层(符合主信号净 alpha≈0/负的先验)
+- `test_meta_label` 16 断言(含噪声标签 AUC≈0.5 自检)接入 tests.yml;8 套相关单测全绿
+
 ## 待办池(按优先级)
 1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
-2. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
+2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
+3. OFI/盘口模块(需分钟级数据,执行层 §6.5)
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
