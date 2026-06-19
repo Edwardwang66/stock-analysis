@@ -13,6 +13,7 @@ from edgar_fundamentals import (  # noqa: E402
     extract_pit_fundamentals,
     latest_fact,
     pit_line,
+    shares_outstanding,
 )
 
 PASS = 0
@@ -92,5 +93,38 @@ ok("gross_profitability=gp/assets=0.2", abs(r["gross_profitability"] - 0.2) < 1e
 ok("roe=ni/eq=0.2", abs(r["roe"] - 0.2) < 1e-9, r["roe"])
 ok("accruals=(ni-cfo)/assets=(80-95)/1000", abs(r["accruals_to_assets"] - (-15 / 1000)) < 1e-9)
 ok("asset_turnover=rev/assets=0.5", abs(r["asset_turnover"] - 0.5) < 1e-9)
+
+# ---- shares_outstanding:拆股取最新 end / 多类汇总 / recency 闸 / 回退 ----
+print("== shares_outstanding ==")
+# 拆股场景:CSO 停留在旧财年(2.46B,end 2024-01-28),dei 封面更新到 24.49B(end 2024-11-15)→ 取最新 end
+split_facts = {"facts": {
+    "us-gaap": {"CommonStockSharesOutstanding": {"units": {"shares": [
+        {"end": "2024-01-28", "val": 2_460_000_000, "filed": "2024-02-21"}]}}},
+    "dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": [
+        {"end": "2024-01-28", "val": 2_460_000_000, "filed": "2024-02-21"},
+        {"end": "2024-11-15", "val": 24_490_000_000, "filed": "2024-11-20"}]}}},
+}}
+sh, end, src = shares_outstanding(split_facts, "2024-12-31")
+ok("拆股:取 end 最新(24.49B 非 2.46B)", sh == 24_490_000_000, (sh, end))
+
+# 多股权类:CSO 同 end 多条(A/B/C)→ 汇总
+multiclass = {"facts": {"us-gaap": {"CommonStockSharesOutstanding": {"units": {"shares": [
+    {"end": "2024-09-30", "val": 6_000_000_000, "filed": "2024-10-30"},   # A
+    {"end": "2024-09-30", "val": 900_000_000, "filed": "2024-10-30"},     # B
+    {"end": "2024-09-30", "val": 5_360_000_000, "filed": "2024-10-30"},   # C
+]}}}}}
+shm, _, _ = shares_outstanding(multiclass, "2024-12-31")
+ok("多类汇总=6+0.9+5.36=12.26B", shm == 12_260_000_000, shm)
+
+# recency 闸:仅有 3 年前的陈旧值 → None(宁缺勿错)
+stale = {"facts": {"dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": [
+    {"end": "2010-01-27", "val": 469_000_000, "filed": "2010-02-03"}]}}}}}
+ok("陈旧股数(>550d)→ None", shares_outstanding(stale, "2024-12-31")[0] is None)
+
+# 回退到加权稀释股数(无 CSO/无近期 dei)
+wavg = {"facts": {"us-gaap": {"WeightedAverageNumberOfDilutedSharesOutstanding": {"units": {"shares": [
+    {"start": "2023-10-01", "end": "2024-09-30", "val": 930_000_000, "filed": "2024-11-01"}]}}}}}
+shw, _, srcw = shares_outstanding(wavg, "2024-12-31")
+ok("回退加权稀释股数=0.93B", shw == 930_000_000 and "Weighted" in srcw, (shw, srcw))
 
 print(f"\nedgar_fundamentals 单测全过:{PASS} 断言")

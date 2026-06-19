@@ -206,6 +206,57 @@ def lines_at_end(facts: dict, end: str, as_of: str) -> dict:
     return out
 
 
+def _latest_val(units: list[dict], as_of: str) -> tuple[str, float] | None:
+    """filed<=as_of 中 end 最新的事实 → (end, val)(不限年度;用于股数时点取最新)。"""
+    ff = [f for f in units if f.get("end") and f.get("filed") and f["filed"] <= as_of and f.get("val") is not None]
+    if not ff:
+        return None
+    f = max(ff, key=lambda x: x["end"])
+    return f["end"], float(f["val"])
+
+
+def shares_outstanding(facts: dict, as_of: str, max_stale_days: int = 550) -> tuple[float | None, str | None, str | None]:
+    """市值用在外股数(防拆股错配 + 多股权类汇总)。返回 (shares, end, source)。
+
+    没有单一可靠标签:dei 对部分公司陈旧(Visa 仅 2010)、us-gaap CSO 可能只到上一年报(拆股前,如 NVDA)。
+    策略:从多标签各取候选,**选 end 最新**(最近=拆股已调整、最贴当前),recency 闸过滤,
+    同 end 取更完整来源(CSO 跨类汇总 > 加权股数 > dei 封面)。全失败 → None(宁缺勿错)。"""
+    cands: list[tuple[str, float, str, int]] = []  # (end, shares, source, priority[小=优先])
+    # CSO:时点,跨股权类在最新 end 汇总(去重同值)
+    u = _concept_units(facts, "us-gaap", "CommonStockSharesOutstanding")
+    if u:
+        ff = [f for f in u if f.get("end") and f.get("filed") and f["filed"] <= as_of and f.get("val")]
+        if ff:
+            le = max(f["end"] for f in ff)
+            seen, tot = set(), 0.0
+            for f in ff:
+                if f["end"] == le and f["val"] not in seen:
+                    seen.add(f["val"])
+                    tot += float(f["val"])
+            if tot > 0:
+                cands.append((le, tot, "us-gaap:CommonStockSharesOutstanding", 0))
+    # 加权稀释/基本股数(总额,已含各类;取 end 最新,不限年度)
+    for tag in ("WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasic"):
+        u = _concept_units(facts, "us-gaap", tag)
+        if u:
+            r = _latest_val(u, as_of)
+            if r:
+                cands.append((r[0], r[1], "us-gaap:" + tag, 1))
+    # dei 封面(单类/可能不全,优先级最低但常最新)
+    u = _concept_units(facts, "dei", "EntityCommonStockSharesOutstanding")
+    if u:
+        r = _latest_val(u, as_of)
+        if r:
+            cands.append((r[0], r[1], "dei:EntityCommonStockSharesOutstanding", 2))
+
+    cands = [c for c in cands if _days(c[0], as_of) <= max_stale_days]
+    if not cands:
+        return None, None, None
+    max_end = max(c[0] for c in cands)
+    top = sorted((c for c in cands if c[0] == max_end), key=lambda c: c[3])
+    return top[0][1], top[0][0], top[0][2]
+
+
 def extract_two_year(facts: dict, as_of: str) -> tuple[dict, dict | None]:
     """返回(本财年, 上一财年)两期对齐快照,供 Piotroski F / Beneish M 两期因子用。
     上一财年不可得时返回 None(两期因子降级为 None,不据缺失数据剔除)。"""

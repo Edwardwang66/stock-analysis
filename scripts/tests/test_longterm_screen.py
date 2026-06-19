@@ -46,13 +46,25 @@ panel = [
 ]
 ranked = score_panel(panel)
 by_t = {r["ticker"]: r for r in ranked}
-ok("A 质量分最高", by_t["A"]["quality_score"] > by_t["B"]["quality_score"] > by_t["C"]["quality_score"])
+ok("A 长期分最高", by_t["A"]["long_score"] > by_t["B"]["long_score"] > by_t["C"]["long_score"])
 ok("A 排第 1", by_t["A"]["rank"] == 1)
 ok("被剔除的 D 沉底(rank 最大)", by_t["D"]["rank"] == len(ranked))
-ok("D 仍算出分(只是沉底)", by_t["D"]["quality_score"] is not None)
-ok("z 分解齐全", set(by_t["A"]["z"]) == set(
-    ["gross_profitability", "cash_op_to_assets", "roic", "roe", "net_margin",
-     "accruals_to_assets", "piotroski_f"]))
+ok("D 仍算出分(只是沉底)", by_t["D"]["long_score"] is not None)
+ok("纯质量输入→long=quality bucket", abs(by_t["A"]["long_score"] - by_t["A"]["buckets"]["quality"]) < 1e-9)
+ok("无价值数据→value bucket None", by_t["A"]["buckets"]["value"] is None)
+
+# 价值 bucket 单独生效:给 value 因子,quality 缺 → long_score = value bucket
+vpanel = [
+    {"ticker": "P", "earnings_yield": 0.10, "ebit_ev": 0.12, "book_to_price": 0.8,
+     "shareholder_yield": 0.05, "fcf_ev": 0.09, "exclude": False},
+    {"ticker": "Q", "earnings_yield": 0.05, "ebit_ev": 0.06, "book_to_price": 0.4,
+     "shareholder_yield": 0.02, "fcf_ev": 0.04, "exclude": False},
+    {"ticker": "R", "earnings_yield": 0.02, "ebit_ev": 0.03, "book_to_price": 0.2,
+     "shareholder_yield": 0.0, "fcf_ev": 0.01, "exclude": False},
+]
+vr = {r["ticker"]: r for r in score_panel(vpanel)}
+ok("便宜的 P value bucket 最高", vr["P"]["buckets"]["value"] > vr["R"]["buckets"]["value"])
+ok("纯价值→long=value bucket", abs(vr["P"]["long_score"] - vr["P"]["buckets"]["value"]) < 1e-9)
 
 # 缺失因子(<2 可用)→ 无分
 sparse = [
@@ -61,6 +73,6 @@ sparse = [
     {"ticker": "Z", "roe": 0.1, "exclude": False},
 ]
 rs = score_panel(sparse)
-ok("单因子名 → quality_score None", all(r["quality_score"] is None for r in rs))
+ok("单因子名 → long_score None", all(r["long_score"] is None for r in rs))
 
 print(f"\nlongterm_screen 单测全过:{PASS} 断言")
