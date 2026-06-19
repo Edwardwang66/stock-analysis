@@ -13,6 +13,8 @@ feed/
 ├── signals/latest.json         # 当前做多做空簿(引擎最新持仓)
 ├── market/state.json           # 最新市场状态快照(regime / 广度 / 拥挤)
 ├── factory/candidates.json     # LLM 假设工厂候选 + 六门控结果(滚动)
+├── longterm/                    # 长期腿(LIS):longscore.json(质量+价值排行)+ validation.json(L-5 验证裁决)
+├── macro/latest.json           # FRED 宏观风险拨盘(risk_dial∈[0,1];scripts/macro_fred.py)
 └── inbox/                       # OpenClaw 投递落点 → CI 校验通过后并入 reports/
 ```
 
