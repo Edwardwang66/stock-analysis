@@ -132,9 +132,17 @@ def quintile_spread(scores: list[float | None], fwd: list[float | None]) -> floa
 
 # ----------------------------- 面板构建(单 as_of)-----------------------------
 
-def panel_at(as_of: str, tickers: list[str], facts_map: dict, with_value: bool) -> list[dict]:
+def _norm(s: str) -> str:
+    return s.upper().replace(".", "").replace("-", "")
+
+
+def panel_at(as_of: str, tickers: list[str], facts_map: dict, with_value: bool,
+             members: set | None = None) -> list[dict]:
     feats = []
+    mset = {_norm(m) for m in members} if members is not None else None
     for t in tickers:
+        if mset is not None and _norm(t) not in mset:
+            continue  # PIT 成分过滤:剔除当日不在指数的票(消前视性成员偏差)
         facts = facts_map.get(t)
         if not facts:
             continue
@@ -199,6 +207,8 @@ def main() -> int:
     ap.add_argument("--end", type=int, default=2023)
     ap.add_argument("--month", default="06-30", help="每年 as_of 月日")
     ap.add_argument("--no-value", action="store_true")
+    ap.add_argument("--pit-sp500", action="store_true",
+                    help="用 backtest/pit_sp500.json 按 as_of 过滤 S&P500 时点成分(消前视性成员偏差)")
     ap.add_argument("--force-prices", action="store_true",
                     help="强制重下 10y 行情(首跑或缓存只有浅历史时需要)")
     ap.add_argument("--out", default=str(ROOT / "feed" / "longterm" / "validation.json"))
@@ -228,10 +238,20 @@ def main() -> int:
         print(f"下载行情(10y,用于市值 + 未来收益;force={args.force_prices})…")
         pricedata.fetch_universe(tickers, range_="10y", workers=10, force=args.force_prices)
 
+    pit_db = None
+    if args.pit_sp500:
+        import pit_membership as pm
+        pit_db = json.loads((ROOT / "backtest" / "pit_sp500.json").read_text())
+        print(f"PIT S&P500:current {len(pit_db.get('current', {}))} + {len(pit_db.get('changes', []))} 变更")
+
     as_ofs = [f"{y}-{args.month}" for y in range(args.start, args.end + 1)]
     periods = []
     for as_of in as_ofs:
-        feats = panel_at(as_of, tickers, facts_map, with_value)
+        members = None
+        if pit_db is not None:
+            import pit_membership as pm
+            members = pm.membership_asof(as_of, pit_db)
+        feats = panel_at(as_of, tickers, facts_map, with_value, members=members)
         if len(feats) < 10:
             print(f"  {as_of}: 面板太小({len(feats)}),跳过")
             continue
@@ -277,9 +297,11 @@ def main() -> int:
         "generated_at": __import__("datetime").datetime.now(
             __import__("datetime").timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "universe_size": len(tickers), "with_value": with_value,
+        "pit_sp500": bool(args.pit_sp500),
         "as_of_grid": as_ofs, "n_periods": len(periods),
         "caveats": [
-            "NDX/给定 universe 为当前成分→幸存者偏差,IC 偏高(上界非真值)",
+            ("PIT 成分过滤已开:消前视性成员偏差,但起点仍是当前可得票→残留退市幸存者偏差"
+             if args.pit_sp500 else "universe 为固定当前成分→幸存者偏差,IC 偏高(上界非真值)"),
             "有效期数极少(~8),t 统计虚高;无 Deflated Sharpe 级别样本",
             "无交易成本/退市票;IC 显著≠净·扣成本可盈利",
             "未对现有因子(HML/RMW/UMD)正交化(下一步)",
