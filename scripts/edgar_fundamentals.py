@@ -62,6 +62,8 @@ TAGS: dict[str, list[str]] = {
     "retained_earnings": ["RetainedEarningsAccumulatedDeficit"],
     "ebit": ["OperatingIncomeLoss"],  # EBIT 近似 = 经营利润
     "receivables": ["AccountsReceivableNetCurrent", "ReceivablesNetCurrent"],
+    "ppe_net": ["PropertyPlantAndEquipmentNet"],
+    "sga": ["SellingGeneralAndAdministrativeExpense", "GeneralAndAdministrativeExpense"],
 }
 # dei 命名空间(在外股数)
 DEI_TAGS = {"shares": ["EntityCommonStockSharesOutstanding"]}
@@ -69,7 +71,7 @@ DEI_TAGS = {"shares": ["EntityCommonStockSharesOutstanding"]}
 # 时段量(损益/现金流,有 start);其余为时点量(资产负债表)。
 FLOW_KEYS = {"revenue", "cogs", "gross_profit", "operating_income", "net_income", "cfo",
              "capex", "dep_amort", "interest_expense", "dividends_paid", "buybacks",
-             "stock_issued", "ebit"}
+             "stock_issued", "ebit", "sga"}
 
 
 # ----------------------------- 网络抓取(薄封装)-----------------------------
@@ -150,6 +152,69 @@ def pit_line(facts: dict, key: str, as_of: str) -> tuple[float | None, str | Non
         if f is not None and f.get("val") is not None:
             return float(f["val"]), f.get("filed")
     return None, None
+
+
+def annual_period_ends(facts: dict, as_of: str) -> list[str]:
+    """从年度损益事实(net_income 优先,revenue 兜底)取 filed<=as_of 的不同财年末,降序。"""
+    for key in ("net_income", "revenue"):
+        for tag in TAGS[key]:
+            units = _concept_units(facts, "us-gaap", tag)
+            if not units:
+                continue
+            ends = sorted({f["end"] for f in units
+                           if _annual(f) and f.get("filed") and f["filed"] <= as_of and f.get("end")},
+                          reverse=True)
+            if ends:
+                return ends
+    return []
+
+
+def _days(a: str, b: str) -> int:
+    from datetime import date
+    return abs((date.fromisoformat(a) - date.fromisoformat(b)).days)
+
+
+def fact_near_end(units: list[dict], end: str, as_of: str, tol: int) -> dict | None:
+    """取 end 落在目标财年末 ±tol 天内、filed<=as_of 的事实;同 end 取首次申报(防重述)。"""
+    cands = [f for f in units if f.get("end") and f.get("filed") and f["filed"] <= as_of
+             and _days(f["end"], end) <= tol]
+    if not cands:
+        return None
+    cands.sort(key=lambda f: (_days(f["end"], end), f["filed"]))  # 最近财年末 + 首次申报
+    return cands[0]
+
+
+def lines_at_end(facts: dict, end: str, as_of: str) -> dict:
+    """取某财年末(end)的全部线项快照(PIT)。财务三表精确对齐(±10d),在外股数容差±100d。"""
+    out: dict = {}
+    for key in list(TAGS) + list(DEI_TAGS):
+        ns, tags = ("dei", DEI_TAGS[key]) if key in DEI_TAGS else ("us-gaap", TAGS.get(key, []))
+        tol = 100 if key == "shares" else 10
+        val = None
+        for tag in tags:
+            units = _concept_units(facts, ns, tag)
+            if not units:
+                continue
+            f = fact_near_end(units, end, as_of, tol)
+            if f is not None and f.get("val") is not None:
+                val = float(f["val"])
+                break
+        out[key] = val
+    if out.get("gross_profit") is None and out.get("revenue") is not None and out.get("cogs") is not None:
+        out["gross_profit"] = out["revenue"] - out["cogs"]
+    out["period_end"] = end
+    return out
+
+
+def extract_two_year(facts: dict, as_of: str) -> tuple[dict, dict | None]:
+    """返回(本财年, 上一财年)两期对齐快照,供 Piotroski F / Beneish M 两期因子用。
+    上一财年不可得时返回 None(两期因子降级为 None,不据缺失数据剔除)。"""
+    ends = annual_period_ends(facts, as_of)
+    if not ends:
+        return extract_pit_fundamentals(facts, as_of), None
+    cur = lines_at_end(facts, ends[0], as_of)
+    prev = lines_at_end(facts, ends[1], as_of) if len(ends) >= 2 else None
+    return cur, prev
 
 
 def extract_pit_fundamentals(facts: dict, as_of: str) -> dict:
