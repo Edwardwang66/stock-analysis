@@ -154,6 +154,7 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ## 📚 文档导航
 
 - 想了解**长期投资系统怎么搭(24 篇调研 + 系统设计)** → [`docs/long-term-investment-system.md`](docs/long-term-investment-system.md) · 调研合集 [`research/long-term/`](research/long-term/README.md)
+- 想速览**2026-06-18 会话做了什么 + 数据瓶颈 + 怎么接力** → [`docs/session-2026-06-18-summary.md`](docs/session-2026-06-18-summary.md)
 - 想了解**市面上有哪些 AI 股票工具/Agent/Skills** → [`research/ai-agents-skills-market-scan.md`](research/ai-agents-skills-market-scan.md)
 - 想了解**平台怎么搭** → [`docs/architecture.md`](docs/architecture.md)
 - 想了解**先做什么、后做什么** → [`docs/roadmap.md`](docs/roadmap.md)
