@@ -1,0 +1,59 @@
+name: Long-term screen (长期腿月度筛选)
+
+# 每月 2 日收盘后(避开 monthly-studies 的 1 日)跑长期投资腿的数据底座 + 质量筛选:
+#   - macro_fred:FRED 宏观风险拨盘 → feed/macro/latest.json(keyless)
+#   - longterm_screen:EDGAR PIT 基本面 → 质量+安全合成 → feed/longterm/longscore.json
+# 长期持有期(数月-数年)→ 月度刷新足矣;commit 回仓供静态看板读取。
+# 诚实:候选清单非下单信号;上线前须过 7 关验证(见 docs/long-term-investment-system.md)。
+
+on:
+  schedule:
+    - cron: "0 23 2 * *"
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: "PIT 截止日 YYYY-MM-DD(留空=今天)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: longterm-screen
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: 单测自检(纯逻辑,触网前先红灯)
+        run: |
+          python scripts/tests/test_edgar_fundamentals.py
+          python scripts/tests/test_factors_fundamental.py
+          python scripts/tests/test_longterm_screen.py
+          python scripts/tests/test_macro_fred.py
+      - name: 宏观风险拨盘(FRED keyless)
+        run: python scripts/macro_fred.py
+      - name: 长期腿质量筛选(NDX100 universe)
+        run: |
+          AS_OF="${{ github.event.inputs.as_of }}"
+          [ -z "$AS_OF" ] && AS_OF="$(date -u +%Y-%m-%d)"
+          echo "as_of=$AS_OF"
+          python scripts/longterm_screen.py --universe scripts/ndx100.json --as-of "$AS_OF"
+      - name: Commit feed 产出
+        run: |
+          git config user.name  "longterm-screen[bot]"
+          git config user.email "actions@github.com"
+          git add feed/longterm/ feed/macro/
+          if git diff --cached --quiet; then
+            echo "无变化"
+          else
+            git commit -m "longterm: 月度质量筛选 + 宏观拨盘 ($(date -u +%Y-%m-%d))"
+            git pull --rebase origin main || true
+            for i in 1 2 3 4; do git push && break || sleep $((2**i)); done
+          fi

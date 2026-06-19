@@ -37,3 +37,9 @@ jobs:
         run: |
           python scripts/tests/test_chan_engine.py
           python scripts/tests/test_validate_feed.py
+      - name: 长期腿单测(EDGAR PIT / 基本面剔除闸 / 质量合成 / 宏观拨盘)
+        run: |
+          python scripts/tests/test_edgar_fundamentals.py
+          python scripts/tests/test_factors_fundamental.py
+          python scripts/tests/test_longterm_screen.py
+          python scripts/tests/test_macro_fred.py
