@@ -105,10 +105,20 @@
 - 实测:20 名 mega-cap live 出榜,市值校准全对(AAPL 3.79T/NVDA 3.29T修后);build 通过
 - 诚实:这是**候选清单非下单信号**,价值/质量混合;上线前须过 7 关验证(2022 holdout)
 
+## Cycle 14(2026-06-18)— LIS L-5 验证 harness + 诚实负面裁决
+- `backtest/study_longscore.py`:历史多 as_of PIT 面板(companyfacts 缓存离线切片)→ LongScore 对未来
+  1年收益 Rank-IC/ICIR/t + 分位价差 + **对动量+规模正交增量** + **PIT 成分过滤**(`--pit-sp500`,复用
+  `pit_membership`)+ 价值均衡 universe(`lt_universe_demo.json` 59 名跨行业)
+- **诚实裁决(两 universe 一致)**:LongScore IC t<1.2 不显著;**正交化后增量≈0/为负(抛硬币)**;
+  价值腿成长指数里 IC 负、均衡 universe ≈0(印证调研);→ **不宣称 alpha**,`/longterm` 永远仅候选展示
+- 看板加「验证裁决卡」置顶(诚实优先);feed/longterm+feed/macro 接 feed_lib 新鲜度;月度 routine playbook
+- 关键:harness 拦住了把噪声当 alpha(20 mega-cap IC +0.17 漂亮,全 NDX 现原形)——正是 R5/R10 目的
+- 全 LIS L-1→L-6 + L-5 打通;设计文档 §9.1 记录负面裁决(负面结果也是结果,诚实归档)
+
 ## 待办池(按优先级)
-0. **LIS L-5 验证**:`study_longscore.py`(历史多 as_of 面板 Rank-IC + 对现有因子正交增量 + 2022 holdout)
-1. **LIS L-2 续**:全名单 PIT 行情对齐成分 + 价值腿扩到 516/NDX100;审计接 feed/longterm + feed/macro 新鲜度
+1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
 2. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
+3. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
