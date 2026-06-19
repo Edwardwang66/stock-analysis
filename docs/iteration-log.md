@@ -131,10 +131,19 @@
   → 否定,不接入下注层(符合主信号净 alpha≈0/负的先验)
 - `test_meta_label` 16 断言(含噪声标签 AUC≈0.5 自检)接入 tests.yml;8 套相关单测全绿
 
+## Cycle 17(2026-06-18)— 借券费/做空可得性建模(清待办 #2)
+- `costs.py` 补空头借券腿(R4 净成本闭环):`borrow_rate_proxy`(ADV 分档:大盘GC 0.3%→微盘 8%→不可做空)
+  + `shortable_mask` + `borrow_cost_daily` + `borrow_drag_annual`(年化借券拖累 + 不可做空权重占比)
+- `study_short_feasibility.py`:big vs small 空头簿借券拖累 + 扣借券净 Sharpe
+- **诚实发现**:S&P600 有流动性入选门槛 → 空头仍属 general-collateral(借券仅 0.1%/年,0 不可做空);
+  下沉净增益**扣借券前就为负**(-0.09),借券非元凶;**真正借券墙在 S&P600 以下的微盘**
+  (调研所指容量受限冷门层),需 microcap universe + 真实 borrow rate 才咬合
+- `test_costs_borrow` 16 断言接入 tests.yml;9 套相关单测全绿
+
 ## 待办池(按优先级)
 1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
-2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
-3. OFI/盘口模块(需分钟级数据,执行层 §6.5)
+2. OFI/盘口模块(需分钟级数据,执行层 §6.5)
+3. microcap universe(S&P600 以下)+ 真实 borrow rate:才能真正检验「下沉救 alpha」+ 借券墙
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
