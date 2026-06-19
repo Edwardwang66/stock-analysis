@@ -86,6 +86,7 @@ class StatArbParams:
     max_participation: float = 0.05 # 单日参与率上限(占 ADV)
     half_spread_bps: float = 5.0    # 单边价差成本(bps)
     impact_Y: float = 0.5           # 平方根冲击系数
+    borrow_costs: bool = True       # 空头腿借券费(R4 净成本闭环;ADV 分档代理,见 costs.borrow_cost_daily)
     n_trials: int = 200             # 申报试验次数(用于 Deflated Sharpe;诚实登记,见 §6.7)
     holdout_start: str = "2025-01-01"  # 真 holdout 起点(R5):此日(含)之后只做终检,不据其调参
     vol_target: float | None = None  # 年化波动目标(如0.04);None=关闭。开启则按近21日实现波动缩放毛杠杆(§6.3)
@@ -329,6 +330,7 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     prev_w: dict[str, float] = {}
     active: set = set()
     net_rets, gross_rets, turnovers, n_pos, breaker_counts = [], [], [], [], []
+    borrow_total = 0.0              # 累计借券费(占 NAV;空头腿,R4)
     ret_ts: list[int] = []          # 每条净收益对应的实现日(t+1)时间戳
     # 回撤治理状态(§7.4 阶梯;全部因果:只用已实现净收益)
     import datetime as _dt2
@@ -391,8 +393,20 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
             adv_d.append(diag.get(t, {}).get("adv_usd", names[t]["adv"][k] if np.isfinite(names[t]["adv"][k]) else 0.0))
         cost = costs.portfolio_turnover_cost(np.array(dw), np.array(sig_d), np.array(adv_d),
                                              p.aum, p.half_spread_bps, p.impact_Y)
+        # 借券费(空头腿持有过夜;R4 净成本闭环。ADV 用当日 adv,缺则 0→按最贵档保守计)
+        borrow = 0.0
+        if p.borrow_costs:
+            sw, sadv = [], []
+            for t, w in weights.items():
+                if w < 0:
+                    sw.append(abs(w))
+                    a = names[t]["adv"][k]
+                    sadv.append(float(a) if np.isfinite(a) else 0.0)
+            if sw:
+                borrow = costs.borrow_cost_daily(np.array(sw), np.array(sadv))
+        borrow_total += borrow
         turnover = float(np.abs(dw).sum())
-        net_rets.append(gross_r - cost)
+        net_rets.append(gross_r - cost - borrow)
         gross_rets.append(gross_r)
         ret_ts.append(int(dates[k + 1]))
         equity *= (1 + net_rets[-1])
@@ -415,6 +429,8 @@ def run(tickers: list[str] | None = None, p: StatArbParams | None = None,
     rep["universe_size"] = len(names)
     rep["risk_governance"] = {"enabled": p.governance, "days": gov_days,
                               "ssr_short_blocks": int(ssr_blocks_total)}
+    n_days = max(1, len(net_rets))
+    rep["borrow_cost_ann"] = float(borrow_total / n_days * 252)  # 年化借券拖累(占 NAV)
     rep["_net_series"] = net.tolist()          # 日净收益全序列(供 CSCV/研究脚本;不入 feed)
     if verbose:
         _print_report(rep)
@@ -545,7 +561,7 @@ def _print_report(rep):
     print(f"\n  净 Sharpe   {n['sharpe']:+.2f}    年化 {n['ann_return']*100:+.1f}%   "
           f"波动 {n['ann_vol']*100:.1f}%   最大回撤 {n['max_drawdown']*100:.1f}%   胜率 {n['hit_rate']*100:.0f}%")
     print(f"  毛 Sharpe   {g['sharpe']:+.2f}    年化 {g['ann_return']*100:+.1f}%   "
-          f"成本拖累 {rep['cost_drag_ann']*100:.1f}%/年")
+          f"成本拖累 {rep['cost_drag_ann']*100:.1f}%/年(其中借券 {rep.get('borrow_cost_ann', 0)*100:.2f}%/年)")
     print(f"  日均换手 {rep['turnover']['avg_daily']*100:.0f}%  双边年化 {rep['turnover']['ann_2way']*100:.0f}%   "
           f"日均持仓 {rep['book']['avg_positions']:.0f}  日均熔断 {rep['book']['avg_breaker_per_day']:.1f}")
     dsr = rep["deflated_sharpe"]
