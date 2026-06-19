@@ -280,6 +280,9 @@ def main() -> int:
             size = [f.get("_size") for f in feats]
             long_orth = neutralize(long_s, [mom, size])
             ic_orth = rank_ic(long_orth, fwd_list)
+        # 剔除闸功效(下行保护假设,与 alpha 分开):被剔除名的未来收益 vs 保留名
+        ex_fwd = [fwd_list[i] for i, f in enumerate(feats) if f.get("exclude") and fwd_list[i] is not None]
+        keep_fwd = [fwd_list[i] for i, f in enumerate(feats) if not f.get("exclude") and fwd_list[i] is not None]
         rec = {
             "as_of": as_of, "n": len(feats), "n_fwd": n_fwd,
             "ic_long": rank_ic(long_s, fwd_list),
@@ -288,6 +291,9 @@ def main() -> int:
             "ic_value": rank_ic(vz, fwd_list) if with_value else None,
             "qspread_long": quintile_spread(long_s, fwd_list),
             "mean_fwd": float(np.nanmean([x for x in fwd_list if x is not None])),
+            "n_excluded": len(ex_fwd),
+            "mean_fwd_excluded": float(np.mean(ex_fwd)) if ex_fwd else None,
+            "mean_fwd_kept": float(np.mean(keep_fwd)) if keep_fwd else None,
         }
         periods.append(rec)
         print(f"  {as_of}: n={rec['n']} IC_long={_f(rec['ic_long'])} "
@@ -326,6 +332,10 @@ def _f(x):
     return "—" if x is None else f"{x:+.3f}"
 
 
+def _pctf(x):
+    return "—" if x is None else f"{x:+.1%}"
+
+
 def _aggregate(periods: list[dict]) -> dict:
     def stats(key):
         vals = [p[key] for p in periods if p.get(key) is not None]
@@ -337,9 +347,21 @@ def _aggregate(periods: list[dict]) -> dict:
         t = (m / sd * (len(vals) ** 0.5)) if sd > 0 else None
         hit = float(np.mean([1.0 if v > 0 else 0.0 for v in vals]))
         return {"mean": m, "std": sd, "icir": icir, "t": t, "n": len(vals), "hit": hit}
+    # 剔除闸功效:跨期池化被剔除 vs 保留名的未来收益(下行保护假设)
+    ex = [p["mean_fwd_excluded"] for p in periods if p.get("mean_fwd_excluded") is not None]
+    n_ex_total = sum(p.get("n_excluded", 0) for p in periods)
+    excl = {"n_excluded_total": n_ex_total, "n_periods_with_excl": len(ex)}
+    if ex:
+        kept = [p["mean_fwd_kept"] for p in periods if p.get("mean_fwd_excluded") is not None
+                and p.get("mean_fwd_kept") is not None]
+        excl["mean_fwd_excluded"] = float(np.mean(ex))
+        excl["mean_fwd_kept"] = float(np.mean(kept)) if kept else None
+        excl["excluded_minus_kept"] = (excl["mean_fwd_excluded"] - excl["mean_fwd_kept"]
+                                       if excl["mean_fwd_kept"] is not None else None)
     return {"ic_long": stats("ic_long"), "ic_long_orth": stats("ic_long_orth"),
             "ic_quality": stats("ic_quality"),
-            "ic_value": stats("ic_value"), "qspread_long": stats("qspread_long")}
+            "ic_value": stats("ic_value"), "qspread_long": stats("qspread_long"),
+            "exclusion": excl}
 
 
 def _print_summary(s: dict):
@@ -353,6 +375,18 @@ def _print_summary(s: dict):
             continue
         print(f"  {lbl:14} mean={st['mean']:+.4f} std={st['std']:.4f} "
               f"ICIR={_f(st['icir'])} t={_f(st['t'])} hit={st['hit']:.0%} (n={st['n']})")
+    ex = s.get("exclusion", {})
+    if ex.get("n_excluded_total"):
+        d = ex.get("excluded_minus_kept")
+        print(f"  剔除闸功效:剔除 {ex['n_excluded_total']} 名·期;被剔除未来收益 "
+              f"{_pctf(ex.get('mean_fwd_excluded'))} vs 保留 {_pctf(ex.get('mean_fwd_kept'))} → 差 {_pctf(d)}")
+        if d is not None and d > 0:
+            print("    ⚠ 被剔除名反而跑赢——几乎必是**幸存者偏差**:真正暴雷的被剔除名(归零/退市)"
+                  "在免费行情里无未来收益、被排除在外。**此测不能证伪剔除闸**,需含退市票才能测下行保护。")
+        elif d is not None:
+            print("    被剔除名跑输,与下行保护假设一致(仍受幸存者偏差影响,谨慎解读)。")
+    else:
+        print("  剔除闸功效:本 universe 几乎无名被剔除(大盘股健康)——下行保护需在更脆弱 universe + 含退市票测")
     print("=" * 56)
     ic = s["ic_long"]
     if ic["t"] is not None:
@@ -399,6 +433,14 @@ def _markdown(doc: dict) -> str:
     qs = s["qspread_long"]
     if qs["mean"] is not None and qs["mean"] < 0:
         findings.append(f"**Q5−Q1 价差={qs['mean']:+.3f} 为负**——综合分未能单调分选收益,合成有效性存疑。")
+    ex = s.get("exclusion", {})
+    if ex.get("n_excluded_total"):
+        d = ex.get("excluded_minus_kept")
+        msg = (f"剔除闸功效:剔除 {ex['n_excluded_total']} 名·期,被剔除未来收益 "
+               f"{_pctf(ex.get('mean_fwd_excluded'))} vs 保留 {_pctf(ex.get('mean_fwd_kept'))}(差 {_pctf(d)})。")
+        if d is not None and d > 0:
+            msg += "**被剔除名反而跑赢=幸存者偏差**(暴雷者已退市无未来收益),此测不能证伪剔除闸,须含退市票。"
+        findings.append(msg)
     lines += ["", "## 关键发现(自动)", ""]
     for f in findings:
         lines.append(f"- {f}")
