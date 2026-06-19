@@ -158,16 +158,25 @@ LongScore = mean_z( value_bucket, quality_bucket, momentum_bucket, lowvol_bucket
 
 ---
 
-## 9. 分期路线图
+## 9. 分期路线图与实现进度
 
-| 阶段 | 交付 | 验收 |
-|---|---|---|
-| **L-1 数据底座** | `edgar_fundamentals.py`(PIT 面板,~500 美股大盘起步)+ `macro_fred.py` | 任意 `as_of` 取出无前视的三表;`filed≤as_of` 不变量 CI 通过 |
-| **L-2 单因子落地** | 质量(`cash_op`/`gp_a`)+ 价值(`ebit_ev`/`npy`)+ 剔除闸(Z''/M-Score)进 `factors_xs.py` | 各子因子 Rank-IC + 分层单调 + 对 RMW/HML 正交增量;2022 holdout |
-| **L-3 合成 + 组合** | `LongScore` 综合分 + `xs_portfolio.py` ≥50 票等权带宽 | integrated vs mixing vs screening 三对照;净·扣成本胜等权基准 |
-| **L-4 风险叠加** | 总敞口波动目标 + 趋势/宏观软开关 + `stock_bond_corr` 早警 | 净·扣成本下降回撤,**不宣称 alpha**(降回撤即合格) |
-| **L-5 feed/看板/routine** | `feed/longterm/*` + `/longterm` 面板 + 月度 routine | feed 校验闸通过;看板展示顶档+剔除原因+风险拨盘 |
-| **L-6 增强(可选)** | 内部人/13F 二次确认;LLM 抽取器(过门控);加密 DCA 倾斜;A 股 CH-3/CH-4 | 每项独立过 7 关验证,不过则降级为展示/否决 |
+> 状态:✅ 已落地 · 🟡 部分 · ⬜ 未开始(更新于 2026-06-18 Cycle 13)
+
+| 阶段 | 交付 | 状态 | 验收 |
+|---|---|---|---|
+| **L-1 数据底座** | `edgar_fundamentals.py`(PIT 面板)+ `macro_fred.py` | ✅ | `filed≤as_of` PIT 切片 + 防重述 + 财年两期 + 股数防拆股;20 断言单测 + live |
+| **L-2 单因子落地** | 质量(`cash_op`/`gp_a`/ROIC)+ 价值(`ebit_ev`/`npy`/E-P)+ 剔除闸(Z''/M/F) | ✅ | `factors_fundamental.py`+`factors_value.py`;双确认剔除纪律;31 断言单测 + live 校准 |
+| **L-3 合成 + 组合** | `LongScore`(bucket rank-z 等权 integrated)+ `longterm_screen.py` | 🟡 | 合成 ✅(15 断言);≥50 票等权带宽组合构建 ⬜(待 L-5 验证后) |
+| **L-4 风险叠加** | 总敞口波动目标 + 趋势/宏观软开关 + `stock_bond_corr` 早警 | 🟡 | 宏观拨盘 ✅(21 断言);波动目标/趋势接入组合层 ⬜ |
+| **L-5 验证** | `study_longscore.py`(Rank-IC + 正交增量 + 2022 holdout + PBO) | ⬜ | 净·扣成本胜等权;Deflated Sharpe/CSCV-PBO/t>3;**不过则只当展示** |
+| **L-6 feed/看板/routine** | `feed/longterm/*` + `/longterm` 面板 + 月度工作流 | ✅ | `/longterm` 排行+因子分解+宏观拨盘;`longterm-screen.yml` 月度;build 通过 |
+| **L-7 增强(可选)** | 内部人/13F 二次确认;LLM 抽取器(过门控);加密 DCA 倾斜;A 股 CH-3/CH-4 | ⬜ | 每项独立过 7 关验证,不过则降级为展示/否决 |
+
+**已交付模块**(Cycle 13):`scripts/edgar_fundamentals.py` · `scripts/macro_fred.py` · `scripts/longterm_screen.py` ·
+`backtest/factors_fundamental.py` · `backtest/factors_value.py` · `frontend/app/longterm/page.tsx` ·
+5 套单测(80+ 断言)· `tests.yml`/`longterm-screen.yml` 工作流。
+
+**下一步关键**:L-5 验证 harness —— 在宣称任何 alpha 前,LongScore 必须过 7 关。当前 `/longterm` 仅是**候选清单展示**。
 
 **诚实预期**:多数因子扣成本+发表衰减后增量有限;长期腿的现实价值大概率是**容量大、换手低、回撤更可控的稳健复利**,而非高 alpha。任何"跑赢"结论都要过 §7 七关,否则只当展示。
 

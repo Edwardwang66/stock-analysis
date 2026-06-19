@@ -91,9 +91,24 @@
   而非单因子准;任何"跑赢"须过七关验证(2022 必入 holdout),否则只当展示
 - 全程仅调研 + 文档,**未改任何引擎/前端代码**;落地从 L-1(EDGAR PIT 面板)起按路线图推进
 
+## Cycle 13(2026-06-18)— 长期投资系统 LIS 落地:L-1→L-3 + L-6 看板
+- **L-1 数据底座**:`scripts/edgar_fundamentals.py`(EDGAR PIT 基本面,filed≤as_of 切片+防重述+
+  财年对齐两期)+ `scripts/macro_fred.py`(FRED keyless 风险拨盘,信用>曲线>FCI>劳动)
+- **L-1/L-2 剔除闸**:`backtest/factors_fundamental.py`(Altman Z''/Piotroski F/Beneish M)+
+  **双确认纪律**(破产 或 Beneish红旗+高应计)——实证 NVDA 爆发增长触发 M 假阳性但低应计→仅软标记
+- **L-2 价值腿**:`backtest/factors_value.py`(E/P, EBIT/EV, FCF/EV, B/P, 净股东收益,需价格 join)
+- **L-2/L-3 合成**:`scripts/longterm_screen.py` bucket 化 → LongScore(质量+价值 rank-z 等权 integrated)
+- **修两个真实数据 bug**:NVDA 10拆1 市值错配10倍 / Visa 多类股+dei陈旧 → `shares_outstanding`
+  取最新 end+跨类汇总+recency闸+多标签回退;Visa 无标准标签诚实置 None(宁缺勿错)
+- **L-6 看板**:`/longterm` 页(LongScore 排行+因子 z 分解+宏观拨盘+剔除原因);首页加入口
+- **CI/工作流**:5 套单测 80+ 断言接入 tests.yml;`longterm-screen.yml` 月度定时
+- 实测:20 名 mega-cap live 出榜,市值校准全对(AAPL 3.79T/NVDA 3.29T修后);build 通过
+- 诚实:这是**候选清单非下单信号**,价值/质量混合;上线前须过 7 关验证(2022 holdout)
+
 ## 待办池(按优先级)
-0. **LIS L-1**:`scripts/edgar_fundamentals.py`(PIT 基本面面板)+ `scripts/macro_fred.py`(宏观拨盘)
-1. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
+0. **LIS L-5 验证**:`study_longscore.py`(历史多 as_of 面板 Rank-IC + 对现有因子正交增量 + 2022 holdout)
+1. **LIS L-2 续**:全名单 PIT 行情对齐成分 + 价值腿扩到 516/NDX100;审计接 feed/longterm + feed/macro 新鲜度
+2. xs_backtest/factor_pipeline(516名单)接 PIT 过滤(那里会真正咬合)
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注
