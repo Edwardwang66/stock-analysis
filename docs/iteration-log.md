@@ -140,10 +140,21 @@
   (调研所指容量受限冷门层),需 microcap universe + 真实 borrow rate 才咬合
 - `test_costs_borrow` 16 断言接入 tests.yml;9 套相关单测全绿
 
+## Cycle 18(2026-06-19)— 10大AI交易Agent诚实扫描 + Polymarket事件概率因子集成
+- 用户给「10大AI交易Agent开源榜」图 → 10 并行 agent 逐项核实(真实仓库/star/license/可信度/可借鉴):
+  `research/agents-scan/`(01-10 + README 采纳矩阵)。**诚实结论:无一有样本外扣成本业绩**;
+  TradingAgents 被 Profit Mirage 论文证伪(知识窗外 Sharpe -55%);star≠能赚;AutoHedge=反面教材
+- **集成(免费只读/零合规/不下注/不让LLM决策)**:
+  ① `scripts/polymarket_events.py`:Gamma API keyless 拉金融/宏观事件隐含概率(Fed/衰退/BTC目标)
+     → `feed/events/latest.json`(longshot 去偏);`/longterm` 看板事件概率卡;可作 meta-labeling 外部因子
+  ② Bull/Bear 结构化辩论 playbook 并入 `routines/openclaw-agent-prompts.md` §7(LLM 只产可证伪研判→stock-note,不决策)
+- 20 断言单测接入 tests.yml;月度 longterm-screen 刷新;deploy 捆绑 feed/events;tsc/build 通过
+
 ## 待办池(按优先级)
 1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
-2. OFI/盘口模块(需分钟级数据,执行层 §6.5)
-3. microcap universe(S&P600 以下)+ 真实 borrow rate:才能真正检验「下沉救 alpha」+ 借券墙
+2. Polymarket 事件概率作 meta-labeling 外部因子的**实证检验**(需把事件→标的映射 + 历史价格序列)
+3. OFI/盘口模块(需分钟级数据,执行层 §6.5)
+4. microcap universe(S&P600 以下)+ 真实 borrow rate:才能真正检验「下沉救 alpha」+ 借券墙
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
 3. /intel 报告详情浏览(点击报告看全文)
 4. meta-labeling(L2):numpy 逻辑回归预测「该信号这次会不会赚」,分离方向与下注

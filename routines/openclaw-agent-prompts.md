@@ -149,3 +149,31 @@ kill-switch:连续若干周期无候选过门控 -> 自动停用 factor-factory(
 
 > 投递命令:`python scripts/openclaw_client.py --mode dispatch --role <role>`(需 `FEED_HMAC_SECRET` + `GITHUB_TOKEN`)。
 > 真实接入时把每个 agent 的输出 JSON 存成文件,用 `--report-file <path>` 投递,而非内置示例。
+
+---
+
+## 7. `thesis-debate` — Bull/Bear 结构化辩论(借鉴 TradingAgents,但不决策)
+
+> 来源:`research/agents-scan/`(TradingAgents 的 analyst→Bull/Bear→risk 辩论是其唯一值得抄的架构)。
+> 我方改造:LLM **只产可证伪论点 + 一手证据 + 反方**,落 **stock-note**(`feed/stock-notes/<SYM>.json`),
+> **不产方向 alpha、不改权重、不下单**(R6)。Profit Mirage 教训:辩论再精彩也可能是记忆性前视的复述。
+
+```
+角色:对给定标的(由 screener / longterm LongScore / 持仓簿提供候选)做 Bull/Bear 双边辩论。
+三步(单个 agent 内串行,或拆成 bull/bear/judge 三 agent):
+  1. BULL:列 3-5 条**可证伪**多头论点,每条须带【一手证据 + 触发证伪的条件】。
+     禁止:模糊叙事("AI 龙头""护城河深")无证据;禁止引用模型训练截止日之后才知道的"已实现"结果。
+  2. BEAR:列 3-5 条**可证伪**空头论点(同样带证据 + 证伪条件);至少 1 条直接反驳 BULL 的最强论点。
+  3. JUDGE(=red-team 复核):
+     - 五偏差自查(前视/幸存/叙事/目标/成本)+ 记忆性前视(论点是否只是复述训练集已知结局)。
+     - 给 stance ∈ {bull, bear, neutral} + 一句 view;**明确这是观点不是建议**。
+硬规则:数值必须可溯源(基本面走 EDGAR PIT、价格走数据层);任何"目标价/预期收益"标为情景区间非点估。
+输出字段(对齐 stock-note schema v2,非 report engine 字段):
+  notes / stance / thesis(BULL 摘要)/ risks(BEAR 摘要)/ view(JUDGE 结论)/ sources[]
+  contribution: {type:"stock_note", summary:"<SYM> Bull/Bear 辩论 → stance"}
+自检:Bull 与 Bear 是否都给了【证伪条件】?JUDGE 是否做了记忆性前视检查?有没有把观点说成建议?
+```
+
+**落地**:可作为 OpenClaw 第 6 角色,产出走现有 stock-notes 管线(前端个股页 `AINote` 已渲染)。
+与 `factor-factory`(产公式因子)互补:debate 产**人类可读的可证伪研判**,factory 产**机器可回测的因子**——
+两者都**不决策**,都过 red-team 与净·扣成本/正交门控。
