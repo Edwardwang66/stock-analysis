@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "kind": "short_feasibility_study",
+  "generated_at": "2026-06-19T16:19:45Z",
+  "borrow_model": {
+    "tiers": [
+      [
+        50000000.0,
+        0.003
+      ],
+      [
+        10000000.0,
+        0.01
+      ],
+      [
+        2000000.0,
+        0.03
+      ],
+      [
+        500000.0,
+        0.08
+      ]
+    ],
+    "shortable_min_adv": 500000.0,
+    "note": "ADV 分档代理,非真实 borrow rate"
+  },
+  "rows": [
+    {
+      "label": "大盘 S&P500 拥挤层",
+      "net_sharpe": -0.2687869665970262,
+      "net_ann": -0.007854990242309776,
+      "net_vol": 0.02922385092461057,
+      "borrow_ann": 0.0006672,
+      "sharpe_after_borrow": -0.29161763329188417,
+      "unshortable_frac": 0.0,
+      "n_short": 21,
+      "n_unshortable": 0,
+      "short_gross": 0.22240000000000001,
+      "mean_borrow_rate": 0.0029999999999999996
+    },
+    {
+      "label": "小盘 S&P600 下沉层",
+      "net_sharpe": -0.35539206348640123,
+      "net_ann": -0.00952138784128152,
+      "net_vol": 0.02679122248222588,
+      "borrow_ann": 0.0005300000000000001,
+      "sharpe_after_borrow": -0.3751746620726216,
+      "unshortable_frac": 0.0,
+      "n_short": 14,
+      "n_unshortable": 0,
+      "short_gross": 0.06979999999999999,
+      "mean_borrow_rate": 0.007593123209169057
+    }
+  ],
+  "net_gain_before_borrow": -0.08660509688937501,
+  "net_gain_after_borrow": -0.08355702878073745,
+  "small_borrow_erosion": 0.01978259858622039,
+  "verdict": "下沉净增益**扣借券前就为负**(-0.09),借券非元凶;且 S&P600 借券拖累仅 0.1%/年(0 不可做空)——S&P600 有流动性入选门槛,仍属 general-collateral。**真正的借券墙在 S&P600 以下的微盘**(调研所指『容量受限冷门层』),需 microcap universe + 真实 borrow rate 才咬合。",
+  "caveats": [
+    "借券率为 ADV 分档代理(免费数据无真实 rate);空头簿为最新快照非时序均值",
+    "不可做空名按最贵档惩罚(保守);实盘可能直接无券",
+    "statarb 净 alpha 本身≈0/负;此研究量化的是『下沉增益』被借券进一步侵蚀的程度"
+  ]
+}

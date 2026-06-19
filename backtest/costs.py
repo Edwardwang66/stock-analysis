@@ -72,3 +72,68 @@ def capacity_cap_weights(w: np.ndarray, adv_notional: np.ndarray, aum: float,
     cap_notional = max_participation * np.where(adv_notional > 0, adv_notional, 0.0)
     cap_w = cap_notional / aum
     return np.sign(w) * np.minimum(np.abs(w), cap_w)
+
+
+# ----------------------------- 借券费 / 做空可行性(空头腿)-----------------------------
+# 设计文档 R4:净·扣成本唯一货币。空头腿除价差+冲击外,还要付**借券费**(annualized),
+# 且小盘/冷门股常**借不到**(unshortable)。免费数据无真实借券率,故用 ADV 分档代理(诚实标注)。
+# 量级参考:大盘 general-collateral ~0.2–0.5%/yr;hard-to-borrow 小盘可达 3–20%+/yr;
+# 微盘常无券可借。实盘须换券商真实 borrow rate / locate 可得性。
+
+SHORTABLE_MIN_ADV = 0.5e6     # ADV 低于此($/日)视为不可做空(借不到券)
+# (ADV 下界 $, 年化借券率) —— 阶梯,越冷门越贵
+BORROW_TIERS = [
+    (50e6, 0.003),   # ≥$50M ADV:GC,~30bps/yr
+    (10e6, 0.010),   # $10–50M:~1%/yr
+    (2e6, 0.030),    # $2–10M:~3%/yr(hard-to-borrow 起)
+    (0.5e6, 0.080),  # $0.5–2M:~8%/yr
+]
+
+
+def borrow_rate_proxy(adv_notional: np.ndarray) -> np.ndarray:
+    """按 ADV 分档的年化借券率代理(小数)。低于 SHORTABLE_MIN_ADV 返回 nan(不可做空)。"""
+    adv = np.asarray(adv_notional, dtype=float)
+    rate = np.full(adv.shape, np.nan)
+    # 从高到低分档赋值(高 ADV 先填,低档覆盖更小的)
+    for lo, r in BORROW_TIERS:
+        rate = np.where((adv >= lo) & np.isnan(rate), r, rate)
+    rate = np.where(adv < SHORTABLE_MIN_ADV, np.nan, rate)
+    return rate
+
+
+def shortable_mask(adv_notional: np.ndarray) -> np.ndarray:
+    """是否可做空(ADV ≥ 阈值且有有效借券率)。"""
+    return np.asarray(adv_notional, dtype=float) >= SHORTABLE_MIN_ADV
+
+
+def borrow_cost_daily(short_weight_abs: np.ndarray, adv_notional: np.ndarray) -> float:
+    """持有空头一天的借券成本(占 NAV 比例)= Σ |w_short| · 年化率 / 252。
+    不可做空的名(rate=nan)按**最贵档**惩罚(若强行做空)——诚实地反映成本下限。"""
+    w = np.abs(np.asarray(short_weight_abs, dtype=float))
+    rate = borrow_rate_proxy(adv_notional)
+    worst = BORROW_TIERS[-1][1]
+    rate = np.where(np.isnan(rate), worst, rate)   # 不可借者按最贵档计(保守)
+    return float(np.nansum(w * rate) / 252.0)
+
+
+def borrow_drag_annual(short_weights: np.ndarray, adv_notional: np.ndarray) -> dict:
+    """对一个空头簿估年化借券拖累 + 不可做空占比。short_weights 为负权重(或绝对值)。
+    返回 {ann_borrow_cost, unshortable_frac, mean_rate, n_short, n_unshortable}。"""
+    w = np.abs(np.asarray(short_weights, dtype=float))
+    sel = w > 1e-9
+    w, adv = w[sel], np.asarray(adv_notional, dtype=float)[sel]
+    if w.sum() == 0:
+        return {"ann_borrow_cost": 0.0, "unshortable_frac": 0.0, "mean_rate": 0.0,
+                "n_short": 0, "n_unshortable": 0}
+    rate = borrow_rate_proxy(adv)
+    unshort = np.isnan(rate)
+    worst = BORROW_TIERS[-1][1]
+    rate_filled = np.where(unshort, worst, rate)
+    ann = float(np.sum(w * rate_filled))                       # 年化借券成本(占 NAV)
+    return {
+        "ann_borrow_cost": ann,
+        "unshortable_frac": float(w[unshort].sum() / w.sum()),  # 按权重计的不可做空占比
+        "mean_rate": float(np.sum(w * rate_filled) / w.sum()),
+        "n_short": int(sel.sum()),
+        "n_unshortable": int(unshort.sum()),
+    }

@@ -43,8 +43,9 @@ jobs:
           python scripts/tests/test_factors_fundamental.py
           python scripts/tests/test_longterm_screen.py
           python scripts/tests/test_macro_fred.py
-      - name: PIT 过滤 + meta-labeling 单测(需 numpy)
+      - name: PIT 过滤 + meta-labeling + 借券模型单测(需 numpy)
         run: |
           pip install numpy >/dev/null 2>&1
           python scripts/tests/test_pit_membership.py
           python scripts/tests/test_meta_label.py
+          python scripts/tests/test_costs_borrow.py
