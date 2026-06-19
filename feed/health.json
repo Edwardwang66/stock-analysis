@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-06-19T05:32:30Z",
+  "checked_at": "2026-06-19T11:02:18Z",
   "ok": true,
   "critical": 0,
   "warn": 0,
@@ -7,58 +7,58 @@
     {
       "level": "info",
       "code": "notes-partial",
-      "message": "stock-notes 最新日 2026-06-18 覆盖率 67%(分布 {'2026-06-09': 3, '2026-06-10': 19, '2026-06-15': 7, '2026-06-16': 9, '2026-06-17': 28, '2026-06-18': 136})"
+      "message": "stock-notes 最新日 2026-06-19 覆盖率 67%(分布 {'2026-06-09': 3, '2026-06-10': 18, '2026-06-15': 7, '2026-06-16': 9, '2026-06-17': 20, '2026-06-18': 13, '2026-06-19': 142})"
     },
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 8.9 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 9.1 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-06-18",
-      "age_days": 1.23
+      "age_days": 1.46
     },
     "market_state": {
       "exists": true,
       "asof": "2026-06-18",
-      "age_days": 1.23
+      "age_days": 1.46
     },
     "screener": {
       "exists": true,
       "asof": "2026-06-19",
-      "age_days": 0.23
+      "age_days": 0.46
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-06-19",
-      "age_days": 0.23
+      "age_days": 0.46
     },
     "stock_notes": {
       "exists": true,
-      "asof": "2026-06-18T05:29:59Z",
-      "age_days": 1.0
+      "asof": "2026-06-19T06:10:01Z",
+      "age_days": 0.2
     },
     "intraday": {
       "exists": true,
       "asof": "2026-06-18T15:59:47+00:00",
-      "age_days": 0.56
+      "age_days": 0.79
     },
     "market_history": {
       "exists": true,
       "asof": "2026-06-19T00:14:01+00:00",
-      "age_days": 0.22
+      "age_days": 0.45
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 32.23
+      "age_days": 32.46
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-06-19T05:19:16Z",
+      "asof": "2026-06-19T10:54:34Z",
       "age_days": 0.01
     }
   }
