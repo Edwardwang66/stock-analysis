@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "kind": "event_signal_study",
+  "generated_at": "2026-06-20T22:53:01Z",
+  "n_markets": 16,
+  "mechanical_corr_mean": 0.0912,
+  "lead_corr_mean": 0.07,
+  "lead_t": 1.163,
+  "per_market": [
+    {
+      "q": "Will bitcoin hit $1m before GTA VI?",
+      "n": 30,
+      "mech_corr": -0.305,
+      "lead_corr": 0.175
+    },
+    {
+      "q": "Will Bitcoin dip to $55,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": -0.242,
+      "lead_corr": 0.321
+    },
+    {
+      "q": "Will Bitcoin dip to $45,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": -0.041,
+      "lead_corr": 0.251
+    },
+    {
+      "q": "Will Bitcoin dip to $35,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.027,
+      "lead_corr": 0.139
+    },
+    {
+      "q": "Will Bitcoin reach $100,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.264,
+      "lead_corr": -0.037
+    },
+    {
+      "q": "Will Bitcoin dip to $55,000 in June?",
+      "n": 18,
+      "mech_corr": -0.084,
+      "lead_corr": 0.158
+    },
+    {
+      "q": "Will Bitcoin dip to $57,500 in June?",
+      "n": 18,
+      "mech_corr": -0.177,
+      "lead_corr": 0.229
+    },
+    {
+      "q": "Will Bitcoin dip to $50,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": -0.225,
+      "lead_corr": 0.241
+    },
+    {
+      "q": "Will Bitcoin reach $110,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.308,
+      "lead_corr": 0.145
+    },
+    {
+      "q": "Will Bitcoin reach $90,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.491,
+      "lead_corr": -0.084
+    },
+    {
+      "q": "Will Bitcoin reach $70,000 in June?",
+      "n": 17,
+      "mech_corr": 0.422,
+      "lead_corr": -0.235
+    },
+    {
+      "q": "Will Bitcoin reach $120,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.113,
+      "lead_corr": -0.148
+    },
+    {
+      "q": "Will Bitcoin dip to $25,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.319,
+      "lead_corr": 0.27
+    },
+    {
+      "q": "Will Bitcoin dip to $40,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.051,
+      "lead_corr": 0.149
+    },
+    {
+      "q": "Will Bitcoin reach $67,500 in June?",
+      "n": 15,
+      "mech_corr": 0.33,
+      "lead_corr": -0.609
+    },
+    {
+      "q": "Will Bitcoin dip to $30,000 by December 31, 2026?",
+      "n": 30,
+      "mech_corr": 0.208,
+      "lead_corr": 0.155
+    }
+  ],
+  "verdict": "机械性弱(corr=0.09)且无领先信号(t=1.16)→ 这些市场**黏滞/低流动**,日频既不紧跟现货也不领先现货=**噪声**,不作日频信号。用 LEVEL 作情绪温度计即可;宏观市场(Fed/衰退)才是值得看的前瞻因子。",
+  "caveats": [
+    "仅 BTC 价格目标市场;宏观市场(Fed/衰退)无干净标的,未在此测",
+    "样本小、prediction-market 历史短;corr 估计噪声大",
+    "隐含概率=市场价格,本就含现货信息;此测只问『有无超出现货的独立信息』"
+  ]
+}
