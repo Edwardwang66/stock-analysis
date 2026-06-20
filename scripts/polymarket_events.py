@@ -87,20 +87,23 @@ def parse_market(m: dict) -> dict | None:
     except (ValueError, TypeError):
         return None
     # 二元 Yes/No:取 Yes 概率;多元:取最高概率结果
-    prob, outcome = None, None
+    prob, outcome, oidx = None, None, 0
     low = [o.lower() for o in outcomes]
     if "yes" in low:
-        i = low.index("yes")
-        prob, outcome = pf[i], "Yes"
+        oidx = low.index("yes")
+        prob, outcome = pf[oidx], "Yes"
     else:
-        i = int(max(range(len(pf)), key=lambda k: pf[k]))
-        prob, outcome = pf[i], outcomes[i]
+        oidx = int(max(range(len(pf)), key=lambda k: pf[k]))
+        prob, outcome = pf[oidx], outcomes[oidx]
     def num(k):
         v = m.get(k)
         try:
             return float(v) if v is not None else None
         except (ValueError, TypeError):
             return None
+    # 所选结果对应的 CLOB token id(用于拉历史隐含概率)
+    tokens = _loads(m.get("clobTokenIds"))
+    token_id = tokens[oidx] if oidx < len(tokens) else None
     return {
         "question": q,
         "outcome": outcome,
@@ -111,7 +114,25 @@ def parse_market(m: dict) -> dict | None:
         "liquidity_usd": num("liquidityNum") or num("liquidity"),
         "end_date": m.get("endDate"),
         "slug": m.get("slug"),
+        "token_id": token_id,
     }
+
+
+def history_features(history: list[dict], days: tuple = (7, 30)) -> dict:
+    """从 prices-history([{t,p}])算各窗口隐含概率变化 + 末段火花线。t 为 unix 秒,p∈[0,1]。"""
+    pts = sorted((h for h in history if h.get("t") and h.get("p") is not None),
+                 key=lambda h: h["t"])
+    if len(pts) < 2:
+        return {}
+    last_t, last_p = pts[-1]["t"], float(pts[-1]["p"])
+    out = {}
+    for d in days:
+        cutoff = last_t - d * 86400
+        prior = [h for h in pts if h["t"] <= cutoff]
+        ref = prior[-1] if prior else pts[0]   # 不足 d 天则用最早点(诚实:窗口不满)
+        out[f"prob_chg_{d}d"] = round(last_p - float(ref["p"]), 4)
+    out["spark"] = [round(float(h["p"]), 3) for h in pts[-12:]]
+    return out
 
 
 # ----------------------------- 网络 + CLI -----------------------------
@@ -137,10 +158,23 @@ def fetch_markets(limit: int = 300, page: int = 100) -> list[dict]:
     return out
 
 
+def fetch_history(token_id: str, interval: str = "1m", fidelity: int = 1440) -> list[dict]:
+    """CLOB prices-history(免鉴权):返回 [{t,p}] 隐含概率时序。失败返回 []。"""
+    if not token_id:
+        return []
+    qs = urllib.parse.urlencode({"market": token_id, "interval": interval, "fidelity": fidelity})
+    try:
+        d = json.loads(_get(f"https://clob.polymarket.com/prices-history?{qs}"))
+        return d.get("history", []) if isinstance(d, dict) else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Polymarket 事件概率因子")
     ap.add_argument("--limit", type=int, default=300, help="拉取的市场数(按成交量降序)")
     ap.add_argument("--top", type=int, default=25, help="输出的相关市场上限")
+    ap.add_argument("--no-trend", action="store_true", help="跳过 prices-history 趋势(更快)")
     ap.add_argument("--out", default=str(OUT))
     args = ap.parse_args()
 
@@ -159,6 +193,18 @@ def main() -> int:
     rel.sort(key=lambda x: -(x.get("volume_usd") or 0))
     rel = rel[:args.top]
 
+    # 趋势富集:对入选市场拉历史隐含概率,算 7d/30d 变化 + 火花线(信念动量比水平更有信息)
+    if not args.no_trend:
+        import time as _t
+        for m in rel:
+            feats = history_features(fetch_history(m.get("token_id")))
+            m.update(feats)
+            m.pop("token_id", None)
+            _t.sleep(0.1)
+    else:
+        for m in rel:
+            m.pop("token_id", None)
+
     doc = {
         "schema_version": "1.0",
         "kind": "event_probabilities",
@@ -175,7 +221,9 @@ def main() -> int:
     print(f"写入 {out_path}:{len(rel)} 个金融/宏观相关市场")
     for m in rel[:12]:
         ls = " ⚠longshot" if m["longshot"] else ""
-        print(f"  {m['prob_pct']:5.1f}%  {m['question'][:60]}{ls}")
+        c30 = m.get("prob_chg_30d")
+        trend = f"  ({c30*100:+.0f}pp/30d)" if c30 is not None else ""
+        print(f"  {m['prob_pct']:5.1f}%{trend}  {m['question'][:55]}{ls}")
     return 0
 
 

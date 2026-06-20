@@ -354,6 +354,7 @@ export interface EventMarket {
   question: string; outcome: string; prob: number; prob_pct: number;
   longshot: boolean; volume_usd: number | null; liquidity_usd: number | null;
   end_date: string | null; slug: string | null;
+  prob_chg_7d?: number; prob_chg_30d?: number; spark?: number[];
 }
 export interface EventProbs {
   schema_version: string; kind: string; updated_at: string; source: string;

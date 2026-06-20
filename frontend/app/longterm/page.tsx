@@ -149,16 +149,22 @@ export default function LongTermDashboard() {
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14, margin: "12px 0" }}>
           <b>🔮 预测市场事件概率(Polymarket)</b>
           <span style={{ color: MUT, fontSize: 12, marginLeft: 8 }}>
-            外部事件/不确定性因子 · 隐含概率=市场价格 · ⚠longshot 偏差 · 非下注信号
+            外部事件/不确定性因子 · 隐含概率=市场价格 · ▲▼=30天信念变化 · ⚠longshot · 非下注信号
           </span>
           <div style={{ overflowX: "auto", marginTop: 8 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <tbody>
-                {events.markets.slice(0, 14).map((m, i) => (
+                {events.markets.slice(0, 14).map((m, i) => {
+                  const c30 = m.prob_chg_30d;
+                  return (
                   <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
                     <td style={{ padding: "3px 8px", textAlign: "right", width: 56,
                       fontWeight: 700, color: m.prob >= 0.6 ? UP : m.prob <= 0.4 ? DOWN : WARN }}>
                       {m.prob_pct}%
+                    </td>
+                    <td style={{ padding: "3px 6px", textAlign: "right", width: 62, whiteSpace: "nowrap",
+                      color: c30 == null ? MUT : c30 > 0.02 ? UP : c30 < -0.02 ? DOWN : MUT }}>
+                      {c30 == null ? "" : `${c30 > 0 ? "▲" : c30 < 0 ? "▼" : ""}${Math.abs(c30 * 100).toFixed(0)}pp`}
                     </td>
                     <td style={{ padding: "3px 6px" }}>
                       {m.question}
@@ -168,7 +174,8 @@ export default function LongTermDashboard() {
                       ${m.volume_usd ? (m.volume_usd / 1e6).toFixed(1) + "M" : "—"}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
