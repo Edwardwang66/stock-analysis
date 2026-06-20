@@ -180,7 +180,8 @@ export default function LongTermDashboard() {
             </table>
           </div>
           <div style={{ color: MUT, fontSize: 11, marginTop: 6 }}>
-            数据 {events.updated_at?.slice(0, 10)} · 免费只读(不下注)· 可作 meta-labeling 外部因子。
+            数据 {events.updated_at?.slice(0, 10)} · 免费只读(不下注)。实证(study_event_signal):
+            BTC 价格目标市场日频=噪声(黏滞/低流动)→ 用 LEVEL 作温度计;**宏观市场(Fed/衰退)的趋势**才是前瞻因子。
           </div>
         </div>
       )}

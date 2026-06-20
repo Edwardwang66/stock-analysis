@@ -150,9 +150,16 @@
   ② Bull/Bear 结构化辩论 playbook 并入 `routines/openclaw-agent-prompts.md` §7(LLM 只产可证伪研判→stock-note,不决策)
 - 20 断言单测接入 tests.yml;月度 longterm-screen 刷新;deploy 捆绑 feed/events;tsc/build 通过
 
+## Cycle 19(2026-06-19)— Polymarket 概率趋势富集 + 事件信号实证检验
+- `polymarket_events.py` 加 prices-history(keyless)趋势富集:每市场 7d/30d 隐含概率变化 + 火花线;
+  `/longterm` 事件卡加 ▲▼30天列。实测捕捉鹰派重定价(『2026 无降息』+12pp、『加息25bp』+15pp)
+- `study_event_signal.py`:对齐隐含概率历史+BTC 现货,测机械vs信息。**诚实裁决**:16 近价 BTC 市场,
+  机械 corr=0.09、领先 t=1.16(不显著)→ 黏滞/低流动=日频噪声 → LEVEL 作温度计,宏观市场才是前瞻因子
+- 27 断言单测(events);看板+feed 反映实证结论
+
 ## 待办池(按优先级)
 1. 若要救活长期腿:更大 universe(全 S&P500/含退市票)+ 净·扣成本组合回测 + 2022 holdout 证明独立显著增量
-2. Polymarket 事件概率作 meta-labeling 外部因子的**实证检验**(需把事件→标的映射 + 历史价格序列)
+2. Fed/衰退宏观事件市场→risk_dial 的实证检验(有干净标的 SPY/利率;比 BTC 价格目标更可能有前瞻信息)
 3. OFI/盘口模块(需分钟级数据,执行层 §6.5)
 4. microcap universe(S&P600 以下)+ 真实 borrow rate:才能真正检验「下沉救 alpha」+ 借券墙
 2. 下沉层若毛增益显著:小盘 universe 的借券费/做空可行性建模
