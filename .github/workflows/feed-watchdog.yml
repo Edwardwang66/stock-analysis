@@ -21,7 +21,7 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
           git fetch origin live:live 2>/dev/null || true
