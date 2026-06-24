@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-06-24T19:03:35Z",
-  "source_report": "routine-2026-06-24T1903Z",
+  "updated_at": "2026-06-24T21:00:49Z",
+  "source_report": "routine-2026-06-24T2100Z",
   "asof": "2026-06-24",
   "n_long": 32,
   "n_short": 23,
@@ -238,14 +238,14 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "LMT",
+      "ticker": "TGT",
       "side": "LONG",
       "weight": 0.0009,
-      "s_score": -0.111,
-      "halflife_days": 12.0,
-      "kappa": 14.6,
-      "hurst": 0.552,
-      "sector": "Industrials"
+      "s_score": 1.225,
+      "halflife_days": 6.6,
+      "kappa": 26.43,
+      "hurst": 0.45,
+      "sector": "Consumer Staples"
     },
     {
       "ticker": "FCX",
@@ -258,24 +258,14 @@
       "sector": "Materials"
     },
     {
-      "ticker": "TGT",
+      "ticker": "LMT",
       "side": "LONG",
       "weight": 0.0009,
-      "s_score": 1.225,
-      "halflife_days": 6.6,
-      "kappa": 26.43,
-      "hurst": 0.45,
-      "sector": "Consumer Staples"
-    },
-    {
-      "ticker": "DHR",
-      "side": "LONG",
-      "weight": 0.0011,
-      "s_score": 0.779,
-      "halflife_days": 10.0,
-      "kappa": 17.52,
-      "hurst": 0.555,
-      "sector": "Health Care"
+      "s_score": -0.111,
+      "halflife_days": 12.0,
+      "kappa": 14.6,
+      "hurst": 0.552,
+      "sector": "Industrials"
     },
     {
       "ticker": "TJX",
@@ -286,6 +276,16 @@
       "kappa": 20.63,
       "hurst": 0.468,
       "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "DHR",
+      "side": "LONG",
+      "weight": 0.0011,
+      "s_score": 0.779,
+      "halflife_days": 10.0,
+      "kappa": 17.52,
+      "hurst": 0.555,
+      "sector": "Health Care"
     },
     {
       "ticker": "CAT",
@@ -308,16 +308,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "META",
-      "side": "LONG",
-      "weight": 0.0016,
-      "s_score": -0.446,
-      "halflife_days": 6.1,
-      "kappa": 28.66,
-      "hurst": 0.42,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "GILD",
       "side": "LONG",
       "weight": 0.0016,
@@ -326,6 +316,16 @@
       "kappa": 49.15,
       "hurst": 0.219,
       "sector": "Health Care"
+    },
+    {
+      "ticker": "META",
+      "side": "LONG",
+      "weight": 0.0016,
+      "s_score": -0.446,
+      "halflife_days": 6.1,
+      "kappa": 28.66,
+      "hurst": 0.42,
+      "sector": "Communication Services"
     },
     {
       "ticker": "TMO",
@@ -538,16 +538,6 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "COST",
-      "side": "LONG",
-      "weight": 0.0212,
-      "s_score": -1.437,
-      "halflife_days": 6.8,
-      "kappa": 25.83,
-      "hurst": 0.372,
-      "sector": "Consumer Staples"
-    },
-    {
       "ticker": "UNP",
       "side": "LONG",
       "weight": 0.0212,
@@ -556,6 +546,16 @@
       "kappa": 13.17,
       "hurst": 0.545,
       "sector": "Industrials"
+    },
+    {
+      "ticker": "COST",
+      "side": "LONG",
+      "weight": 0.0212,
+      "s_score": -1.437,
+      "halflife_days": 6.8,
+      "kappa": 25.83,
+      "hurst": 0.372,
+      "sector": "Consumer Staples"
     }
   ]
 }
