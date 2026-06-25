@@ -1,6 +1,102 @@
 {
-  "updated_at": "2026-06-24T23:43:28Z",
+  "updated_at": "2026-06-25T23:52:54Z",
   "candidates": [
+    {
+      "expr": "z(gap_oc) - z(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "-z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0333,
+      "post_cutoff": true,
+      "t_stat": 1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.033 t=+1.7 净年化=+13.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "z(gap_oc) - rank(hi52)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × hi52(52周高点接近度:George-Hwang 锚定效应)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0345,
+      "post_cutoff": true,
+      "t_stat": -1.81,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.035 t=-1.8 净年化=-18.6% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "rank(r63) + z(amihud21)",
+      "hypothesis": "机器组装假设:r63(过去63日收益:季度动量) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0347,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.035 t=+1.8 净年化=+8.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "z(gap_oc) - rank(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.8 净年化=-8.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "rank(vol63) - z(gap_oc)",
+      "hypothesis": "机器组装假设:vol63(63日实现波动:低波异象(慢)) × gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0344,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.034 t=+1.8 净年化=+3.5% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
+    {
+      "expr": "-rank(hi52) - rank(amihud21)",
+      "hypothesis": "机器组装假设:hi52(52周高点接近度:George-Hwang 锚定效应) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.87,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-06-25T2352Z",
+      "_at": "2026-06-25T23:52:54Z"
+    },
     {
       "expr": "z(gap_oc) - z(vol63)",
       "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
@@ -1344,104 +1440,6 @@
       "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
       "_source": "factory-local-2026-06-10T0531Z",
       "_at": "2026-06-10T05:31:12Z"
-    },
-    {
-      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
-      "hypothesis": "复核 factor-factory 同名趋势延续候选。",
-      "incremental_ic": 0.0,
-      "post_cutoff": true,
-      "pbo": 1.0,
-      "t_stat": 0.0,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。",
-      "_source": "openclaw-red-team-2026-06-09T2334Z",
-      "_at": "2026-06-09T23:34:06Z"
-    },
-    {
-      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
-      "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
-      "incremental_ic": 0.0,
-      "post_cutoff": true,
-      "pbo": 1.0,
-      "t_stat": 0.0,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。",
-      "_source": "openclaw-factor-factory-2026-06-09T2333Z",
-      "_at": "2026-06-09T23:33:57Z"
-    },
-    {
-      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
-      "hypothesis": "复核 factor-factory 同名趋势延续候选。",
-      "incremental_ic": 0.0,
-      "post_cutoff": true,
-      "pbo": 1.0,
-      "t_stat": 0.0,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "红队否决: 未计入完整试验次数、未做风险中性化后增量 IC、未过真 holdout 与成本后 IR。",
-      "_source": "openclaw-red-team-2026-06-09T2323Z",
-      "_at": "2026-06-09T23:23:50Z"
-    },
-    {
-      "expr": "rank(ts_zscore(close / sma(close, 50) - 1, 20))",
-      "hypothesis": "看多清单中相对50日均线的温和趋势延续可能反映机构缓慢调仓。",
-      "incremental_ic": 0.0,
-      "post_cutoff": true,
-      "pbo": 1.0,
-      "t_stat": 0.0,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "本轮只有公开日线与规则化看多清单，未完成正交增量 IC、相依 FDR、成本后 IR 和真 holdout；按 R6 拒绝。",
-      "_source": "openclaw-factor-factory-2026-06-09T2323Z",
-      "_at": "2026-06-09T23:23:40Z"
-    },
-    {
-      "expr": "rank(-ts_zscore(residual_return, 5)) * sign(adv_20)",
-      "hypothesis": "5 日残差被过度外推 -> 反转;以流动性为门(事前经济机制)。",
-      "post_cutoff": false,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "示例候选:未接真实 LLM、未跑六门控(§6.2.3),增量 IC/PBO/t 留空。仅演示契约,不可交易。",
-      "_source": "routine-2026-06-06T1014Z",
-      "_at": "2026-06-06T10:14:47Z"
-    },
-    {
-      "expr": "rank(-ts_zscore(residual_return, 5)) * sign(adv_20)",
-      "hypothesis": "5 日残差被过度外推 -> 反转;以流动性为门(事前经济机制)。",
-      "post_cutoff": false,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "示例候选:未接真实 LLM、未跑六门控(§6.2.3),增量 IC/PBO/t 留空。仅演示契约,不可交易。",
-      "_source": "routine-2026-06-06T1013Z",
-      "_at": "2026-06-06T10:13:56Z"
-    },
-    {
-      "expr": "rank(residual_meanrev_zscore(5)) - rank(residual_meanrev_zscore(20))",
-      "hypothesis": "短周期残差反转相对长周期的相对强弱;事前机制=短期过度反应、长期信息扩散。",
-      "incremental_ic": 0.011,
-      "post_cutoff": true,
-      "pbo": 0.18,
-      "t_stat": 2.1,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "OpenClaw 残差分析师候选:截止后 IC 为正但 PBO=0.18>0.10、t=2.1<3 -> 未过门控,拒绝(R6/§6.7)。",
-      "_source": "openclaw-residual-analyst-2026-06-06T1013Z",
-      "_at": "2026-06-06T10:13:04Z"
-    },
-    {
-      "expr": "rank(-ts_zscore(residual_return, 5)) * sign(adv_20)",
-      "hypothesis": "5 日残差被过度外推 -> 反转;以流动性为门(事前经济机制)。",
-      "incremental_ic": null,
-      "post_cutoff": false,
-      "pbo": null,
-      "t_stat": null,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "示例候选:未接真实 LLM、未跑六门控(§6.2.3)。仅演示契约,不可交易。",
-      "_source": "routine-2026-06-06T1011Z",
-      "_at": "2026-06-06T10:11:39Z"
     }
   ]
 }
