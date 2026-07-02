@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-07-02T11:39:40Z",
+  "checked_at": "2026-07-02T11:51:17Z",
   "ok": true,
   "critical": 0,
   "warn": 0,
@@ -12,7 +12,7 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 22.1 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 22.2 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
@@ -39,12 +39,12 @@
     "stock_notes": {
       "exists": true,
       "asof": "2026-07-02T04:55:17Z",
-      "age_days": 0.28
+      "age_days": 0.29
     },
     "intraday": {
       "exists": true,
       "asof": "2026-07-01T15:19:59+00:00",
-      "age_days": 0.85
+      "age_days": 0.86
     },
     "market_history": {
       "exists": true,
@@ -59,7 +59,7 @@
     "crypto_state": {
       "exists": true,
       "asof": "2026-07-02T09:29:08Z",
-      "age_days": 0.09
+      "age_days": 0.1
     }
   }
 }
