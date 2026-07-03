@@ -1,14 +1,14 @@
 {
   "symbol": "US:CNC",
-  "date": "2026-06-10",
-  "model": "Claude (看板侧代班)",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: Centene Corporation 属于 Healthcare/Healthcare Plans，当前进入看多清单，技术评分 85、RSI14 69.1；最新价约 65.33，20/50/200日均线约 60.30/50.46/41.04；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.8%、97分位；SuperTrend(10,3) 多头·约 45 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 10.2%/87.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "date": "2026-07-03",
+  "model": "OpenClaw notes (Actions)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "看多",
+  "thesis": "多头: Centene Corporation 属于 Healthcare/Healthcare Plans，当前进入看多清单，技术评分 85、RSI14 65.7；最新价约 67.86，20/50/200日均线约 64.10/58.62/43.58；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -2.1%、97分位；SuperTrend(10,3) 多头·约 60 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 14.0%/86.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Here's Why Investors Continue to Hold Ensign Group Stock(Zacks)；How AI Will Change the Job Market—and Boost These Health Insurance Stocks(Barrons.com)；Long Beach Community Care Campus Expansion Advances with $10 Million Investment from Centene Foundation and Health Net(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Can Centene's Integrated Healthcare Model Support Earnings Growth?(Zacks)；CNC, OSCR Stocks Rally After Baird Calls Risk Adjustment Results Favorable(Stocktwits)；RBC Initiates Centene (CNC) Coverage and Says the Worst of 2025 Is Firmly in the Rearview Mirror(Insider Monkey)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.8%、97分位；SuperTrend(10,3) 多头·约 45 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -2.1%、97分位；SuperTrend(10,3) 多头·约 60 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: CNC",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/CNC/news/"
     },
     {
-      "title": "Here's Why Investors Continue to Hold Ensign Group Stock",
-      "url": "https://finance.yahoo.com/sectors/healthcare/articles/heres-why-investors-continue-hold-181300972.html"
+      "title": "Can Centene's Integrated Healthcare Model Support Earnings Growth?",
+      "url": "https://finance.yahoo.com/healthcare/articles/centenes-integrated-healthcare-model-support-145800876.html"
     },
     {
-      "title": "How AI Will Change the Job Market—and Boost These Health Insurance Stocks",
-      "url": "https://finance.yahoo.com/m/f9af4541-77f7-3c00-8c91-ca551a126bff/how-ai-will-change-the-job.html"
+      "title": "CNC, OSCR Stocks Rally After Baird Calls Risk Adjustment Results Favorable",
+      "url": "https://finance.yahoo.com/m/4d640e41-d882-3655-aa53-6c7dbd2b2da5/cnc%2C-oscr-stocks-rally-after.html"
     }
   ],
   "methodology": {
     "td9": "上行9(防衰竭)",
-    "week52": "距高 -1.8% · 97分位",
-    "supertrend": "多头·约 45 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，有背驰迹象",
+    "week52": "距高 -2.1% · 97分位",
+    "supertrend": "多头·约 60 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
     "rs": 94
   }
 }
