@@ -766,6 +766,38 @@ class FeedPublicationTests(unittest.TestCase):
             ("feed/market/state.json",),
         )
 
+    def test_feed_lib_write_without_manifest_does_not_import_publication(self) -> None:
+        real_import = __import__
+
+        def reject_publication_import(
+            name: str, *args: object, **kwargs: object
+        ) -> object:
+            if name == "feed_publication":
+                raise AssertionError("unconfigured write imported feed_publication")
+            return real_import(name, *args, **kwargs)
+
+        cases = (
+            ("unset", {}),
+            ("empty", {publication.MANIFEST_ENV: ""}),
+        )
+        for label, environment in cases:
+            with self.subTest(manifest=label):
+                target = self.feed / "market" / f"{label}.json"
+                with mock.patch.dict(
+                    os.environ, environment, clear=True
+                ), mock.patch(
+                    "builtins.__import__", side_effect=reject_publication_import
+                ):
+                    fl.save_json(str(target), {"manifest": label})
+
+                self.assertEqual(
+                    json.loads(
+                        target.read_text(encoding="utf-8"),
+                        parse_constant=fl.reject_json_constant,
+                    ),
+                    {"manifest": label},
+                )
+
     def test_dispatch_create_merge_stage_excludes_temporary_inbox(self) -> None:
         subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
         inbox = self.feed / "inbox"

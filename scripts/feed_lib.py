@@ -60,6 +60,8 @@ def json_file_bytes(obj: object) -> bytes:
 
 def record_publication_path(path: str | os.PathLike[str]) -> None:
     """Record a successfully closed feed artifact when publication is configured."""
+    if not os.environ.get("FEED_PUBLICATION_MANIFEST"):
+        return
     from feed_publication import record_written_path
 
     record_written_path(path)

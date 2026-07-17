@@ -9,6 +9,9 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SHELL_CONTROL = {";", "&&", "||", "|", "&", "(", ")"}
+BLOCK_SCALAR_HEADER = re.compile(
+    r"^(?P<style>[|>])(?:(?:[+-][1-9]?|[1-9][+-]?))?(?:[ \t]+#.*)?$"
+)
 
 
 def workflow_run_scripts(text: str) -> list[tuple[int, str]]:
@@ -26,7 +29,8 @@ def workflow_run_scripts(text: str) -> list[tuple[int, str]]:
             continue
         start = index + 1
         body = match.group("body").strip()
-        if body in {"|", "|-", "|+", ">", ">-", ">+"}:
+        block_header = BLOCK_SCALAR_HEADER.fullmatch(body)
+        if block_header is not None:
             base_indent = len(match.group("indent"))
             block: list[str] = []
             index += 1
@@ -38,7 +42,7 @@ def workflow_run_scripts(text: str) -> list[tuple[int, str]]:
                 block.append(line[base_indent + 1 :])
                 index += 1
             script = "\n".join(block)
-            if body.startswith(">"):
+            if block_header.group("style") == ">":
                 script = " ".join(part.strip() for part in block)
             scripts.append((start, script))
             continue
@@ -105,6 +109,17 @@ def broad_feed_adds(text: str) -> list[tuple[int, str]]:
 
 
 class WorkflowSecurityTests(unittest.TestCase):
+    def test_workflow_scan_ci_triggers_on_every_workflow_change(self) -> None:
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertEqual(text.count('      - ".github/workflows/**"'), 2)
+        self.assertEqual(
+            re.findall(r'^\s+- "\.github/workflows/[^*\"]+"$', text, re.MULTILINE),
+            [],
+        )
+
     def test_broad_staging_detector_covers_yaml_shell_and_pathspec_variants(self) -> None:
         dangerous = {
             "inline root": "steps:\n  - run: git add feed\n",
@@ -112,6 +127,24 @@ class WorkflowSecurityTests(unittest.TestCase):
             "wildcard": "steps:\n  - run: git add feed/*\n",
             "quoted wildcard": "steps:\n  - run: git add 'feed/**'\n",
             "inline quoted": 'steps:\n  - run: "git add feed/**"\n',
+            "literal comment": (
+                "steps:\n  - run: | # shell\n      git add feed\n"
+            ),
+            "literal indent then chomp": (
+                "steps:\n  - run: |2-\n      git add feed\n"
+            ),
+            "literal chomp then indent": (
+                "steps:\n  - run: |-2\n      git add feed\n"
+            ),
+            "folded comment and keep": (
+                "steps:\n  - run: >+ # folded shell\n      git add feed\n"
+            ),
+            "folded indent then chomp": (
+                "steps:\n  - run: >2+\n      git add feed\n"
+            ),
+            "folded chomp then indent": (
+                "steps:\n  - run: >-2\n      git add feed\n"
+            ),
             "continuation and chdir": (
                 "steps:\n  - run: |\n      git \\\n"
                 "        -C . \\\n"
@@ -125,6 +158,17 @@ class WorkflowSecurityTests(unittest.TestCase):
 
         exact = "steps:\n  - run: git -C . add -A -- feed/index.json feed/reports/id.json\n"
         self.assertEqual(broad_feed_adds(exact), [])
+
+        inline = 'steps:\n  - run: "echo inline | sed s/x/y/"\n'
+        self.assertEqual(
+            workflow_run_scripts(inline),
+            [(2, "echo inline | sed s/x/y/")],
+        )
+
+        for header in ("|22", "|+-", ">0-", "|#not-a-comment"):
+            with self.subTest(malformed_header=header):
+                malformed = f"steps:\n  - run: {header}\n      git add feed\n"
+                self.assertEqual(workflow_run_scripts(malformed), [(2, header)])
 
     def test_no_workflow_stages_feed_root_or_wildcard_pathspec(self) -> None:
         workflows = ROOT / ".github" / "workflows"

@@ -8,22 +8,12 @@ on:
     paths:
       - "backend/**"
       - "scripts/**"
-      - ".github/workflows/tests.yml"
-      - ".github/workflows/feed-validate.yml"
-      - ".github/workflows/alpha-routine.yml"
-      - ".github/workflows/hyperliquid-monitor.yml"
-      - ".github/workflows/monthly-studies.yml"
-      - ".github/workflows/openclaw-notes.yml"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "backend/**"
       - "scripts/**"
-      - ".github/workflows/tests.yml"
-      - ".github/workflows/feed-validate.yml"
-      - ".github/workflows/alpha-routine.yml"
-      - ".github/workflows/hyperliquid-monitor.yml"
-      - ".github/workflows/monthly-studies.yml"
-      - ".github/workflows/openclaw-notes.yml"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
