@@ -1,14 +1,14 @@
 {
   "symbol": "US:SPY",
-  "date": "2026-07-16",
+  "date": "2026-07-17",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 754.81，20/50/200日均线约 744.89/743.34/695.85；TD9 上行5；52周位置 距高 -0.7%、96分位；SuperTrend(10,3) 空头·约 27 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -0.0%/6.3%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 750.72，20/50/200日均线约 744.90/743.99/696.29；TD9 下行1；52周位置 距高 -1.3%、93分位；SuperTrend(10,3) 空头·约 28 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 0.1%/5.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Dow, S&P 500 Futures Edge Higher As Record Bank Earnings, Cooling Inflation Lift Risk Appetite: ASTS, ATAI, AAPL, PYPL in Focus(Stocktwits)；Review & Preview: Losing Momentum(Barrons.com)；XYLD Investors Gave Up 28% in Gains: The Covered-Call Ceiling No One Talks About(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Nasdaq, Dow, S&P 500 Futures Slip As Chip Selloff Overshadows Strong Earnings Season: NFLX, SNDK, SPCX, MRVL Stocks In Focus(Stocktwits)；S&P 500, Nasdaq, Dow End Lower As Chip Stocks Slide On TSMC Capex Concerns — TSM, MU, NVDA, UNH, GOOGL In Focus(Stocktwits)；Analyst: ‘We’re In One Of The Most Dangerous Times In History’ For Passive Investors(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行5；52周位置 距高 -0.7%、96分位；SuperTrend(10,3) 空头·约 27 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行1；52周位置 距高 -1.3%、93分位；SuperTrend(10,3) 空头·约 28 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SPY",
@@ -19,18 +19,18 @@
       "url": "https://finance.yahoo.com/quote/SPY/news/"
     },
     {
-      "title": "Dow, S&P 500 Futures Edge Higher As Record Bank Earnings, Cooling Inflation Lift Risk Appetite: ASTS, ATAI, AAPL, PYPL in Focus",
-      "url": "https://finance.yahoo.com/m/cbdc5680-0506-35e1-b55c-cd6c6de78375/dow%2C-s%26p-500-futures-edge.html"
+      "title": "Nasdaq, Dow, S&P 500 Futures Slip As Chip Selloff Overshadows Strong Earnings Season: NFLX, SNDK, SPCX, MRVL Stocks In Focus",
+      "url": "https://finance.yahoo.com/m/1a4370ea-5e26-3b7a-9b7d-d227b2683e44/nasdaq%2C-dow%2C-s%26p-500-futures.html"
     },
     {
-      "title": "Review & Preview: Losing Momentum",
-      "url": "https://finance.yahoo.com/m/f849e7d8-7b9b-33f5-8390-4b675a00f945/review-%26-preview%3A-losing.html"
+      "title": "S&P 500, Nasdaq, Dow End Lower As Chip Stocks Slide On TSMC Capex Concerns — TSM, MU, NVDA, UNH, GOOGL In Focus",
+      "url": "https://finance.yahoo.com/m/4586dfda-8bbd-31a0-bf5c-f353056ea441/s%26p-500%2C-nasdaq%2C-dow-end.html"
     }
   ],
   "methodology": {
-    "td9": "上行5",
-    "week52": "距高 -0.7% · 96分位",
-    "supertrend": "空头·约 27 个交易日前翻转",
+    "td9": "下行1",
+    "week52": "距高 -1.3% · 93分位",
+    "supertrend": "空头·约 28 个交易日前翻转",
     "chan": "震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰"
   }
 }

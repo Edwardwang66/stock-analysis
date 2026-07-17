@@ -1,14 +1,14 @@
 {
   "symbol": "US:CI",
-  "date": "2026-07-16",
+  "date": "2026-07-17",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "看多",
-  "thesis": "多头: Cigna 属于 Healthcare/Healthcare Plans，当前进入看多清单，技术评分 80、RSI14 58.6；最新价约 297.81，20/50/200日均线约 286.70/286.48/280.55；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -5.6%、77分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 1.4%/6.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "中性",
+  "thesis": "多头: CI 属于 Healthcare/Healthcare Plans，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 283.82，20/50/200日均线约 286.30/286.57/280.54；TD9 下行1；52周位置 距高 -10.0%、58分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -2.8%/1.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: CI: Raising target price to $334.00(Argus Research)；FTC Reaches Settlement With CVS Health Over Insulin Prices(Barrons.com)；Stocks making big moves yesterday: RXO, Progyny, Cigna, GoodRx, and Domino's(StockStory)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Why UNH Stock Breakout Faltered After Massive Earnings Beat(Investor's Business Daily)；The Medicaid Problem That Swallowed an Earnings Beat(Trefis)；The Medicaid Problem Weighing On Elevance Health Stock(Trefis)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -5.6%、77分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行1；52周位置 距高 -10.0%、58分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: CI",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/CI/news/"
     },
     {
-      "title": "CI: Raising target price to $334.00",
-      "url": "https://finance.yahoo.com/m/561bd420-5c54-37ae-be7a-4e7c2b12309d/ci%3A-raising-target-price-to.html"
+      "title": "Why UNH Stock Breakout Faltered After Massive Earnings Beat",
+      "url": "https://finance.yahoo.com/m/e802cced-4ca8-336c-a11a-594feecb783a/why-unh-stock-breakout.html"
     },
     {
-      "title": "FTC Reaches Settlement With CVS Health Over Insulin Prices",
-      "url": "https://finance.yahoo.com/m/c5d85e76-e0e7-3a45-afc7-9a8ea3b1f6e9/ftc-reaches-settlement-with.html"
+      "title": "The Medicaid Problem That Swallowed an Earnings Beat",
+      "url": "https://finance.yahoo.com/m/75e3dde7-75f2-39dc-a164-12da888b0b10/the-medicaid-problem-that.html"
     }
   ],
   "methodology": {
-    "td9": "上行9(防衰竭)",
-    "week52": "距高 -5.6% · 77分位",
-    "supertrend": "多头·约 3 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
-    "rs": 45
+    "td9": "下行1",
+    "week52": "距高 -10.0% · 58分位",
+    "supertrend": "多头·约 4 个交易日前翻转",
+    "chan": "下行笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 34
   }
 }
