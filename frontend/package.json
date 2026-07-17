@@ -9,10 +9,16 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:server",
+    "build:static": "node scripts/build-profile.mjs static",
+    "build:server": "node scripts/build-profile.mjs server",
     "start": "next start",
     "lint": "next lint --max-warnings=0",
-    "typecheck": "tsc --project tsconfig.json --noEmit --incremental false"
+    "typecheck": "tsc --project tsconfig.json --noEmit --incremental false",
+    "smoke": "npm run smoke:server",
+    "smoke:static": "node scripts/smoke-static.mjs",
+    "smoke:server": "node scripts/smoke-server.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run build:static && npm run smoke:static && npm run build:server && npm run smoke:server"
   },
   "dependencies": {
     "lightweight-charts": "4.2.3",
