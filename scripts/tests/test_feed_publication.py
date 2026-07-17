@@ -141,6 +141,132 @@ class FeedPublicationTests(unittest.TestCase):
             ],
         )
 
+    def test_stage_treats_recorded_git_metachar_path_as_literal(self) -> None:
+        reports = self.feed / "reports"
+        reports.mkdir()
+        literal = reports / "report[1].json"
+        sibling = reports / "report1.json"
+        literal.write_text("literal before\n", encoding="utf-8")
+        sibling.write_text("sibling before\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "init", "-q"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "add", "-A"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Codex",
+                "-c",
+                "user.email=codex@example.invalid",
+                "commit",
+                "-qm",
+                "seed",
+            ],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        literal.write_text("literal after\n", encoding="utf-8")
+        sibling.write_text("sibling after\n", encoding="utf-8")
+        record_written_path(
+            literal,
+            manifest_path=self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+
+        stage_recorded_paths(
+            self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+
+        cached = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "--no-renames"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        self.assertEqual(cached, ["feed/reports/report[1].json"])
+
+    def test_tracked_metachar_deletion_uses_literal_git_proof(self) -> None:
+        reports = self.feed / "reports"
+        reports.mkdir()
+        literal = reports / "report[1].json"
+        sibling = reports / "report1.json"
+        literal.write_text("literal before\n", encoding="utf-8")
+        sibling.write_text("sibling before\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "init", "-q"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "add", "-A"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Codex",
+                "-c",
+                "user.email=codex@example.invalid",
+                "commit",
+                "-qm",
+                "seed",
+            ],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        literal.unlink()
+        sibling.write_text("sibling after\n", encoding="utf-8")
+
+        try:
+            recorded = record_tracked_deletion(
+                literal,
+                manifest_path=self.manifest,
+                repo_root=self.repo,
+                feed_root=self.feed,
+            )
+        except ValueError as exc:
+            self.fail(f"literal tracked deletion was rejected: {exc}")
+        self.assertTrue(recorded)
+        stage_recorded_paths(
+            self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+
+        cached = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "--no-renames"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        self.assertEqual(cached, ["feed/reports/report[1].json"])
+
     def test_exact_tracked_deletion_can_be_staged(self) -> None:
         deleted = "feed/reports/openclaw-deleted-id.json"
         self.manifest.write_text(

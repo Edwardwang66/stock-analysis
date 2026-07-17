@@ -59,6 +59,14 @@ def _manifest_path(path: str | os.PathLike[str] | None) -> Path | None:
     return Path(configured) if configured else None
 
 
+def _literal_git_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for variable in ("GIT_GLOB_PATHSPECS", "GIT_NOGLOB_PATHSPECS", "GIT_ICASE_PATHSPECS"):
+        environment.pop(variable, None)
+    environment["GIT_LITERAL_PATHSPECS"] = "1"
+    return environment
+
+
 def load_manifest_paths(
     manifest_path: str | os.PathLike[str],
     *,
@@ -166,6 +174,7 @@ def record_tracked_deletion(
         cwd=str(repo),
         capture_output=True,
         text=True,
+        env=_literal_git_environment(),
     )
     if tracked.returncode != 0:
         return False
@@ -208,6 +217,7 @@ def stage_recorded_paths(
             cwd=str(repo),
             capture_output=True,
             text=True,
+            env=_literal_git_environment(),
         )
         tracked_paths = tracked.stdout.splitlines()
         if tracked.returncode == 0 and tracked_paths == [relative_path]:
@@ -224,6 +234,7 @@ def stage_recorded_paths(
         check=True,
         capture_output=True,
         text=True,
+        env=_literal_git_environment(),
     )
     return tuple(stageable)
 
