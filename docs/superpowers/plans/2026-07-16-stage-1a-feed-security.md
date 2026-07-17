@@ -2218,251 +2218,42 @@ Expected: the commit removes all broad feed staging. Its manifest remains explic
 - Create: `scripts/dependabot_merge_gate.py`
 - Create: `scripts/tests/test_dependabot_merge_gate.py`
 - Modify: `scripts/tests/test_workflow_security.py`
-- Modify: `.github/workflows/dependabot-automerge.yml:1-82`
-- Modify: `.github/workflows/tests.yml:5-10, 36-45`
+- Modify: `.github/workflows/dependabot-automerge.yml`
+- Modify: `.github/workflows/tests.yml`
 
 **Interfaces:**
 - Produces: `dependabot_merge_gate.MergeDecision` with `ENABLED` and `NOT_READY` values.
+- Produces: `dependabot_merge_gate.MetadataDecision` with `ELIGIBLE` and `INELIGIBLE` values plus strict `classify_metadata(package_ecosystem: object, update_type: object) -> MetadataDecision`.
 - Produces: `required_checks_successful(checks: object) -> bool`.
 - Produces: `current_pr_ready(view: object) -> bool` requiring a non-empty `headRefOid`, `mergeable == "MERGEABLE"`, and `mergeStateStatus == "CLEAN"`.
+- Produces: exact-label and head-attestation validators that reject malformed shapes and require the newest exact-context status to be a trusted success.
 - Produces: `gate_pull_request(*, repo: str, pr_number: int, run=subprocess.run) -> MergeDecision`.
 - Produces: `revoke_auto_merge(*, repo: str, pr_number: int, run=subprocess.run) -> bool`, which queries native auto-merge state and disables it only when active.
 - CLI: `python scripts/dependabot_merge_gate.py --repo <owner/repo> --pr <number>`.
-- Eligibility contract: after `dependabot/fetch-metadata`, the on-PR job synchronizes `dependencies:auto-merge-eligible`; npm/pip semver-major PRs are unlabeled, while permitted updates receive the label. Failure to classify or label stops the job.
+- Eligibility contract: after `dependabot/fetch-metadata`, the on-PR job synchronizes `dependencies:auto-merge-eligible` plus a head-bound `dependabot/auto-merge-eligible` commit status; npm/pip semver-major PRs remain unlabeled and receive failure status, while permitted updates receive the label and success status. Failure to classify, mutate the label, or post status stops the job.
 - Metadata token contract: consume the action outputs exactly as `npm_and_yarn`, `pip`, and `github_actions`. In particular, `npm_and_yarn` and `github_actions` differ from the `.github/dependabot.yml` configuration keys `npm` and `github-actions`; do not normalize or accept the configuration keys as aliases.
 - Concurrency contract: all on-PR, scheduled, and manual runs share the top-level group `dependabot-automerge-${{ github.repository }}` with `queue: max`; do not use `cancel-in-progress: true`. GitHub queues at most 100 pending runs in this mode, so the residual overflow risk remains explicit.
-- Event contract: the write-capable classifier uses `pull_request_target`, checks `github.event.pull_request.user.login == 'dependabot[bot]'`, and checks out only the explicit base SHA with credentials disabled; no PR-controlled code is executed. At cleanup start and again before eligibility label/success writes, query the current `headRefOid` and compare it to the event head. A failed, empty, or mismatched query imports trusted-base `revoke_auto_merge`, revokes once, and exits nonzero without adding the label, posting success, or enabling auto-merge.
-- Sweep contract: list up to 1000 open PRs authored by `app/dependabot` without label prefiltering and request only `number,title`. Every result reaches `gate_pull_request`; unlabeled legacy/unknown PRs are never inferred from their title and are reconciled to inactive auto-merge.
+- Event contract: the write-capable classifier uses `pull_request_target`, checks `github.event.pull_request.user.login == 'dependabot[bot]'`, and checks out only the explicit base SHA with credentials disabled; no PR-controlled code is executed. At cleanup start and again before eligibility writes, query the current `headRefOid` and compare it to the event head. A failed, empty, or mismatched query imports trusted-base `revoke_auto_merge`, attempts one native revoke, and exits nonzero without adding the label, posting success, or enabling auto-merge; a revoke failure also remains nonzero.
+- Sweep contract: list up to 1000 open PRs authored by `app/dependabot` without label prefiltering and request only `number,title`. Every fetched result reaches `gate_pull_request`; unlabeled legacy/unknown PRs are never inferred from their title and are reconciled to inactive auto-merge. Per-PR operational errors are counted while the sweep continues through the fetched set, then make the job fail.
 - Reconciliation contract: private `_evaluate_pull_request` performs the current-state decision and the public `gate_pull_request` owns auto-merge reconciliation. `ENABLED` returns without an auto-merge query. `NOT_READY` must confirm auto-merge is inactive or disable it. Any evaluator `RuntimeError` triggers exactly one revoke attempt; if that also fails, the raised error preserves both `primary failure:` and `auto-merge revoke failure:`.
 - GitHub CLI contract: current PR state and label are queried with `gh pr view --json headRefOid,mergeable,mergeStateStatus,labels`; the head-bound trusted status and required checks are then queried before any enable mutation.
 - Merge contract: the only permitted merge command includes `--auto`, `--merge`, and `--match-head-commit <current headRefOid>`; it is unreachable unless current state is exactly `MERGEABLE`/`CLEAN` and the current required-check set is non-empty and entirely successful.
 
-- [ ] **Step 1: Write the required-check and command-construction tests**
+- [ ] **Step 1: Write the fail-closed gate and reconciliation tests**
 
-Create `scripts/tests/test_dependabot_merge_gate.py`:
+Create `scripts/tests/test_dependabot_merge_gate.py` as the executable specification. The complete current file is the authoritative final test implementation; this plan deliberately does not embed a second, partial `FakeRunner` or test-class copy that can drift. Add the tests before the module and cover all of these contracts:
 
-```python
-"""Fail-closed tests for Dependabot required-check gating."""
-from __future__ import annotations
-
-import json
-import pathlib
-import subprocess
-import sys
-import unittest
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-
-from dependabot_merge_gate import (  # noqa: E402
-    MergeDecision,
-    current_pr_ready,
-    gate_pull_request,
-    required_checks_successful,
-)
-
-
-class FakeRunner:
-    def __init__(
-        self,
-        checks: object,
-        *,
-        view: object | None = None,
-        view_returncode: int = 0,
-        view_stdout: str | None = None,
-        view_stderr: str = "",
-        checks_returncode: int = 0,
-        checks_stdout: str | None = None,
-        checks_stderr: str = "",
-    ) -> None:
-        self.view = view if view is not None else {
-            "headRefOid": "current-abc123",
-            "mergeable": "MERGEABLE",
-            "mergeStateStatus": "CLEAN",
-        }
-        self.view_returncode = view_returncode
-        self.view_stdout = view_stdout
-        self.view_stderr = view_stderr
-        self.checks = checks
-        self.checks_returncode = checks_returncode
-        self.checks_stdout = checks_stdout
-        self.checks_stderr = checks_stderr
-        self.commands: list[list[str]] = []
-
-    def __call__(self, command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        self.commands.append(command)
-        if command[:3] == ["gh", "pr", "view"]:
-            return subprocess.CompletedProcess(
-                command,
-                self.view_returncode,
-                stdout=(
-                    self.view_stdout
-                    if self.view_stdout is not None
-                    else json.dumps(self.view)
-                ),
-                stderr=self.view_stderr,
-            )
-        if command[:3] == ["gh", "pr", "checks"]:
-            return subprocess.CompletedProcess(
-                command,
-                self.checks_returncode,
-                stdout=(
-                    self.checks_stdout
-                    if self.checks_stdout is not None
-                    else json.dumps(self.checks)
-                ),
-                stderr=self.checks_stderr,
-            )
-        if command[:3] == ["gh", "pr", "merge"]:
-            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
-        raise AssertionError(f"unexpected command: {command}")
-
-    @property
-    def merge_commands(self) -> list[list[str]]:
-        return [command for command in self.commands if command[:3] == ["gh", "pr", "merge"]]
-
-    @property
-    def check_commands(self) -> list[list[str]]:
-        return [command for command in self.commands if command[:3] == ["gh", "pr", "checks"]]
-
-
-class DependabotMergeGateTests(unittest.TestCase):
-    def test_missing_required_checks_fail_closed(self) -> None:
-        self.assertFalse(required_checks_successful([]))
-
-    def test_only_success_pass_bucket_is_accepted(self) -> None:
-        rejected = [
-            {"state": "SUCCESS", "bucket": "pass"},
-            {"name": "", "state": "SUCCESS", "bucket": "pass"},
-            {"name": "tests", "state": "PENDING", "bucket": "pending"},
-            {"name": "tests", "state": "FAILURE", "bucket": "fail"},
-            {"name": "tests", "state": "NEUTRAL", "bucket": "pass"},
-            {"name": "tests", "state": "SKIPPED", "bucket": "skipping"},
-            {"name": "tests", "state": "CANCELLED", "bucket": "cancel"},
-            {"name": "tests", "state": None, "bucket": "pass"},
-        ]
-        for check in rejected:
-            with self.subTest(check=check):
-                self.assertFalse(required_checks_successful([check]))
-
-    def test_all_required_checks_must_succeed(self) -> None:
-        self.assertTrue(
-            required_checks_successful(
-                [
-                    {"name": "tests", "state": "SUCCESS", "bucket": "pass"},
-                    {"name": "build", "state": "SUCCESS", "bucket": "pass"},
-                ]
-            )
-        )
-        self.assertFalse(
-            required_checks_successful(
-                [
-                    {"name": "tests", "state": "SUCCESS", "bucket": "pass"},
-                    {"name": "build", "state": "PENDING", "bucket": "pending"},
-                ]
-            )
-        )
-
-    def test_current_pr_requires_mergeable_clean_state_and_head(self) -> None:
-        self.assertTrue(
-            current_pr_ready(
-                {
-                    "headRefOid": "current-abc123",
-                    "mergeable": "MERGEABLE",
-                    "mergeStateStatus": "CLEAN",
-                }
-            )
-        )
-        rejected = [
-            {},
-            {"headRefOid": "", "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN"},
-            {"headRefOid": "abc", "mergeable": "UNKNOWN", "mergeStateStatus": "CLEAN"},
-            {"headRefOid": "abc", "mergeable": "MERGEABLE", "mergeStateStatus": "BLOCKED"},
-            {"headRefOid": "abc", "mergeable": "MERGEABLE", "mergeStateStatus": None},
-        ]
-        for view in rejected:
-            with self.subTest(view=view):
-                self.assertFalse(current_pr_ready(view))
-
-    def test_successful_checks_still_fail_closed_when_merge_state_is_blocked(self) -> None:
-        runner = FakeRunner(
-            [{"name": "tests", "state": "SUCCESS", "bucket": "pass"}],
-            view={
-                "headRefOid": "current-abc123",
-                "mergeable": "MERGEABLE",
-                "mergeStateStatus": "BLOCKED",
-            },
-        )
-
-        decision = gate_pull_request(repo="owner/repo", pr_number=42, run=runner)
-
-        self.assertEqual(decision, MergeDecision.NOT_READY)
-        self.assertEqual(runner.check_commands, [])
-        self.assertEqual(runner.merge_commands, [])
-
-    def test_empty_checks_do_not_run_merge(self) -> None:
-        runner = FakeRunner([])
-        decision = gate_pull_request(
-            repo="owner/repo",
-            pr_number=42,
-            run=runner,
-        )
-        self.assertEqual(decision, MergeDecision.NOT_READY)
-        self.assertEqual(runner.merge_commands, [])
-
-    def test_pending_gh_exit_code_does_not_run_merge(self) -> None:
-        runner = FakeRunner(
-            [{"name": "tests", "state": "PENDING", "bucket": "pending"}],
-            checks_returncode=8,
-        )
-        decision = gate_pull_request(
-            repo="owner/repo",
-            pr_number=42,
-            run=runner,
-        )
-        self.assertEqual(decision, MergeDecision.NOT_READY)
-        self.assertEqual(runner.merge_commands, [])
-
-    def test_no_required_checks_cli_response_is_not_ready(self) -> None:
-        runner = FakeRunner(
-            [],
-            checks_returncode=1,
-            checks_stdout="",
-            checks_stderr="no required checks reported on the branch",
-        )
-        decision = gate_pull_request(
-            repo="owner/repo",
-            pr_number=42,
-            run=runner,
-        )
-        self.assertEqual(decision, MergeDecision.NOT_READY)
-        self.assertEqual(runner.merge_commands, [])
-
-    def test_success_uses_auto_merge_and_head_match(self) -> None:
-        runner = FakeRunner(
-            [{"name": "tests", "state": "SUCCESS", "bucket": "pass"}]
-        )
-        decision = gate_pull_request(
-            repo="owner/repo",
-            pr_number=42,
-            run=runner,
-        )
-        self.assertEqual(decision, MergeDecision.ENABLED)
-        self.assertEqual(len(runner.merge_commands), 1)
-        command = runner.merge_commands[0]
-        self.assertIn("--auto", command)
-        self.assertIn("--merge", command)
-        self.assertNotIn("--admin", command)
-        self.assertEqual(
-            command[command.index("--match-head-commit") + 1],
-            "current-abc123",
-        )
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
-```
+- Metadata classification enumerates only the nine repository-supported action-output pairs: `npm_and_yarn` and `pip` patch/minor are eligible and major is ineligible; `github_actions` patch/minor/major are eligible. Missing values, unknown ecosystems/update types, and configuration-key aliases such as `npm` or `github-actions` raise or exit nonzero.
+- PR readiness rejects malformed data, an empty head, and every state other than exactly `MERGEABLE` plus `CLEAN`. An exact eligibility label and the newest exact-context success status from `github-actions[bot]` on that current head are both required.
+- Required checks are a non-empty sequence whose every item has a non-empty name, `state == "SUCCESS"`, and `bucket == "pass"`. Empty output, pending exit code 8, GitHub's explicit “no required checks” response, malformed/non-finite JSON, failed queries, pending, skipped, neutral, cancelled, and failed checks all fail closed.
+- The only enabling mutation is native auto-merge with `--auto --merge --match-head-commit <current headRefOid>`; it is never reached for a blocked PR, a stale/malformed label or attestation, or missing/non-successful checks.
+- `revoke_auto_merge` queries `autoMergeRequest`, makes no disable call when inactive, and uses the native `--disable-auto` command exactly once when active. Query, parse, shape, or disable errors raise.
+- Public `gate_pull_request` reconciles every `NOT_READY` result by querying/revoking auto-merge. Every evaluator `RuntimeError`, including view, attestation, checks, or enable failures, triggers exactly one revoke attempt; a second failure preserves one `primary failure:` and one `auto-merge revoke failure:` in the raised error. `ENABLED` does not perform a redundant auto-merge query.
+- CLI tests cover both strict metadata-classification mode and `--repo`/`--pr` gate mode.
 
 - [ ] **Step 2: Run the test to verify the gate module is absent**
+
+At this red-test point, before creating the module, run:
 
 ```bash
 python3 scripts/tests/test_dependabot_merge_gate.py
@@ -2470,178 +2261,19 @@ python3 scripts/tests/test_dependabot_merge_gate.py
 
 Expected: exit code 1 with `ModuleNotFoundError: No module named 'dependabot_merge_gate'`.
 
-- [ ] **Step 3: Implement the fail-closed gate**
+- [ ] **Step 3: Implement the fail-closed gate and public reconciliation wrapper**
 
-Create `scripts/dependabot_merge_gate.py`:
+Create `scripts/dependabot_merge_gate.py` against the interfaces and test contract above. The complete current repository file `scripts/dependabot_merge_gate.py`, together with `scripts/tests/test_dependabot_merge_gate.py`, is the authoritative final implementation; do not substitute an abbreviated inline copy from this plan.
 
-```python
-#!/usr/bin/env python3
-"""Enable Dependabot auto-merge only for a current clean PR with green required checks."""
-from __future__ import annotations
+The implementation must preserve this control flow:
 
-import argparse
-import json
-import subprocess
-import sys
-from collections.abc import Callable, Mapping, Sequence
-from enum import Enum
-
-from feed_lib import reject_json_constant
-
-
-Runner = Callable[..., subprocess.CompletedProcess[str]]
-
-
-class MergeDecision(Enum):
-    ENABLED = "enabled"
-    NOT_READY = "not_ready"
-
-
-def current_pr_ready(view: object) -> bool:
-    return (
-        isinstance(view, Mapping)
-        and isinstance(view.get("headRefOid"), str)
-        and bool(view["headRefOid"].strip())
-        and view.get("mergeable") == "MERGEABLE"
-        and view.get("mergeStateStatus") == "CLEAN"
-    )
-
-
-def required_checks_successful(checks: object) -> bool:
-    if not isinstance(checks, Sequence) or isinstance(checks, (str, bytes)) or not checks:
-        return False
-    for check in checks:
-        if not isinstance(check, Mapping):
-            return False
-        if not isinstance(check.get("name"), str) or not check["name"].strip():
-            return False
-        if check.get("state") != "SUCCESS" or check.get("bucket") != "pass":
-            return False
-    return True
-
-
-def gate_pull_request(
-    *,
-    repo: str,
-    pr_number: int,
-    run: Runner = subprocess.run,
-) -> MergeDecision:
-    view_command = [
-        "gh",
-        "pr",
-        "view",
-        str(pr_number),
-        "--repo",
-        repo,
-        "--json",
-        "headRefOid,mergeable,mergeStateStatus",
-    ]
-    view_result = run(view_command, capture_output=True, text=True)
-    if view_result.returncode != 0:
-        raise RuntimeError(
-            f"current PR query failed for #{pr_number}: {view_result.stderr.strip()}"
-        )
-    try:
-        view = json.loads(
-            view_result.stdout,
-            parse_constant=reject_json_constant,
-        )
-    except (json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError(f"current PR query returned invalid JSON for #{pr_number}") from exc
-    if not current_pr_ready(view):
-        print(f"#{pr_number} skipped: current PR is not exactly MERGEABLE and CLEAN")
-        return MergeDecision.NOT_READY
-    head_sha = view["headRefOid"]
-
-    checks_command = [
-        "gh",
-        "pr",
-        "checks",
-        str(pr_number),
-        "--repo",
-        repo,
-        "--required",
-        "--json",
-        "name,state,bucket",
-    ]
-    checks_result = run(
-        checks_command,
-        capture_output=True,
-        text=True,
-    )
-    no_required_checks = "no required checks reported" in checks_result.stderr.lower()
-    if checks_result.returncode == 8 or (
-        checks_result.returncode == 1 and no_required_checks
-    ):
-        print(
-            f"#{pr_number} skipped: required checks are absent, pending, or unavailable"
-        )
-        return MergeDecision.NOT_READY
-    if checks_result.returncode != 0:
-        raise RuntimeError(
-            f"required-check query failed for PR #{pr_number}: {checks_result.stderr.strip()}"
-        )
-    if not checks_result.stdout.strip():
-        print(f"#{pr_number} skipped: required-check query returned no data")
-        return MergeDecision.NOT_READY
-    try:
-        checks = json.loads(
-            checks_result.stdout,
-            parse_constant=reject_json_constant,
-        )
-    except (json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError(
-            f"required-check query failed for PR #{pr_number}: {checks_result.stderr.strip()}"
-        ) from exc
-
-    if not required_checks_successful(checks):
-        print(f"#{pr_number} skipped: required checks are missing, incomplete, or unsuccessful")
-        return MergeDecision.NOT_READY
-
-    merge_command = [
-        "gh",
-        "pr",
-        "merge",
-        str(pr_number),
-        "--repo",
-        repo,
-        "--auto",
-        "--merge",
-        "--match-head-commit",
-        head_sha,
-    ]
-    merge_result = run(
-        merge_command,
-        capture_output=True,
-        text=True,
-    )
-    if merge_result.returncode != 0:
-        raise RuntimeError(
-            f"auto-merge enablement failed for PR #{pr_number}: {merge_result.stderr.strip()}"
-        )
-    print(f"#{pr_number}: auto-merge enabled for head {head_sha}")
-    return MergeDecision.ENABLED
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--repo", required=True)
-    parser.add_argument("--pr", required=True, type=int)
-    args = parser.parse_args(argv)
-    try:
-        gate_pull_request(
-            repo=args.repo,
-            pr_number=args.pr,
-        )
-    except RuntimeError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
+1. `classify_metadata` accepts only the exact `dependabot/fetch-metadata` tokens listed in Step 1 and emits only `eligible` or `ineligible`; unknown or missing input fails closed.
+2. Private `_evaluate_pull_request` strictly parses GitHub JSON with `reject_json_constant`, reads `headRefOid,mergeable,mergeStateStatus,labels`, requires the exact eligibility label, then reads statuses for that head and accepts only the newest exact attestation context when it is a success created by `github-actions[bot]`.
+3. Only after those checks does it request native required checks. Any absent, unavailable, malformed, incomplete, or unsuccessful set returns `NOT_READY`; other operational failures raise.
+4. The only enable command is `gh pr merge ... --auto --merge --match-head-commit <current headRefOid>`.
+5. `revoke_auto_merge` strictly queries `autoMergeRequest` and, only when active, calls `gh pr merge ... --disable-auto`; query, parse, shape, and disable failures raise.
+6. Public `gate_pull_request` owns reconciliation: `NOT_READY` always calls `revoke_auto_merge`; any evaluator `RuntimeError` gets one revoke attempt before re-raising; a revoke failure preserves both failures without recursion; `ENABLED` returns directly.
+7. The CLI keeps classification mode separate from gate mode, requires `--repo` and `--pr` for gating, and exits nonzero on operational or classification errors.
 
 - [ ] **Step 4: Run gate tests and compile the module**
 
@@ -2650,7 +2282,7 @@ python3 scripts/tests/test_dependabot_merge_gate.py
 python3 -m py_compile scripts/dependabot_merge_gate.py
 ```
 
-Expected: the test reports `Ran 9 tests` and `OK`; compilation exits 0 with no output. The successful-check/`BLOCKED` regression makes no `gh pr checks` or `gh pr merge` call.
+Expected: the entire current gate suite exits 0 and ends with `OK`; no fixed test count is part of this contract. Compilation exits 0 with no output. The suite must demonstrate the fail-closed and reconciliation behaviors from Step 1, not merely the successful merge path.
 
 - [ ] **Step 5: Replace the on-PR direct fallback with the tested gate**
 
@@ -2677,7 +2309,7 @@ jobs:
     if: github.event_name != 'pull_request_target'
 ```
 
-Update the workflow's opening “两层” comment to describe `pull_request_target` metadata classification/labeling and a full scheduled reconciliation sweep; remove any statement that the sweep derives version eligibility from a PR title. Do not check out the Dependabot head under `pull_request_target`; every executable file in this job comes from the base SHA. Add read permission for required-check data plus the issue-label write scope, while preserving the existing write scopes needed to enable auto-merge. Also define the one workflow-wide eligibility label:
+Update the workflow's opening “两层” comment to describe `pull_request_target` metadata classification/labeling and a full scheduled reconciliation sweep; remove any statement that the sweep derives version eligibility from a PR title. Do not check out the Dependabot head under `pull_request_target`; every executable file in this job comes from the base SHA. Add read permission for required-check data plus the issue-label and commit-status write scopes, while preserving the existing write scopes needed to enable auto-merge. Also define the workflow-wide eligibility label and head-bound attestation context:
 
 ```yaml
 permissions:
@@ -2685,9 +2317,11 @@ permissions:
   pull-requests: write
   issues: write
   checks: read
+  statuses: write
 
 env:
   AUTOMERGE_ELIGIBLE_LABEL: dependencies:auto-merge-eligible
+  AUTOMERGE_ATTESTATION_CONTEXT: dependabot/auto-merge-eligible
 ```
 
 In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
@@ -2699,24 +2333,72 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - name: 先清除旧 auto-merge 资格标签
+      - name: 清理旧资格并撤销 auto-merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          if [ -z "$HEAD_SHA" ]; then
+            echo "pull_request_target 未提供 head SHA，拒绝清理。" >&2
+            exit 1
+          fi
+
+          current_head=""
+          head_query_failed=0
+          current_head="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
+          )" || head_query_failed=1
+          if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
+            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+            echo "事件 head 已过期或当前 head 查询失败；已撤销 auto-merge，拒绝旧事件写入。" >&2
+            exit 1
+          fi
+
+          cleanup_failed=0
+          current_labels="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name'
+          )" || cleanup_failed=1
+          if grep -Fxq "$AUTOMERGE_ELIGIBLE_LABEL" <<<"$current_labels"; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" \
+              --remove-label "$AUTOMERGE_ELIGIBLE_LABEL" \
+              || cleanup_failed=1
+          fi
+
+          python3 - "$REPO" "$PR_NUMBER" <<'PY' || cleanup_failed=1
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+
+          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state=pending \
+            -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+            -f description="Dependabot auto-merge eligibility is being reclassified" \
+            --silent \
+            || cleanup_failed=1
+
+          if [ "$cleanup_failed" -ne 0 ]; then
+            echo "旧资格清理或 auto-merge 撤销失败，拒绝继续分类。" >&2
+            exit 1
+          fi
+
           gh label create "$AUTOMERGE_ELIGIBLE_LABEL" \
             --repo "$REPO" \
             --color "0E8A16" \
             --description "Dependabot update classified by fetch-metadata for guarded auto-merge" \
             --force
-          current_labels="$(
-            gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name'
-          )"
-          if grep -Fxq "$AUTOMERGE_ELIGIBLE_LABEL" <<<"$current_labels"; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" \
-              --remove-label "$AUTOMERGE_ELIGIBLE_LABEL"
-          fi
       - name: 取 dependabot 元数据
         id: meta
         uses: dependabot/fetch-metadata@v3
@@ -2728,9 +2410,28 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
         run: |
+          current_head=""
+          head_query_failed=0
+          current_head="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
+          )" || head_query_failed=1
+          if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
+            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+            echo "事件 head 已过期或当前 head 查询失败；已撤销 auto-merge，拒绝资格写入。" >&2
+            exit 1
+          fi
+
           classification="$(
             python3 scripts/dependabot_merge_gate.py \
               --classify-ecosystem "$PACKAGE_ECOSYSTEM" \
@@ -2741,15 +2442,26 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
             eligible)
               gh pr edit "$PR_NUMBER" --repo "$REPO" \
                 --add-label "$AUTOMERGE_ELIGIBLE_LABEL"
+              gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+                -f state=success \
+                -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+                -f description="Dependabot update is eligible for guarded auto-merge" \
+                --silent
               eligible=true
               ;;
             ineligible)
+              gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+                -f state=failure \
+                -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+                -f description="Dependabot update is outside guarded auto-merge policy" \
+                --silent
               ;;
             *)
               echo "分类器返回未知结果: $classification" >&2
               exit 1
               ;;
           esac
+
           echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
       - name: 检查 required checks 后启用 auto-merge
         if: steps.eligibility.outputs.eligible == 'true'
@@ -2763,7 +2475,9 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
             --pr "$PR_NUMBER"
 ```
 
-The first write-capable step removes any prior eligibility label, so a metadata failure, unknown output, or later labeling failure leaves the PR ineligible. The classifier receives the action's package ecosystem and update type verbatim and accepts only the explicitly enumerated production pairs; patch/minor is not a fail-open rule for an arbitrary ecosystem. Only after `fetch-metadata` succeeds may classification add the label; an ineligible major update remains explicitly unlabeled. Every label create/edit failure stops the job, so the gate never runs on an unclassified PR. Both write-capable steps re-check the event head before eligibility writes. There is no `|| gh pr merge` fallback. If checks have not registered yet, the gate exits safely without merging and the scheduled sweep revisits every open Dependabot PR to reconcile auto-merge state.
+The order above is security-sensitive. Trusted-base checkout disables persisted credentials. Cleanup first requires a non-empty event `HEAD_SHA` and compares it to a freshly queried current head; a failed, empty, or mismatched query attempts trusted-base native revocation and exits nonzero, and a revocation failure also exits nonzero. For a matching head, label query/removal, native revocation, and a head-bound pending status form one fail-closed cleanup: any query, removal, revoke, or status failure stops before label creation and metadata classification. The label definition itself must then be created successfully.
+
+Only after cleanup may `fetch-metadata` run. The eligibility step repeats the same current-head stale-event guard before any classification write. The Python classifier receives the action's ecosystem and update type verbatim and accepts only the explicitly enumerated production pairs; patch/minor is never a shell fail-open rule for an arbitrary ecosystem. An eligible result adds the label and then posts success to the event head; an ineligible result posts failure to that head and leaves the label absent. Unknown classifier output, label/status failure, or failed revocation exits before a successful `GITHUB_OUTPUT`; only a completed eligible path writes `eligible=true` and reaches the gate. There is no direct merge fallback. If checks are not ready, the public gate reconciles auto-merge to inactive, and the unfiltered scheduled sweep revisits every open Dependabot PR.
 
 - [ ] **Step 6: Replace sweep check heuristics and direct merge with the same gate**
 
@@ -2812,82 +2526,29 @@ Replace the entire `sweep.steps` block with:
           PY
 ```
 
-The sweep contains no title/version heuristic and does not infer eligibility for old PRs. It asks GitHub for every open Dependabot PR (up to the platform's 1000-result request limit) and delegates fresh label, `headRefOid`/`mergeable`/`mergeStateStatus`, attestation, and required-check reads to the gate. An empty required-check result or any state other than `MERGEABLE`/`CLEAN` cannot merge, and any active auto-merge request is revoked for `NOT_READY`.
+The sweep contains no title/version heuristic and does not infer eligibility for old PRs. It asks GitHub for every open Dependabot PR in the fetched set (up to the platform's 1000-result request limit) and delegates fresh label, `headRefOid`/`mergeable`/`mergeStateStatus`, attestation, and required-check reads to the public gate. An empty required-check result or any state other than `MERGEABLE`/`CLEAN` cannot merge, and any active auto-merge request is revoked for `NOT_READY`. A per-PR operational error is reported without skipping the rest of the fetched set, and any accumulated error makes the sweep job exit nonzero.
 
 - [ ] **Step 7: Extend workflow static checks for Dependabot**
 
-Append these methods to `WorkflowSecurityTests` in `scripts/tests/test_workflow_security.py`:
+Extend `WorkflowSecurityTests` in `scripts/tests/test_workflow_security.py`. The complete current file is the authoritative final static suite; keep these assertions together rather than copying a reduced inline method set from this plan:
 
-```python
-    def test_dependabot_has_no_direct_merge_fallback(self) -> None:
-        workflow = (
-            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
-        ).read_text(encoding="utf-8")
-        self.assertNotIn("|| gh pr merge --merge", workflow)
-        self.assertNotIn("statusCheckRollup", workflow)
-        self.assertNotIn("--admin", workflow)
-        self.assertIn("dependabot_merge_gate.py", workflow)
-        self.assertIn("checks: read", workflow)
-        self.assertIn("issues: write", workflow)
-
-    def test_dependabot_sweep_reconciles_every_open_dependabot_pr(self) -> None:
-        workflow = (
-            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
-        ).read_text(encoding="utf-8")
-        sweep = workflow[workflow.index("  sweep:") :]
-        label = "dependencies:auto-merge-eligible"
-        self.assertIn("dependabot/fetch-metadata@v3", workflow)
-        self.assertIn("pull_request_target:", workflow)
-        self.assertNotIn("\n  pull_request:\n", workflow)
-        self.assertIn("github.event.pull_request.user.login == 'dependabot[bot]'", workflow)
-        self.assertIn("ref: ${{ github.event.pull_request.base.sha }}", workflow)
-        self.assertIn("persist-credentials: false", workflow)
-        self.assertIn(f"AUTOMERGE_ELIGIBLE_LABEL: {label}", workflow)
-        self.assertIn('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
-        self.assertIn('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
-        self.assertIn("--author 'app/dependabot' --state open", sweep)
-        self.assertIn("--limit 1000", sweep)
-        self.assertIn("--json number,title", sweep)
-        self.assertNotIn("--label", sweep)
-        self.assertNotIn("continue", sweep)
-        self.assertIn("steps.eligibility.outputs.eligible == 'true'", workflow)
-        self.assertNotIn("major_match", workflow)
-        self.assertNotIn("re.search", workflow)
-        self.assertLess(
-            workflow.index('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
-            workflow.index("dependabot/fetch-metadata@v3"),
-        )
-        self.assertLess(
-            workflow.index("dependabot/fetch-metadata@v3"),
-            workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
-        )
-        self.assertLess(
-            workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
-            workflow.index("python3 scripts/dependabot_merge_gate.py"),
-        )
-
-    def test_dependabot_gate_requires_current_clean_state_and_native_checks(self) -> None:
-        gate = (ROOT / "scripts" / "dependabot_merge_gate.py").read_text(encoding="utf-8")
-        self.assertIn("view_command = [", gate)
-        self.assertIn('"view",', gate)
-        self.assertIn('"headRefOid,mergeable,mergeStateStatus,labels"', gate)
-        self.assertIn('view.get("mergeable") == "MERGEABLE"', gate)
-        self.assertIn('view.get("mergeStateStatus") == "CLEAN"', gate)
-        self.assertIn('"--required"', gate)
-        self.assertIn('"--auto"', gate)
-        self.assertIn('"--match-head-commit"', gate)
-        self.assertNotIn("--head-sha", gate)
-```
+- No direct merge fallback, `statusCheckRollup`, `--admin`, or `--head-sha`; the workflow has `checks: read`, `issues: write`, and `statuses: write`.
+- One top-level `dependabot-automerge-${{ github.repository }}` concurrency group uses `queue: max` and never `cancel-in-progress: true`.
+- The trusted-base `pull_request_target` job uses the Dependabot actor guard, explicit base SHA, and `persist-credentials: false`.
+- The sweep requests `number,title` for every open `app/dependabot` PR up to `--limit 1000`, has no label prefilter or title/version inference, and sends every fetched PR to `gate_pull_request`.
+- Exactly two current-head queries and stale-event guards occur before their corresponding writes; each guard imports `revoke_auto_merge` and exits before label or success-status mutation.
+- Cleanup and eligibility ordering is enforced: remove label, revoke, pending status, metadata, strict classification, add label, success status, then gate. Failure status for ineligible metadata, `HEAD_SHA`, and the exact attestation context are present.
+- Cleanup tracks label-query/removal, native revoke, and pending-status failures and exits before classification. The gate requires the current label, current-head trusted attestation, exact merge state, non-empty successful required checks, native `--disable-auto` reconciliation, and head-matched native auto-merge.
 
 - [ ] **Step 8: Add Dependabot workflow and tests to CI coverage**
 
-Add this entry to both `push.paths` and `pull_request.paths` in `.github/workflows/tests.yml`:
+Ensure both `push.paths` and `pull_request.paths` in `.github/workflows/tests.yml` cover every workflow file, so later changes cannot bypass the static suite:
 
 ```yaml
-      - ".github/workflows/dependabot-automerge.yml"
+      - ".github/workflows/**"
 ```
 
-Append this command to the scripts security test step:
+Ensure the scripts security test step runs the authoritative gate suite:
 
 ```yaml
           python scripts/tests/test_dependabot_merge_gate.py
@@ -2908,7 +2569,7 @@ Run:
 rg -n '\|\| gh pr merge --merge|statusCheckRollup|--admin|major_match|re\.search|--head-sha' .github/workflows/dependabot-automerge.yml scripts/dependabot_merge_gate.py
 ```
 
-Expected: no matches and exit code 1. Separately, the static test proves the metadata action precedes label assignment, every open Dependabot PR reaches the sweep gate, and the gate contains the current-state query plus reconciliation.
+Expected: no matches and exit code 1. Separately, the authoritative static suite proves the top-level queue, both stale-event revoke/exit guards, cleanup/revoke/pending and classification/status ordering, the unfiltered full sweep, and current-head attestation plus public reconciliation in the gate.
 
 - [ ] **Step 10: Commit the Dependabot gate**
 
