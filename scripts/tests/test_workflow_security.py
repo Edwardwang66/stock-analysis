@@ -208,6 +208,66 @@ class WorkflowSecurityTests(unittest.TestCase):
             self.assertNotIn("git pull --rebase origin main || true", text, filename)
             self.assertIn('if [ "$pushed" -ne 1 ]', text, filename)
 
+    def test_dependabot_has_no_direct_merge_fallback(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("|| gh pr merge --merge", workflow)
+        self.assertNotIn("statusCheckRollup", workflow)
+        self.assertNotIn("--admin", workflow)
+        self.assertIn("dependabot_merge_gate.py", workflow)
+        self.assertIn("checks: read", workflow)
+        self.assertIn("issues: write", workflow)
+
+    def test_dependabot_sweep_requires_metadata_eligibility_label(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        label = "dependencies:auto-merge-eligible"
+        self.assertIn("dependabot/fetch-metadata@v3", workflow)
+        self.assertIn("pull_request_target:", workflow)
+        self.assertNotIn("\n  pull_request:\n", workflow)
+        self.assertIn(
+            "github.event.pull_request.user.login == 'dependabot[bot]'", workflow
+        )
+        self.assertIn("ref: ${{ github.event.pull_request.base.sha }}", workflow)
+        self.assertIn("persist-credentials: false", workflow)
+        self.assertIn(f"AUTOMERGE_ELIGIBLE_LABEL: {label}", workflow)
+        self.assertIn('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
+        self.assertIn('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
+        self.assertIn('--label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
+        self.assertIn("steps.eligibility.outputs.eligible == 'true'", workflow)
+        self.assertNotIn("major_match", workflow)
+        self.assertNotIn("re.search", workflow)
+        self.assertLess(
+            workflow.index('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
+            workflow.index("dependabot/fetch-metadata@v3"),
+        )
+        self.assertLess(
+            workflow.index("dependabot/fetch-metadata@v3"),
+            workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
+        )
+        self.assertLess(
+            workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
+            workflow.index("python3 scripts/dependabot_merge_gate.py"),
+        )
+
+    def test_dependabot_gate_requires_current_clean_state_and_native_checks(
+        self,
+    ) -> None:
+        gate = (ROOT / "scripts" / "dependabot_merge_gate.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("view_command = [", gate)
+        self.assertIn('"view",', gate)
+        self.assertIn('"headRefOid,mergeable,mergeStateStatus"', gate)
+        self.assertIn('view.get("mergeable") == "MERGEABLE"', gate)
+        self.assertIn('view.get("mergeStateStatus") == "CLEAN"', gate)
+        self.assertIn('"--required"', gate)
+        self.assertIn('"--auto"', gate)
+        self.assertIn('"--match-head-commit"', gate)
+        self.assertNotIn("--head-sha", gate)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
