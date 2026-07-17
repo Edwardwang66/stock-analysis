@@ -14,11 +14,16 @@ import hashlib
 import hmac
 import json
 import os
+import re
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import NoReturn
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FEED = os.path.join(REPO_ROOT, "feed")
 SCHEMA_PATH = os.path.join(FEED, "schema", "report.schema.json")
+
+REPORT_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{6,80}$")
 
 MAX_INDEX_REPORTS = 60        # index.json 中保留的最近报告条数
 MAX_CONTRIB = 80              # 贡献日志保留条数
@@ -31,23 +36,44 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def reject_json_constant(value: str) -> NoReturn:
+    raise ValueError(f"non-standard JSON constant is forbidden: {value}")
+
+
 def load_json(path: str, default=None):
     if not os.path.exists(path):
         return default
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    with open(path, encoding="utf-8") as handle:
+        return json.load(handle, parse_constant=reject_json_constant)
 
 
-def save_json(path: str, obj) -> None:
+def json_file_bytes(obj: object) -> bytes:
+    text = json.dumps(
+        obj,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=False,
+        allow_nan=False,
+    ) + "\n"
+    return text.encode("utf-8")
+
+
+def save_json(path: str, obj: object) -> None:
+    payload = json_file_bytes(obj)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=2, sort_keys=False)
-        f.write("\n")
+    with open(path, "wb") as handle:
+        handle.write(payload)
 
 
-def canonical_json(obj) -> str:
-    """用于签名的确定性序列化(排序键、紧凑、UTF-8)。"""
-    return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+def canonical_json(obj: object) -> str:
+    """用于签名的确定性严格 JSON 序列化。"""
+    return json.dumps(
+        obj,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
 
 
 # ----------------------------- 签名(HMAC)-----------------------------
@@ -62,7 +88,7 @@ def sign_report(report: dict, secret: str, key_id: str = "default") -> dict:
 
 def verify_signature(report: dict, secret: str) -> bool:
     sig = report.get("signature")
-    if not sig or sig.get("alg") != "HMAC-SHA256":
+    if not isinstance(sig, dict) or sig.get("alg") != "HMAC-SHA256":
         return False
     body = {k: v for k, v in report.items() if k != "signature"}
     expect = hmac.new(secret.encode(), canonical_json(body).encode(), hashlib.sha256).hexdigest()
@@ -90,14 +116,66 @@ def validate_report(report: dict) -> tuple[bool, list[str]]:
             errs.append("kind 取值非法")
         if not isinstance(report.get("producer"), dict) or "name" not in report.get("producer", {}):
             errs.append("producer.name 缺失")
+        try:
+            require_report_id(report.get("id"))
+        except ValueError as exc:
+            errs.append(str(exc))
         return (len(errs) == 0, errs)
 
 
 # ----------------------------- 写入 feed -----------------------------
 
+def require_report_id(value: object) -> str:
+    if not isinstance(value, str) or REPORT_ID_RE.fullmatch(value) is None:
+        raise ValueError("report id must match ^[A-Za-z0-9._:-]{6,80}$")
+    return value
+
+
+def artifact_json_path(root: str | os.PathLike[str], artifact_id: object) -> str:
+    report_id = require_report_id(artifact_id)
+    approved_root = Path(root).resolve()
+    destination = (approved_root / f"{report_id}.json").resolve()
+    if destination.parent != approved_root:
+        raise ValueError("resolved artifact path escaped its approved root")
+    return str(destination)
+
+
+def _feed_child_root(name: str) -> Path:
+    feed_root = Path(FEED).resolve()
+    child_root = (feed_root / name).resolve()
+    if child_root.parent != feed_root:
+        raise ValueError(f"resolved feed/{name} root escaped feed")
+    return child_root
+
+
+def inbox_path(
+    report_id: object,
+    inbox_dir: str | os.PathLike[str] | None = None,
+) -> str:
+    root = Path(inbox_dir) if inbox_dir is not None else _feed_child_root("inbox")
+    return artifact_json_path(root, report_id)
+
+
+def save_json_exclusive(
+    path: str | os.PathLike[str],
+    obj: object,
+    *,
+    encoded: bytes | None = None,
+    record_publication: bool = True,
+) -> None:
+    # Task 5 wires record_publication to the transitional publication recorder.
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json_file_bytes(obj)
+    if encoded is not None and encoded != serialized:
+        raise ValueError("encoded JSON does not match the strict serialization of obj")
+    payload = serialized if encoded is None else encoded
+    with destination.open("xb") as handle:
+        handle.write(payload)
+
+
 def report_path(report_id: str) -> str:
-    safe = "".join(c if (c.isalnum() or c in "._:-") else "_" for c in report_id)
-    return os.path.join(FEED, "reports", f"{safe}.json")
+    return artifact_json_path(_feed_child_root("reports"), report_id)
 
 
 def write_report_files(report: dict) -> str:
