@@ -279,6 +279,11 @@ class WorkflowSecurityTests(unittest.TestCase):
             workflow,
         )
         self.assertIn("HEAD_SHA: ${{ github.event.pull_request.head.sha }}", workflow)
+        self.assertIn(
+            "PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}",
+            workflow,
+        )
+        self.assertIn('--classify-ecosystem "$PACKAGE_ECOSYSTEM"', workflow)
         self.assertIn("--classify-update-type", workflow)
         self.assertIn("-f state=failure", workflow)
         self.assertIn('"repos/$REPO/statuses/$HEAD_SHA"', workflow)

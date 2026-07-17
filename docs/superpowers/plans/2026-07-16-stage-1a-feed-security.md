@@ -2228,6 +2228,7 @@ Expected: the commit removes all broad feed staging. Its manifest remains explic
 - Produces: `gate_pull_request(*, repo: str, pr_number: int, run=subprocess.run) -> MergeDecision`.
 - CLI: `python scripts/dependabot_merge_gate.py --repo <owner/repo> --pr <number>`.
 - Eligibility contract: after `dependabot/fetch-metadata`, the on-PR job synchronizes `dependencies:auto-merge-eligible`; npm/pip semver-major PRs are unlabeled, while permitted updates receive the label. Failure to classify or label stops the job.
+- Metadata token contract: consume the action outputs exactly as `npm_and_yarn`, `pip`, and `github_actions`. In particular, `npm_and_yarn` and `github_actions` differ from the `.github/dependabot.yml` configuration keys `npm` and `github-actions`; do not normalize or accept the configuration keys as aliases.
 - Event contract: the write-capable classifier uses `pull_request_target`, checks `github.event.pull_request.user.login == 'dependabot[bot]'`, and checks out only the explicit base SHA with credentials disabled; no PR-controlled code is executed.
 - Sweep contract: list only open PRs authored by `app/dependabot` and carrying the exact eligibility label. Unlabeled legacy/unknown PRs are never inferred from their title.
 - GitHub CLI contract: current PR state is queried with `gh pr view --json headRefOid,mergeable,mergeStateStatus`; required checks are then queried with `gh pr checks --required --json name,state,bucket`.
@@ -2733,7 +2734,7 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
               eligible=true
               ;;
             version-update:semver-major)
-              if [ "$PACKAGE_ECOSYSTEM" = "github-actions" ]; then
+              if [ "$PACKAGE_ECOSYSTEM" = "github_actions" ]; then
                 eligible=true
               fi
               ;;

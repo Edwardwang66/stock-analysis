@@ -33,15 +33,15 @@ def classify_metadata(
     update_type: object,
 ) -> MetadataDecision:
     supported = {
-        ("npm", "version-update:semver-patch"): MetadataDecision.ELIGIBLE,
-        ("npm", "version-update:semver-minor"): MetadataDecision.ELIGIBLE,
-        ("npm", "version-update:semver-major"): MetadataDecision.INELIGIBLE,
+        ("npm_and_yarn", "version-update:semver-patch"): MetadataDecision.ELIGIBLE,
+        ("npm_and_yarn", "version-update:semver-minor"): MetadataDecision.ELIGIBLE,
+        ("npm_and_yarn", "version-update:semver-major"): MetadataDecision.INELIGIBLE,
         ("pip", "version-update:semver-patch"): MetadataDecision.ELIGIBLE,
         ("pip", "version-update:semver-minor"): MetadataDecision.ELIGIBLE,
         ("pip", "version-update:semver-major"): MetadataDecision.INELIGIBLE,
-        ("github-actions", "version-update:semver-patch"): MetadataDecision.ELIGIBLE,
-        ("github-actions", "version-update:semver-minor"): MetadataDecision.ELIGIBLE,
-        ("github-actions", "version-update:semver-major"): MetadataDecision.ELIGIBLE,
+        ("github_actions", "version-update:semver-patch"): MetadataDecision.ELIGIBLE,
+        ("github_actions", "version-update:semver-minor"): MetadataDecision.ELIGIBLE,
+        ("github_actions", "version-update:semver-major"): MetadataDecision.ELIGIBLE,
     }
     try:
         return supported[(package_ecosystem, update_type)]

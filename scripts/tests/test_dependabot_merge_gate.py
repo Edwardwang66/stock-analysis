@@ -27,6 +27,8 @@ SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "dependabot_merge_gate.py
 PATCH = "version-update:semver-patch"
 MINOR = "version-update:semver-minor"
 MAJOR = "version-update:semver-major"
+NPM = "npm_and_yarn"
+GITHUB_ACTIONS = "github_actions"
 
 
 class FakeRunner:
@@ -188,15 +190,15 @@ class FakeRunner:
 class DependabotMergeGateTests(unittest.TestCase):
     def test_metadata_classification_enumerates_repo_supported_pairs(self) -> None:
         expected = {
-            ("npm", PATCH): MetadataDecision.ELIGIBLE,
-            ("npm", MINOR): MetadataDecision.ELIGIBLE,
-            ("npm", MAJOR): MetadataDecision.INELIGIBLE,
+            (NPM, PATCH): MetadataDecision.ELIGIBLE,
+            (NPM, MINOR): MetadataDecision.ELIGIBLE,
+            (NPM, MAJOR): MetadataDecision.INELIGIBLE,
             ("pip", PATCH): MetadataDecision.ELIGIBLE,
             ("pip", MINOR): MetadataDecision.ELIGIBLE,
             ("pip", MAJOR): MetadataDecision.INELIGIBLE,
-            ("github-actions", PATCH): MetadataDecision.ELIGIBLE,
-            ("github-actions", MINOR): MetadataDecision.ELIGIBLE,
-            ("github-actions", MAJOR): MetadataDecision.ELIGIBLE,
+            (GITHUB_ACTIONS, PATCH): MetadataDecision.ELIGIBLE,
+            (GITHUB_ACTIONS, MINOR): MetadataDecision.ELIGIBLE,
+            (GITHUB_ACTIONS, MAJOR): MetadataDecision.ELIGIBLE,
         }
 
         for pair, decision in expected.items():
@@ -208,11 +210,12 @@ class DependabotMergeGateTests(unittest.TestCase):
             ("", PATCH),
             (None, PATCH),
             ("docker", PATCH),
-            ("github_actions", PATCH),
-            ("npm", ""),
-            ("npm", None),
-            ("npm", "security-update:semver-patch"),
-            ("npm", "version-update:semver-unknown"),
+            ("npm", PATCH),
+            ("github-actions", PATCH),
+            (NPM, ""),
+            (NPM, None),
+            (NPM, "security-update:semver-patch"),
+            (NPM, "version-update:semver-unknown"),
         ]
 
         for pair in rejected:
@@ -225,7 +228,7 @@ class DependabotMergeGateTests(unittest.TestCase):
                 sys.executable,
                 str(SCRIPT),
                 "--classify-ecosystem",
-                "docker",
+                "github-actions",
                 "--classify-update-type",
                 PATCH,
             ],
