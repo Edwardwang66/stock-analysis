@@ -38,6 +38,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: submission
           persist-credentials: false
+          allow-unsafe-pr-checkout: true
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -47,7 +48,27 @@ jobs:
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
         run: |
-          mapfile -d '' files < <(find "$GITHUB_WORKSPACE/submission/feed/inbox" -maxdepth 1 -type f -name '*.json' -print0)
+          inbox="$GITHUB_WORKSPACE/submission/feed/inbox"
+          entry_list="$RUNNER_TEMP/pr-inbox-entries"
+          if ! find "$inbox" -mindepth 1 -print0 > "$entry_list"; then
+            echo "find 无法完整枚举 feed/inbox，拒绝校验。" >&2
+            exit 1
+          fi
+          files=()
+          invalid=0
+          while IFS= read -r -d '' entry; do
+            relative="${entry#"$inbox"/}"
+            name="${entry##*/}"
+            if [[ "$relative" == */* || "$name" == .* || ! -f "$entry" || -L "$entry" || "$name" != *.json ]]; then
+              printf 'PR 不允许的 feed/inbox 条目: %s\n' "$relative" >&2
+              invalid=1
+              continue
+            fi
+            files+=("$entry")
+          done < "$entry_list"
+          if (( invalid != 0 )); then
+            exit 1
+          fi
           if (( ${#files[@]} == 0 )); then
             echo "PR 没有可校验的 feed/inbox JSON 普通文件。" >&2
             exit 1
@@ -72,10 +93,29 @@ jobs:
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
         run: |
-          shopt -s nullglob
-          files=(feed/inbox/*.json)
+          inbox="feed/inbox"
+          entry_list="$RUNNER_TEMP/push-inbox-entries"
+          if ! find "$inbox" -mindepth 1 -print0 > "$entry_list"; then
+            echo "find 无法完整枚举 feed/inbox，拒绝校验。" >&2
+            exit 1
+          fi
+          files=()
+          invalid=0
+          while IFS= read -r -d '' entry; do
+            relative="${entry#"$inbox"/}"
+            name="${entry##*/}"
+            if [[ "$relative" == */* || "$name" == .* || ! -f "$entry" || -L "$entry" || "$name" != *.json ]]; then
+              printf 'push 不允许的 feed/inbox 条目: %s\n' "$relative" >&2
+              invalid=1
+              continue
+            fi
+            files+=("$entry")
+          done < "$entry_list"
+          if (( invalid != 0 )); then
+            exit 1
+          fi
           if (( ${#files[@]} == 0 )); then
-            echo "feed/inbox/*.json 没有匹配文件，拒绝空合并。" >&2
+            echo "feed/inbox 没有可校验的顶层 JSON 普通文件，拒绝空合并。" >&2
             exit 1
           fi
           python scripts/validate_feed.py --merge --require-signature "${files[@]}"
