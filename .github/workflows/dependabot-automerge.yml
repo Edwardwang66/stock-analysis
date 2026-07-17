@@ -7,13 +7,17 @@ name: Dependabot auto-merge
 #   - 双保险:事件层仍显式拦截 npm/pip 的 semver-major(若未来有人放开 ignore)。
 # 两层:
 #   1) pull_request_target 事件:从可信 base SHA 运行 metadata 分类,同步标签与 head 状态证明;
-#   2) 定时清扫(每 6h):标签只做候选过滤,gate 重新验证当前 head 的可信状态证明。
+#   2) 定时清扫(每 6h):逐一 reconciliation 所有 open Dependabot PR 的 gate 与 auto-merge 状态。
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
   schedule:
     - cron: "45 */6 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: dependabot-automerge-${{ github.repository }}
+  queue: max
 
 permissions:
   contents: write
@@ -47,6 +51,24 @@ jobs:
         run: |
           if [ -z "$HEAD_SHA" ]; then
             echo "pull_request_target 未提供 head SHA，拒绝清理。" >&2
+            exit 1
+          fi
+
+          current_head=""
+          head_query_failed=0
+          current_head="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
+          )" || head_query_failed=1
+          if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
+            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+            echo "事件 head 已过期或当前 head 查询失败；已撤销 auto-merge，拒绝旧事件写入。" >&2
             exit 1
           fi
 
@@ -101,6 +123,24 @@ jobs:
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
         run: |
+          current_head=""
+          head_query_failed=0
+          current_head="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
+          )" || head_query_failed=1
+          if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
+            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+            echo "事件 head 已过期或当前 head 查询失败；已撤销 auto-merge，拒绝资格写入。" >&2
+            exit 1
+          fi
+
           classification="$(
             python3 scripts/dependabot_merge_gate.py \
               --classify-ecosystem "$PACKAGE_ECOSYSTEM" \
@@ -154,8 +194,8 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh pr list --repo "$REPO" --author 'app/dependabot' --state open \
-            --label "$AUTOMERGE_ELIGIBLE_LABEL" \
-            --json number,title,labels > /tmp/prs.json
+            --limit 1000 \
+            --json number,title > /tmp/prs.json
           python3 - <<'PY'
           import json
           import os
@@ -168,16 +208,11 @@ jobs:
           with open("/tmp/prs.json", encoding="utf-8") as handle:
               prs = json.load(handle, parse_constant=reject_json_constant)
           repo = os.environ["REPO"]
-          eligibility_label = os.environ["AUTOMERGE_ELIGIBLE_LABEL"]
           operational_errors = 0
-          print(f"带可靠资格标签的开放 dependabot PR: {len(prs)}")
+          print(f"开放 dependabot PR: {len(prs)}")
           for pr in prs:
               number = pr["number"]
               title = pr["title"]
-              labels = {label["name"] for label in pr.get("labels", [])}
-              if eligibility_label not in labels:
-                  print(f"  #{number} 跳过(资格标签缺失): {title}")
-                  continue
               try:
                   decision = gate_pull_request(
                       repo=repo,
@@ -186,8 +221,8 @@ jobs:
               except RuntimeError as exc:
                   operational_errors += 1
                   print(f"  #{number} gate error: {exc}", file=sys.stderr)
-                  continue
-              print(f"  #{number} {decision.value}: {title}")
+              else:
+                  print(f"  #{number} {decision.value}: {title}")
           if operational_errors:
               raise SystemExit(1)
           PY

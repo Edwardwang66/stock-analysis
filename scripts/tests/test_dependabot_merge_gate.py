@@ -158,12 +158,17 @@ class FakeRunner:
         raise AssertionError(f"unexpected command: {command}")
 
     @property
-    def merge_commands(self) -> list[list[str]]:
+    def enable_commands(self) -> list[list[str]]:
         return [
             command
             for command in self.commands
             if command[:3] == ["gh", "pr", "merge"]
+            and "--disable-auto" not in command
         ]
+
+    @property
+    def merge_commands(self) -> list[list[str]]:
+        return self.enable_commands
 
     @property
     def check_commands(self) -> list[list[str]]:
@@ -186,8 +191,188 @@ class FakeRunner:
             and "--disable-auto" in command
         ]
 
+    @property
+    def auto_view_commands(self) -> list[list[str]]:
+        return [
+            command
+            for command in self.commands
+            if command[:3] == ["gh", "pr", "view"]
+            and command[command.index("--json") + 1] == "autoMergeRequest"
+        ]
+
 
 class DependabotMergeGateTests(unittest.TestCase):
+    def test_active_auto_merge_is_reconciled_for_every_not_ready_state(self) -> None:
+        ready_view = {
+            "headRefOid": "current-abc123",
+            "mergeable": "MERGEABLE",
+            "mergeStateStatus": "CLEAN",
+            "labels": [{"name": AUTOMERGE_ELIGIBLE_LABEL}],
+        }
+        trusted_status = {
+            "context": AUTOMERGE_ATTESTATION_CONTEXT,
+            "state": "success",
+            "creator": {"login": "github-actions[bot]"},
+        }
+        successful_checks = [
+            {"name": "tests", "state": "SUCCESS", "bucket": "pass"}
+        ]
+        cases: list[tuple[str, dict[str, object]]] = [
+            (
+                "not mergeable",
+                {"view": {**ready_view, "mergeable": "UNKNOWN"}},
+            ),
+            (
+                "not clean",
+                {"view": {**ready_view, "mergeStateStatus": "BLOCKED"}},
+            ),
+            ("missing label", {"view": {**ready_view, "labels": []}}),
+            (
+                "malformed label",
+                {"view": {**ready_view, "labels": [AUTOMERGE_ELIGIBLE_LABEL]}},
+            ),
+            ("missing status", {"statuses": []}),
+            (
+                "pending status",
+                {"statuses": [{**trusted_status, "state": "pending"}]},
+            ),
+            (
+                "failed status",
+                {"statuses": [{**trusted_status, "state": "failure"}]},
+            ),
+            (
+                "untrusted status",
+                {
+                    "statuses": [
+                        {**trusted_status, "creator": {"login": "dependabot[bot]"}}
+                    ]
+                },
+            ),
+            (
+                "no required checks",
+                {
+                    "checks_returncode": 1,
+                    "checks_stdout": "",
+                    "checks_stderr": "no required checks reported on the branch",
+                },
+            ),
+            ("pending required checks", {"checks_returncode": 8}),
+            (
+                "failed required checks",
+                {
+                    "checks": [
+                        {"name": "tests", "state": "FAILURE", "bucket": "fail"}
+                    ]
+                },
+            ),
+            ("empty required-check output", {"checks_stdout": ""}),
+        ]
+
+        for name, overrides in cases:
+            arguments = dict(overrides)
+            checks = arguments.pop("checks", successful_checks)
+            runner = FakeRunner(
+                checks,
+                auto_merge_request={"enabledAt": "2026-07-17T00:00:00Z"},
+                **arguments,
+            )
+            with self.subTest(name=name):
+                decision = gate_pull_request(
+                    repo="owner/repo",
+                    pr_number=42,
+                    run=runner,
+                )
+
+                self.assertEqual(decision, MergeDecision.NOT_READY)
+                self.assertEqual(len(runner.auto_view_commands), 1)
+                self.assertEqual(len(runner.disable_commands), 1)
+                self.assertEqual(runner.enable_commands, [])
+
+    def test_inactive_auto_merge_is_queried_once_for_not_ready_state(self) -> None:
+        runner = FakeRunner([], auto_merge_request=None)
+
+        decision = gate_pull_request(repo="owner/repo", pr_number=42, run=runner)
+
+        self.assertEqual(decision, MergeDecision.NOT_READY)
+        self.assertEqual(len(runner.auto_view_commands), 1)
+        self.assertEqual(runner.disable_commands, [])
+        self.assertEqual(runner.enable_commands, [])
+
+    def test_operational_failures_attempt_one_auto_merge_revoke(self) -> None:
+        active = {"enabledAt": "2026-07-17T00:00:00Z"}
+        cases = [
+            ("view query", {"view_returncode": 1, "view_stderr": "denied"}),
+            ("view parse", {"view_stdout": '{"headRefOid": NaN}'}),
+            (
+                "status query",
+                {"statuses_returncode": 1, "statuses_stderr": "denied"},
+            ),
+            ("status parse", {"statuses_stdout": "[NaN]"}),
+            (
+                "check query",
+                {"checks_returncode": 1, "checks_stderr": "API denied"},
+            ),
+            ("check parse", {"checks_stdout": "[NaN]"}),
+            ("enable mutation", {"merge_returncode": 1, "merge_stderr": "denied"}),
+        ]
+        successful_checks = [
+            {"name": "tests", "state": "SUCCESS", "bucket": "pass"}
+        ]
+
+        for name, overrides in cases:
+            runner = FakeRunner(
+                successful_checks,
+                auto_merge_request=active,
+                **overrides,
+            )
+            with self.subTest(name=name), self.assertRaises(RuntimeError):
+                gate_pull_request(repo="owner/repo", pr_number=42, run=runner)
+            self.assertEqual(len(runner.auto_view_commands), 1)
+            self.assertEqual(len(runner.disable_commands), 1)
+
+    def test_primary_and_revoke_failures_are_preserved_without_recursion(self) -> None:
+        cases = [
+            (
+                FakeRunner(
+                    [],
+                    view_returncode=1,
+                    view_stderr="primary view denied",
+                    auto_view_returncode=1,
+                    auto_view_stderr="revoke query denied",
+                ),
+                "current PR query failed",
+                "auto-merge query failed",
+                0,
+            ),
+            (
+                FakeRunner(
+                    [{"name": "tests", "state": "SUCCESS", "bucket": "pass"}],
+                    merge_returncode=1,
+                    merge_stderr="primary enable denied",
+                    auto_merge_request={"enabledAt": "2026-07-17T00:00:00Z"},
+                    disable_returncode=1,
+                    disable_stderr="revoke disable denied",
+                ),
+                "auto-merge enablement failed",
+                "auto-merge disable failed",
+                1,
+            ),
+        ]
+
+        for runner, primary, revoke, disable_count in cases:
+            with self.subTest(primary=primary), self.assertRaises(RuntimeError) as caught:
+                gate_pull_request(repo="owner/repo", pr_number=42, run=runner)
+
+            message = str(caught.exception)
+            self.assertIn("primary failure:", message)
+            self.assertIn("auto-merge revoke failure:", message)
+            self.assertIn(primary, message)
+            self.assertIn(revoke, message)
+            self.assertEqual(message.count("primary failure:"), 1)
+            self.assertEqual(message.count("auto-merge revoke failure:"), 1)
+            self.assertEqual(len(runner.auto_view_commands), 1)
+            self.assertEqual(len(runner.disable_commands), disable_count)
+
     def test_metadata_classification_enumerates_repo_supported_pairs(self) -> None:
         expected = {
             (NPM, PATCH): MetadataDecision.ELIGIBLE,
@@ -629,14 +814,24 @@ class DependabotMergeGateTests(unittest.TestCase):
             run=runner,
         )
         self.assertEqual(decision, MergeDecision.ENABLED)
-        self.assertEqual(len(runner.merge_commands), 1)
-        command = runner.merge_commands[0]
-        self.assertIn("--auto", command)
-        self.assertIn("--merge", command)
-        self.assertNotIn("--admin", command)
+        self.assertEqual(runner.auto_view_commands, [])
+        self.assertEqual(runner.disable_commands, [])
         self.assertEqual(
-            command[command.index("--match-head-commit") + 1],
-            "current-abc123",
+            runner.enable_commands,
+            [
+                [
+                    "gh",
+                    "pr",
+                    "merge",
+                    "42",
+                    "--repo",
+                    "owner/repo",
+                    "--auto",
+                    "--merge",
+                    "--match-head-commit",
+                    "current-abc123",
+                ]
+            ],
         )
 
 

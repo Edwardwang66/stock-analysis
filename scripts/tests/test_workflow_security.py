@@ -108,6 +108,20 @@ def broad_feed_adds(text: str) -> list[tuple[int, str]]:
     return offenders
 
 
+def top_level_mapping_block(text: str, key: str) -> str:
+    """Return one top-level YAML mapping block without parsing YAML."""
+    lines = text.splitlines()
+    starts = [index for index, line in enumerate(lines) if line == f"{key}:"]
+    if len(starts) != 1:
+        raise AssertionError(f"expected one top-level {key!r} block, found {len(starts)}")
+    block: list[str] = []
+    for line in lines[starts[0] + 1 :]:
+        if line and not line[0].isspace():
+            break
+        block.append(line)
+    return "\n".join(block)
+
+
 class WorkflowSecurityTests(unittest.TestCase):
     def test_workflow_scan_ci_triggers_on_every_workflow_change(self) -> None:
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
@@ -220,10 +234,22 @@ class WorkflowSecurityTests(unittest.TestCase):
         self.assertIn("issues: write", workflow)
         self.assertIn("statuses: write", workflow)
 
-    def test_dependabot_sweep_requires_metadata_eligibility_label(self) -> None:
+    def test_dependabot_serializes_all_runs_with_a_top_level_queue(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
         ).read_text(encoding="utf-8")
+
+        concurrency = top_level_mapping_block(workflow, "concurrency")
+
+        self.assertIn("  group: dependabot-automerge-${{ github.repository }}", concurrency)
+        self.assertIn("  queue: max", concurrency)
+        self.assertNotRegex(workflow, r"(?m)^\s*cancel-in-progress:\s*true\s*$")
+
+    def test_dependabot_sweep_reconciles_every_open_dependabot_pr(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        sweep = workflow[workflow.index("  sweep:") :]
         label = "dependencies:auto-merge-eligible"
         self.assertIn("dependabot/fetch-metadata@v3", workflow)
         self.assertIn("pull_request_target:", workflow)
@@ -236,7 +262,13 @@ class WorkflowSecurityTests(unittest.TestCase):
         self.assertIn(f"AUTOMERGE_ELIGIBLE_LABEL: {label}", workflow)
         self.assertIn('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
         self.assertIn('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
-        self.assertIn('--label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
+        self.assertIn("--author 'app/dependabot' --state open", sweep)
+        self.assertIn("--limit 1000", sweep)
+        self.assertIn("--json number,title", sweep)
+        self.assertNotIn("--label", sweep)
+        self.assertNotIn("labels", sweep)
+        self.assertNotIn("eligibility_label", sweep)
+        self.assertNotIn("continue", sweep)
         self.assertIn("steps.eligibility.outputs.eligible == 'true'", workflow)
         self.assertNotIn("major_match", workflow)
         self.assertNotIn("re.search", workflow)
@@ -253,6 +285,48 @@ class WorkflowSecurityTests(unittest.TestCase):
             workflow.index('--pr "$PR_NUMBER"'),
         )
 
+    def test_dependabot_stale_event_guards_precede_all_eligibility_writes(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        query = "--json headRefOid --jq '.headRefOid // empty'"
+        mismatch = (
+            'if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] '
+            '|| [ "$current_head" != "$HEAD_SHA" ]; then'
+        )
+        self.assertEqual(workflow.count(query), 2)
+        self.assertEqual(workflow.count(mismatch), 2)
+
+        cleanup = workflow.index("- name: 清理旧资格并撤销 auto-merge")
+        cleanup_guard = workflow.index(mismatch, cleanup)
+        cleanup_revoke = workflow.index(
+            "from dependabot_merge_gate import revoke_auto_merge",
+            cleanup_guard,
+        )
+        cleanup_exit = workflow.index("exit 1", cleanup_revoke)
+        remove_label = workflow.index('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"')
+        pending = workflow.index("-f state=pending")
+        eligibility = workflow.index("- name: 根据 metadata 同步 auto-merge 资格标签")
+        eligibility_guard = workflow.index(mismatch, eligibility)
+        eligibility_revoke = workflow.index(
+            "from dependabot_merge_gate import revoke_auto_merge",
+            eligibility_guard,
+        )
+        eligibility_exit = workflow.index("exit 1", eligibility_revoke)
+        add_label = workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"')
+        success = workflow.index("-f state=success")
+
+        self.assertLess(cleanup, cleanup_guard)
+        self.assertLess(cleanup_guard, cleanup_revoke)
+        self.assertLess(cleanup_revoke, cleanup_exit)
+        self.assertLess(cleanup_exit, remove_label)
+        self.assertLess(cleanup_exit, pending)
+        self.assertLess(eligibility, eligibility_guard)
+        self.assertLess(eligibility_guard, eligibility_revoke)
+        self.assertLess(eligibility_revoke, eligibility_exit)
+        self.assertLess(eligibility_exit, add_label)
+        self.assertLess(eligibility_exit, success)
+
     def test_dependabot_metadata_policy_uses_head_bound_attestation(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
@@ -268,7 +342,7 @@ class WorkflowSecurityTests(unittest.TestCase):
             self.assertIn(marker, workflow)
         metadata = workflow.index("dependabot/fetch-metadata@v3")
         remove_label = workflow.index('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"')
-        revoke = workflow.index("revoke_auto_merge(")
+        revoke = workflow.index("revoke_auto_merge(", remove_label)
         pending = workflow.index("-f state=pending")
         classify = workflow.index("--classify-ecosystem")
         add_label = workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"')

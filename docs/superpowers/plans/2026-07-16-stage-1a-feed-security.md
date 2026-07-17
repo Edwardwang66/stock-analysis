@@ -21,7 +21,7 @@
 - At Stage 1A completion, no workflow may stage the `feed` root or a wildcard feed pathspec, including `feed`, `feed/`, `./feed/`, `feed/*`, continuations, or `git -C . add` variants. Stage 1A stages only exact paths recorded in the temporary publication allowlist; Task 3's temporary broad commands are removed in Task 5 before the final gate.
 - The Stage 1A publication allowlist controls Git staging only. It does not add reader manifests, atomic artifact replacement, previous-manifest fallback, data-branch transport, or the final Stage 3 publisher.
 - Dependabot sees zero required checks, missing fields, pending checks, neutral checks, skipped checks, cancelled checks, failed checks, stale/unknown eligibility, or any current PR state other than `mergeable=MERGEABLE` plus `mergeStateStatus=CLEAN` as not mergeable.
-- Only the on-PR job may derive Dependabot eligibility, and only from successful `dependabot/fetch-metadata` outputs. The scheduled sweep processes Dependabot PRs carrying the exact `dependencies:auto-merge-eligible` label; unlabeled legacy or unknown PRs fail closed.
+- Only the on-PR job may derive Dependabot eligibility, and only from successful `dependabot/fetch-metadata` outputs. The scheduled sweep reconciles every open PR authored by `app/dependabot`; unlabeled legacy or unknown PRs reach the gate and have any active auto-merge request revoked.
 - Dependabot uses `gh pr merge --auto --merge --match-head-commit`; direct merge fallback and `--admin` are forbidden.
 - Preserve the user's untracked `AGENTS.md`; every `git add` command below names only files owned by its task.
 - Use only standard-library dependencies for the new security tests and helper modules.
@@ -2226,12 +2226,15 @@ Expected: the commit removes all broad feed staging. Its manifest remains explic
 - Produces: `required_checks_successful(checks: object) -> bool`.
 - Produces: `current_pr_ready(view: object) -> bool` requiring a non-empty `headRefOid`, `mergeable == "MERGEABLE"`, and `mergeStateStatus == "CLEAN"`.
 - Produces: `gate_pull_request(*, repo: str, pr_number: int, run=subprocess.run) -> MergeDecision`.
+- Produces: `revoke_auto_merge(*, repo: str, pr_number: int, run=subprocess.run) -> bool`, which queries native auto-merge state and disables it only when active.
 - CLI: `python scripts/dependabot_merge_gate.py --repo <owner/repo> --pr <number>`.
 - Eligibility contract: after `dependabot/fetch-metadata`, the on-PR job synchronizes `dependencies:auto-merge-eligible`; npm/pip semver-major PRs are unlabeled, while permitted updates receive the label. Failure to classify or label stops the job.
 - Metadata token contract: consume the action outputs exactly as `npm_and_yarn`, `pip`, and `github_actions`. In particular, `npm_and_yarn` and `github_actions` differ from the `.github/dependabot.yml` configuration keys `npm` and `github-actions`; do not normalize or accept the configuration keys as aliases.
-- Event contract: the write-capable classifier uses `pull_request_target`, checks `github.event.pull_request.user.login == 'dependabot[bot]'`, and checks out only the explicit base SHA with credentials disabled; no PR-controlled code is executed.
-- Sweep contract: list only open PRs authored by `app/dependabot` and carrying the exact eligibility label. Unlabeled legacy/unknown PRs are never inferred from their title.
-- GitHub CLI contract: current PR state is queried with `gh pr view --json headRefOid,mergeable,mergeStateStatus`; required checks are then queried with `gh pr checks --required --json name,state,bucket`.
+- Concurrency contract: all on-PR, scheduled, and manual runs share the top-level group `dependabot-automerge-${{ github.repository }}` with `queue: max`; do not use `cancel-in-progress: true`. GitHub queues at most 100 pending runs in this mode, so the residual overflow risk remains explicit.
+- Event contract: the write-capable classifier uses `pull_request_target`, checks `github.event.pull_request.user.login == 'dependabot[bot]'`, and checks out only the explicit base SHA with credentials disabled; no PR-controlled code is executed. At cleanup start and again before eligibility label/success writes, query the current `headRefOid` and compare it to the event head. A failed, empty, or mismatched query imports trusted-base `revoke_auto_merge`, revokes once, and exits nonzero without adding the label, posting success, or enabling auto-merge.
+- Sweep contract: list up to 1000 open PRs authored by `app/dependabot` without label prefiltering and request only `number,title`. Every result reaches `gate_pull_request`; unlabeled legacy/unknown PRs are never inferred from their title and are reconciled to inactive auto-merge.
+- Reconciliation contract: private `_evaluate_pull_request` performs the current-state decision and the public `gate_pull_request` owns auto-merge reconciliation. `ENABLED` returns without an auto-merge query. `NOT_READY` must confirm auto-merge is inactive or disable it. Any evaluator `RuntimeError` triggers exactly one revoke attempt; if that also fails, the raised error preserves both `primary failure:` and `auto-merge revoke failure:`.
+- GitHub CLI contract: current PR state and label are queried with `gh pr view --json headRefOid,mergeable,mergeStateStatus,labels`; the head-bound trusted status and required checks are then queried before any enable mutation.
 - Merge contract: the only permitted merge command includes `--auto`, `--merge`, and `--match-head-commit <current headRefOid>`; it is unreachable unless current state is exactly `MERGEABLE`/`CLEAN` and the current required-check set is non-empty and entirely successful.
 
 - [ ] **Step 1: Write the required-check and command-construction tests**
@@ -2661,6 +2664,10 @@ on:
     - cron: "45 */6 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: dependabot-automerge-${{ github.repository }}
+  queue: max
+
 jobs:
   on-pr:
     if: >-
@@ -2670,7 +2677,7 @@ jobs:
     if: github.event_name != 'pull_request_target'
 ```
 
-Update the workflow's opening “两层” comment to describe `pull_request_target` metadata classification/labeling and a label-only scheduled sweep; remove any statement that the sweep derives version eligibility from a PR title. Do not check out the Dependabot head under `pull_request_target`; every executable file in this job comes from the base SHA. Add read permission for required-check data plus the issue-label write scope, while preserving the existing write scopes needed to enable auto-merge. Also define the one workflow-wide eligibility label:
+Update the workflow's opening “两层” comment to describe `pull_request_target` metadata classification/labeling and a full scheduled reconciliation sweep; remove any statement that the sweep derives version eligibility from a PR title. Do not check out the Dependabot head under `pull_request_target`; every executable file in this job comes from the base SHA. Add read permission for required-check data plus the issue-label write scope, while preserving the existing write scopes needed to enable auto-merge. Also define the one workflow-wide eligibility label:
 
 ```yaml
 permissions:
@@ -2724,30 +2731,25 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
         run: |
+          classification="$(
+            python3 scripts/dependabot_merge_gate.py \
+              --classify-ecosystem "$PACKAGE_ECOSYSTEM" \
+              --classify-update-type "$UPDATE_TYPE"
+          )"
           eligible=false
-          if [ -z "$PACKAGE_ECOSYSTEM" ]; then
-            echo "fetch-metadata 未返回 package-ecosystem，拒绝分类。" >&2
-            exit 1
-          fi
-          case "$UPDATE_TYPE" in
-            version-update:semver-patch|version-update:semver-minor)
+          case "$classification" in
+            eligible)
+              gh pr edit "$PR_NUMBER" --repo "$REPO" \
+                --add-label "$AUTOMERGE_ELIGIBLE_LABEL"
               eligible=true
               ;;
-            version-update:semver-major)
-              if [ "$PACKAGE_ECOSYSTEM" = "github_actions" ]; then
-                eligible=true
-              fi
+            ineligible)
               ;;
             *)
-              echo "未知 update-type=$UPDATE_TYPE，拒绝分类。" >&2
+              echo "分类器返回未知结果: $classification" >&2
               exit 1
               ;;
           esac
-
-          if [ "$eligible" = "true" ]; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" \
-              --add-label "$AUTOMERGE_ELIGIBLE_LABEL"
-          fi
           echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
       - name: 检查 required checks 后启用 auto-merge
         if: steps.eligibility.outputs.eligible == 'true'
@@ -2761,7 +2763,7 @@ In `.github/workflows/dependabot-automerge.yml`, make the `on-pr` steps exactly:
             --pr "$PR_NUMBER"
 ```
 
-The first write-capable step removes any prior eligibility label, so a metadata failure, unknown output, or later labeling failure leaves the PR ineligible. Only after `fetch-metadata` succeeds may classification add the label; an ineligible major update remains explicitly unlabeled. Every label create/edit failure stops the job, so the gate never runs on an unclassified PR. There is no `|| gh pr merge` fallback. If checks have not registered yet, the gate exits safely without merging and the scheduled sweep can revisit only the labeled PR.
+The first write-capable step removes any prior eligibility label, so a metadata failure, unknown output, or later labeling failure leaves the PR ineligible. The classifier receives the action's package ecosystem and update type verbatim and accepts only the explicitly enumerated production pairs; patch/minor is not a fail-open rule for an arbitrary ecosystem. Only after `fetch-metadata` succeeds may classification add the label; an ineligible major update remains explicitly unlabeled. Every label create/edit failure stops the job, so the gate never runs on an unclassified PR. Both write-capable steps re-check the event head before eligibility writes. There is no `|| gh pr merge` fallback. If checks have not registered yet, the gate exits safely without merging and the scheduled sweep revisits every open Dependabot PR to reconcile auto-merge state.
 
 - [ ] **Step 6: Replace sweep check heuristics and direct merge with the same gate**
 
@@ -2776,30 +2778,25 @@ Replace the entire `sweep.steps` block with:
           REPO: ${{ github.repository }}
         run: |
           gh pr list --repo "$REPO" --author 'app/dependabot' --state open \
-            --label "$AUTOMERGE_ELIGIBLE_LABEL" \
-            --json number,title,labels > /tmp/prs.json
+            --limit 1000 \
+            --json number,title > /tmp/prs.json
           python3 - <<'PY'
           import json
           import os
           import sys
 
           sys.path.insert(0, "scripts")
-          from dependabot_merge_gate import MergeDecision, gate_pull_request
+          from dependabot_merge_gate import gate_pull_request
           from feed_lib import reject_json_constant
 
           with open("/tmp/prs.json", encoding="utf-8") as handle:
               prs = json.load(handle, parse_constant=reject_json_constant)
           repo = os.environ["REPO"]
-          eligibility_label = os.environ["AUTOMERGE_ELIGIBLE_LABEL"]
           operational_errors = 0
-          print(f"带可靠资格标签的开放 dependabot PR: {len(prs)}")
+          print(f"开放 dependabot PR: {len(prs)}")
           for pr in prs:
               number = pr["number"]
               title = pr["title"]
-              labels = {label["name"] for label in pr.get("labels", [])}
-              if eligibility_label not in labels:
-                  print(f"  #{number} 跳过(资格标签缺失): {title}")
-                  continue
               try:
                   decision = gate_pull_request(
                       repo=repo,
@@ -2808,14 +2805,14 @@ Replace the entire `sweep.steps` block with:
               except RuntimeError as exc:
                   operational_errors += 1
                   print(f"  #{number} gate error: {exc}", file=sys.stderr)
-                  continue
-              print(f"  #{number} {decision.value}: {title}")
+              else:
+                  print(f"  #{number} {decision.value}: {title}")
           if operational_errors:
               raise SystemExit(1)
           PY
 ```
 
-The sweep contains no title/version heuristic and does not infer eligibility for old PRs. It asks GitHub only for labeled Dependabot PRs, verifies the label again in parsed output, and delegates fresh `headRefOid`/`mergeable`/`mergeStateStatus` plus required-check reads to the gate. An empty required-check result or any state other than `MERGEABLE`/`CLEAN` cannot merge.
+The sweep contains no title/version heuristic and does not infer eligibility for old PRs. It asks GitHub for every open Dependabot PR (up to the platform's 1000-result request limit) and delegates fresh label, `headRefOid`/`mergeable`/`mergeStateStatus`, attestation, and required-check reads to the gate. An empty required-check result or any state other than `MERGEABLE`/`CLEAN` cannot merge, and any active auto-merge request is revoked for `NOT_READY`.
 
 - [ ] **Step 7: Extend workflow static checks for Dependabot**
 
@@ -2833,10 +2830,11 @@ Append these methods to `WorkflowSecurityTests` in `scripts/tests/test_workflow_
         self.assertIn("checks: read", workflow)
         self.assertIn("issues: write", workflow)
 
-    def test_dependabot_sweep_requires_metadata_eligibility_label(self) -> None:
+    def test_dependabot_sweep_reconciles_every_open_dependabot_pr(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
         ).read_text(encoding="utf-8")
+        sweep = workflow[workflow.index("  sweep:") :]
         label = "dependencies:auto-merge-eligible"
         self.assertIn("dependabot/fetch-metadata@v3", workflow)
         self.assertIn("pull_request_target:", workflow)
@@ -2847,7 +2845,11 @@ Append these methods to `WorkflowSecurityTests` in `scripts/tests/test_workflow_
         self.assertIn(f"AUTOMERGE_ELIGIBLE_LABEL: {label}", workflow)
         self.assertIn('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
         self.assertIn('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
-        self.assertIn('--label "$AUTOMERGE_ELIGIBLE_LABEL"', workflow)
+        self.assertIn("--author 'app/dependabot' --state open", sweep)
+        self.assertIn("--limit 1000", sweep)
+        self.assertIn("--json number,title", sweep)
+        self.assertNotIn("--label", sweep)
+        self.assertNotIn("continue", sweep)
         self.assertIn("steps.eligibility.outputs.eligible == 'true'", workflow)
         self.assertNotIn("major_match", workflow)
         self.assertNotIn("re.search", workflow)
@@ -2868,7 +2870,7 @@ Append these methods to `WorkflowSecurityTests` in `scripts/tests/test_workflow_
         gate = (ROOT / "scripts" / "dependabot_merge_gate.py").read_text(encoding="utf-8")
         self.assertIn("view_command = [", gate)
         self.assertIn('"view",', gate)
-        self.assertIn('"headRefOid,mergeable,mergeStateStatus"', gate)
+        self.assertIn('"headRefOid,mergeable,mergeStateStatus,labels"', gate)
         self.assertIn('view.get("mergeable") == "MERGEABLE"', gate)
         self.assertIn('view.get("mergeStateStatus") == "CLEAN"', gate)
         self.assertIn('"--required"', gate)
@@ -2906,7 +2908,7 @@ Run:
 rg -n '\|\| gh pr merge --merge|statusCheckRollup|--admin|major_match|re\.search|--head-sha' .github/workflows/dependabot-automerge.yml scripts/dependabot_merge_gate.py
 ```
 
-Expected: no matches and exit code 1. Separately, the static test proves the metadata action precedes label assignment, the sweep filters on the exact label, and the gate contains the current-state query.
+Expected: no matches and exit code 1. Separately, the static test proves the metadata action precedes label assignment, every open Dependabot PR reaches the sweep gate, and the gate contains the current-state query plus reconciliation.
 
 - [ ] **Step 10: Commit the Dependabot gate**
 

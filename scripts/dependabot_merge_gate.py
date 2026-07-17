@@ -175,7 +175,7 @@ def revoke_auto_merge(
     return True
 
 
-def gate_pull_request(
+def _evaluate_pull_request(
     *,
     repo: str,
     pr_number: int,
@@ -318,6 +318,33 @@ def gate_pull_request(
         )
     print(f"#{pr_number}: auto-merge enabled for head {head_sha}")
     return MergeDecision.ENABLED
+
+
+def gate_pull_request(
+    *,
+    repo: str,
+    pr_number: int,
+    run: Runner = subprocess.run,
+) -> MergeDecision:
+    try:
+        decision = _evaluate_pull_request(
+            repo=repo,
+            pr_number=pr_number,
+            run=run,
+        )
+    except RuntimeError as primary_failure:
+        try:
+            revoke_auto_merge(repo=repo, pr_number=pr_number, run=run)
+        except RuntimeError as revoke_failure:
+            raise RuntimeError(
+                f"primary failure: {primary_failure}; "
+                f"auto-merge revoke failure: {revoke_failure}"
+            ) from primary_failure
+        raise
+
+    if decision is MergeDecision.NOT_READY:
+        revoke_auto_merge(repo=repo, pr_number=pr_number, run=run)
+    return decision
 
 
 def main(argv: list[str] | None = None) -> int:
