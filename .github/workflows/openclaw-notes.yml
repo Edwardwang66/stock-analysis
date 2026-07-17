@@ -30,6 +30,8 @@ jobs:
   notes:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -46,7 +48,7 @@ jobs:
         run: |
           git config user.name "openclaw-notes[bot]"
           git config user.email "openclaw-notes[bot]@users.noreply.github.com"
-          git add feed/stock-notes feed/screener/analysis-*.md
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "openclaw: 每日个股 AI 解读 $(date -u +%F)(Actions 备胎)"
           for i in 1 2 3 4; do

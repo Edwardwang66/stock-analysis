@@ -10,12 +10,20 @@ on:
       - "scripts/**"
       - ".github/workflows/tests.yml"
       - ".github/workflows/feed-validate.yml"
+      - ".github/workflows/alpha-routine.yml"
+      - ".github/workflows/hyperliquid-monitor.yml"
+      - ".github/workflows/monthly-studies.yml"
+      - ".github/workflows/openclaw-notes.yml"
   pull_request:
     paths:
       - "backend/**"
       - "scripts/**"
       - ".github/workflows/tests.yml"
       - ".github/workflows/feed-validate.yml"
+      - ".github/workflows/alpha-routine.yml"
+      - ".github/workflows/hyperliquid-monitor.yml"
+      - ".github/workflows/monthly-studies.yml"
+      - ".github/workflows/openclaw-notes.yml"
   workflow_dispatch:
 
 permissions:
@@ -48,3 +56,5 @@ jobs:
           python scripts/tests/test_feed_validation_security.py
           python scripts/tests/test_feed_ingress.py
           python scripts/tests/test_validate_feed_cli.py
+          python scripts/tests/test_feed_publication.py
+          python scripts/tests/test_workflow_security.py

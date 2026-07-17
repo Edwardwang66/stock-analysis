@@ -546,6 +546,7 @@ def write_daily_analysis(date: str, universe: list[tuple[str, str, dict | None]]
     out = os.path.join(fl.FEED, "screener", f"analysis-{date}.md")
     with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+    fl.record_publication_path(out)
     print(f"[daily] 本地写入 {os.path.relpath(out, fl.REPO_ROOT)}")
 
 

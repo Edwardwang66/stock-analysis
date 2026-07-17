@@ -23,6 +23,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import feed_lib as fl  # noqa: E402
+from feed_publication import record_tracked_deletion  # noqa: E402
 
 MAX_BYTES = 512 * 1024          # 单份投递 ≤512KB
 MAX_POSITIONS = 400
@@ -156,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
         if passed and args.merge and report is not None:
             fl.write_report_files(report)
             os.remove(path)
+            record_tracked_deletion(path)
             merged += 1
         all_ok = all_ok and passed
 

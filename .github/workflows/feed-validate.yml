@@ -80,6 +80,8 @@ jobs:
   publish:
     if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
     permissions:
       contents: write
     steps:
@@ -121,7 +123,7 @@ jobs:
           python scripts/validate_feed.py --merge --require-signature "${files[@]}"
           git config user.name "feed-validate[bot]"
           git config user.email "actions@github.com"
-          git add feed/
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
           if ! git diff --cached --quiet; then
             git commit -m "openclaw: 并入 push 投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
             pushed=0
@@ -143,7 +145,7 @@ jobs:
           python scripts/validate_feed.py --merge --require-signature "$dispatch_path"
           git config user.name "feed-validate[bot]"
           git config user.email "actions@github.com"
-          git add feed/
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
           if ! git diff --cached --quiet; then
             git commit -m "openclaw: 并入投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
             pushed=0

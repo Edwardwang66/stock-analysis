@@ -15,12 +15,17 @@ import fcntl
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
+import feed_lib as fl  # noqa: E402
+import feed_ingress  # noqa: E402
+import feed_publication as publication  # noqa: E402
+import openclaw_daily  # noqa: E402
 from feed_publication import (  # noqa: E402
     load_manifest_paths,
     record_tracked_deletion,
     record_written_path,
     stage_recorded_paths,
 )
+import validate_feed  # noqa: E402
 
 
 class FakeRunner:
@@ -740,6 +745,209 @@ class FeedPublicationTests(unittest.TestCase):
         self.assertIn("feed publication staging failed", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
         self.assertEqual(result.stdout, "")
+
+    def test_feed_lib_write_records_path_when_manifest_is_configured(self) -> None:
+        target = self.feed / "market" / "state.json"
+        with mock.patch.object(publication, "REPO_ROOT", self.repo), mock.patch.object(
+            publication, "FEED_ROOT", self.feed
+        ), mock.patch.dict(
+            os.environ,
+            {publication.MANIFEST_ENV: str(self.manifest)},
+            clear=False,
+        ):
+            fl.save_json(str(target), {"updated_at": "2026-07-16T00:00:00Z"})
+
+        self.assertEqual(
+            load_manifest_paths(
+                self.manifest,
+                repo_root=self.repo,
+                feed_root=self.feed,
+            ),
+            ("feed/market/state.json",),
+        )
+
+    def test_dispatch_create_merge_stage_excludes_temporary_inbox(self) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+        inbox = self.feed / "inbox"
+        inbox.mkdir()
+        report = {
+            "schema_version": "1.0",
+            "id": "openclaw-dispatch-lifecycle-test",
+            "kind": "openclaw",
+            "produced_at": "2026-07-16T00:00:00Z",
+            "asof_data": "2026-07-16",
+            "producer": {"name": "dispatch-lifecycle-test"},
+        }
+
+        with mock.patch.object(publication, "REPO_ROOT", self.repo), mock.patch.object(
+            publication, "FEED_ROOT", self.feed
+        ), mock.patch.object(fl, "FEED", str(self.feed)), mock.patch.dict(
+            os.environ,
+            {publication.MANIFEST_ENV: str(self.manifest)},
+            clear=False,
+        ), mock.patch.object(
+            feed_ingress,
+            "check_report",
+            return_value=(True, []),
+        ), mock.patch.object(
+            validate_feed,
+            "check_one",
+            return_value=(True, [], report),
+        ):
+            dispatch_path = feed_ingress.receive_dispatch(
+                report,
+                secret="dispatch-lifecycle-secret",
+                inbox_dir=inbox,
+            )
+            self.assertFalse(
+                self.manifest.exists(),
+                "temporary dispatch creation must not publish its inbox path",
+            )
+
+            rc = validate_feed.main(
+                ["--merge", "--require-signature", dispatch_path]
+            )
+
+        self.assertEqual(rc, 0)
+        recorded = load_manifest_paths(
+            self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+        self.assertNotIn("feed/inbox/openclaw-dispatch-lifecycle-test.json", recorded)
+        self.assertIn("feed/reports/openclaw-dispatch-lifecycle-test.json", recorded)
+        self.assertIn("feed/index.json", recorded)
+
+        staged = stage_recorded_paths(
+            self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+        self.assertEqual(staged, recorded)
+        cached = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        self.assertNotIn("feed/inbox/openclaw-dispatch-lifecycle-test.json", cached)
+        self.assertEqual(cached, list(recorded))
+
+    def test_tracked_inbox_deletion_is_recorded_and_staged(self) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+        tracked = self.feed / "inbox" / "openclaw-tracked-delete-test.json"
+        tracked.parent.mkdir()
+        tracked.write_text("{}\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "--", "feed/inbox/openclaw-tracked-delete-test.json"],
+            cwd=self.repo,
+            check=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=stage-1a-test",
+                "-c",
+                "user.email=stage-1a@example.invalid",
+                "commit",
+                "-q",
+                "-m",
+                "seed tracked inbox",
+            ],
+            cwd=self.repo,
+            check=True,
+        )
+        tracked.unlink()
+
+        self.assertTrue(
+            record_tracked_deletion(
+                tracked,
+                manifest_path=self.manifest,
+                repo_root=self.repo,
+                feed_root=self.feed,
+            )
+        )
+        staged = stage_recorded_paths(
+            self.manifest,
+            repo_root=self.repo,
+            feed_root=self.feed,
+        )
+
+        self.assertEqual(staged, ("feed/inbox/openclaw-tracked-delete-test.json",))
+        status = subprocess.run(
+            ["git", "diff", "--cached", "--name-status"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        self.assertEqual(status, ["D\tfeed/inbox/openclaw-tracked-delete-test.json"])
+
+    def test_openclaw_analysis_records_markdown_after_successful_close(self) -> None:
+        class TrackingWriter:
+            def __init__(self) -> None:
+                self.closed = False
+
+            def __enter__(self) -> "TrackingWriter":
+                return self
+
+            def write(self, text: str) -> int:
+                return len(text)
+
+            def __exit__(self, *args: object) -> None:
+                self.closed = True
+
+        writer = TrackingWriter()
+        missing = self.repo / "missing.json"
+        out = self.feed / "screener" / "analysis-2026-07-16.md"
+        out.parent.mkdir()
+        with mock.patch.object(fl, "FEED", str(self.feed)), mock.patch.object(
+            fl, "REPO_ROOT", str(self.repo)
+        ), mock.patch.object(
+            openclaw_daily, "WATCHLIST_FILE", str(missing)
+        ), mock.patch.object(
+            openclaw_daily, "SA_LP_FILE", str(missing)
+        ), mock.patch(
+            "builtins.open", return_value=writer
+        ), mock.patch.object(
+            fl, "record_publication_path"
+        ) as recorder:
+            recorder.side_effect = lambda path: self.assertTrue(writer.closed)
+
+            openclaw_daily.write_daily_analysis("2026-07-16", [])
+
+        recorder.assert_called_once_with(str(out))
+
+    def test_openclaw_analysis_does_not_record_failed_markdown_write(self) -> None:
+        class FailingWriter:
+            def __enter__(self) -> "FailingWriter":
+                return self
+
+            def write(self, text: str) -> int:
+                raise OSError("simulated Markdown write failure")
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        missing = self.repo / "missing.json"
+        (self.feed / "screener").mkdir()
+        with mock.patch.object(fl, "FEED", str(self.feed)), mock.patch.object(
+            fl, "REPO_ROOT", str(self.repo)
+        ), mock.patch.object(
+            openclaw_daily, "WATCHLIST_FILE", str(missing)
+        ), mock.patch.object(
+            openclaw_daily, "SA_LP_FILE", str(missing)
+        ), mock.patch(
+            "builtins.open", return_value=FailingWriter()
+        ), mock.patch.object(
+            fl, "record_publication_path"
+        ) as recorder:
+            with self.assertRaisesRegex(OSError, "simulated Markdown write failure"):
+                openclaw_daily.write_daily_analysis("2026-07-16", [])
+
+        recorder.assert_not_called()
 
 
 if __name__ == "__main__":

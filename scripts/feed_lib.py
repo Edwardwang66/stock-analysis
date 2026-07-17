@@ -58,11 +58,19 @@ def json_file_bytes(obj: object) -> bytes:
     return text.encode("utf-8")
 
 
+def record_publication_path(path: str | os.PathLike[str]) -> None:
+    """Record a successfully closed feed artifact when publication is configured."""
+    from feed_publication import record_written_path
+
+    record_written_path(path)
+
+
 def save_json(path: str, obj: object) -> None:
     payload = json_file_bytes(obj)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as handle:
         handle.write(payload)
+    record_publication_path(path)
 
 
 def canonical_json(obj: object) -> str:
@@ -163,7 +171,6 @@ def save_json_exclusive(
     encoded: bytes | None = None,
     record_publication: bool = True,
 ) -> None:
-    # Task 5 wires record_publication to the transitional publication recorder.
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     serialized = json_file_bytes(obj)
@@ -172,6 +179,8 @@ def save_json_exclusive(
     payload = serialized if encoded is None else encoded
     with destination.open("xb") as handle:
         handle.write(payload)
+    if record_publication:
+        record_publication_path(destination)
 
 
 def report_path(report_id: str) -> str:

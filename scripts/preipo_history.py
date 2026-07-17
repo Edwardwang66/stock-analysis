@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import feed_lib as fl
+
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "feed" / "crypto" / "state.json"
 OUT = ROOT / "feed" / "crypto" / "preipo-history.json"
@@ -19,7 +21,10 @@ KEEP = 1200
 
 def main() -> int:
     try:
-        st = json.loads(STATE.read_text())
+        st = json.loads(
+            STATE.read_text(),
+            parse_constant=fl.reject_json_constant,
+        )
     except Exception:  # noqa: BLE001
         print("state.json 不可读,跳过")
         return 0
@@ -36,7 +41,10 @@ def main() -> int:
 
     hist: list = []
     try:
-        hist = json.loads(OUT.read_text())
+        hist = json.loads(
+            OUT.read_text(),
+            parse_constant=fl.reject_json_constant,
+        )
     except Exception:  # noqa: BLE001
         pass
     at = st.get("updated_at")
@@ -45,7 +53,7 @@ def main() -> int:
         return 0
     hist.append({"at": at, "marks": marks})
     hist = hist[-KEEP:]
-    OUT.write_text(json.dumps(hist, ensure_ascii=False, separators=(",", ":")) + "\n")
+    fl.save_json(str(OUT), hist)
     print(f"preipo-history: +1 → {len(hist)} 点({len(marks)} 标的)")
     return 0
 
