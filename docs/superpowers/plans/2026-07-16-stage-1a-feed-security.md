@@ -2249,7 +2249,7 @@ Create `scripts/tests/test_dependabot_merge_gate.py` as the executable specifica
 - The only enabling mutation is native auto-merge with `--auto --merge --match-head-commit <current headRefOid>`; it is never reached for a blocked PR, a stale/malformed label or attestation, or missing/non-successful checks.
 - `revoke_auto_merge` queries `autoMergeRequest`, makes no disable call when inactive, and uses the native `--disable-auto` command exactly once when active. Query, parse, shape, or disable errors raise.
 - Public `gate_pull_request` reconciles every `NOT_READY` result by querying/revoking auto-merge. Every evaluator `RuntimeError`, including view, attestation, checks, or enable failures, triggers exactly one revoke attempt; a second failure preserves one `primary failure:` and one `auto-merge revoke failure:` in the raised error. `ENABLED` does not perform a redundant auto-merge query.
-- CLI tests cover both strict metadata-classification mode and `--repo`/`--pr` gate mode.
+- Tests exercise strict metadata classification through the CLI and exercise merge-gate behavior directly through the injected `gate_pull_request` function.
 
 - [ ] **Step 2: Run the test to verify the gate module is absent**
 
