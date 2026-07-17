@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-07-17T21:12:14Z",
-  "source_report": "routine-2026-07-17T2112Z",
+  "updated_at": "2026-07-17T22:09:55Z",
+  "source_report": "routine-2026-07-17T2209Z",
   "asof": "2026-07-17",
   "n_long": 23,
   "n_short": 21,
@@ -18,13 +18,23 @@
       "sector": "Materials"
     },
     {
-      "ticker": "DHR",
+      "ticker": "BKNG",
       "side": "SHORT",
       "weight": -0.0223,
-      "s_score": 1.016,
-      "halflife_days": 16.6,
-      "kappa": 10.49,
-      "hurst": 0.399,
+      "s_score": 0.831,
+      "halflife_days": 10.7,
+      "kappa": 16.33,
+      "hurst": 0.449,
+      "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "TMO",
+      "side": "SHORT",
+      "weight": -0.0223,
+      "s_score": 1.653,
+      "halflife_days": 8.3,
+      "kappa": 20.98,
+      "hurst": 0.363,
       "sector": "Health Care"
     },
     {
@@ -38,24 +48,14 @@
       "sector": "Real Estate"
     },
     {
-      "ticker": "TMO",
+      "ticker": "DHR",
       "side": "SHORT",
       "weight": -0.0223,
-      "s_score": 1.653,
-      "halflife_days": 8.3,
-      "kappa": 20.98,
-      "hurst": 0.363,
+      "s_score": 1.016,
+      "halflife_days": 16.6,
+      "kappa": 10.49,
+      "hurst": 0.399,
       "sector": "Health Care"
-    },
-    {
-      "ticker": "BKNG",
-      "side": "SHORT",
-      "weight": -0.0223,
-      "s_score": 0.831,
-      "halflife_days": 10.7,
-      "kappa": 16.33,
-      "hurst": 0.449,
-      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "LMT",
@@ -398,16 +398,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "UNH",
-      "side": "LONG",
-      "weight": 0.0223,
-      "s_score": -1.16,
-      "halflife_days": 5.8,
-      "kappa": 30.24,
-      "hurst": 0.26,
-      "sector": "Health Care"
-    },
-    {
       "ticker": "VZ",
       "side": "LONG",
       "weight": 0.0223,
@@ -426,6 +416,16 @@
       "kappa": 23.87,
       "hurst": 0.348,
       "sector": "Communication Services"
+    },
+    {
+      "ticker": "UNH",
+      "side": "LONG",
+      "weight": 0.0223,
+      "s_score": -1.16,
+      "halflife_days": 5.8,
+      "kappa": 30.24,
+      "hurst": 0.26,
+      "sector": "Health Care"
     },
     {
       "ticker": "SLB",
