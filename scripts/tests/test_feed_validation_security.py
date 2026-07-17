@@ -126,6 +126,32 @@ class FeedValidationSecurityTests(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertTrue(errors)
 
+    def test_fallback_rejects_falsey_non_list_collection_values(self) -> None:
+        real_import = __import__
+
+        def import_without_jsonschema(name: str, *args: object, **kwargs: object):
+            if name == "jsonschema":
+                raise ImportError("forced jsonschema fallback")
+            return real_import(name, *args, **kwargs)
+
+        for value in (0, False, ""):
+            cases = (
+                ({"book": {"positions": value}}, "book.positions 必须是 JSON array。"),
+                ({"factory_candidates": value}, "factory_candidates 必须是 JSON array。"),
+            )
+            for overrides, expected_error in cases:
+                with self.subTest(value=value, overrides=overrides), mock.patch(
+                    "builtins.__import__", side_effect=import_without_jsonschema
+                ), mock.patch.object(fl, "has_report", return_value=False):
+                    report = fl.sign_report(mk_report(**overrides), SECRET)
+                    passed, errors = check_report(
+                        report,
+                        require_sig=True,
+                        secret=SECRET,
+                    )
+                    self.assertFalse(passed)
+                    self.assertIn(expected_error, errors)
+
     def test_file_validation_rejects_nonstandard_json_constants(self) -> None:
         for constant in ("NaN", "Infinity", "-Infinity"):
             with self.subTest(constant=constant), tempfile.TemporaryDirectory() as td:
