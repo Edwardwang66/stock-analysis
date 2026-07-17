@@ -2,7 +2,7 @@
 
 把外部投递当作不可信输入对待(投递者 = 任何能向本仓 PR/commit 的人):
   1. JSON 解析 + schema 校验(report.schema.json)。
-  2. 签名校验:OpenClaw 或 --require-signature 外部投递必须配置非空 FEED_HMAC_SECRET
+  2. 签名校验:OpenClaw / manual 外部投递必须配置非空 FEED_HMAC_SECRET
      并提供有效 HMAC;缺失 secret 时 fail closed(拒绝)。
   3. 幂等:同 id 已存在则跳过(防重复投递)。
   4. 内容边界:openclaw 投递不得自带 kind=routine 冒充本仓任务;大小/字段数上限防滥用。
@@ -72,7 +72,7 @@ def check_report(
     elif len(candidates) > MAX_CANDIDATES:
         errs.append(f"factory_candidates 过多 (>{MAX_CANDIDATES})")
 
-    must_verify = require_sig or report.get("kind") == "openclaw"
+    must_verify = require_sig or report.get("kind") in ("openclaw", "manual")
     if must_verify:
         if not secret:
             errs.append("FEED_HMAC_SECRET 未配置，拒绝需要签名的外部投递。")

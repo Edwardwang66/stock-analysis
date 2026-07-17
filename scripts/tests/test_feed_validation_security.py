@@ -96,6 +96,17 @@ class FeedValidationSecurityTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertTrue(any("HMAC" in error for error in errors), errors)
 
+    def test_external_manual_fails_closed_without_cli_signature_flag(self) -> None:
+        with mock.patch.object(fl, "has_report", return_value=False):
+            passed, errors = check_report(
+                mk_report(kind="manual", id="manual-stage1a-fail-closed-test"),
+                require_sig=False,
+                secret=None,
+            )
+
+        self.assertFalse(passed)
+        self.assertTrue(any("FEED_HMAC_SECRET" in error for error in errors), errors)
+
     def test_valid_signature_still_passes(self) -> None:
         report = fl.sign_report(mk_report(), SECRET)
         with mock.patch.object(fl, "has_report", return_value=False):
