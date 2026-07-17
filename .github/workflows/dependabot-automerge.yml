@@ -6,8 +6,8 @@ name: Dependabot auto-merge
 #   - github-actions 的 major 有手动合并先例(#19-22) → 同样自动合并;
 #   - 双保险:事件层仍显式拦截 npm/pip 的 semver-major(若未来有人放开 ignore)。
 # 两层:
-#   1) pull_request_target 事件:从可信 base SHA 运行 metadata 分类,同步可靠资格标签;
-#   2) 定时清扫(每 6h):只重试已有资格标签的 dependabot PR,不从标题推断版本资格。
+#   1) pull_request_target 事件:从可信 base SHA 运行 metadata 分类,同步标签与 head 状态证明;
+#   2) 定时清扫(每 6h):标签只做候选过滤,gate 重新验证当前 head 的可信状态证明。
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
@@ -20,9 +20,11 @@ permissions:
   pull-requests: write
   issues: write
   checks: read
+  statuses: write
 
 env:
   AUTOMERGE_ELIGIBLE_LABEL: dependencies:auto-merge-eligible
+  AUTOMERGE_ATTESTATION_CONTEXT: dependabot/auto-merge-eligible
 
 jobs:
   on-pr:
@@ -36,24 +38,54 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - name: 先清除旧 auto-merge 资格标签
+      - name: 清理旧资格并撤销 auto-merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          if [ -z "$HEAD_SHA" ]; then
+            echo "pull_request_target 未提供 head SHA，拒绝清理。" >&2
+            exit 1
+          fi
+
+          cleanup_failed=0
+          current_labels="$(
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name'
+          )" || cleanup_failed=1
+          if grep -Fxq "$AUTOMERGE_ELIGIBLE_LABEL" <<<"$current_labels"; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" \
+              --remove-label "$AUTOMERGE_ELIGIBLE_LABEL" \
+              || cleanup_failed=1
+          fi
+
+          python3 - "$REPO" "$PR_NUMBER" <<'PY' || cleanup_failed=1
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from dependabot_merge_gate import revoke_auto_merge
+
+          revoke_auto_merge(repo=sys.argv[1], pr_number=int(sys.argv[2]))
+          PY
+
+          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state=pending \
+            -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+            -f description="Dependabot auto-merge eligibility is being reclassified" \
+            --silent \
+            || cleanup_failed=1
+
+          if [ "$cleanup_failed" -ne 0 ]; then
+            echo "旧资格清理或 auto-merge 撤销失败，拒绝继续分类。" >&2
+            exit 1
+          fi
+
           gh label create "$AUTOMERGE_ELIGIBLE_LABEL" \
             --repo "$REPO" \
             --color "0E8A16" \
             --description "Dependabot update classified by fetch-metadata for guarded auto-merge" \
             --force
-          current_labels="$(
-            gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name'
-          )"
-          if grep -Fxq "$AUTOMERGE_ELIGIBLE_LABEL" <<<"$current_labels"; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" \
-              --remove-label "$AUTOMERGE_ELIGIBLE_LABEL"
-          fi
       - name: 取 dependabot 元数据
         id: meta
         uses: dependabot/fetch-metadata@v3
@@ -65,33 +97,40 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           PACKAGE_ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
         run: |
+          classification="$(
+            python3 scripts/dependabot_merge_gate.py \
+              --classify-ecosystem "$PACKAGE_ECOSYSTEM" \
+              --classify-update-type "$UPDATE_TYPE"
+          )"
           eligible=false
-          if [ -z "$PACKAGE_ECOSYSTEM" ]; then
-            echo "fetch-metadata 未返回 package-ecosystem，拒绝分类。" >&2
-            exit 1
-          fi
-          case "$UPDATE_TYPE" in
-            version-update:semver-patch|version-update:semver-minor)
+          case "$classification" in
+            eligible)
+              gh pr edit "$PR_NUMBER" --repo "$REPO" \
+                --add-label "$AUTOMERGE_ELIGIBLE_LABEL"
+              gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+                -f state=success \
+                -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+                -f description="Dependabot update is eligible for guarded auto-merge" \
+                --silent
               eligible=true
               ;;
-            version-update:semver-major)
-              if [ "$PACKAGE_ECOSYSTEM" = "github-actions" ]; then
-                eligible=true
-              fi
+            ineligible)
+              gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+                -f state=failure \
+                -f context="$AUTOMERGE_ATTESTATION_CONTEXT" \
+                -f description="Dependabot update is outside guarded auto-merge policy" \
+                --silent
               ;;
             *)
-              echo "未知 update-type=$UPDATE_TYPE，拒绝分类。" >&2
+              echo "分类器返回未知结果: $classification" >&2
               exit 1
               ;;
           esac
 
-          if [ "$eligible" = "true" ]; then
-            gh pr edit "$PR_NUMBER" --repo "$REPO" \
-              --add-label "$AUTOMERGE_ELIGIBLE_LABEL"
-          fi
           echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
       - name: 检查 required checks 后启用 auto-merge
         if: steps.eligibility.outputs.eligible == 'true'
@@ -123,7 +162,7 @@ jobs:
           import sys
 
           sys.path.insert(0, "scripts")
-          from dependabot_merge_gate import MergeDecision, gate_pull_request
+          from dependabot_merge_gate import gate_pull_request
           from feed_lib import reject_json_constant
 
           with open("/tmp/prs.json", encoding="utf-8") as handle:

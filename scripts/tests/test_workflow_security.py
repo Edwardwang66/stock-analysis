@@ -218,6 +218,7 @@ class WorkflowSecurityTests(unittest.TestCase):
         self.assertIn("dependabot_merge_gate.py", workflow)
         self.assertIn("checks: read", workflow)
         self.assertIn("issues: write", workflow)
+        self.assertIn("statuses: write", workflow)
 
     def test_dependabot_sweep_requires_metadata_eligibility_label(self) -> None:
         workflow = (
@@ -249,8 +250,59 @@ class WorkflowSecurityTests(unittest.TestCase):
         )
         self.assertLess(
             workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"'),
-            workflow.index("python3 scripts/dependabot_merge_gate.py"),
+            workflow.index('--pr "$PR_NUMBER"'),
         )
+
+    def test_dependabot_metadata_policy_uses_head_bound_attestation(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        required = (
+            "revoke_auto_merge(",
+            "-f state=pending",
+            "--classify-ecosystem",
+            '--add-label "$AUTOMERGE_ELIGIBLE_LABEL"',
+            "-f state=success",
+        )
+        for marker in required:
+            self.assertIn(marker, workflow)
+        metadata = workflow.index("dependabot/fetch-metadata@v3")
+        remove_label = workflow.index('--remove-label "$AUTOMERGE_ELIGIBLE_LABEL"')
+        revoke = workflow.index("revoke_auto_merge(")
+        pending = workflow.index("-f state=pending")
+        classify = workflow.index("--classify-ecosystem")
+        add_label = workflow.index('--add-label "$AUTOMERGE_ELIGIBLE_LABEL"')
+        success = workflow.index("-f state=success")
+
+        self.assertIn(
+            "AUTOMERGE_ATTESTATION_CONTEXT: dependabot/auto-merge-eligible",
+            workflow,
+        )
+        self.assertIn("HEAD_SHA: ${{ github.event.pull_request.head.sha }}", workflow)
+        self.assertIn("--classify-update-type", workflow)
+        self.assertIn("-f state=failure", workflow)
+        self.assertIn('"repos/$REPO/statuses/$HEAD_SHA"', workflow)
+        self.assertLess(remove_label, revoke)
+        self.assertLess(revoke, pending)
+        self.assertLess(pending, metadata)
+        self.assertLess(metadata, classify)
+        self.assertLess(classify, add_label)
+        self.assertLess(add_label, success)
+        self.assertLess(success, workflow.index("--pr \"$PR_NUMBER\""))
+
+    def test_dependabot_cleanup_revokes_active_auto_merge_fail_closed(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "dependabot-automerge.yml"
+        ).read_text(encoding="utf-8")
+        gate = (ROOT / "scripts" / "dependabot_merge_gate.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("cleanup_failed=0", workflow)
+        self.assertIn("from dependabot_merge_gate import revoke_auto_merge", workflow)
+        self.assertIn('if [ "$cleanup_failed" -ne 0 ]; then', workflow)
+        self.assertIn('"--disable-auto"', gate)
+        self.assertNotIn("--admin", gate)
 
     def test_dependabot_gate_requires_current_clean_state_and_native_checks(
         self,
@@ -260,9 +312,12 @@ class WorkflowSecurityTests(unittest.TestCase):
         )
         self.assertIn("view_command = [", gate)
         self.assertIn('"view",', gate)
-        self.assertIn('"headRefOid,mergeable,mergeStateStatus"', gate)
+        self.assertIn('"headRefOid,mergeable,mergeStateStatus,labels"', gate)
         self.assertIn('view.get("mergeable") == "MERGEABLE"', gate)
         self.assertIn('view.get("mergeStateStatus") == "CLEAN"', gate)
+        self.assertIn("statuses?per_page=100", gate)
+        self.assertIn("eligibility_attested(statuses)", gate)
+        self.assertIn('TRUSTED_ATTESTATION_CREATOR = "github-actions[bot]"', gate)
         self.assertIn('"--required"', gate)
         self.assertIn('"--auto"', gate)
         self.assertIn('"--match-head-commit"', gate)
