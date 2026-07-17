@@ -3,18 +3,71 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
+import os
 import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import feed_lib  # noqa: E402
 from validate_feed import main as validate_main  # noqa: E402
 
 
 class ValidateFeedCliTests(unittest.TestCase):
+    def test_valid_signed_report_returns_exit_zero(self) -> None:
+        secret = "test-secret"
+        report = feed_lib.sign_report(
+            {
+                "schema_version": "1.0",
+                "id": "openclaw-cli-valid-cafebabe",
+                "kind": "openclaw",
+                "produced_at": "2026-07-17T00:00:00Z",
+                "producer": {"name": "test-suite"},
+                "asof_data": "2026-07-17",
+            },
+            secret,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td) / "valid.json"
+            path.write_text(json.dumps(report), encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.dict(os.environ, {"FEED_HMAC_SECRET": secret}),
+                mock.patch.object(feed_lib, "has_report", return_value=False),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                rc = validate_main(["--require-signature", str(path)])
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(
+            stdout.getvalue(),
+            f"✓ {path}\n\n全部投递校验通过。\n",
+        )
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_schema_invalid_report_returns_exit_one(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td) / "invalid.json"
+            path.write_text("{}\n", encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                rc = validate_main([str(path)])
+
+        self.assertEqual(rc, 1)
+        self.assertTrue(stdout.getvalue().startswith(f"✗ {path}\n"))
+        self.assertEqual(stderr.getvalue(), "\n校验失败:存在无效投递。\n")
+
     def test_unmatched_glob_returns_exit_two(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             pattern = str(pathlib.Path(td) / "inbox" / "*.json")
