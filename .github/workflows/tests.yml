@@ -5,9 +5,17 @@ name: Tests (单元测试闸门)
 on:
   push:
     branches: [main]
-    paths: ["backend/**", "scripts/**", ".github/workflows/tests.yml"]
+    paths:
+      - "backend/**"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+      - ".github/workflows/feed-validate.yml"
   pull_request:
-    paths: ["backend/**", "scripts/**", ".github/workflows/tests.yml"]
+    paths:
+      - "backend/**"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+      - ".github/workflows/feed-validate.yml"
   workflow_dispatch:
 
 permissions:
@@ -33,7 +41,10 @@ jobs:
         run: |
           python tests/test_backend.py
           python tests/test_api.py
-      - name: scripts 引擎单测(缠论引擎 + 投递闸门)
+      - name: scripts 引擎与安全单测
         run: |
           python scripts/tests/test_chan_engine.py
           python scripts/tests/test_validate_feed.py
+          python scripts/tests/test_feed_validation_security.py
+          python scripts/tests/test_feed_ingress.py
+          python scripts/tests/test_validate_feed_cli.py

@@ -29,11 +29,20 @@ MAX_POSITIONS = 400
 MAX_CANDIDATES = 50
 
 
-def _expand(paths: list[str]) -> list[str]:
-    out: list[str] = []
-    for p in paths:
-        out.extend(sorted(glob.glob(p)) if any(c in p for c in "*?[") else [p])
-    return [p for p in out if os.path.isfile(p)]
+def _expand(paths: list[str]) -> tuple[list[str], list[str]]:
+    files: list[str] = []
+    missing: list[str] = []
+    for requested in paths:
+        candidates = (
+            sorted(glob.glob(requested))
+            if any(char in requested for char in "*?[")
+            else [requested]
+        )
+        matches = [candidate for candidate in candidates if os.path.isfile(candidate)]
+        if not matches:
+            missing.append(requested)
+        files.extend(matches)
+    return list(dict.fromkeys(files)), missing
 
 
 def check_report(
@@ -115,39 +124,50 @@ def check_one(
     return passed, errs, report if passed else None
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("paths", nargs="+")
-    ap.add_argument("--merge", action="store_true", help="校验通过则并入 feed/reports/ 并重建 index")
-    ap.add_argument("--require-signature", action="store_true")
-    args = ap.parse_args()
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("paths", nargs="+")
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        help="校验通过则并入 feed/reports/ 并重建 index",
+    )
+    parser.add_argument("--require-signature", action="store_true")
+    args = parser.parse_args(argv)
     secret = os.environ.get("FEED_HMAC_SECRET")
 
-    files = _expand(args.paths)
+    files, missing = _expand(args.paths)
+    if missing:
+        for requested in missing:
+            print(f"没有匹配到投递文件: {requested}", file=sys.stderr)
+        return 2
     if not files:
-        print("没有匹配到投递文件(inbox 为空)——通过。")
-        return
+        print("没有可校验的普通文件，拒绝空校验。", file=sys.stderr)
+        return 2
+
     all_ok = True
     merged = 0
     for path in files:
-        ok, errs, report = check_one(path, args.require_signature, secret)
-        tag = "✓" if ok else "✗"
+        passed, errors, report = check_one(path, args.require_signature, secret)
+        tag = "✓" if passed else "✗"
         print(f"{tag} {path}")
-        for e in errs:
-            print(f"    - {e}")
-        if ok and args.merge and report is not None:
+        for error in errors:
+            print(f"    - {error}")
+        if passed and args.merge and report is not None:
             fl.write_report_files(report)
             os.remove(path)
             merged += 1
-        all_ok = all_ok and ok
+        all_ok = all_ok and passed
+
     if args.merge and merged:
-        idx = fl.rebuild_index()
-        print(f"已并入 {merged} 份投递,feed 现有 {idx['stats']['total_reports']} 份报告。")
+        index = fl.rebuild_index()
+        print(f"已并入 {merged} 份投递,feed 现有 {index['stats']['total_reports']} 份报告。")
     if not all_ok:
-        print("\n校验失败:存在无效投递。")
-        sys.exit(1)
+        print("\n校验失败:存在无效投递。", file=sys.stderr)
+        return 1
     print("\n全部投递校验通过。")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
