@@ -1,64 +1,94 @@
 {
-  "checked_at": "2026-07-17T21:13:27Z",
+  "checked_at": "2026-07-20T04:12:09Z",
   "ok": true,
   "critical": 0,
-  "warn": 0,
+  "warn": 6,
   "issues": [
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "signals_book 已 3.2 天未更新(SLA 3d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "market_state 已 3.2 天未更新(SLA 3d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "screener 已 3.2 天未更新(SLA 2d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "rs_ranks 已 3.2 天未更新(SLA 2d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "stock_notes 已 2.0 天未更新(SLA 2d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "intraday 已 2.6 天未更新(SLA 2d)"
+    },
     {
       "level": "info",
       "code": "notes-partial",
-      "message": "stock-notes 最新日 2026-07-17 覆盖率 41%(分布 {'2026-06-10': 5, '2026-06-15': 1, '2026-06-16': 5, '2026-06-17': 3, '2026-06-20': 2, '2026-06-23': 15, '2026-06-24': 2, '2026-06-25': 1, '2026-06-26': 6, '2026-06-27': 6, '2026-06-30': 2, '2026-07-01': 13, '2026-07-02': 4, '2026-07-04': 3, '2026-07-07': 14, '2026-07-08': 22, '2026-07-09': 9, '2026-07-10': 10, '2026-07-11': 6, '2026-07-14': 12, '2026-07-15': 18, '2026-07-16': 13, '2026-07-17': 120})"
+      "message": "stock-notes 最新日 2026-07-18 覆盖率 43%(分布 {'2026-06-10': 5, '2026-06-15': 1, '2026-06-16': 5, '2026-06-17': 2, '2026-06-20': 2, '2026-06-23': 15, '2026-06-24': 2, '2026-06-25': 1, '2026-06-26': 6, '2026-06-27': 6, '2026-06-30': 2, '2026-07-01': 12, '2026-07-02': 4, '2026-07-04': 3, '2026-07-07': 14, '2026-07-08': 18, '2026-07-09': 9, '2026-07-10': 9, '2026-07-11': 6, '2026-07-14': 11, '2026-07-15': 17, '2026-07-16': 10, '2026-07-17': 10, '2026-07-18': 126})"
     },
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 37.5 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 39.8 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-07-17",
-      "age_days": 0.88
+      "age_days": 3.18
     },
     "market_state": {
       "exists": true,
       "asof": "2026-07-17",
-      "age_days": 0.88
+      "age_days": 3.18
     },
     "screener": {
       "exists": true,
-      "asof": "2026-07-16",
-      "age_days": 1.88
+      "asof": "2026-07-17",
+      "age_days": 3.18
     },
     "rs_ranks": {
       "exists": true,
-      "asof": "2026-07-16",
-      "age_days": 1.88
+      "asof": "2026-07-17",
+      "age_days": 3.18
     },
     "stock_notes": {
       "exists": true,
-      "asof": "2026-07-17T03:57:12Z",
-      "age_days": 0.72
+      "asof": "2026-07-18T03:50:19Z",
+      "age_days": 2.02
     },
     "intraday": {
       "exists": true,
       "asof": "2026-07-17T14:13:58+00:00",
-      "age_days": 0.29
+      "age_days": 2.58
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-07-17T09:26:33+00:00",
-      "age_days": 0.49
+      "asof": "2026-07-17T23:31:14+00:00",
+      "age_days": 2.2
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 60.88
+      "age_days": 63.18
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-07-17T21:04:14Z",
+      "asof": "2026-07-20T03:56:33Z",
       "age_days": 0.01
     }
   }
