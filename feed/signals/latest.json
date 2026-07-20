@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-07-20T20:45:28Z",
-  "source_report": "routine-2026-07-20T2045Z",
+  "updated_at": "2026-07-20T22:17:13Z",
+  "source_report": "routine-2026-07-20T2217Z",
   "asof": "2026-07-20",
   "n_long": 20,
   "n_short": 23,
@@ -16,6 +16,26 @@
       "kappa": 20.14,
       "hurst": 0.399,
       "sector": "Materials"
+    },
+    {
+      "ticker": "DHR",
+      "side": "SHORT",
+      "weight": -0.0229,
+      "s_score": 1.26,
+      "halflife_days": 8.4,
+      "kappa": 20.86,
+      "hurst": 0.326,
+      "sector": "Health Care"
+    },
+    {
+      "ticker": "BKNG",
+      "side": "SHORT",
+      "weight": -0.0229,
+      "s_score": 0.963,
+      "halflife_days": 6.5,
+      "kappa": 27.06,
+      "hurst": 0.387,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "O",
@@ -35,26 +55,6 @@
       "halflife_days": 13.3,
       "kappa": 13.13,
       "hurst": 0.338,
-      "sector": "Health Care"
-    },
-    {
-      "ticker": "BKNG",
-      "side": "SHORT",
-      "weight": -0.0229,
-      "s_score": 0.963,
-      "halflife_days": 6.5,
-      "kappa": 27.06,
-      "hurst": 0.387,
-      "sector": "Consumer Discretionary"
-    },
-    {
-      "ticker": "DHR",
-      "side": "SHORT",
-      "weight": -0.0229,
-      "s_score": 1.26,
-      "halflife_days": 8.4,
-      "kappa": 20.86,
-      "hurst": 0.326,
       "sector": "Health Care"
     },
     {
@@ -388,16 +388,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "VZ",
-      "side": "LONG",
-      "weight": 0.0216,
-      "s_score": -0.852,
-      "halflife_days": 9.1,
-      "kappa": 19.17,
-      "hurst": 0.351,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "GOOGL",
       "side": "LONG",
       "weight": 0.0216,
@@ -405,6 +395,16 @@
       "halflife_days": 8.0,
       "kappa": 21.91,
       "hurst": 0.35,
+      "sector": "Communication Services"
+    },
+    {
+      "ticker": "VZ",
+      "side": "LONG",
+      "weight": 0.0216,
+      "s_score": -0.852,
+      "halflife_days": 9.1,
+      "kappa": 19.17,
+      "hurst": 0.351,
       "sector": "Communication Services"
     },
     {
@@ -418,16 +418,6 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "MDLZ",
-      "side": "LONG",
-      "weight": 0.0218,
-      "s_score": -1.437,
-      "halflife_days": 10.8,
-      "kappa": 16.1,
-      "hurst": 0.445,
-      "sector": "Consumer Staples"
-    },
-    {
       "ticker": "SLB",
       "side": "LONG",
       "weight": 0.0218,
@@ -436,6 +426,16 @@
       "kappa": 25.81,
       "hurst": 0.488,
       "sector": "Energy"
+    },
+    {
+      "ticker": "MDLZ",
+      "side": "LONG",
+      "weight": 0.0218,
+      "s_score": -1.437,
+      "halflife_days": 10.8,
+      "kappa": 16.1,
+      "hurst": 0.445,
+      "sector": "Consumer Staples"
     }
   ]
 }
