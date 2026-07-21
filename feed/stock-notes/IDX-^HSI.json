@@ -1,14 +1,14 @@
 {
   "symbol": "IDX:^HSI",
-  "date": "2026-07-18",
+  "date": "2026-07-21",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: ^HSI 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 24562.24，20/50/200日均线约 23741.38/24766.43/25797.63；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -12.5%、37分位；SuperTrend(10,3) 多头·约 8 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 1.0%/-6.8%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "看多",
+  "thesis": "多头: ^HSI 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 25139.53，20/50/200日均线约 23870.85/24715.28/25784.60；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -10.4%、47分位；SuperTrend(10,3) 多头·约 10 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 5.8%/-3.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 IDX 交易所/公司公告源 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Tech Rout Blunts Asian Stock Markets(MT Newswires)；Stocks sink as chip rout deepens, oil set for weekly gain(Reuters Videos)；Oil, Tech Outlooks Gyrate Asian Stock Markets(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Last Week's Mini DeepSeek Moment Blows Over, but KOSPI Struggles Persist(Barrons.com)；Tech Turmoil Troubles Asian Stock Markets(MT Newswires)；Tech Rout Blunts Asian Stock Markets(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -12.5%、37分位；SuperTrend(10,3) 多头·约 8 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -10.4%、47分位；SuperTrend(10,3) 多头·约 10 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: ^HSI",
@@ -19,18 +19,18 @@
       "url": "https://finance.yahoo.com/quote/^HSI/news/"
     },
     {
-      "title": "Tech Rout Blunts Asian Stock Markets",
-      "url": "https://finance.yahoo.com/markets/world-indices/articles/tech-rout-blunts-asian-stock-103614132.html"
+      "title": "Last Week's Mini DeepSeek Moment Blows Over, but KOSPI Struggles Persist",
+      "url": "https://finance.yahoo.com/m/0da2a579-f55f-3bc9-8f6a-2636b904346d/last-week%27s-mini-deepseek.html"
     },
     {
-      "title": "Stocks sink as chip rout deepens, oil set for weekly gain",
-      "url": "https://finance.yahoo.com/video/stocks-sink-chip-rout-deepens-102107909.html"
+      "title": "Tech Turmoil Troubles Asian Stock Markets",
+      "url": "https://finance.yahoo.com/markets/world-indices/articles/tech-turmoil-troubles-asian-stock-103830698.html"
     }
   ],
   "methodology": {
     "td9": "上行9(防衰竭)",
-    "week52": "距高 -12.5% · 37分位",
-    "supertrend": "多头·约 8 个交易日前翻转",
+    "week52": "距高 -10.4% · 47分位",
+    "supertrend": "多头·约 10 个交易日前翻转",
     "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰"
   }
 }
