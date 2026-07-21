@@ -1,56 +1,56 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-21T03:36:03Z",
+  "updated_at": "2026-07-21T06:37:38Z",
   "freshness": {
-    "last_report_at": "2026-07-21T03:36:03Z",
+    "last_report_at": "2026-07-21T06:37:38Z",
     "market_data_asof": "2026-07-20",
     "report_age_hours": 0.0,
-    "data_age_days": 1.15,
+    "data_age_days": 1.28,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-07-20",
-        "age_days": 1.15
+        "age_days": 1.28
       },
       "market_state": {
         "exists": true,
         "asof": "2026-07-20",
-        "age_days": 1.15
+        "age_days": 1.28
       },
       "screener": {
         "exists": true,
         "asof": "2026-07-20",
-        "age_days": 1.15
+        "age_days": 1.28
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-07-20",
-        "age_days": 1.15
+        "age_days": 1.28
       },
       "stock_notes": {
         "exists": true,
-        "asof": "2026-07-18T03:50:19Z",
-        "age_days": 2.99
+        "asof": "2026-07-21T04:11:44Z",
+        "age_days": 0.1
       },
       "intraday": {
         "exists": true,
         "asof": "2026-07-20T14:49:51+00:00",
-        "age_days": 0.53
+        "age_days": 0.66
       },
       "market_history": {
         "exists": true,
         "asof": "2026-07-20T23:36:17+00:00",
-        "age_days": 0.17
+        "age_days": 0.29
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-05-18",
-        "age_days": 64.15
+        "age_days": 64.28
       },
       "crypto_state": {
         "exists": true,
-        "asof": "2026-07-21T03:36:01Z",
+        "asof": "2026-07-21T06:37:35Z",
         "age_days": 0.0
       }
     }
@@ -64,14 +64,14 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.29≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.22≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 500,
+    "total_reports": 501,
     "by_kind": {
-      "routine": 450,
+      "routine": 451,
       "manual": 39,
       "openclaw": 11
     },
     "by_producer": {
-      "hyperliquid-monitor": 305,
+      "hyperliquid-monitor": 306,
       "factor-factory-local": 32,
       "github-actions-routine": 145,
       "study-downshift": 2,
@@ -133,9 +133,24 @@
     "2026-07-18": 10,
     "2026-07-19": 10,
     "2026-07-20": 13,
-    "2026-07-21": 1
+    "2026-07-21": 2
   },
   "reports": [
+    {
+      "id": "hl-monitor-2026-07-21T0637Z",
+      "kind": "routine",
+      "produced_at": "2026-07-21T06:37:38Z",
+      "asof_data": "2026-07-21",
+      "producer": "hyperliquid-monitor",
+      "agent_role": "crowding-monitor",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 3,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "HL 衍生品情报:20 流动永续持仓面,跨所错位 36,HIP-3 24/7 资产 87。",
+      "path": "reports/hl-monitor-2026-07-21T0637Z.json"
+    },
     {
       "id": "hl-monitor-2026-07-21T0336Z",
       "kind": "routine",
@@ -1020,24 +1035,16 @@
       "contribution_type": "signal_refresh",
       "contribution_summary": "刷新做多做空簿(多 24/空 21),净 Sharpe -0.14;市场 risk_on、广度 0.583、拥挤 0.081。",
       "path": "reports/routine-2026-07-16T1743Z.json"
-    },
-    {
-      "id": "hl-monitor-2026-07-16T1735Z",
-      "kind": "routine",
-      "produced_at": "2026-07-16T17:35:20Z",
-      "asof_data": "2026-07-16",
-      "producer": "hyperliquid-monitor",
-      "agent_role": "crowding-monitor",
-      "net_sharpe": null,
-      "verdict": null,
-      "n_alerts": 2,
-      "n_candidates": 0,
-      "contribution_type": "regime_update",
-      "contribution_summary": "HL 衍生品情报:19 流动永续持仓面,跨所错位 55,HIP-3 24/7 资产 87。",
-      "path": "reports/hl-monitor-2026-07-16T1735Z.json"
     }
   ],
   "contributions": [
+    {
+      "at": "2026-07-21T06:37:38Z",
+      "producer": "hyperliquid-monitor",
+      "id": "hl-monitor-2026-07-21T0637Z",
+      "type": "regime_update",
+      "summary": "HL 衍生品情报:20 流动永续持仓面,跨所错位 36,HIP-3 24/7 资产 87。"
+    },
     {
       "at": "2026-07-21T03:36:03Z",
       "producer": "hyperliquid-monitor",
@@ -1661,13 +1668,6 @@
       "id": "hl-monitor-2026-07-15T0624Z",
       "type": "regime_update",
       "summary": "HL 衍生品情报:26 流动永续持仓面,跨所错位 54,HIP-3 24/7 资产 87。"
-    },
-    {
-      "at": "2026-07-15T03:24:39Z",
-      "producer": "hyperliquid-monitor",
-      "id": "hl-monitor-2026-07-15T0324Z",
-      "type": "regime_update",
-      "summary": "HL 衍生品情报:26 流动永续持仓面,跨所错位 64,HIP-3 24/7 资产 87。"
     }
   ]
 }
