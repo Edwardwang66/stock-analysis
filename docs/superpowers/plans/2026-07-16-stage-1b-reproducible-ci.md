@@ -4,7 +4,7 @@
 
 **Goal:** Establish deterministic Node and Python installations, explicit static and server frontend builds, offline route smoke tests, and an all-PR CI matrix without changing application behavior or deleting source directories during a build.
 
-**Architecture:** Node and npm are pinned once at the repository root and npm continues to use the existing lockfile. Python keeps human-maintained direct-dependency `.in` files and generated, hash-checked locks for the primary runtime, scheduled research automation, and the CI compatibility runtime; CI regenerates those locks in temporary directories and byte-compares them with the committed outputs. Server builds run against the real frontend tree so Vercel continues to package `frontend/app/api`; static builds run in a private temporary copy that excludes only `app/api`, then copy the generated `out/` artifact back to the ignored build-output directory.
+**Architecture:** Node and npm are pinned once at the repository root and npm continues to use the existing lockfile. Python keeps human-maintained direct-dependency `.in` files and generated, hash-checked locks for the primary runtime, scheduled research automation, and the CI compatibility runtime; CI regenerates those locks in temporary directories and byte-compares them with the committed outputs. Server builds run against the real frontend tree so Vercel continues to package `frontend/app/api`. Static builds run in a private temporary copy that excludes only `app/api`; the export is copied to a unique same-root stage and published through a validated rename/swap protocol with a canonical hard-link owner, durable transaction state, append-only successor claims, dead-owner recovery, rollback, and atomically retired tombstones.
 
 **Tech Stack:** Node.js 20.20.2, npm 10.8.2, Next.js 14.2.35, TypeScript 5.9.3, ESLint 8.57.1 with `next/core-web-vitals`, Python 3.11.15 primary, Python 3.12.13 compatibility, pip-tools 7.5.2, GitHub Actions.
 
@@ -41,6 +41,8 @@
 - `frontend/scripts/build-profile.mjs` — explicit server build and isolated static-copy build orchestrator.
 - `frontend/scripts/smoke-static.mjs` — offline assertions over exported HTML routes.
 - `frontend/scripts/smoke-server.mjs` — starts `next start`, probes key routes through localhost, and shuts it down.
+- `frontend/scripts/tests/build-profile-publication.test.mjs` — publication concurrency, crash-recovery, rollback, and unsafe-path regression coverage.
+- `frontend/scripts/tests/smoke-server.test.mjs` — child-owned readiness, bounded I/O, unexpected-exit, and shutdown regression coverage.
 - `backend/requirements.in` — direct backend runtime dependencies.
 - `scripts/requirements.in` — direct automation/feed dependencies.
 - `scripts/requirements-winter-pg.in` — optional Winter PostgreSQL dependency declaration.
@@ -55,9 +57,9 @@
 
 ### Files modified
 
-- `frontend/package.json` — exact dependency versions and stable lint/typecheck/build/smoke commands.
+- `frontend/package.json` — exact dependency versions and stable lint/typecheck/script-test/build/smoke commands.
 - `frontend/package-lock.json` — regenerated with Node 20.20.2/npm 10.8.2.
-- `frontend/.gitignore` — keep generated outputs ignored but track `next-env.d.ts`.
+- `frontend/.gitignore` — keep generated outputs and private publication artifacts ignored while tracking `next-env.d.ts`.
 - `frontend/next-env.d.ts` — commit the standard Next TypeScript references already present locally.
 - `frontend/next.config.mjs` — validate and apply an explicit `NEXT_BUILD_PROFILE`.
 - `backend/requirements.txt` — generated Python 3.11.15 hash lock.
@@ -89,7 +91,8 @@
 - `node scripts/build-profile.mjs server` produces `frontend/.next/` from the real source tree, including `app/api`.
 - `STATIC_FEED_SOURCE=/absolute/path node scripts/build-profile.mjs static` replaces `public/feed` only inside the private static-build copy; the worktree snapshot is never deleted or rewritten.
 - `node scripts/smoke-static.mjs` consumes `frontend/out/` and `NEXT_PUBLIC_BASE_PATH`.
-- `node scripts/smoke-server.mjs` consumes a completed server build in `frontend/.next/` and optional `SMOKE_PORT`.
+- `node scripts/smoke-server.mjs` consumes a completed server build in `frontend/.next/`; by default its own child binds port 0, and an explicit `SMOKE_PORT` must be a valid nonzero port.
+- `npm run test:scripts` runs both build-publication and server-smoke lifecycle suites before either build profile in the aggregate `verify` command.
 - `requirements/ci-py311.txt` and `requirements/ci-py312.txt` are complete install inputs; CI does not resolve from `.in` files.
 - `requirements/automation.txt` is the complete install input for workflows that execute both `scripts/` and `backtest/` modules.
 - Python 3.11.15 regenerates and compares the backend, scripts, Winter PostgreSQL, backtest, automation, and `ci-py311` locks; Python 3.12.13 regenerates and compares only `ci-py312`.
@@ -280,12 +283,15 @@ git commit -m "chore: pin frontend toolchain"
 - Create: `frontend/scripts/build-profile.mjs`
 - Create: `frontend/scripts/smoke-static.mjs`
 - Create: `frontend/scripts/smoke-server.mjs`
+- Create: `frontend/scripts/tests/build-profile-publication.test.mjs`
+- Create: `frontend/scripts/tests/smoke-server.test.mjs`
 - Modify: `frontend/next.config.mjs`
+- Modify: `frontend/.gitignore`
 - Modify: `frontend/package.json`
 
 **Interfaces:**
 - Consumes: Task 1's exact npm install and the unchanged `frontend/app/api` handlers.
-- Produces: `build:static`, `build:server`, `smoke`, `smoke:static`, `smoke:server`, and `verify` commands used by CI and Pages deployment.
+- Produces: `test:scripts`, `build:static`, `build:server`, `smoke`, `smoke:static`, `smoke:server`, and `verify` commands used by CI and Pages deployment.
 
 - [ ] **Step 1: Verify the profile commands are initially absent**
 
@@ -342,109 +348,30 @@ Create the new script directory first:
 mkdir -p frontend/scripts
 ```
 
-Create `frontend/scripts/build-profile.mjs`:
+Implement the contract in `frontend/scripts/build-profile.mjs` and keep its
+publication regression coverage in
+`frontend/scripts/tests/build-profile-publication.test.mjs`:
 
-```js
-import { spawn } from "node:child_process";
-import { cp, mkdtemp, rm, stat, symlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+- recursively copy the frontend into a private temporary tree, excluding only
+  `node_modules`, `.next`, and `out`, and remove `app/api` only from that copy;
+- apply `STATIC_FEED_SOURCE` only to the copy's `public/feed`, then build the
+  static profile with the pinned local Next binary;
+- copy the completed export into a unique same-root `.out-stage-<transaction>`
+  directory before touching the published output;
+- serialize publication with a validated canonical hard link to immutable
+  owner metadata, durable transaction phases, and append-only successor links;
+- recover dead owners, validate inode/path/type and phase/shape metadata before
+  mutation, swap by rename, roll back failures, and atomically retire completed
+  records as tombstones before deletion;
+- fail closed on live owners, ambiguous state, unsafe paths, or ownership
+  changes, while preserving the primary error alongside cleanup errors.
 
-const scriptsDir = dirname(fileURLToPath(import.meta.url));
-const frontendRoot = resolve(scriptsDir, "..");
-const nextBin = join(frontendRoot, "node_modules", "next", "dist", "bin", "next");
-
-function runNextBuild(cwd, profile) {
-  return new Promise((resolveBuild, rejectBuild) => {
-    const child = spawn(process.execPath, [nextBin, "build"], {
-      cwd,
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        NEXT_BUILD_PROFILE: profile,
-        NEXT_TELEMETRY_DISABLED: "1",
-      },
-    });
-
-    child.once("error", rejectBuild);
-    child.once("exit", (code, signal) => {
-      if (code === 0) {
-        resolveBuild();
-        return;
-      }
-      rejectBuild(
-        new Error(`next build failed with code=${code} signal=${signal ?? "none"}`),
-      );
-    });
-  });
-}
-
-async function buildStatic() {
-  const temporaryParent = await mkdtemp(join(tmpdir(), "stock-analysis-static-"));
-  const temporaryRoot = join(temporaryParent, "frontend");
-  const excludedRoots = new Set(["node_modules", ".next", "out"]);
-
-  try {
-    await cp(frontendRoot, temporaryRoot, {
-      recursive: true,
-      filter(source) {
-        const pathWithinFrontend = relative(frontendRoot, source);
-        const rootName = pathWithinFrontend.split(sep)[0];
-        return !excludedRoots.has(rootName);
-      },
-    });
-    await rm(join(temporaryRoot, "app", "api"), {
-      recursive: true,
-      force: true,
-    });
-
-    const feedSourceValue = process.env.STATIC_FEED_SOURCE;
-    if (feedSourceValue) {
-      const feedSource = resolve(feedSourceValue);
-      const feedSourceStat = await stat(feedSource);
-      if (!feedSourceStat.isDirectory()) {
-        throw new Error("STATIC_FEED_SOURCE must name a directory");
-      }
-      const bundledFeed = join(temporaryRoot, "public", "feed");
-      await rm(bundledFeed, { recursive: true, force: true });
-      await cp(feedSource, bundledFeed, { recursive: true });
-    }
-
-    await symlink(
-      join(frontendRoot, "node_modules"),
-      join(temporaryRoot, "node_modules"),
-      process.platform === "win32" ? "junction" : "dir",
-    );
-
-    await runNextBuild(temporaryRoot, "static");
-    await rm(join(frontendRoot, "out"), { recursive: true, force: true });
-    await cp(join(temporaryRoot, "out"), join(frontendRoot, "out"), {
-      recursive: true,
-    });
-  } finally {
-    await rm(temporaryParent, { recursive: true, force: true });
-  }
-}
-
-async function main() {
-  const profile = process.argv[2];
-  if (!new Set(["static", "server"]).has(profile)) {
-    throw new Error("usage: node scripts/build-profile.mjs <static|server>");
-  }
-
-  if (profile === "server") {
-    await runNextBuild(frontendRoot, "server");
-    return;
-  }
-
-  await buildStatic();
-}
-
-await main();
-```
-
-This script recursively copies the complete frontend so future build configuration is not omitted, filters only `node_modules`, `.next`, and `out`, removes `app/api` only in that private copy, uses the pinned installed Next binary, and cleans the temporary directory even on failure. An optional `STATIC_FEED_SOURCE` replaces only the copy's bundled feed. The only worktree path it removes is ignored generated output `frontend/out/`.
+The build's private-copy API/feed changes never touch the worktree. Publication
+touches only ignored `frontend/out/` and validated ignored transaction
+artifacts (`.out-stage-*`, `.out-backup-*`, and `.out-publish.lock*`). The test
+file is the canonical executable specification for concurrency, crash points,
+recovery, rollback, and cleanup safety; do not duplicate the implementation in
+this plan.
 
 - [ ] **Step 4: Add deterministic route smoke scripts**
 
@@ -486,188 +413,75 @@ assert.ok(
 console.log(`static smoke: ${pages.length} routes OK`);
 ```
 
-Create `frontend/scripts/smoke-server.mjs`:
+Implement the server lifecycle contract in
+`frontend/scripts/smoke-server.mjs`, with focused coverage in
+`frontend/scripts/tests/smoke-server.test.mjs`:
 
-```js
-import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { once } from "node:events";
-import { setTimeout as delay } from "node:timers/promises";
+- launch exactly one `next start` child on loopback and default to child-owned
+  port 0; an explicit `SMOKE_PORT` remains available for controlled runs;
+- pipe and tee that child's stdout/stderr, parse both its `Local:` URL and
+  `Ready` marker from the same child, and never probe before both are observed;
+- bound readiness, every fetch, and every response-body read; treat spawn
+  errors and any pre-cleanup child exit (including code 0) as failure;
+- probe eleven HTML routes and two offline API negative paths;
+- begin cleanup with SIGTERM and escalate to SIGKILL if the child does not
+  exit, surfacing cleanup failure together with any primary smoke failure.
 
-const port = Number(process.env.SMOKE_PORT || "3100");
-assert.ok(Number.isInteger(port) && port > 0 && port < 65536, "invalid SMOKE_PORT");
-
-const origin = `http://127.0.0.1:${port}`;
-const routes = [
-  "/",
-  "/alerts/",
-  "/desk/",
-  "/help/",
-  "/intel/",
-  "/portfolio/",
-  "/reports/",
-  "/screener/",
-  "/sources/",
-  "/symbol/",
-  "/tracker/",
-];
-
-const server = spawn(
-  process.execPath,
-  [
-    "node_modules/next/dist/bin/next",
-    "start",
-    "--hostname",
-    "127.0.0.1",
-    "--port",
-    String(port),
-  ],
-  {
-    cwd: new URL("..", import.meta.url),
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      NEXT_BUILD_PROFILE: "server",
-      NEXT_PUBLIC_BASE_PATH: "",
-      NEXT_TELEMETRY_DISABLED: "1",
-      NODE_ENV: "production",
-    },
-  },
-);
-
-async function waitUntilReady() {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (server.exitCode !== null) {
-      throw new Error(`next start exited early with ${server.exitCode}`);
-    }
-    try {
-      const response = await fetch(origin);
-      if (response.status === 200) return;
-    } catch {
-      // The local server is still starting.
-    }
-    await delay(250);
-  }
-  throw new Error("next start did not become ready within 30 seconds");
-}
-
-async function stopServer() {
-  if (server.exitCode !== null) return;
-  const exited = once(server, "exit");
-  server.kill("SIGTERM");
-  const stoppedGracefully = await Promise.race([
-    exited.then(() => true),
-    delay(5_000).then(() => false),
-  ]);
-  if (!stoppedGracefully && server.exitCode === null) {
-    server.kill("SIGKILL");
-    await exited;
-  }
-}
-
-try {
-  await waitUntilReady();
-  for (const route of routes) {
-    const response = await fetch(`${origin}${route}`);
-    assert.equal(response.status, 200, `${route} status`);
-    assert.match(
-      response.headers.get("content-type") || "",
-      /^text\/html/i,
-      `${route} content type`,
-    );
-    assert.match(await response.text(), /<html/i, `${route} document`);
-    console.log(`PASS server ${route}`);
-  }
-  for (const [route, expectedError] of [
-    ["/api/quote", "symbols required"],
-    ["/api/ohlcv?symbol=BAD:X", "unsupported market BAD"],
-  ]) {
-    const response = await fetch(`${origin}${route}`);
-    assert.equal(response.status, 400, `${route} status`);
-    const body = await response.json();
-    assert.equal(body.error, expectedError, `${route} error`);
-    console.log(`PASS server ${route}`);
-  }
-} finally {
-  await stopServer();
-}
-```
+The lifecycle test file is the canonical executable specification for
+port/readiness ownership, occupied ports, black-hole bodies, child exits, and
+signal escalation; do not duplicate the implementation in this plan.
 
 - [ ] **Step 5: Expose the stable npm commands**
 
-Replace `frontend/package.json` with its final Stage 1B form:
+Keep the exact dependency and engine pins from Task 1. Add these exact script
+entries to `frontend/package.json` alongside the existing profile and smoke
+commands:
 
 ```json
 {
-  "name": "stock-dashboard-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "packageManager": "npm@10.8.2",
-  "engines": {
-    "node": "20.20.2",
-    "npm": "10.8.2"
-  },
-  "scripts": {
-    "dev": "next dev",
-    "build": "npm run build:server",
-    "build:static": "node scripts/build-profile.mjs static",
-    "build:server": "node scripts/build-profile.mjs server",
-    "start": "next start",
-    "lint": "next lint --max-warnings=0",
-    "typecheck": "tsc --project tsconfig.json --noEmit --incremental false",
-    "smoke": "npm run smoke:server",
-    "smoke:static": "node scripts/smoke-static.mjs",
-    "smoke:server": "node scripts/smoke-server.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run build:static && npm run smoke:static && npm run build:server && npm run smoke:server"
-  },
-  "dependencies": {
-    "lightweight-charts": "4.2.3",
-    "next": "14.2.35",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "20.19.43",
-    "@types/react": "18.3.31",
-    "@types/react-dom": "18.3.7",
-    "eslint": "8.57.1",
-    "eslint-config-next": "14.2.35",
-    "typescript": "5.9.3"
-  }
+  "test:scripts": "node --test scripts/tests/build-profile-publication.test.mjs scripts/tests/smoke-server.test.mjs",
+  "verify": "npm run lint && npm run typecheck && npm run test:scripts && npm run build:static && npm run smoke:static && npm run build:server && npm run smoke:server"
 }
 ```
 
-Run the following from the repository root:
-
-```bash
-docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp/home \
-  --tmpfs /workspace/frontend/node_modules:rw,exec,mode=1777 \
-  --volume "$PWD:/workspace" --workdir /workspace/frontend \
-  node:20.20.2-bookworm-slim npm install --package-lock-only
-```
-
-Expected: resolved dependency versions do not drift. npm may leave the lockfile unchanged because package scripts are not serialized into `package-lock.json`.
+The order is binding: lint, typecheck, script tests, static build/smoke, then
+server build/smoke. This integration changes package scripts only and must not
+regenerate or otherwise modify `frontend/package-lock.json`.
 
 - [ ] **Step 6: Verify both profiles and prove source preservation**
 
-Run:
+Run the exact pinned image from the worktree root with a clean ephemeral
+installation. Script tests precede both builds:
 
 ```bash
 docker run --rm \
-  --user "$(id -u):$(id -g)" \
-  --env HOME=/tmp/home \
   --tmpfs /workspace/frontend/node_modules:rw,exec,mode=1777 \
-  --volume "$PWD:/workspace" \
-  --workdir /workspace/frontend \
+  --mount type=volume,src=stock-analysis-stage1b-npm-cache,dst=/root/.npm \
+  -v /private/tmp/stock-analysis-codex-stage-1-refactor:/workspace \
+  -w /workspace/frontend \
   node:20.20.2-bookworm-slim \
-  sh -lc 'npm ci && npm run lint && npm run typecheck && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run build:static && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run smoke:static && env -u NEXT_PUBLIC_BASE_PATH npm run build:server && env -u NEXT_PUBLIC_BASE_PATH npm run smoke:server'
-test -f frontend/app/api/quote/route.ts
-test -f frontend/app/api/ohlcv/route.ts
-git diff --exit-code -- frontend/app/api/quote/route.ts frontend/app/api/ohlcv/route.ts
-test -f frontend/.next/BUILD_ID
+  sh -lc 'node --version && npm --version && npm ci && npm run lint && npm run typecheck && npm run test:scripts && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run build:static && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run smoke:static && env -u NEXT_PUBLIC_BASE_PATH npm run build:server && env -u NEXT_PUBLIC_BASE_PATH npm run smoke:server'
 ```
 
-Expected: static smoke reports `12 routes OK`; both App Router handler files still exist and have no diff; server smoke prints eleven page passes plus two offline API negative-path passes; `.next/BUILD_ID` exists.
+Then run all preservation and residue assertions:
+
+```bash
+test -f frontend/app/api/quote/route.ts
+test -f frontend/app/api/ohlcv/route.ts
+test -f frontend/.next/BUILD_ID
+test "$(shasum -a 256 frontend/package-lock.json | awk '{print $1}')" = "97875c90208b25596cae8ea55482f4c38295aba18b77287f4a11e32208b563d1"
+git diff --exit-code HEAD -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts
+test -z "$(git status --porcelain=v1 --untracked-files=all -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts)"
+test -z "$(find frontend -maxdepth 1 \( -name '.out-stage-*' -o -name '.out-backup-*' -o -name '.out-publish.lock*' \) -print -quit)"
+git diff --check
+```
+
+Expected: Node prints `v20.20.2`, npm prints `10.8.2`, all script tests pass,
+static smoke reports `12 routes OK`, and server smoke prints eleven page passes
+plus two offline API negative-path passes. Both handlers and `.next/BUILD_ID`
+exist; the lock hash matches; API, bundled feed, lockfile, TypeScript config, and
+Next environment declarations have no tracked or untracked drift; no private
+publication residue remains; and `git diff --check` exits 0.
 
 - [ ] **Step 7: Commit the profile builds and smoke tests**
 
@@ -675,6 +489,17 @@ Expected: static smoke reports `12 routes OK`; both App Router handler files sti
 git add frontend/next.config.mjs frontend/package.json frontend/package-lock.json frontend/scripts/build-profile.mjs frontend/scripts/smoke-static.mjs frontend/scripts/smoke-server.mjs
 git diff --cached --check
 git commit -m "build: add reproducible frontend profiles"
+```
+
+- [ ] **Step 8: Commit the reviewed smoke/publication hardening follow-up**
+
+After the exact gate and focused review both pass, stage exactly the hardening
+set. `frontend/package-lock.json` is deliberately excluded:
+
+```bash
+git add frontend/.gitignore frontend/package.json frontend/scripts/build-profile.mjs frontend/scripts/smoke-server.mjs frontend/scripts/tests/build-profile-publication.test.mjs frontend/scripts/tests/smoke-server.test.mjs docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md
+git diff --cached --check
+git commit -m "fix: harden frontend smoke and static publish"
 ```
 
 ---
@@ -1188,6 +1013,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run test:scripts
       - if: matrix.profile == 'static'
         run: npm run build:static
       - if: matrix.profile == 'static'
@@ -1509,7 +1335,11 @@ Then run the exact Node container gate from Task 2 Step 6 and both exact Python 
 ```bash
 test -f frontend/app/api/quote/route.ts
 test -f frontend/app/api/ohlcv/route.ts
-git diff --exit-code -- frontend/app/api/quote/route.ts frontend/app/api/ohlcv/route.ts frontend/public/feed
+test -f frontend/.next/BUILD_ID
+test "$(shasum -a 256 frontend/package-lock.json | awk '{print $1}')" = "97875c90208b25596cae8ea55482f4c38295aba18b77287f4a11e32208b563d1"
+git diff --exit-code HEAD -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts
+test -z "$(git status --porcelain=v1 --untracked-files=all -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts)"
+test -z "$(find frontend -maxdepth 1 \( -name '.out-stage-*' -o -name '.out-backup-*' -o -name '.out-publish.lock*' \) -print -quit)"
 git diff --check
 git status --short
 ```
@@ -1522,6 +1352,7 @@ Expected:
 - `alpha-routine` and `monthly-studies` each install the combined automation lock and smoke-import their `backtest/` and `scripts/` modules exactly once;
 - both frontend profiles pass and the real `app/api` handlers remain present;
 - both Python versions reproduce their applicable locks and pass all current tests with no broken requirements;
+- API/feed/lock/config inputs remain byte-stable and no private publication residue remains;
 - `git diff --check` reports no whitespace errors;
 - only intended tracked files plus the pre-existing untracked `AGENTS.md` appear in status.
 
@@ -1537,7 +1368,7 @@ git commit -m "ci: use pinned toolchains everywhere"
 
 ## Final Acceptance Gate
 
-After all five commits, run the exact Node container gate from Task 2 Step 6 and the following two-runtime Python gates once more from a clean checkout. These are intentionally explicit here so the final run cannot fall back to a root/system Python install:
+After all six commits, run the exact Node container gate from Task 2 Step 6 and the following two-runtime Python gates once more from a clean checkout. These are intentionally explicit here so the final run cannot fall back to a root/system Python install:
 
 ```bash
 docker run --rm \
@@ -1612,9 +1443,13 @@ Then run:
 ```bash
 test -f frontend/app/api/quote/route.ts
 test -f frontend/app/api/ohlcv/route.ts
-git diff --exit-code -- frontend/app/api/quote/route.ts frontend/app/api/ohlcv/route.ts frontend/public/feed
+test -f frontend/.next/BUILD_ID
+test "$(shasum -a 256 frontend/package-lock.json | awk '{print $1}')" = "97875c90208b25596cae8ea55482f4c38295aba18b77287f4a11e32208b563d1"
+git diff --exit-code HEAD -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts
+test -z "$(git status --porcelain=v1 --untracked-files=all -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts)"
+test -z "$(find frontend -maxdepth 1 \( -name '.out-stage-*' -o -name '.out-backup-*' -o -name '.out-publish.lock*' \) -print -quit)"
 git diff --check
 git status --short
 ```
 
-Expected: all commands exit 0; static smoke reports 12 routes; server smoke reports eleven page passes and two API-route passes; all seven lock comparisons and all twenty Python test invocations pass; neither API source nor the tracked bundled feed changes; no tracked generated artifact is introduced by verification. Push only after the GitHub `frontend (static)`, `frontend (server)`, `Python (3.11.15)`, and `Python (3.12.13)` jobs all succeed.
+Expected: all commands exit 0; script tests pass before either build; static smoke reports 12 routes; server smoke reports eleven page passes and two API-route passes; all seven lock comparisons and all twenty Python test invocations pass; API/feed/lock/config inputs remain byte-stable; no publication residue or tracked generated artifact is introduced by verification. After this local final gate passes, push the feature branch; require the actual GitHub `Frontend (static)`, `Frontend (server)`, `Python (3.11.15)`, and `Python (3.12.13)` jobs to succeed before merge.
