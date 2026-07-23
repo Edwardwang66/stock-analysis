@@ -1,22 +1,12 @@
 {
-  "updated_at": "2026-07-23T19:50:44Z",
-  "source_report": "routine-2026-07-23T1950Z",
+  "updated_at": "2026-07-23T21:32:03Z",
+  "source_report": "routine-2026-07-23T2132Z",
   "asof": "2026-07-23",
   "n_long": 22,
   "n_short": 24,
   "gross_leverage": 0.465,
   "net_exposure": 0.0133,
   "positions": [
-    {
-      "ticker": "BKNG",
-      "side": "SHORT",
-      "weight": -0.0236,
-      "s_score": 1.212,
-      "halflife_days": 6.3,
-      "kappa": 27.93,
-      "hurst": 0.306,
-      "sector": "Consumer Discretionary"
-    },
     {
       "ticker": "O",
       "side": "SHORT",
@@ -26,6 +16,16 @@
       "kappa": 26.43,
       "hurst": 0.497,
       "sector": "Real Estate"
+    },
+    {
+      "ticker": "BKNG",
+      "side": "SHORT",
+      "weight": -0.0236,
+      "s_score": 1.212,
+      "halflife_days": 6.3,
+      "kappa": 27.93,
+      "hurst": 0.306,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "TMO",
@@ -78,16 +78,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "META",
-      "side": "SHORT",
-      "weight": -0.0111,
-      "s_score": 1.623,
-      "halflife_days": 5.6,
-      "kappa": 31.22,
-      "hurst": 0.351,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "BMY",
       "side": "SHORT",
       "weight": -0.0111,
@@ -98,14 +88,14 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "RTX",
+      "ticker": "META",
       "side": "SHORT",
-      "weight": -0.0107,
-      "s_score": 0.55,
-      "halflife_days": 3.7,
-      "kappa": 46.99,
-      "hurst": 0.281,
-      "sector": "Industrials"
+      "weight": -0.0111,
+      "s_score": 1.623,
+      "halflife_days": 5.6,
+      "kappa": 31.22,
+      "hurst": 0.351,
+      "sector": "Communication Services"
     },
     {
       "ticker": "LMT",
@@ -115,6 +105,16 @@
       "halflife_days": 11.5,
       "kappa": 15.21,
       "hurst": 0.476,
+      "sector": "Industrials"
+    },
+    {
+      "ticker": "RTX",
+      "side": "SHORT",
+      "weight": -0.0107,
+      "s_score": 0.55,
+      "halflife_days": 3.7,
+      "kappa": 46.99,
+      "hurst": 0.281,
       "sector": "Industrials"
     },
     {
@@ -208,16 +208,6 @@
       "sector": "Energy"
     },
     {
-      "ticker": "PSX",
-      "side": "SHORT",
-      "weight": -0.0019,
-      "s_score": 0.253,
-      "halflife_days": 4.4,
-      "kappa": 39.9,
-      "hurst": 0.366,
-      "sector": "Energy"
-    },
-    {
       "ticker": "NKE",
       "side": "SHORT",
       "weight": -0.0019,
@@ -226,6 +216,16 @@
       "kappa": 51.13,
       "hurst": 0.342,
       "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "PSX",
+      "side": "SHORT",
+      "weight": -0.0019,
+      "s_score": 0.253,
+      "halflife_days": 4.4,
+      "kappa": 39.9,
+      "hurst": 0.366,
+      "sector": "Energy"
     },
     {
       "ticker": "HON",
