@@ -1,14 +1,14 @@
 {
   "symbol": "US:MSFT",
-  "date": "2026-07-22",
+  "date": "2026-07-23",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: MSFT 属于 Technology/Software—Infrastructure，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 397.75，20/50/200日均线约 383.82/400.82/438.16；TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -28.4%、24分位；SuperTrend(10,3) 多头·约 5 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 8.3%/-4.3%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: MSFT 属于 Technology/Software—Infrastructure，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 390.34，20/50/200日均线约 384.64/400.32/437.53；TD9 下行1；52周位置 距高 -29.7%、20分位；SuperTrend(10,3) 多头·约 6 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 4.4%/-8.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Why AMD Stock Jumped Today(Motley Fool)；AMD stock gets a new reason to watch from Bank of America(TheStreet)；What History Teaches Us About Today’s Tech Market(Motley Fool)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Nasdaq, S&P 500, Dow Futures Edge Higher, Brushing Off Fresh US-Iran Clashes As Earnings Take Center Stage: TSLA, NOW, GOOGL, NOK In Focus(Stocktwits)；AMD, Cerebras Strike AI Chip Deals(Investor's Business Daily)；The Ultimate Bull Run for NVIDIA, Micron, and SanDisk May Be Closer Than Investors Think(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -28.4%、24分位；SuperTrend(10,3) 多头·约 5 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行1；52周位置 距高 -29.7%、20分位；SuperTrend(10,3) 多头·约 6 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: MSFT",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/MSFT/news/"
     },
     {
-      "title": "Why AMD Stock Jumped Today",
-      "url": "https://finance.yahoo.com/m/98a6c317-5b47-3d97-9bdb-59697d51444c/why-amd-stock-jumped-today.html"
+      "title": "Nasdaq, S&P 500, Dow Futures Edge Higher, Brushing Off Fresh US-Iran Clashes As Earnings Take Center Stage: TSLA, NOW, GOOGL, NOK In Focus",
+      "url": "https://finance.yahoo.com/m/d62d497e-03cc-3a9f-888f-0ca3879727ac/nasdaq%2C-s%26p-500%2C-dow-futures.html"
     },
     {
-      "title": "AMD stock gets a new reason to watch from Bank of America",
-      "url": "https://finance.yahoo.com/m/e50180ab-1401-3421-9811-edfbfabb9948/amd-stock-gets-a-new-reason.html"
+      "title": "AMD, Cerebras Strike AI Chip Deals",
+      "url": "https://finance.yahoo.com/m/eb24034f-91e3-3778-88a4-ebbde26313bf/amd%2C-cerebras-strike-ai-chip.html"
     }
   ],
   "methodology": {
-    "td9": "上行7(防衰竭)",
-    "week52": "距高 -28.4% · 24分位",
-    "supertrend": "多头·约 5 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，有背驰迹象",
-    "rs": 17
+    "td9": "下行1",
+    "week52": "距高 -29.7% · 20分位",
+    "supertrend": "多头·约 6 个交易日前翻转",
+    "chan": "震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 13
   }
 }
