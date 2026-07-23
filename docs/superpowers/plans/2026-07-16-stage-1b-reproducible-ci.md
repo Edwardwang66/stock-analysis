@@ -18,8 +18,9 @@
 - Pin Node to 20.20.2 and npm to 10.8.2 because the approved specification requires Node 20. Node 20 is already end-of-life; this pin is a migration risk, not a claim of ongoing upstream support. Upgrading to an actively supported Node line requires a follow-up specification and a separately reviewed change.
 - Pin the primary Python runtime to 3.11.15 and test compatibility on exactly 3.12.13.
 - Because Render evaluates `rootDir: backend`, declare `PYTHON_VERSION=3.11.15` in `render.yaml`; the root `.python-version` is not a Render version source.
-- All application/runtime Python installs used by CI, Docker, Render, and scheduled workflows must consume generated lockfiles with `--require-hashes`; the only bootstrap exception is Task 3's exact pip-tools 7.5.2 install used to create the first generation of those locks.
-- Generate every committed Python lock with pip-tools 7.5.2 and `--no-header`; CI and the local Python matrix gates must regenerate the applicable locks into a temporary directory and compare them byte-for-byte with `cmp`.
+- All application/runtime Python installs used by CI, Docker, Render, and scheduled workflows must consume generated lockfiles with `--require-hashes`; the only bootstrap exception is Task 3's exact `pip==25.2` plus `pip-tools==7.5.2` install used to create the first generation of those locks.
+- Generate every committed Python lock with pip-tools 7.5.2, `--allow-unsafe`, `--no-reuse-hashes`, and `--no-header`; CI and the local Python matrix gates must regenerate the applicable locks into a temporary directory and compare them byte-for-byte with `cmp`. The CI compiler input pins `pip==25.2`, the newest pip release officially supported by pip-tools 7.5.2, and `--allow-unsafe` ensures both pip and setuptools are hashed for a clean Python 3.12 venv.
+- Before a reproduction compile, copy each committed lock to its temporary output path and compile that existing output without `--upgrade` but with `--no-reuse-hashes`; pip-tools then preserves the reviewed pins while fetching the authoritative hash set again. Seed pins, never hashes. Dependency upgrades are a separate explicit `--upgrade` workflow, not a required-check side effect.
 - Every host-mounted Python Docker command must run as the host UID/GID with `HOME=/tmp/home` and `PYTHONDONTWRITEBYTECODE=1`, create `/tmp/venv`, and install and execute through that venv so verification cannot leave root-owned bytecode or environment files in the worktree.
 - The deployable backend image excludes host bytecode/databases from its context, runs as numeric non-root user `10001:10001`, and uses `exec` so Uvicorn receives termination signals.
 - Normal CI and smoke tests must be offline with respect to market-data providers. Localhost HTTP requests are allowed.
@@ -521,13 +522,16 @@ git commit -m "fix: harden frontend smoke and static publish"
 - Create: `requirements/ci.in`
 - Create: `requirements/ci-py311.txt`
 - Create: `requirements/ci-py312.txt`
+- Create: `scripts/check_lock_consistency.py`
+- Create: `scripts/tests/test_check_lock_consistency.py`
 - Create: `backend/.dockerignore`
 - Modify: `backend/runtime.txt`
 - Modify: `backend/Dockerfile`
+- Modify: `docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md` — record the audited direct-dependency corrections used by this task.
 
 **Interfaces:**
 - Consumes: the current imports in `backend/`, `scripts/`, `scripts/winter_pg/`, and `backtest/`.
-- Produces: direct dependency declarations plus complete, hash-checked install inputs for production, feed validation, combined script/backtest automation, research, optional PostgreSQL tools, and both CI Python versions.
+- Produces: direct dependency declarations plus complete, hash-checked install inputs for production, feed validation, combined script/backtest automation, research, optional PostgreSQL tools, and both CI Python versions; a tested cross-lock invariant ensures the primary CI and automation environments contain the exact versions from their narrower runtime locks.
 
 - [ ] **Step 1: Demonstrate the current declaration and version gaps**
 
@@ -564,12 +568,13 @@ Create `backend/requirements.in`:
 fastapi==0.139.0
 uvicorn[standard]==0.49.0
 httpx==0.28.1
+pydantic>=2,<3
 ```
 
 Create `scripts/requirements.in`:
 
 ```text
-# Automation and feed validation. Research engines remain in backtest/requirements.in.
+# Feed validation and NumPy automation. Screener/Chan jobs consume the backend lock for HTTPX.
 numpy>=1.26,<3
 jsonschema>=4,<5
 ```
@@ -585,8 +590,6 @@ Create `backtest/requirements.in`:
 
 ```text
 numpy>=1.26,<3
-pandas>=2,<3
-lxml>=5,<7
 scikit-learn>=1.4,<2
 ```
 
@@ -604,6 +607,8 @@ Create `requirements/ci.in`:
 ```text
 -r ../backend/requirements.in
 -r ../scripts/requirements.in
+# pip-tools 7.5.2 officially supports pip through 25.2.
+pip==25.2
 pip-tools==7.5.2
 ```
 
@@ -621,14 +626,14 @@ docker run --rm \
   python:3.11.15-slim \
   sh -lc '
     python -m venv /tmp/venv &&
-    /tmp/venv/bin/python -m pip install pip-tools==7.5.2 &&
+    /tmp/venv/bin/python -m pip install pip==25.2 pip-tools==7.5.2 &&
     /tmp/venv/bin/python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version" &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=backend/requirements.txt backend/requirements.in &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=scripts/requirements.txt scripts/requirements.in &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=scripts/requirements-winter-pg.txt scripts/requirements-winter-pg.in &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=backtest/requirements.txt backtest/requirements.in &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/automation.txt requirements/automation.in &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/ci-py311.txt requirements/ci.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=backend/requirements.txt backend/requirements.in &&
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=scripts/requirements.txt scripts/requirements.in &&
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=scripts/requirements-winter-pg.txt scripts/requirements-winter-pg.in &&
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=backtest/requirements.txt backtest/requirements.in &&
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/automation.txt requirements/automation.in &&
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/ci-py311.txt requirements/ci.in
   '
 ```
 
@@ -644,15 +649,43 @@ docker run --rm \
   python:3.12.13-slim \
   sh -lc '
     python -m venv /tmp/venv &&
-    /tmp/venv/bin/python -m pip install pip-tools==7.5.2 &&
+    /tmp/venv/bin/python -m pip install pip==25.2 pip-tools==7.5.2 &&
     /tmp/venv/bin/python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version" &&
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/ci-py312.txt requirements/ci.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file=requirements/ci-py312.txt requirements/ci.in
   '
 ```
 
-Expected: every output is header-free, contains only pinned versions, environment markers where required, and one or more `--hash=sha256:` entries per resolved distribution. The two CI locks resolve successfully under their named interpreters, and both include pip-tools 7.5.2 so the installed CI environments can reproduce their own locks.
+Expected: every output is header-free, contains only pinned versions, environment markers where required, and a freshly resolved `--hash=sha256:` allowlist per distribution rather than hashes reused from an older output. The two CI locks resolve successfully under their named interpreters, and both include pip-tools 7.5.2 so the installed CI environments can reproduce their own locks.
 
-- [ ] **Step 4: Pin the backend runtime and enforce hashes in Docker**
+- [ ] **Step 4: Add a fail-closed cross-lock consistency checker**
+
+First create `scripts/tests/test_check_lock_consistency.py` with temporary lock fixtures and RED assertions for all of these cases:
+
+- multiline hashes plus indented `# via` annotations parse successfully, as does the column-zero unsafe-package preamble emitted before hashed pip/setuptools entries by `--allow-unsafe`;
+- normalized names treat `Foo_Bar[extra]` and `foo.bar` as the same distribution while duplicate normalized names in one lock fail;
+- missing target packages and same-name version drift fail with source, target, package, and version details;
+- identical trimmed marker text passes, a marked source may map to an unmarked target, and the reverse, two different markers, or different whitespace inside a quoted marker literal fail closed;
+- dangling continuations, a comment inserted before a hash continuation finishes, missing or malformed SHA-256 hashes, non-exact specifiers, URLs, includes, options, editables, inline comments, and unexpected indented content fail closed;
+- the repository contract contains exactly these four subset pairs, and a temporary repository fails when any one pair drifts:
+  - `backend/requirements.txt` ⊆ `requirements/ci-py311.txt`
+  - `scripts/requirements.txt` ⊆ `requirements/ci-py311.txt`
+  - `scripts/requirements.txt` ⊆ `requirements/automation.txt`
+  - `backtest/requirements.txt` ⊆ `requirements/automation.txt`
+
+Run the new test before creating the checker. Expected: it fails because `scripts/check_lock_consistency.py` does not exist.
+
+Then create `scripts/check_lock_consistency.py` as a standard-library-only CLI. `python scripts/check_lock_consistency.py --root .` must use the fixed four-pair repository contract and parse physical lines with an explicit state machine: while idle it accepts blank lines and whole-line comments at any indentation (including pip-tools' unsafe-package preamble); an entry begins with a column-zero exact requirement header, continues with one or more indented SHA-256 hash lines, and only after the last hash may be followed by indented `# via` comments. A comment or any other content may not interrupt an unfinished hash continuation. The parser must not flatten an entry and split on `--hash=`, because that text could occur inside marker content. Normalize names by PEP 503's `[-_.]+` rule, remove validated extras from the identity key, require exact `==` entries with one or more unique 64-hex SHA-256 hashes, reject duplicate normalized packages and unsupported pip syntax, and conservatively compare marker text without attempting to evaluate markers. Only leading and trailing marker whitespace is stripped; content inside the marker, including quoted-literal whitespace, is compared byte-for-byte. Identical trimmed markers pass; a marked source may map to an unmarked target because the target is broader; an unmarked source mapped to a marked target or two different markers fails closed. Contract or parse errors exit 1 with actionable diagnostics; argparse errors exit 2; success exits 0 with one summary line. Winter PostgreSQL and `ci-py312` are deliberately outside these four primary-runtime subset checks.
+
+Run:
+
+```bash
+python scripts/tests/test_check_lock_consistency.py
+python scripts/check_lock_consistency.py --root .
+```
+
+Expected: the unit fixtures pass and the applicable primary-runtime locks satisfy all four subset invariants.
+
+- [ ] **Step 5: Pin the backend runtime and enforce hashes in Docker**
 
 Replace `backend/runtime.txt` with:
 
@@ -686,18 +719,21 @@ CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
 Create `backend/.dockerignore`:
 
 ```text
-__pycache__/
-*.py[cod]
-.venv/
-.pytest_cache/
-*.db
-*.sqlite
-*.sqlite3
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.pytest_cache/
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite3
+**/*.sqlite3-*
 ```
 
-The numeric runtime identity keeps the image independent of host user databases; the default SQLite files remain writable under `/tmp`, while mounted persistent paths must be granted deliberately by the deployer. `exec` makes Uvicorn receive container stop signals directly.
+The recursive `**/` patterns scrub bytecode, virtualenvs, test caches, main SQLite databases, and their `-wal`/`-shm`/`-journal` sidecars at every context depth rather than only at the context root. The numeric runtime identity keeps the image independent of host user databases; the default SQLite files remain writable under `/tmp`, while mounted persistent paths must be granted deliberately by the deployer. `exec` makes Uvicorn receive container stop signals directly.
 
-- [ ] **Step 5: Verify each lock in a clean environment**
+- [ ] **Step 6: Verify each lock in a clean environment**
 
 Run:
 
@@ -705,6 +741,10 @@ Run:
 set -e
 for file in backend/requirements.txt scripts/requirements.txt scripts/requirements-winter-pg.txt backtest/requirements.txt requirements/automation.txt requirements/ci-py311.txt requirements/ci-py312.txt; do
   rg -q -- '--hash=sha256:' "$file"
+done
+for file in requirements/ci-py311.txt requirements/ci-py312.txt; do
+  rg -q '^pip==25\.2' "$file"
+  rg -q '^setuptools==' "$file"
 done
 
 docker run --rm \
@@ -719,21 +759,30 @@ docker run --rm \
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
     /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -c "from importlib.metadata import version; assert version(\"pip\") == \"25.2\"; version(\"setuptools\")"
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
+    cp backend/requirements.txt "$tmp/backend.txt"
+    cp scripts/requirements.txt "$tmp/scripts.txt"
+    cp scripts/requirements-winter-pg.txt "$tmp/winter-pg.txt"
+    cp backtest/requirements.txt "$tmp/backtest.txt"
+    cp requirements/automation.txt "$tmp/automation.txt"
+    cp requirements/ci-py311.txt "$tmp/ci-py311.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
     cmp "$tmp/backend.txt" backend/requirements.txt
     cmp "$tmp/scripts.txt" scripts/requirements.txt
     cmp "$tmp/winter-pg.txt" scripts/requirements-winter-pg.txt
     cmp "$tmp/backtest.txt" backtest/requirements.txt
     cmp "$tmp/automation.txt" requirements/automation.txt
     cmp "$tmp/ci-py311.txt" requirements/ci-py311.txt
-    /tmp/venv/bin/python -c "import fastapi, httpx, jsonschema, numpy, piptools"
+    /tmp/venv/bin/python scripts/tests/test_check_lock_consistency.py
+    /tmp/venv/bin/python scripts/check_lock_consistency.py --root .
+    /tmp/venv/bin/python -c "import fastapi, httpx, jsonschema, numpy, piptools, pydantic"
   '
 
 docker run --rm \
@@ -748,11 +797,13 @@ docker run --rm \
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py312.txt
     /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -c "from importlib.metadata import version; assert version(\"pip\") == \"25.2\"; version(\"setuptools\")"
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
+    cp requirements/ci-py312.txt "$tmp/ci-py312.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
     cmp "$tmp/ci-py312.txt" requirements/ci-py312.txt
-    /tmp/venv/bin/python -c "import fastapi, httpx, jsonschema, numpy, piptools"
+    /tmp/venv/bin/python -c "import fastapi, httpx, jsonschema, numpy, piptools, pydantic"
   '
 
 docker run --rm \
@@ -782,7 +833,7 @@ docker run --rm \
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r backtest/requirements.txt
     /tmp/venv/bin/python -m pip check
-    PYTHONPATH=/workspace/backtest /tmp/venv/bin/python -c "import data, lxml, numpy, pandas, sklearn, statarb, walkforward"
+    PYTHONPATH=/workspace/backtest /tmp/venv/bin/python -c "import data, numpy, sklearn, statarb, walkforward"
   '
 
 docker run --rm \
@@ -815,20 +866,32 @@ docker run --rm \
     /tmp/venv/bin/python -c "import psycopg2"
   '
 
-docker build --pull=false --tag stock-analysis-backend:stage1b backend
+fixture_context="$(mktemp -d)"
+trap 'rm -rf "$fixture_context"' EXIT
+cp -R backend/. "$fixture_context/"
+mkdir -p "$fixture_context/app/nested/__pycache__"
+cp backend/app/__init__.py "$fixture_context/app/nested/__pycache__/leak.pyc"
+cp backend/app/__init__.py "$fixture_context/app/nested/leak.db"
+cp backend/app/__init__.py "$fixture_context/app/nested/leak.db-wal"
+cp backend/app/__init__.py "$fixture_context/app/nested/leak.sqlite3-journal"
+test -f "$fixture_context/app/nested/__pycache__/leak.pyc"
+test -f "$fixture_context/app/nested/leak.db"
+test -f "$fixture_context/app/nested/leak.db-wal"
+test -f "$fixture_context/app/nested/leak.sqlite3-journal"
+docker build --pull=false --tag stock-analysis-backend:stage1b "$fixture_context"
 test "$(docker image inspect stock-analysis-backend:stage1b --format '{{.Config.User}}')" = "10001:10001"
 docker run --rm stock-analysis-backend:stage1b \
-  sh -c 'test -z "$(find /app \( -name __pycache__ -o -name "*.py[co]" \) -print -quit)"'
+  sh -eu -c 'found="$(find /app \( -name __pycache__ -o -name "*.py[co]" -o -name "*.db" -o -name "*.db-*" -o -name "*.sqlite" -o -name "*.sqlite-*" -o -name "*.sqlite3" -o -name "*.sqlite3-*" \) -print -quit)"; test -z "$found"'
 docker run --rm stock-analysis-backend:stage1b \
   python -c 'import app.main; print("backend image import OK")'
 ```
 
-Expected: the hash loop fails immediately if any lock lacks a hash; every install, dependency import, and source-module import exits 0; `pip check` reports `No broken requirements found.` in all six environments; all six Python 3.11 locks and the Python 3.12 CI lock exactly match fresh header-free temporary outputs from their `.in` files. The backend image builds from the scrubbed context, contains no copied bytecode/cache directories, records user `10001:10001`, and imports the application successfully as that non-root user.
+Expected: the hash loop fails immediately if any lock lacks a hash; every install, dependency import, and source-module import exits 0; `pip check` reports `No broken requirements found.` in all six environments; all six Python 3.11 locks and the Python 3.12 CI lock exactly match temporary outputs reproduced from their `.in` files with the committed pins seeded first and hashes fetched anew. Both CI locks contain hashed `pip==25.2` and setuptools entries, so the Python 3.12 clean install does not rely on an undeclared bootstrap package. The backend image builds from a deliberately polluted temporary context, excludes the nested bytecode, main database, WAL, and rollback-journal fixtures, records user `10001:10001`, and imports the application successfully as that non-root user.
 
-- [ ] **Step 6: Commit declarations, generated locks, and runtime pins**
+- [ ] **Step 7: Commit declarations, generated locks, runtime pins, and lock consistency checks**
 
 ```bash
-git add .python-version backend/.dockerignore backend/requirements.in backend/requirements.txt backend/runtime.txt backend/Dockerfile scripts/requirements.in scripts/requirements.txt scripts/requirements-winter-pg.in scripts/requirements-winter-pg.txt backtest/requirements.in backtest/requirements.txt requirements/automation.in requirements/automation.txt requirements/ci.in requirements/ci-py311.txt requirements/ci-py312.txt
+git add .python-version backend/.dockerignore backend/requirements.in backend/requirements.txt backend/runtime.txt backend/Dockerfile scripts/requirements.in scripts/requirements.txt scripts/requirements-winter-pg.in scripts/requirements-winter-pg.txt scripts/check_lock_consistency.py scripts/tests/test_check_lock_consistency.py backtest/requirements.in backtest/requirements.txt requirements/automation.in requirements/automation.txt requirements/ci.in requirements/ci-py311.txt requirements/ci-py312.txt docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md
 git diff --cached --check
 git commit -m "build: lock Python dependencies"
 ```
@@ -839,11 +902,12 @@ git commit -m "build: lock Python dependencies"
 
 **Files:**
 - Modify: `scripts/tests/test_validate_feed.py`
+- Modify: `scripts/tests/test_workflow_security.py`
 - Modify: `.github/workflows/tests.yml`
 
 **Interfaces:**
 - Consumes: Task 2's stable frontend commands and Task 3's Python-version-specific CI locks.
-- Produces: a regression test that fails without `jsonschema` and required CI jobs for both frontend profiles and both Python runtimes.
+- Produces: a regression test that fails without `jsonschema`, required CI jobs for both frontend profiles and both Python runtimes, and one stable aggregate gate for branch protection.
 
 - [ ] **Step 1: Add a test that the Stage 1A fallback validator cannot satisfy**
 
@@ -909,12 +973,18 @@ docker run --rm \
     /tmp/venv/bin/python -m pip check
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
+    cp backend/requirements.txt "$tmp/backend.txt"
+    cp scripts/requirements.txt "$tmp/scripts.txt"
+    cp scripts/requirements-winter-pg.txt "$tmp/winter-pg.txt"
+    cp backtest/requirements.txt "$tmp/backtest.txt"
+    cp requirements/automation.txt "$tmp/automation.txt"
+    cp requirements/ci-py311.txt "$tmp/ci-py311.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
     cmp "$tmp/backend.txt" backend/requirements.txt
     cmp "$tmp/scripts.txt" scripts/requirements.txt
     cmp "$tmp/winter-pg.txt" scripts/requirements-winter-pg.txt
@@ -931,6 +1001,8 @@ docker run --rm \
     /tmp/venv/bin/python scripts/tests/test_feed_publication.py
     /tmp/venv/bin/python scripts/tests/test_dependabot_merge_gate.py
     /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+    /tmp/venv/bin/python scripts/tests/test_check_lock_consistency.py
+    /tmp/venv/bin/python scripts/check_lock_consistency.py --root .
   '
 
 docker run --rm \
@@ -947,7 +1019,8 @@ docker run --rm \
     /tmp/venv/bin/python -m pip check
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
+    cp requirements/ci-py312.txt "$tmp/ci-py312.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
     cmp "$tmp/ci-py312.txt" requirements/ci-py312.txt
     (cd backend && /tmp/venv/bin/python tests/test_backend.py)
     (cd backend && /tmp/venv/bin/python tests/test_api.py)
@@ -962,9 +1035,21 @@ docker run --rm \
   '
 ```
 
-Expected: all seven committed locks byte-match their runtime-specific temporary regenerations; all twenty test invocations exit 0; the feed test prints `完整 JSON Schema 拒绝额外顶层字段` as passed under both runtimes; no test contacts a live market provider. Lock regeneration adds no test invocation and does not alter the Stage 1A six-script contract in either leg.
+Expected: all seven committed locks byte-match their runtime-specific temporary regenerations; all twenty-two process-level test and contract entrypoint invocations exit 0; the Python 3.11-only lock-consistency unit suite and repository CLI prove the four primary-runtime subset invariants, while `ci-py312` remains an independently resolved compatibility lock. The feed test prints `完整 JSON Schema 拒绝额外顶层字段` as passed under both runtimes; no test contacts a live market provider. Lock regeneration adds no test invocation and does not alter the Stage 1A six-script contract in either leg.
 
 - [ ] **Step 4: Replace the test workflow with the full matrix**
+
+Before replacing the workflow, update `scripts/tests/test_workflow_security.py` so its CI-policy regression covers the new contract instead of requiring the old path filters:
+
+- `pull_request` has no `paths` or `paths-ignore` filter.
+- `push` targets `main` and ignores exactly the generated feed allowlist shown below; it must not ignore `feed/inbox/**`, `feed/schema/**`, or `feed/README.md`.
+- both `actions/checkout@v7` steps set `persist-credentials: false`.
+- both frontend matrix legs use `actions/setup-node@v7`, resolve `.node-version`, and fail closed unless the active versions are exactly Node `20.20.2` and npm `10.8.2`.
+- the Python matrix runs both `python scripts/tests/test_check_lock_consistency.py` and `python scripts/check_lock_consistency.py --root .` only when `matrix.python_version == '3.11.15'`.
+- every `piptools compile` invocation uses `--no-reuse-hashes`, so existing outputs seed reviewed versions but cannot seed a forged or stale hash allowlist.
+- the workflow contains the stable `Tests (单元测试闸门)` aggregate job, waits for both matrix jobs with `if: ${{ always() }}`, and fails unless both results are `success`.
+
+Run `python scripts/tests/test_workflow_security.py` before changing the workflow. Expected: the updated policy test fails against the old workflow, proving the regression is red for the intended reasons.
 
 Replace `.github/workflows/tests.yml` with:
 
@@ -974,6 +1059,19 @@ name: CI (reproducible baseline)
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "feed/crypto/**"
+      - "feed/factory/**"
+      - "feed/funds/**"
+      - "feed/health.json"
+      - "feed/index.json"
+      - "feed/intraday/**"
+      - "feed/market/**"
+      - "feed/reports/**"
+      - "feed/screener/**"
+      - "feed/signals/**"
+      - "feed/stock-notes/**"
+      - "feed/watchlist.json"
   pull_request:
   workflow_dispatch:
 
@@ -1005,11 +1103,17 @@ jobs:
       NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Verify exact Node and npm
+        run: |
+          test "$(node --version)" = "v20.20.2"
+          test "$(npm --version)" = "10.8.2"
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
@@ -1039,6 +1143,8 @@ jobs:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python_version }}
@@ -1053,12 +1159,18 @@ jobs:
           set -euo pipefail
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
+          cp backend/requirements.txt "$tmp/backend.txt"
+          cp scripts/requirements.txt "$tmp/scripts.txt"
+          cp scripts/requirements-winter-pg.txt "$tmp/winter-pg.txt"
+          cp backtest/requirements.txt "$tmp/backtest.txt"
+          cp requirements/automation.txt "$tmp/automation.txt"
+          cp requirements/ci-py311.txt "$tmp/ci-py311.txt"
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
           cmp "$tmp/backend.txt" backend/requirements.txt
           cmp "$tmp/scripts.txt" scripts/requirements.txt
           cmp "$tmp/winter-pg.txt" scripts/requirements-winter-pg.txt
@@ -1072,7 +1184,8 @@ jobs:
           set -euo pipefail
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-          python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
+          cp requirements/ci-py312.txt "$tmp/ci-py312.txt"
+          python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
           cmp "$tmp/ci-py312.txt" requirements/ci-py312.txt
       - name: Backend HTTP and data-layer tests
         working-directory: backend
@@ -1089,9 +1202,28 @@ jobs:
           python scripts/tests/test_feed_publication.py
           python scripts/tests/test_dependabot_merge_gate.py
           python scripts/tests/test_workflow_security.py
+      - name: Primary-runtime lock consistency
+        if: matrix.python_version == '3.11.15'
+        run: |
+          python scripts/tests/test_check_lock_consistency.py
+          python scripts/check_lock_consistency.py --root .
+
+  gate:
+    name: Tests (单元测试闸门)
+    if: ${{ always() }}
+    needs: [frontend, python]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every runtime matrix to pass
+        env:
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          PYTHON_RESULT: ${{ needs.python.result }}
+        run: |
+          test "$FRONTEND_RESULT" = success
+          test "$PYTHON_RESULT" = success
 ```
 
-There are deliberately no `paths` filters: every pull request must receive both frontend profile checks and both Python checks, including dependency-only, documentation-adjacent, workflow, and cross-directory changes. The workflow is a merge of the Stage 1A security gate, not a replacement that drops its six regression scripts.
+There are deliberately no pull-request path filters: every pull request must receive both frontend profile checks and both Python checks, including dependency-only, documentation-adjacent, workflow, and cross-directory changes. Main-branch pushes ignore only the explicit generated-feed allowlist above, so robot publication commits do not start all four matrix legs while feed inputs, schemas, documentation, workflows, and source changes remain covered. The workflow is a merge of the Stage 1A security gate, not a replacement that drops its six regression scripts. Configure branch protection, when enabled, against only the stable `Tests (单元测试闸门)` check rather than the four matrix-generated names.
 
 - [ ] **Step 5: Run the local equivalents of every matrix leg**
 
@@ -1099,12 +1231,12 @@ Run:
 
 Run the exact Node container command from Task 2 Step 6 and both exact Python container commands from Task 4 Step 3.
 
-Expected: both frontend profiles pass, all seven lock comparisons pass, and all twenty Python test invocations pass. `git status --short` shows no tracked build-artifact changes.
+Expected: both frontend profiles pass, all seven lock comparisons pass, and all twenty-two Python process-level test and contract entrypoint invocations pass. The Python 3.11 leg enforces the four primary-runtime lock subset invariants; the stable aggregate policy is covered by `test_workflow_security.py`, both checkout steps are non-credential-persisting, and `git status --short` shows no tracked build-artifact changes.
 
 - [ ] **Step 6: Commit the validation regression and CI matrix**
 
 ```bash
-git add scripts/tests/test_validate_feed.py .github/workflows/tests.yml
+git add scripts/tests/test_validate_feed.py scripts/tests/test_workflow_security.py .github/workflows/tests.yml
 git diff --cached --check
 git commit -m "ci: test both runtime profiles"
 ```
@@ -1139,7 +1271,7 @@ git commit -m "ci: test both runtime profiles"
 Run:
 
 ```bash
-rg -n 'node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
+rg -n 'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
 ```
 
 Expected: matches include `deploy-pages.yml`'s major-only Node pin and `rm -rf app/api`, mixed 3.11/3.12 workflow pins, bare `pip install`, and the backend README's non-hash install.
@@ -1214,10 +1346,7 @@ on:
     paths: ["frontend/**", "feed/schema/**", ".node-version", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -1226,16 +1355,24 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Verify exact Node and npm
+        run: |
+          test "$(node --version)" = "v20.20.2"
+          test "$(npm --version)" = "10.8.2"
       - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |
@@ -1261,6 +1398,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -1314,7 +1454,7 @@ Run:
 
 ```bash
 set -e
-! rg -n 'node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
+! rg -n 'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
 for file in .github/workflows/deploy-pages.yml .github/workflows/tests.yml; do
   rg -q 'node-version-file: \.node-version' "$file"
 done
@@ -1385,12 +1525,18 @@ docker run --rm \
     /tmp/venv/bin/python -m pip check
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
+    cp backend/requirements.txt "$tmp/backend.txt"
+    cp scripts/requirements.txt "$tmp/scripts.txt"
+    cp scripts/requirements-winter-pg.txt "$tmp/winter-pg.txt"
+    cp backtest/requirements.txt "$tmp/backtest.txt"
+    cp requirements/automation.txt "$tmp/automation.txt"
+    cp requirements/ci-py311.txt "$tmp/ci-py311.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
     cmp "$tmp/backend.txt" backend/requirements.txt
     cmp "$tmp/scripts.txt" scripts/requirements.txt
     cmp "$tmp/winter-pg.txt" scripts/requirements-winter-pg.txt
@@ -1407,6 +1553,8 @@ docker run --rm \
     /tmp/venv/bin/python scripts/tests/test_feed_publication.py
     /tmp/venv/bin/python scripts/tests/test_dependabot_merge_gate.py
     /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+    /tmp/venv/bin/python scripts/tests/test_check_lock_consistency.py
+    /tmp/venv/bin/python scripts/check_lock_consistency.py --root .
   '
 
 docker run --rm \
@@ -1423,7 +1571,8 @@ docker run --rm \
     /tmp/venv/bin/python -m pip check
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
+    cp requirements/ci-py312.txt "$tmp/ci-py312.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
     cmp "$tmp/ci-py312.txt" requirements/ci-py312.txt
     (cd backend && /tmp/venv/bin/python tests/test_backend.py)
     (cd backend && /tmp/venv/bin/python tests/test_api.py)
@@ -1452,4 +1601,4 @@ git diff --check
 git status --short
 ```
 
-Expected: all commands exit 0; script tests pass before either build; static smoke reports 12 routes; server smoke reports eleven page passes and two API-route passes; all seven lock comparisons and all twenty Python test invocations pass; API/feed/lock/config inputs remain byte-stable; no publication residue or tracked generated artifact is introduced by verification. After this local final gate passes, push the feature branch; require the actual GitHub `Frontend (static)`, `Frontend (server)`, `Python (3.11.15)`, and `Python (3.12.13)` jobs to succeed before merge.
+Expected: all commands exit 0; script tests pass before either build; static smoke reports 12 routes; server smoke reports eleven page passes and two API-route passes; all seven lock comparisons and all twenty-two Python process-level test and contract entrypoint invocations pass; the four primary-runtime cross-lock invariants hold; API/feed/lock/config inputs remain byte-stable; no publication residue or tracked generated artifact is introduced by verification. After this local final gate passes, push the feature branch; require the actual GitHub `Frontend (static)`, `Frontend (server)`, `Python (3.11.15)`, `Python (3.12.13)`, and stable `Tests (单元测试闸门)` jobs to succeed before merge.
