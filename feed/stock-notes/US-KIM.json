@@ -1,14 +1,14 @@
 {
   "symbol": "US:KIM",
-  "date": "2026-07-01",
+  "date": "2026-07-23",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: Kimco Realty 属于 Real Estate/REIT—Retail，当前进入看多清单，技术评分 80、RSI14 57.2；最新价约 25.35，20/50/200日均线约 24.97/24.21/22.23；TD9 下行1；52周位置 距高 -2.8%、88分位；SuperTrend(10,3) 空头·约 8 个交易日前翻转；缠论近似: 当前上行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 7.2%/12.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: Kimco Realty 属于 Real Estate/REIT—Retail，当前进入看多清单，技术评分 80、RSI14 64.0；最新价约 26.14，20/50/200日均线约 25.47/24.73/22.50；TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.2%、95分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 3.8%/10.3%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Raymond James Adjusts Price Target on Kimco Realty to $29 From $26, Maintains Strong Buy Rating(MT Newswires)；Is Holding Kimco Realty Stock Still a Smart Move for Your Portfolio?(Zacks)；Kimco Realty (KIM) Earns Upgrade from Wolfe Research on Strong Fundamentals(Insider Monkey)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Ladenburg Thalmann Adjusts Price Target on Kimco Realty to $30 From $28, Maintains Buy Rating(MT Newswires)；Piper Sandler Adjusts Price Target on Kimco Realty to $31 From $28, Maintains Overweight Rating(MT Newswires)；Goldman Sachs Adjusts Kimco Realty Price Target to $26 From $25, Maintains Neutral Rating(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 下行1；52周位置 距高 -2.8%、88分位；SuperTrend(10,3) 空头·约 8 个交易日前翻转；缠论近似: 当前上行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.2%、95分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: KIM",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/KIM/news/"
     },
     {
-      "title": "Raymond James Adjusts Price Target on Kimco Realty to $29 From $26, Maintains Strong Buy Rating",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/raymond-james-adjusts-price-target-093034320.html"
+      "title": "Ladenburg Thalmann Adjusts Price Target on Kimco Realty to $30 From $28, Maintains Buy Rating",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/ladenburg-thalmann-adjusts-price-target-115548112.html"
     },
     {
-      "title": "Is Holding Kimco Realty Stock Still a Smart Move for Your Portfolio?",
-      "url": "https://finance.yahoo.com/real-estate/articles/holding-kimco-realty-stock-still-173100052.html"
+      "title": "Piper Sandler Adjusts Price Target on Kimco Realty to $31 From $28, Maintains Overweight Rating",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/piper-sandler-adjusts-price-target-115533427.html"
     }
   ],
   "methodology": {
-    "td9": "下行1",
-    "week52": "距高 -2.8% · 88分位",
-    "supertrend": "空头·约 8 个交易日前翻转",
-    "chan": "上行笔，位于中枢内部，暂未见明显 MACD 面积背驰",
-    "rs": 68
+    "td9": "上行7(防衰竭)",
+    "week52": "距高 -1.2% · 95分位",
+    "supertrend": "多头·约 4 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 69
   }
 }

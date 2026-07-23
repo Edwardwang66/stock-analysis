@@ -1,14 +1,14 @@
 {
   "symbol": "US:TSLA",
-  "date": "2026-07-16",
+  "date": "2026-07-23",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 394.46，20/50/200日均线约 399.31/410.00/417.61；TD9 下行1；52周位置 距高 -20.9%、48分位；SuperTrend(10,3) 多头·约 10 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -4.1%/-1.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 374.01，20/50/200日均线约 394.62/407.47/415.96；TD9 下行6；52周位置 距高 -25.0%、38分位；SuperTrend(10,3) 空头·约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -2.0%/-0.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: After Blasting Trump's Intel Deal, Gavin Newsom Jokes California Should Collect Tesla Shares for 'Corporate Welfare' Given to Elon Musk(Benzinga)；The Top Mag 7 Stock Headed Into Q2 Earnings: Jefferies Says Buy Amazon Over Tesla or Apple(24/7 Wall St.)；GPU.ai Named Official Title Sponsor of AGI Summit SF 2026(PR Newswire)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Dow Jones Futures: Google, Tesla Fall On Earnings, Capital Spending(Investor's Business Daily)；Elon Musk's Tesla Held on to Bitcoin Stockpile in Q2 Despite $112 Million in Paper Losses(Benzinga)；Bill Ackman Says Tesla Robotaxi Fears Are Creating a 'Very Cheap' Buying Opportunity for UBER(Benzinga)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行1；52周位置 距高 -20.9%、48分位；SuperTrend(10,3) 多头·约 10 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行6；52周位置 距高 -25.0%、38分位；SuperTrend(10,3) 空头·约 3 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: TSLA",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/TSLA/news/"
     },
     {
-      "title": "After Blasting Trump's Intel Deal, Gavin Newsom Jokes California Should Collect Tesla Shares for 'Corporate Welfare' Given to Elon Musk",
-      "url": "https://finance.yahoo.com/m/39f0d050-08e5-3c98-8c1d-e99c7caad65e/after-blasting-trump%27s-intel.html"
+      "title": "Dow Jones Futures: Google, Tesla Fall On Earnings, Capital Spending",
+      "url": "https://finance.yahoo.com/m/092ff924-f233-311d-95de-ed11a4dabc57/dow-jones-futures%3A-google%2C.html"
     },
     {
-      "title": "The Top Mag 7 Stock Headed Into Q2 Earnings: Jefferies Says Buy Amazon Over Tesla or Apple",
-      "url": "https://finance.yahoo.com/m/f5b0a281-2f67-3253-8dbf-5d4c7e5d43e2/the-top-mag-7-stock-headed.html"
+      "title": "Elon Musk's Tesla Held on to Bitcoin Stockpile in Q2 Despite $112 Million in Paper Losses",
+      "url": "https://finance.yahoo.com/markets/crypto/articles/elon-musks-tesla-held-bitcoin-024402257.html"
     }
   ],
   "methodology": {
-    "td9": "下行1",
-    "week52": "距高 -20.9% · 48分位",
-    "supertrend": "多头·约 10 个交易日前翻转",
-    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰",
-    "rs": 46
+    "td9": "下行6",
+    "week52": "距高 -25.0% · 38分位",
+    "supertrend": "空头·约 3 个交易日前翻转",
+    "chan": "下行笔，接近中枢下沿，暂未见明显 MACD 面积背驰",
+    "rs": 30
   }
 }
