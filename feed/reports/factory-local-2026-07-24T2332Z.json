@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "id": "factory-local-2026-07-24T2332Z",
+  "kind": "manual",
+  "produced_at": "2026-07-24T23:32:13Z",
+  "asof_data": "2026-07-24",
+  "producer": {
+    "name": "factor-factory-local",
+    "agent_role": "factor-factory"
+  },
+  "factory_candidates": [
+    {
+      "expr": "-rank(hi52) - rank(amihud21)",
+      "hypothesis": "机器组装假设:hi52(52周高点接近度:George-Hwang 锚定效应) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.87,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现"
+    },
+    {
+      "expr": "rank(vol63) - z(gap_oc)",
+      "hypothesis": "机器组装假设:vol63(63日实现波动:低波异象(慢)) × gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0344,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.034 t=+1.8 净年化=+3.5% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现"
+    },
+    {
+      "expr": "z(gap_oc) - rank(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.8 净年化=-8.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现"
+    },
+    {
+      "expr": "rank(r63) + z(amihud21)",
+      "hypothesis": "机器组装假设:r63(过去63日收益:季度动量) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0347,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.035 t=+1.8 净年化=+8.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现"
+    },
+    {
+      "expr": "z(gap_oc) - rank(hi52)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × hi52(52周高点接近度:George-Hwang 锚定效应)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0345,
+      "post_cutoff": true,
+      "t_stat": -1.81,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.035 t=-1.8 净年化=-18.6% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现"
+    },
+    {
+      "expr": "z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现"
+    },
+    {
+      "expr": "-z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0333,
+      "post_cutoff": true,
+      "t_stat": 1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.033 t=+1.7 净年化=+13.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现"
+    },
+    {
+      "expr": "z(gap_oc) - z(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现"
+    }
+  ],
+  "contribution": {
+    "type": "new_factor",
+    "candidates_proposed": 304,
+    "candidates_accepted": 0,
+    "summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。"
+  },
+  "notes": "非 LLM 预算化搜索(穷举+种子抽样),无记忆性前视;广度门(④)未实现,假设(⑤)为机器生成弱先验。 全部试验次数已计入 FDR。LLM 接入只替换提案器,门控管线不变。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "5e4a0a52388a7b6166cf520c80393275a934465e16401500c63e22b17c8fc15c"
+  }
+}
