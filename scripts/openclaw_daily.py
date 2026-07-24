@@ -25,6 +25,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -782,23 +783,60 @@ def dispatch_role(report: dict, mode: str, repo: str, token: str | None, secret:
         oc.post_dispatch(report, repo, token)
 
 
+def _winter_pg_dsn() -> str | None:
+    """Return the exact non-empty DSN the child loaders would resolve."""
+    if "WINTER_PG_DSN" in os.environ:
+        return os.environ["WINTER_PG_DSN"] or None
+
+    env_file = Path.home() / ".config/stock-analysis/openclaw.env"
+    if not env_file.exists():
+        return None
+    for line in env_file.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.strip() == "WINTER_PG_DSN":
+            value = value.strip().strip('"').strip("'")
+            return value or None
+    return None
+
+
 def archive_pg() -> None:
-    """Best-effort local warehouse ingest after daily delivery."""
-    r = subprocess.run([sys.executable, "scripts/winter_pg/ingest.py"], cwd=fl.REPO_ROOT,
-                       capture_output=True, text=True)
-    msg = (r.stdout or r.stderr).strip()
-    if msg:
-        print(f"[daily] pg {msg}")
-    r = subprocess.run([sys.executable, "scripts/winter_pg/winrate.py", "--if-due"], cwd=fl.REPO_ROOT,
-                       capture_output=True, text=True)
-    msg = (r.stdout or r.stderr).strip()
-    if msg and "not due" not in msg:
-        print(f"[daily] winrate {msg}")
-    r = subprocess.run([sys.executable, "scripts/winter_pg/event_heat.py"], cwd=fl.REPO_ROOT,
-                       capture_output=True, text=True)
-    msg = (r.stdout or r.stderr).strip()
-    if msg:
-        print(f"[daily] event-heat {msg}")
+    """Skip when unconfigured; run configured local warehouse jobs fail-fast."""
+    dsn = _winter_pg_dsn()
+    if dsn is None:
+        print("[daily] pg skipped: WINTER_PG_DSN not configured")
+        return
+
+    commands = (
+        ([sys.executable, "scripts/winter_pg/ingest.py"], "[daily] pg ", None),
+        (
+            [sys.executable, "scripts/winter_pg/winrate.py", "--if-due"],
+            "[daily] winrate ",
+            "not due",
+        ),
+        (
+            [sys.executable, "scripts/winter_pg/event_heat.py"],
+            "[daily] event-heat ",
+            None,
+        ),
+    )
+    for command, prefix, suppressed in commands:
+        result = subprocess.run(
+            command,
+            cwd=fl.REPO_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        safe_stdout = (result.stdout or "").replace(dsn, "[REDACTED]")
+        safe_stderr = (result.stderr or "").replace(dsn, "[REDACTED]")
+        message = (safe_stdout or safe_stderr).strip()
+        if message and (suppressed is None or suppressed not in message):
+            print(f"{prefix}{message}")
+        result.stdout = safe_stdout
+        result.stderr = safe_stderr
+        result.check_returncode()
 
 
 def main():

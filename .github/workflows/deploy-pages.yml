@@ -1,19 +1,12 @@
 name: Deploy frontend to GitHub Pages
 
-# 把 frontend/ 的 Next.js 静态导出发布到 GitHub Pages。
-# 启用方法:仓库 Settings → Pages → Build and deployment → Source 选 "GitHub Actions"。
 on:
   push:
-    # 只在默认分支触发部署:github-pages 环境的分支保护只放行 main,
-    # 在 feature 分支跑 deploy 必被环境规则拒(build 成功、deploy 红叉),故不再触发。
     branches: [main]
-    paths: ["frontend/**", "feed/schema/**", ".github/workflows/deploy-pages.yml"]
+    paths: ["frontend/**", "feed/schema/**", ".node-version", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -22,40 +15,85 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version-file: .node-version
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: 捆绑最新 feed 快照(首屏兜底;实时数据仍走 GitHub raw)
+      - name: Verify exact Node and npm
+        run: |
+          test "$(node --version)" = "v20.20.2"
+          test "$(npm --version)" = "10.8.2"
+      - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |
-          rm -rf frontend/public/feed
-          mkdir -p frontend/public/feed
-          cp -r feed/index.json feed/health.json feed/watchlist.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener feed/stock-notes feed/crypto frontend/public/feed/ 2>/dev/null || true
+          set -euo pipefail
+          snapshot="$RUNNER_TEMP/feed-snapshot"
+          rm -rf "$snapshot"
+          mkdir -p "$snapshot"
+          sources=(
+            feed/index.json
+            feed/health.json
+            feed/watchlist.json
+            feed/schema
+            feed/reports
+            feed/signals
+            feed/market
+            feed/factory
+            feed/screener
+            feed/stock-notes
+            feed/crypto
+            feed/intraday
+            feed/funds
+          )
+          for source in "${sources[@]}"; do
+            test -e "$source"
+          done
+          cp -R -- "${sources[@]}" "$snapshot/"
       - run: npm ci
-      - name: 静态导出前剔除边缘函数目录(app/api 仅供 Vercel 部署使用)
-        run: rm -rf app/api
-      - name: Build (static export)
+      - name: Build and smoke static profile
         env:
-          # 项目站点路径 = /<repo>
+          STATIC_FEED_SOURCE: ${{ runner.temp }}/feed-snapshot
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
-          # 后端地址:在仓库 Settings → Secrets and variables → Actions → Variables
-          # 新增 API_BASE = https://你的后端域名 后,前端即自动改用后端(摆脱公共代理)。
-          # 未设置时为空,前端回退到浏览器直连公开 API。
           NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
-          # Vercel 边缘代理域名(仓库 Variables 设 EDGE_BASE,如 https://xxx.vercel.app):
-          # 设置后 Pages 站点的报价/K线优先走自有边缘函数,彻底摆脱公共 CORS 代理。
           NEXT_PUBLIC_EDGE_BASE: ${{ vars.EDGE_BASE }}
-          # 情报馈送实时源:指向当前分支的 feed/(raw GitHub,新 commit 即时可见,无需重建 Pages)。
-          # 远端失败时前端自动回退到捆绑快照 public/feed/。
           NEXT_PUBLIC_FEED_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/feed
-        run: npm run build
+        run: |
+          npm run build:static
+          npm run smoke:static
+      - name: Verify complete exported feed snapshot
+        run: |
+          set -euo pipefail
+          entries=(
+            index.json
+            health.json
+            watchlist.json
+            schema
+            reports
+            signals
+            market
+            factory
+            screener
+            stock-notes
+            crypto
+            intraday
+            funds
+          )
+          for entry in "${entries[@]}"; do
+            test -e "out/feed/$entry"
+          done
+          test -f out/feed/funds/situational-awareness.json
+          test -f out/feed/intraday/latest.json
+          test -f out/feed/intraday/overnight.json
       - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/out
@@ -63,6 +101,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

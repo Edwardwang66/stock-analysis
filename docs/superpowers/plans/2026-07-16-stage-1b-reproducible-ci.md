@@ -22,9 +22,11 @@
 - Generate every committed Python lock with pip-tools 7.5.2, `--allow-unsafe`, `--no-reuse-hashes`, and `--no-header`; CI and the local Python matrix gates must regenerate the applicable locks into a temporary directory and compare them byte-for-byte with `cmp`. The CI compiler input pins `pip==25.2`, the newest pip release officially supported by pip-tools 7.5.2, and `--allow-unsafe` ensures both pip and setuptools are hashed for a clean Python 3.12 venv.
 - Before a reproduction compile, copy each committed lock to its temporary output path and compile that existing output without `--upgrade` but with `--no-reuse-hashes`; pip-tools then preserves the reviewed pins while fetching the authoritative hash set again. Seed pins, never hashes. Dependency upgrades are a separate explicit `--upgrade` workflow, not a required-check side effect.
 - Every host-mounted Python Docker command must run as the host UID/GID with `HOME=/tmp/home` and `PYTHONDONTWRITEBYTECODE=1`, create `/tmp/venv`, and install and execute through that venv so verification cannot leave root-owned bytecode or environment files in the worktree.
+- Host-mounted Python generation and acceptance commands use the full official `python:3.11.15` and `python:3.12.13` images, not the `-slim` variants: the direct-execution suite creates Git repositories. Before creating a venv, every acceptance leg must prove the exact interpreter patch version, `git --version`, a non-root effective UID, and equality with the host UID/GID passed as `EXPECTED_UID`/`EXPECTED_GID`.
 - The deployable backend image excludes host bytecode/databases from its context, runs as numeric non-root user `10001:10001`, and uses `exec` so Uvicorn receives termination signals.
 - Normal CI and smoke tests must be offline with respect to market-data providers. Localhost HTTP requests are allowed.
 - Keep the existing direct-execution Python tests; converting them to pytest is outside Stage 1B.
+- Preserve all user-visible features and support the static and self-hosted/server profiles equally with the same core semantics. Internal breaking refactors are allowed only behind the already approved contracts; Task 5 is limited to its exact workflow, OpenClaw boundary, Render, quick-start, test, and plan files.
 - Do not add Prettier or perform repository-wide formatting in this stage.
 - Do not add semantic-parity, contract-generation, DataGateway, or analysis-core work; those belong to later stages.
 - Preserve the user's untracked `AGENTS.md` and all unrelated worktree changes.
@@ -75,7 +77,9 @@
 - `.github/workflows/chan-stats.yml`
 - `.github/workflows/daily-digest.yml`
 - `.github/workflows/daily-screener.yml`
+- `.github/workflows/dependabot-automerge.yml`
 - `.github/workflows/feed-validate.yml`
+- `.github/workflows/feed-watchdog.yml`
 - `.github/workflows/funds-13f.yml`
 - `.github/workflows/hyperliquid-monitor.yml`
 - `.github/workflows/intraday-report.yml`
@@ -83,8 +87,12 @@
 - `.github/workflows/monthly-studies.yml`
 - `.github/workflows/openclaw-notes.yml`
 - `.github/workflows/premarket-pack.yml`
+- `scripts/openclaw_daily.py` — recognize the optional Winter PostgreSQL configuration before spawning child tools and fail fast once configured.
+- `scripts/tests/test_feed_publication.py` — TDD coverage for the optional Winter PostgreSQL boundary, local config compatibility, secrecy, and child failure propagation.
+- `scripts/tests/test_workflow_security.py` — job-scoped production Python, Pages, Render, quick-start, checkout-credential, and behavior-preservation policy.
 - `render.yaml` — exact Render Python version and hash-checked backend install.
 - `backend/README.md` — deterministic backend installation command.
+- `docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md` — corrected Task 5 contract and Git-capable acceptance gates.
 
 ### Interfaces
 
@@ -105,8 +113,8 @@ The implementation host is not assumed to have the pinned runtimes installed. Be
 ```bash
 docker --version
 docker pull node:20.20.2-bookworm-slim
-docker pull python:3.11.15-slim
-docker pull python:3.12.13-slim
+docker pull python:3.11.15
+docker pull python:3.12.13
 ```
 
 Expected: Docker is available and all three exact images pull successfully. Bootstrap and install steps can require registry, npm, and PyPI (or configured package-mirror) network access unless the relevant images and packages are already cached; the offline requirement applies to application smoke tests and market-data-provider access, not dependency acquisition. All lock generation below runs in those images, so the current host's Node 26/npm 11 and missing `python3.11` cannot silently generate repository locks. If an already-installed local runtime is used instead, its full version must match the corresponding pin exactly before any install or compile command runs.
@@ -458,7 +466,7 @@ installation. Script tests precede both builds:
 docker run --rm \
   --tmpfs /workspace/frontend/node_modules:rw,exec,mode=1777 \
   --mount type=volume,src=stock-analysis-stage1b-npm-cache,dst=/root/.npm \
-  -v /private/tmp/stock-analysis-codex-stage-1-refactor:/workspace \
+  -v "$PWD:/workspace" \
   -w /workspace/frontend \
   node:20.20.2-bookworm-slim \
   sh -lc 'node --version && npm --version && npm ci && npm run lint && npm run typecheck && npm run test:scripts && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run build:static && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run smoke:static && env -u NEXT_PUBLIC_BASE_PATH npm run build:server && env -u NEXT_PUBLIC_BASE_PATH npm run smoke:server'
@@ -619,12 +627,20 @@ Generate every primary-runtime lock from the exact Linux runtime used by deploym
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv &&
     /tmp/venv/bin/python -m pip install pip==25.2 pip-tools==7.5.2 &&
     /tmp/venv/bin/python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version" &&
@@ -642,12 +658,20 @@ Generate the compatibility lock with Python 3.12.13:
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.12.13-slim \
+  python:3.12.13 \
   sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version"
+    git --version
     python -m venv /tmp/venv &&
     /tmp/venv/bin/python -m pip install pip==25.2 pip-tools==7.5.2 &&
     /tmp/venv/bin/python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version" &&
@@ -749,13 +773,20 @@ done
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
     /tmp/venv/bin/python -m pip check
@@ -787,13 +818,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.12.13-slim \
+  python:3.12.13 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py312.txt
     /tmp/venv/bin/python -m pip check
@@ -808,13 +846,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r scripts/requirements.txt
     /tmp/venv/bin/python -m pip check
@@ -823,13 +868,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r backtest/requirements.txt
     /tmp/venv/bin/python -m pip check
@@ -838,13 +890,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/automation.txt
     /tmp/venv/bin/python -m pip check
@@ -853,13 +912,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r scripts/requirements-winter-pg.txt
     /tmp/venv/bin/python -m pip check
@@ -937,13 +1003,20 @@ Run:
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r backend/requirements.txt
     /tmp/venv/bin/python scripts/tests/test_validate_feed.py
@@ -961,13 +1034,20 @@ For each exact runtime image, install its CI lock into `/tmp/venv`, regenerate t
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
     /tmp/venv/bin/python -m pip check
@@ -1007,13 +1087,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.12.13-slim \
+  python:3.12.13 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py312.txt
     /tmp/venv/bin/python -m pip check
@@ -1251,7 +1338,9 @@ git commit -m "ci: test both runtime profiles"
 - Modify: `.github/workflows/chan-stats.yml`
 - Modify: `.github/workflows/daily-digest.yml`
 - Modify: `.github/workflows/daily-screener.yml`
+- Modify: `.github/workflows/dependabot-automerge.yml`
 - Modify: `.github/workflows/feed-validate.yml`
+- Modify: `.github/workflows/feed-watchdog.yml`
 - Modify: `.github/workflows/funds-13f.yml`
 - Modify: `.github/workflows/hyperliquid-monitor.yml`
 - Modify: `.github/workflows/intraday-report.yml`
@@ -1259,81 +1348,739 @@ git commit -m "ci: test both runtime profiles"
 - Modify: `.github/workflows/monthly-studies.yml`
 - Modify: `.github/workflows/openclaw-notes.yml`
 - Modify: `.github/workflows/premarket-pack.yml`
+- Modify: `scripts/openclaw_daily.py`
+- Modify: `scripts/tests/test_feed_publication.py`
+- Modify: `scripts/tests/test_workflow_security.py`
 - Modify: `render.yaml`
 - Modify: `backend/README.md`
+- Modify: `docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md`
 
 **Interfaces:**
-- Consumes: `.node-version`, `.python-version`, generated hash locks including `requirements/automation.txt`, and Task 2's static build/smoke commands.
-- Produces: Pages, Render, and scheduled automation paths that use the same reproducible entry points already proven by CI.
+- Consumes: `.node-version`, `.python-version`, generated hash locks including `requirements/automation.txt`, Task 2's static build/smoke commands, and the supported local Winter configuration path `~/.config/stock-analysis/openclaw.env`.
+- Produces: Pages, Render, and all sixteen production Python jobs wired to pinned, reproducible entry points; a read-only `WINTER_PG_DSN` configuration probe; fail-fast configured PostgreSQL child execution; and a fail-closed inventory for direct Python interpreter tokens and setup-python actions.
+- Scope is exactly the twenty product files above plus this plan. Do not modify Task 4's `.github/workflows/tests.yml` or `scripts/tests/test_validate_feed.py`; any version file, direct dependency input, generated lock, frontend source/configuration, Winter PostgreSQL child script, or feed artifact; or controller scratch under `.superpowers/`.
+- Non-goals: do not repair funds/intraday/watchdog retry failure semantics, create a global publication queue, change Dependabot concurrency, change authentication or Git-push behavior beyond the explicit non-pushing sweep credential hardening, deploy Pages/Render, or modify a feed artifact. These publication-reliability items remain Stage 2/P1.
 
-- [ ] **Step 1: Capture the policy violations before editing workflows**
+- [ ] **Step 1: Snapshot immutable inputs and the behavior that Task 5 is not allowed to change**
 
 Run:
 
 ```bash
-rg -n 'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
+set -eu
+git rev-parse HEAD > /tmp/stage1b-task5-baseline-head
+git ls-files -- \
+  .node-version .python-version backend/runtime.txt \
+  backend/requirements.in backend/requirements.txt \
+  scripts/requirements.in scripts/requirements.txt \
+  scripts/requirements-winter-pg.in scripts/requirements-winter-pg.txt \
+  backtest/requirements.in backtest/requirements.txt \
+  requirements frontend feed \
+  .github/workflows/tests.yml scripts/tests/test_validate_feed.py \
+  | LC_ALL=C sort \
+  | while IFS= read -r tracked_file; do shasum -a 256 "$tracked_file"; done \
+  > /tmp/stage1b-task5-byte-baseline.sha256
+find . -xdev -user root -print | LC_ALL=C sort \
+  > /tmp/stage1b-task5-root-owned-baseline
+
+rg -n \
+  'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api|(^|[[:space:]])python3([[:space:]]|$)' \
+  .github/workflows render.yaml backend/README.md
 ```
 
-Expected: matches include `deploy-pages.yml`'s major-only Node pin and `rm -rf app/api`, mixed 3.11/3.12 workflow pins, bare `pip install`, and the backend README's non-hash install.
+Expected: the immutable-input manifest is created from the Task 4 commit. Policy matches include Pages' major-only Node pin and source deletion, mixed 3.11/3.12 workflow pins, bare installs, implicit `python3` commands, and the backend README's non-hash install.
 
-- [ ] **Step 2: Normalize every scheduled Python setup to the primary version file**
+Before any production edit, add a complete protected-workflow snapshot to `scripts/tests/test_workflow_security.py`. The protected set is all fourteen production Python workflow files:
 
-In each of the following workflows:
-
-```text
-.github/workflows/alpha-routine.yml
-.github/workflows/chan-stats.yml
-.github/workflows/daily-digest.yml
-.github/workflows/daily-screener.yml
-.github/workflows/feed-validate.yml
-.github/workflows/funds-13f.yml
-.github/workflows/hyperliquid-monitor.yml
-.github/workflows/intraday-report.yml
-.github/workflows/market-snapshot.yml
-.github/workflows/monthly-studies.yml
-.github/workflows/openclaw-notes.yml
-.github/workflows/premarket-pack.yml
+```python
+PROTECTED_PYTHON_WORKFLOWS = {
+    "alpha-routine.yml",
+    "chan-stats.yml",
+    "daily-digest.yml",
+    "daily-screener.yml",
+    "dependabot-automerge.yml",
+    "feed-validate.yml",
+    "feed-watchdog.yml",
+    "funds-13f.yml",
+    "hyperliquid-monitor.yml",
+    "intraday-report.yml",
+    "market-snapshot.yml",
+    "monthly-studies.yml",
+    "openclaw-notes.yml",
+    "premarket-pack.yml",
+}
 ```
 
-replace the literal version field under `actions/setup-python@v6` with:
+Declare the exact sixteen job-to-runtime/lock entries immediately after that set, before any helper refers to them:
+
+```python
+PRODUCTION_PYTHON_JOBS = {
+    ("alpha-routine.yml", "run"): (".python-version", "requirements/automation.txt"),
+    ("monthly-studies.yml", "studies"): (".python-version", "requirements/automation.txt"),
+    ("chan-stats.yml", "stats"): (".python-version", "backend/requirements.txt"),
+    ("daily-screener.yml", "screen"): (".python-version", "backend/requirements.txt"),
+    ("feed-validate.yml", "pr-validate"): (
+        "trusted/.python-version",
+        "trusted/scripts/requirements.txt",
+    ),
+    ("feed-validate.yml", "publish"): (".python-version", "scripts/requirements.txt"),
+    ("hyperliquid-monitor.yml", "monitor"): (".python-version", "scripts/requirements.txt"),
+    ("daily-digest.yml", "digest"): (".python-version", None),
+    ("funds-13f.yml", "track"): (".python-version", None),
+    ("intraday-report.yml", "report"): (".python-version", None),
+    ("market-snapshot.yml", "snapshot"): (".python-version", None),
+    ("openclaw-notes.yml", "notes"): (".python-version", None),
+    ("premarket-pack.yml", "pack"): (".python-version", None),
+    ("feed-watchdog.yml", "audit"): (".python-version", None),
+    ("dependabot-automerge.yml", "on-pr"): (".python-version", None),
+    ("dependabot-automerge.yml", "sweep"): (".python-version", None),
+}
+```
+
+Do not derive `PROTECTED_PYTHON_WORKFLOWS` from this later constant: both declarations are explicit, and a test requires that the filenames in the sixteen-entry mapping equal the fourteen-name protected set.
+
+Before implementing the normalizer, embed its approval authority directly in `scripts/tests/test_workflow_security.py`. These are immutable test-source literals, not values learned from `root`, `overrides`, parsed YAML shape, the workflow currently under test, or `PRODUCTION_PYTHON_JOBS`:
+
+```python
+BASELINE_MISSING_SETUP_JOBS = {
+    ("feed-watchdog.yml", "audit"),
+    ("dependabot-automerge.yml", "on-pr"),
+    ("dependabot-automerge.yml", "sweep"),
+}
+
+DEPENDENCY_JOBS = {
+    ("alpha-routine.yml", "run"),
+    ("monthly-studies.yml", "studies"),
+    ("chan-stats.yml", "stats"),
+    ("daily-screener.yml", "screen"),
+    ("feed-validate.yml", "pr-validate"),
+    ("feed-validate.yml", "publish"),
+    ("hyperliquid-monitor.yml", "monitor"),
+}
+
+APPROVED_PYTHON_RUN_BODY_KEYS = {
+    (
+        "dependabot-automerge.yml",
+        "on-pr",
+        "清理旧资格并撤销 auto-merge",
+    ),
+    (
+        "dependabot-automerge.yml",
+        "on-pr",
+        "根据 metadata 同步 auto-merge 资格标签",
+    ),
+    (
+        "dependabot-automerge.yml",
+        "on-pr",
+        "检查 required checks 后启用 auto-merge",
+    ),
+    (
+        "dependabot-automerge.yml",
+        "sweep",
+        "清扫存量 dependabot PR",
+    ),
+    ("funds-13f.yml", "track", "提交 + 新披露开 Issue"),
+    (
+        "intraday-report.yml",
+        "report",
+        "三轮循环(5 分钟节拍 × 3,内嵌备胎守卫)",
+    ),
+    (
+        "feed-watchdog.yml",
+        "audit",
+        "三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮",
+    ),
+    ("feed-watchdog.yml", "audit", "运行审计并写 health.json"),
+}
+```
+
+Define these exact dictionaries/constants next:
+
+- `CURRENT_SETUP_STEPS`: thirteen explicit `(filename, job) -> raw entire step` entries. Five values are the exact `python-version: "3.12"` Task 4 step (`alpha`, `monthly`, both feed jobs, and `hyperliquid`); seven are the exact `python-version: "3.11"` step (`chan`, `daily-screener`, `daily-digest`, `funds`, `intraday`, `market`, and `premarket`); `openclaw-notes/notes` is the same 3.11 raw step with its existing additional blank separator. The three `BASELINE_MISSING_SETUP_JOBS` have no current entry.
+- `FINAL_SETUP_STEPS`: sixteen explicit entries. Each value is the exact whole final step shown in Step 5, including `python-version-file`, and, for the seven dependency jobs only, exact cache and lock path. The `openclaw-notes/notes` value alone retains its additional blank separator.
+- `CURRENT_INSTALL_STEPS`: seven explicit entries copied byte-for-byte from Task 4. They include the complete `name: 安装依赖` alpha step, complete named trusted-validator step, and five unnamed steps.
+- `FINAL_INSTALL_STEPS`: seven explicit entries copied from the exact Step 5 result. They preserve those two names and separators and contain only the classified `python -m pip install --require-hashes -r <exact lock>` command.
+- `APPROVED_PYTHON_RUN_BODIES`: exactly the eight keys above. Each value is a three-tuple `(current_body_literal, final_body_literal, current_python3_count)`. Both bodies must be independently embedded triple-quoted literals copied from the audited Task 4 and exact Task 5 forms; never generate either body from the workflow under test. The counts in key order are `2, 2, 1, 1, 1, 1, 2, 1`, totaling eleven.
+- `FINAL_SMOKE_STEPS`: exactly two explicit whole-step literals, keyed by alpha and monthly, including the exact common name `Smoke combined automation imports` and respective exact command. Baseline smoke presence is exactly zero.
+- `CURRENT_SWEEP_CHECKOUT_STEP` and `FINAL_SWEEP_CHECKOUT_STEP`: the exact one-line Task 4 checkout and exact final checkout containing only `persist-credentials: false`, including separators.
+
+Literal reuse through a fixed test-source string such as `CURRENT_SETUP_311` is permitted, but no value may be read, templated, or inferred from a tested file. Assert these authority invariants before normalization:
+
+```python
+assert len(PRODUCTION_PYTHON_JOBS) == 16
+assert len(CURRENT_SETUP_STEPS) == 13
+assert set(CURRENT_SETUP_STEPS) == (
+    set(PRODUCTION_PYTHON_JOBS) - BASELINE_MISSING_SETUP_JOBS
+)
+assert len(FINAL_SETUP_STEPS) == 16
+assert set(FINAL_SETUP_STEPS) == set(PRODUCTION_PYTHON_JOBS)
+assert len(CURRENT_INSTALL_STEPS) == 7
+assert len(FINAL_INSTALL_STEPS) == 7
+assert set(CURRENT_INSTALL_STEPS) == DEPENDENCY_JOBS
+assert set(FINAL_INSTALL_STEPS) == DEPENDENCY_JOBS
+assert len(APPROVED_PYTHON_RUN_BODIES) == 8
+assert set(APPROVED_PYTHON_RUN_BODIES) == APPROVED_PYTHON_RUN_BODY_KEYS
+assert sum(item[2] for item in APPROVED_PYTHON_RUN_BODIES.values()) == 11
+assert set(FINAL_SMOKE_STEPS) == {
+    ("alpha-routine.yml", "run"),
+    ("monthly-studies.yml", "studies"),
+}
+```
+
+Add `normalized_protected_workflows(root, overrides=None) -> dict[str, str]`. It must read the full text of every protected file and preserve every byte except the exact fixed literals above. Implement it as a two-phase, two-state validator:
+
+1. Read every file with `Path.read_bytes().decode("utf-8")`, preserving newline bytes; `overrides` may contain only a protected basename. Locate every job and raw step span exactly once. Inventory every `actions/setup-python@*` step and every executable `pip install`/`python -m pip install` step across all jobs in the protected files, including unclassified/shadow jobs.
+2. Before replacing anything, match the **entire fourteen-file set** against one state vector:
+   - `BASELINE`: all thirteen `CURRENT_SETUP_STEPS` are present exactly once and immediately after their final checkout; the three missing setup sites have none; all seven current installs are present exactly once; both smoke steps are absent; sweep uses the exact current checkout; and all eight Python bodies equal their current literals.
+   - `FINAL`: all sixteen `FINAL_SETUP_STEPS` are present exactly once in the required location; all seven final installs and both final smoke steps are present exactly once in the required order; sweep uses the exact final checkout; and all eight Python bodies equal their final literals.
+   - A per-job/category mixture, partial migration, missing required literal, duplicate, near miss, wrong location/input/name/command, or candidate outside the fixed site inventory matches neither state and raises `ValueError`. The normalizer must never independently choose current/final at each site.
+   - There is no site-local third option: the thirteen baseline-present setup jobs may never be zero, and only watchdog plus the two Dependabot jobs are zero in `BASELINE`; those three must contain their exact final setup in `FINAL`.
+   - Implement the decision as `current_ok = exact_current_sites and candidate_inventory == CURRENT_INVENTORY`, `final_ok = exact_final_sites and candidate_inventory == FINAL_INVENTORY`, then require `current_ok ^ final_ok` before replacement. Inventory counts (`13/7/0/11` versus `16/7/2/0` for setup/install/smoke/`python3`) are supplemental checks, never substitutes for whole-span/body equality.
+3. Only after the set is proven wholly `BASELINE` or wholly `FINAL`, replace the state-specific setup steps with `      - __TASK5_ALLOWED_SETUP__`, the entire install steps (including names) in place with `      - __TASK5_ALLOWED_INSTALL__`, both smoke sites with `      - __TASK5_ALLOWED_SMOKE__`, and sweep checkout with:
 
 ```yaml
+      - uses: actions/checkout@v7
+        __TASK5_ALLOWED_SWEEP_CREDENTIAL__
+```
+
+Emit the embedded final Python body for every approved run-body site. Collect all non-overlapping replacements against the original raw spans and apply them in descending offset order. Whole-span equality is mandatory; no substring approval or permissive YAML-shape matching is allowed. Protected files may contain no setup/install candidate outside the embedded site inventories. Workflows outside the fourteen-file protected set remain covered by Step 4's independent global inventory.
+
+Bytes outside the explicitly recognized spans and eleven token replacements remain unchanged, so the payload is a complete full-file snapshot, not a selected-step projection. The returned value is exactly `{filename: normalized_full_file_text}`. Serialize it with:
+
+```python
+encoded = json.dumps(
+    payload,
+    ensure_ascii=False,
+    sort_keys=True,
+    separators=(",", ":"),
+).encode()
+```
+
+Three independent literal-driven line-span implementations over Task 4 `HEAD` and a complete in-memory Task 5 final state reproduce byte-identical payloads: 41,968 normalized source bytes and exactly 43,994 encoded JSON bytes with SHA-256:
+
+```python
+PROTECTED_WORKFLOW_SHA256 = (
+    "9b634f7b39ea0f1b232bde96db36214b3871618be076f8029d15cce0330d3e35"
+)
+```
+
+Add `test_all_protected_workflow_behavior_is_unchanged()` to:
+
+- normalize the checked-out protected set, whether it is wholly baseline or wholly final;
+- create the opposite complete state in memory by replacing every embedded current literal with its embedded final literal, or vice versa, across the full transition table;
+- normalize both states and assert their full dictionaries are byte-identical, their concatenated normalized source is 41,968 bytes, their encoded JSON is 43,994 bytes, and both digests equal `PROTECTED_WORKFLOW_SHA256`.
+
+The opposite-state fixture may apply fixed source constants but may not learn an approved literal from the checked-out files.
+
+Add `test_protected_workflow_normalizer_rejects_unapproved_variants()` and require `ValueError`, before digest comparison, for each independent override:
+
+- delete the exact current setup from one of the thirteen baseline-present jobs; also delete one setup from a complete synthetic final state, including a final-only watchdog setup case;
+- make a current setup near miss by changing its literal version/input, and separately duplicate or move an otherwise exact setup;
+- make a current install near miss by changing its name or command, and separately delete or duplicate an install;
+- append a shadow job in a protected file containing an extra `actions/setup-python@v6` step but no Python command;
+- add an install step to a standard-library job or other site outside `DEPENDENCY_JOBS`;
+- migrate only one of a multi-token approved Python body, migrate only one complete body/job while the other approved bodies remain current, and reverse only one body in the complete final fixture.
+
+Every case above calls `normalized_protected_workflows(..., overrides=...)` inside `assertRaises(ValueError)`; a changed digest alone is not an acceptable result. Also reject a state in which all eleven Python tokens are final but setup/install/smoke/sweep remain baseline, proving state selection is repository-wide rather than category-local.
+
+Add the existing protected-business table-driven mutation tests using `overrides={filename: mutated_text}` and one exact replacement each:
+
+```python
+PROTECTED_WORKFLOW_MUTATIONS = [
+    (
+        "alpha-routine.yml",
+        "python scripts/run_routine.py $ARGS",
+        "python scripts/run_routine.py $ARGS --unexpected",
+        "unselected producer step",
+    ),
+    ("alpha-routine.yml", "  contents: write", "  contents: read", "permission"),
+    (
+        "hyperliquid-monitor.yml",
+        "    timeout-minutes: 10",
+        "    timeout-minutes: 11",
+        "timeout",
+    ),
+    (
+        "alpha-routine.yml",
+        "FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json",
+        "FEED_PUBLICATION_MANIFEST: /tmp/changed-${{ github.run_id }}.json",
+        "environment",
+    ),
+    (
+        "alpha-routine.yml",
+        '    - cron: "30 22 * * 1-5"',
+        '    - cron: "31 22 * * 1-5"',
+        "trigger",
+    ),
+    (
+        "alpha-routine.yml",
+        "for i in 1 2 3 4; do",
+        "for i in 1 2 3; do",
+        "retry",
+    ),
+]
+```
+
+Each old string must occur exactly once; each structurally valid baseline/final mutation remains classifiable but produces a digest different from `PROTECTED_WORKFLOW_SHA256`. Put these cases in `test_protected_workflow_mutations_are_detected()`. Separate exact policies in Steps 4–6 continue to validate every normalized-away setup, install, smoke, and sweep-credential block.
+
+Before Step 2, run only the complete current/final snapshot, structural rejection matrix, and six protected-business mutation categories in this exact focused container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -m unittest \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_all_protected_workflow_behavior_is_unchanged \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_protected_workflow_normalizer_rejects_unapproved_variants \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_protected_workflow_mutations_are_detected
+  '
+```
+
+Expected: GREEN against both complete current and synthetic-final fixtures. Every deletion, near miss, extra out-of-inventory setup/install, or partial/mixed Python migration raises; each unselected producer, permission, timeout, environment, trigger, and retry mutation remains valid input but changes the complete digest.
+
+- [ ] **Step 2: Write the optional Winter PostgreSQL boundary tests and record RED**
+
+Add `contextlib` and `io` imports plus an `OpenClawPostgresBoundaryTests` class to `scripts/tests/test_feed_publication.py`. Every case uses a temporary `HOME`, creates or omits `.config/stock-analysis/openclaw.env`, restores `os.environ` after the test, patches only `openclaw_daily.subprocess.run`, and captures both stdout and stderr.
+
+Add these exact cases:
+
+```text
+test_archive_pg_skips_without_process_or_local_configuration
+  no WINTER_PG_DSN and no file; zero child calls; stdout contains
+  "[daily] pg skipped: WINTER_PG_DSN not configured"
+
+test_archive_pg_redacts_process_dsn_from_success_stdout_and_stderr
+  WINTER_PG_DSN="postgresql://process-secret-marker"; the three successful
+  CompletedProcess fakes put that exact DSN respectively in stdout, in stderr
+  while stdout is empty, and in both streams; captured output contains the
+  existing `[daily] pg `, `[daily] winrate `, and `[daily] event-heat ` prefixes
+  plus `[REDACTED]`, but neither captured stream contains the exact DSN
+
+test_archive_pg_preserves_supported_local_configuration
+  process key absent; local file contains blank/comment/malformed/non-target lines
+  followed by ` WINTER_PG_DSN = 'postgresql://local-secret' `; three calls;
+  the successful fakes exercise the same stdout-only, stderr-only, and
+  both-stream cases with that exact DSN; environment before/after is identical;
+  captured output contains `[REDACTED]` and the three existing prefixes, while
+  neither captured stream contains the DSN
+
+test_archive_pg_explicit_empty_process_value_wins
+  process key is present with ""; local file has a nonempty value; zero calls
+
+test_archive_pg_first_local_assignment_wins_even_when_empty
+  local file first assigns WINTER_PG_DSN="", then assigns a nonempty duplicate;
+  zero calls; a file containing only a non-target key also makes zero calls
+
+test_archive_pg_ingest_failure_is_fail_fast
+test_archive_pg_winrate_failure_is_fail_fast
+test_archive_pg_event_heat_failure_is_fail_fast
+  return codes are respectively [7], [0, 8], and [0, 0, 9];
+  every failing CompletedProcess puts the exact configured
+  "postgresql://failure-secret-marker" in both stdout and stderr; each raises
+  subprocess.CalledProcessError with returncode 7, 8, or 9 and records exactly
+  1, 2, or 3 unchanged child commands; before the exception, captured output
+  contains that child's existing log prefix and `[REDACTED]`; the exact DSN is
+  absent from both captured streams and from the exception's `.stdout` and
+  `.stderr`, while both exception streams retain `[REDACTED]`
+```
+
+The exact command list asserted by every configured case is:
+
+```python
+[
+    [sys.executable, "scripts/winter_pg/ingest.py"],
+    [sys.executable, "scripts/winter_pg/winrate.py", "--if-due"],
+    [sys.executable, "scripts/winter_pg/event_heat.py"],
+]
+```
+
+Use `subprocess.CompletedProcess(command, code, stdout=..., stderr=...)` for fakes and `self.assertRaises(subprocess.CalledProcessError)`. Assertions for `[REDACTED]` and the existing prefix are mandatory so a test cannot pass merely because implementation output was omitted. Run this exact Python 3.11 focused container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python scripts/tests/test_feed_publication.py
+  '
+```
+
+Expected: the new skip/config/fail-fast cases fail against the current unconditional best-effort `archive_pg()`. Existing feed-publication cases remain green.
+
+- [ ] **Step 3: Implement the minimal read-only configuration probe and fail-fast children**
+
+In `scripts/openclaw_daily.py`, add `from pathlib import Path` if it is not already imported, then add exactly this same-file probe:
+
+```python
+def _winter_pg_dsn() -> str | None:
+    """Return the exact non-empty DSN the child loaders would resolve."""
+    if "WINTER_PG_DSN" in os.environ:
+        return os.environ["WINTER_PG_DSN"] or None
+
+    env_file = Path.home() / ".config/stock-analysis/openclaw.env"
+    if not env_file.exists():
+        return None
+    for line in env_file.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.strip() == "WINTER_PG_DSN":
+            value = value.strip().strip('"').strip("'")
+            return value or None
+    return None
+```
+
+This is deliberately read-only: it mirrors the child loaders' first-assignment `setdefault` behavior without inserting any value into the parent environment. Do not strip or rewrite a process-environment value; preserve the local file parser's exact `strip().strip('"').strip("'")` behavior; return immediately on the first local target assignment even when it is empty. Replace `archive_pg()` with the same three commands and existing log labels, but:
+
+```python
+def archive_pg() -> None:
+    """Skip when unconfigured; run configured local warehouse jobs fail-fast."""
+    dsn = _winter_pg_dsn()
+    if dsn is None:
+        print("[daily] pg skipped: WINTER_PG_DSN not configured")
+        return
+
+    commands = (
+        ([sys.executable, "scripts/winter_pg/ingest.py"], "[daily] pg ", None),
+        (
+            [sys.executable, "scripts/winter_pg/winrate.py", "--if-due"],
+            "[daily] winrate ",
+            "not due",
+        ),
+        (
+            [sys.executable, "scripts/winter_pg/event_heat.py"],
+            "[daily] event-heat ",
+            None,
+        ),
+    )
+    for command, prefix, suppressed in commands:
+        result = subprocess.run(
+            command,
+            cwd=fl.REPO_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        safe_stdout = (result.stdout or "").replace(dsn, "[REDACTED]")
+        safe_stderr = (result.stderr or "").replace(dsn, "[REDACTED]")
+        message = (safe_stdout or safe_stderr).strip()
+        if message and (suppressed is None or suppressed not in message):
+            print(f"{prefix}{message}")
+        result.stdout = safe_stdout
+        result.stderr = safe_stderr
+        result.check_returncode()
+```
+
+Mutating the `CompletedProcess` streams before `check_returncode()` is required: the raised `CalledProcessError.output`/`.stderr` must be sanitized as well as console output. Run the exact focused container again:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python scripts/tests/test_feed_publication.py
+  '
+```
+
+Expected: all cases pass; an unconfigured Actions run spawns no PostgreSQL child, while a configured local process retains the existing local config path, redacts the exact DSN from success and failure stdout/stderr and the raised exception, logs before propagating child failure, and never mutates the environment. Do not install `scripts/requirements-winter-pg.txt` in any workflow, Render service, or backend environment.
+
+- [ ] **Step 4: Add a fail-closed direct-interpreter/setup-action inventory and record RED**
+
+Use the exact `PRODUCTION_PYTHON_JOBS` mapping already declared before the Step 1 normalizer. Add helpers that inspect every `run:` body returned by `workflow_run_scripts()`, including block scalars and heredocs. Preserve the raw interpreter token and detect bare, quoted, path-qualified, and versioned forms with:
+
+```python
+PYTHON_INTERPRETER_TOKEN = re.compile(
+    r'''(?x)
+    (?<![A-Za-z0-9_./$~{}+\-])
+    (?:
+      "(?:(?:[^"\r\n]*/)?python(?:3(?:\.\d+)*)?)"
+     |
+      '(?:(?:[^'\r\n]*/)?python(?:3(?:\.\d+)*)?)'
+     |
+      (?:
+        (?:
+          (?:/|\./|\.\./|~/|\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})/)
+          (?:[^\s"';&|()<>]+/)*
+        )
+       |
+        (?:[A-Za-z0-9_.~+${}\-]+/)+
+      )?
+      python(?:3(?:\.\d+)*)?
+    )
+    (?=$|[\s;&|()<>])
+    '''
+)
+```
+
+Enumerate every job in every `.github/workflows/*.yml`/`*.yaml`; the set of jobs containing any matching direct Python interpreter token must equal `set(PRODUCTION_PYTHON_JOBS) | {("tests.yml", "python")}`. A direct `python`/`python3` token in an unknown job fails closed. In a final production `run:` body, every match's complete raw text must be exactly unquoted, unqualified `python`; therefore absolute/relative paths, quoted paths including `"/tmp/my env/bin/python"`, `$VENV/bin/python`, `${VENV}/bin/python3.12`, quoted bare/versioned tokens, and `python3.12` all fail even though they remain discoverable.
+
+This is deliberately a fail-closed **direct lexical token and setup-action inventory**, not a general Bash/POSIX parser. It does not claim to interpret aliases, functions, `eval`, command variables/substitutions, shebang execution, or split/escaped spellings such as `python\` followed by a newline, `py\thon`, `pyt''hon`, or direct `./script.py`. During Task 5, the fourteen normalized full-file snapshots, exact raw Pages file, frozen `tests.yml`, and exact changed-path set prevent adding or rewriting workflow commands into those forms even though the token regex itself does not parse them. Continue to reject an explicit direct `python`/`python3` token in any unknown job; do not broaden that corrected contract into an arbitrary-shell guarantee.
+
+Independently inventory every step whose `uses` starts with `actions/setup-python@`, including jobs with no Python command. Also inventory every raw `actions/setup-python@` occurrence across every workflow and require a one-to-one correspondence with those parsed step spans, so an occurrence outside a job/step cannot hide. The exact job-key set must be `set(PRODUCTION_PYTHON_JOBS) | {("tests.yml", "python")}`, the raw and parsed occurrence counts must both be exactly seventeen, each key must have exactly one setup action, and every action must be exactly `actions/setup-python@v6`. This global action inventory is separate from Python-command discovery so a shadow setup job cannot hide.
+
+For each classified production job, assert:
+
+- exactly one `actions/setup-python@v6` block;
+- its `python-version-file` is exact, it has no literal `python-version`, no `if`, and no `continue-on-error`;
+- it occurs after the job's final checkout and before its first Python command;
+- dependency jobs have `cache: pip`, exact `cache-dependency-path`, and exactly one unconditional run body `python -m pip install --require-hashes -r <lock>`; the complete install step name is exactly `安装依赖` in `alpha-routine/run`, exactly `Install trusted validator dependencies` in `feed-validate/pr-validate`, and absent in the other five;
+- standard-library jobs have no pip install and no setup cache;
+- no post-setup production run body invokes `python3`, and no other production workflow install exists; Task 4's exact `tests.yml/python` matrix remains the sole CI exception;
+- alpha and monthly contain their exact smoke imports once:
+  `PYTHONPATH=backtest:scripts python -c "import factor_factory, feed_lib, run_routine, statarb"` and
+  `PYTHONPATH=backtest:scripts python -c "import feed_lib, statarb, study_downshift, study_pbo"`;
+- both `feed-validate/pr-validate` checkouts are non-credential-persisting; the trusted base SHA is at `trusted/`; the head repo/SHA is at `submission/` with `allow-unsafe-pr-checkout: true`; setup occurs after both checkouts; and install/execution paths use only `trusted/`, never executable content from `submission/`;
+- within the fourteen Task 5 production Python workflows, checkout credentials are false only for both PR-validation checkouts, Dependabot `on-pr`, and Dependabot `sweep`. Every production job that Git-pushes retains credentials; `feed-validate/publish` remains credentialed. Do not include Pages in this Step 4/5 credential gate: the current Pages checkout is intentionally still baseline here, and Step 6's complete byte-exact Pages validator owns its transition to `persist-credentials: false`. Task 4's frozen `tests.yml/frontend` and `tests.yml/python` checkouts are separate exact exceptions: each remains one `actions/checkout@v7` step with only `persist-credentials: false`, and Step 8's Task 4 non-drift check prevents either from changing;
+- Dependabot's direct top-level `concurrency` mapping is exactly `group: dependabot-automerge-${{ github.repository }}` followed by `queue: max`; it has no `cancel-in-progress` or other key. Mutations that change `queue`, add `cancel-in-progress`, or add any concurrency key must fail;
+- required setup/install steps contain no `if`, `continue-on-error`, `|| true`, or extra setup/install block.
+- Task 4's sole exception, `tests.yml/python`, still has exactly one setup-python v6 step with literal structure `python-version: ${{ matrix.python_version }}`, `cache: pip`, and `cache-dependency-path: ${{ matrix.lockfile }}`; it has no `python-version-file`, `if`, or `continue-on-error`.
+
+Add table-driven mutation tests that run the real policy helper, not only the regex:
+
+```python
+FORBIDDEN_INTERPRETER_MUTATIONS = (
+    "/usr/bin/python scripts/daily_digest.py",
+    '"/tmp/venv/bin/python" scripts/daily_digest.py',
+    '"/tmp/my env/bin/python" scripts/daily_digest.py',
+    "$VENV/bin/python scripts/daily_digest.py",
+    "${VENV}/bin/python3.12 scripts/daily_digest.py",
+    "'python3.11' scripts/daily_digest.py",
+    "python3.12 scripts/daily_digest.py",
+)
+```
+
+Each replaces the exact canonical `python scripts/daily_digest.py` in a temporary override and must fail through the real policy helper. The test must assert the scanner returns the entire raw mutated token, including quotes, spaces, `$`, or `${...}`, before the policy rejects it. Also require these independent inventory mutations to fail:
+
+- append a shadow job with `actions/setup-python@v5` and no `run:` body;
+- insert a second setup-python step into a classified job;
+- change the sole setup action in one allowed job from `@v6` to `@v5`.
+
+Finally mutate each normalized-away category and prove its exact semantic policy fails: move a valid setup behind a business step; change one `python-version-file` or cache input; alter the alpha install name or any hashed install command; alter one smoke import list; and change the Dependabot sweep checkout to `persist-credentials: true` or add another checkout input.
+
+Run the exact focused container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+  '
+```
+
+Expected: RED because watchdog and Dependabot jobs have no setup, literals and `python3` remain, installs are unhashed, and dependency jobs do not match their locks. The complete protected-workflow normalized full-file digest from Step 1 remains green.
+
+- [ ] **Step 5: Normalize all sixteen production Python jobs without changing their business behavior**
+
+Apply the classification literally. A dependency-bearing setup is:
+
+```yaml
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements/automation.txt
+      - run: python -m pip install --require-hashes -r requirements/automation.txt
+```
+
+Substitute the classified version-file and lock paths for each job. A standard-library setup has only:
+
+```yaml
+      - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
 ```
 
-For the isolated `pr-validate` job in `.github/workflows/feed-validate.yml`, the trusted checkout lives below `trusted/`; use `python-version-file: trusted/.python-version` in that job and `.python-version` in its `publish` job. This intentionally moves scheduled production jobs to Python 3.11.15. Python 3.12.13 remains a compatibility-only CI leg in `.github/workflows/tests.yml`.
+The generic dependency example is unnamed only for the five originally unnamed installs. Preserve these two exact named variants:
 
-- [ ] **Step 3: Make every scheduled dependency install hash-checked**
-
-Use these exact commands in the named workflows:
-
-```text
-.github/workflows/alpha-routine.yml:
-python -m pip install --require-hashes -r requirements/automation.txt
-PYTHONPATH=backtest:scripts python -c "import factor_factory, feed_lib, run_routine, statarb"
-
-.github/workflows/feed-validate.yml:
-python -m pip install --require-hashes -r trusted/scripts/requirements.txt
-python -m pip install --require-hashes -r scripts/requirements.txt
-
-.github/workflows/monthly-studies.yml:
-python -m pip install --require-hashes -r requirements/automation.txt
-PYTHONPATH=backtest:scripts python -c "import feed_lib, statarb, study_downshift, study_pbo"
-
-.github/workflows/hyperliquid-monitor.yml:
-python -m pip install --require-hashes -r scripts/requirements.txt
-
-.github/workflows/chan-stats.yml:
-python -m pip install --require-hashes -r backend/requirements.txt
-
-.github/workflows/daily-screener.yml:
-python -m pip install --require-hashes -r backend/requirements.txt
+```yaml
+      - name: 安装依赖
+        run: python -m pip install --require-hashes -r requirements/automation.txt
 ```
 
-Workflows with no third-party imports keep no install step; do not add unnecessary packages to them.
+```yaml
+      - name: Install trusted validator dependencies
+        run: python -m pip install --require-hashes -r trusted/scripts/requirements.txt
+```
 
-- [ ] **Step 4: Replace the Pages workflow with the proven static profile**
+Use the first only in `alpha-routine/run`, the second only in `feed-validate/pr-validate`, and no `name` on the other five hashed install steps. Place setup after the final checkout and before the first Python command. In `feed-validate/pr-validate`, use `trusted/.python-version`, `trusted/scripts/requirements.txt`, and the trusted cache path after both checkouts. Replace standalone production `python3` commands with `python`. Add the two exact alpha/monthly smoke-import commands immediately after their hashed installs, each under the exact step name `Smoke combined automation imports`. Add `persist-credentials: false` to the non-pushing Dependabot sweep checkout; leave the already protected Dependabot `on-pr` and feed PR checkouts false; do not change checkout credentials in any pushing job.
+
+Do not change triggers, permissions, timeouts, publication manifests, Git configuration, rebase/push retries, `|| true`, sleep/backoff, worktree behavior, concurrency, or failure handling. In particular, do not repair the known funds exhaustion, intraday swallowing, or watchdog swallowing behavior in this task. Run both focused tests in the exact container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python scripts/tests/test_feed_publication.py
+    /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+  '
+```
+
+Expected: GREEN, including the complete protected-workflow normalized full-file digest and every exact normalized-away policy. No test contacts a live provider.
+
+- [ ] **Step 6: Add the Pages job/step policy, record RED, and replace the workflow**
+
+First add `test_pages_uses_the_complete_isolated_static_profile()` to `scripts/tests/test_workflow_security.py`. Scope every assertion through `on`, `permissions`, `jobs/build`, `jobs/deploy`, and the exact step blocks. Require:
+
+- push paths are exactly `frontend/**`, `feed/schema/**`, `.node-version`, and `.github/workflows/deploy-pages.yml`, plus manual dispatch; ordinary generated feed commits do not trigger Pages;
+- workflow permissions are exactly `{}`, build permissions exactly `contents: read`, and deploy permissions exactly `pages: write` plus `id-token: write`;
+- one checkout v7 with `persist-credentials: false`, one setup-node v7 with `.node-version` and the frontend npm cache, exact Node/npm assertions, and exactly one unconditional `npm ci`;
+- the snapshot step uses only `$RUNNER_TEMP/feed-snapshot`, rejects any missing source, and copies exactly these thirteen entries: `index.json`, `health.json`, `watchlist.json`, `schema`, `reports`, `signals`, `market`, `factory`, `screener`, `stock-notes`, `crypto`, `intraday`, `funds`;
+- no step deletes or rewrites `frontend/public/feed` or `frontend/app/api`; the only `rm -rf` target is `"$snapshot"`;
+- one unconditional build step supplies `STATIC_FEED_SOURCE`, Pages base, API base, Edge base, and raw feed base, then runs exactly one `npm run build:static` and one `npm run smoke:static`; no default/server build appears;
+- an output-verification step requires the same thirteen entries under `out/feed` plus `funds/situational-awareness.json`, `intraday/latest.json`, and `intraday/overnight.json`;
+- upload-pages-artifact v5 uploads exactly `frontend/out`, and deploy-pages v5 runs only in the deploy job.
+
+This is a complete structure policy, not a presence check. Define the expected raw UTF-8 workflow text from the exact replacement block below and require byte equality. In addition, parse/scopingly inspect it and require these exact direct-key sets:
+
+```text
+top level:             name, on, permissions, concurrency, jobs
+on:                    push, workflow_dispatch
+push:                  branches, paths
+concurrency:           group, cancel-in-progress
+jobs:                  build, deploy
+build:                 runs-on, permissions, defaults, steps
+build.permissions:     contents
+build.defaults:        run
+build.defaults.run:    working-directory
+deploy:                needs, runs-on, permissions, environment, steps
+deploy.permissions:    pages, id-token
+deploy.environment:    name, url
+```
+
+`workflow_dispatch:` is exactly empty and has no inputs; `permissions: {}` is the exact empty inline mapping. Because the existing mapping helper recognizes only a `key:` header, add exact accessors/assertions for those inline and empty forms rather than silently skipping them. Assert inline `branches` and `paths` by their complete raw values.
+
+Require the build step direct-key sets, in exact order, to be:
+
+```text
+checkout:              uses, with
+setup-node:            uses, with
+version assertion:     name, run
+snapshot:              name, working-directory, run
+npm install:           run
+build/smoke:           name, env, run
+output verification:   name, run
+upload:                uses, with
+deploy step:           id, uses
+```
+
+The `with` mappings are exact: checkout has only `persist-credentials`; setup-node has only `node-version-file`, `cache`, and `cache-dependency-path`; upload has only `path`; deploy has no `with`. The build/smoke `env` mapping has exactly `STATIC_FEED_SOURCE`, `NEXT_PUBLIC_BASE_PATH`, `NEXT_PUBLIC_API_BASE`, `NEXT_PUBLIC_EDGE_BASE`, and `NEXT_PUBLIC_FEED_BASE`, with the exact context expressions shown below. No step has an undeclared `if`, `continue-on-error`, `timeout-minutes`, `env`, `with`, or other direct key.
+
+Add mutation tests that each start from the exact expected Pages text and prove the Pages validator rejects:
+
+- an extra top-level key;
+- an extra key in either `build` or `deploy`;
+- `workflow_dispatch.inputs`;
+- checkout `fetch-depth`;
+- a wrong setup-node value and an extra setup-node input;
+- an extra upload input or any deploy `with`;
+- a step-level `if` or `continue-on-error`;
+- an extra build environment variable or a substituted/invalid context expression.
+
+Run the method before editing Pages in the exact focused container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -m unittest \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_pages_uses_the_complete_isolated_static_profile
+  '
+```
+
+Expected: RED on broad permissions, credential persistence, Node major pin, swallowed feed copies, source deletion, default build, missing smoke, and missing output verification.
 
 Replace `.github/workflows/deploy-pages.yml` with:
 
@@ -1376,10 +2123,29 @@ jobs:
       - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |
+          set -euo pipefail
           snapshot="$RUNNER_TEMP/feed-snapshot"
           rm -rf "$snapshot"
           mkdir -p "$snapshot"
-          cp -r feed/index.json feed/health.json feed/watchlist.json feed/schema feed/reports feed/signals feed/market feed/factory feed/screener feed/stock-notes feed/intraday feed/crypto feed/funds "$snapshot/"
+          sources=(
+            feed/index.json
+            feed/health.json
+            feed/watchlist.json
+            feed/schema
+            feed/reports
+            feed/signals
+            feed/market
+            feed/factory
+            feed/screener
+            feed/stock-notes
+            feed/crypto
+            feed/intraday
+            feed/funds
+          )
+          for source in "${sources[@]}"; do
+            test -e "$source"
+          done
+          cp -R -- "${sources[@]}" "$snapshot/"
       - run: npm ci
       - name: Build and smoke static profile
         env:
@@ -1391,6 +2157,30 @@ jobs:
         run: |
           npm run build:static
           npm run smoke:static
+      - name: Verify complete exported feed snapshot
+        run: |
+          set -euo pipefail
+          entries=(
+            index.json
+            health.json
+            watchlist.json
+            schema
+            reports
+            signals
+            market
+            factory
+            screener
+            stock-notes
+            crypto
+            intraday
+            funds
+          )
+          for entry in "${entries[@]}"; do
+            test -e "out/feed/$entry"
+          done
+          test -f out/feed/funds/situational-awareness.json
+          test -f out/feed/intraday/latest.json
+          test -f out/feed/intraday/overnight.json
       - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/out
@@ -1409,9 +2199,65 @@ jobs:
         uses: actions/deploy-pages@v5
 ```
 
-The only `rm -rf` left here refreshes a runner-temporary feed snapshot. `build-profile.mjs` overlays that snapshot only inside its private frontend copy. The workflow does not delete or rewrite tracked `frontend/public/feed`, `frontend/app/api`, or any other application source path.
+Run the focused workflow method in the exact container:
 
-- [ ] **Step 5: Make Render and the backend quick start consume the backend lock**
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -m unittest \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_pages_uses_the_complete_isolated_static_profile
+  '
+```
+
+Expected: GREEN. The only deletion refreshes a runner-temporary snapshot; `build-profile.mjs` overlays it only inside its private frontend copy. Raw GitHub feed data remains live, while the bundled fallback refreshes only on the four explicit path families or manual dispatch. The workflow never deletes or rewrites tracked `frontend/public/feed`, `frontend/app/api`, or another application source path.
+
+- [ ] **Step 7: Add exact Render/quick-start policy, record RED, and consume the backend lock**
+
+Add `test_render_and_backend_quick_start_are_exact()` to `scripts/tests/test_workflow_security.py`. It must compare `render.yaml` to the exact structure below, require one adjacent `PYTHON_VERSION` entry, and assert that the README's ordered command block creates a `python3.11` venv, activates it, performs the exact hash install, and launches with `python -m uvicorn`. Run it first in the exact focused container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -m unittest \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_render_and_backend_quick_start_are_exact
+  '
+```
+
+Expected: RED on the unhashed Render/README installs, unpinned Render runtime, and direct Uvicorn commands.
 
 Replace `render.yaml` with:
 
@@ -1424,7 +2270,7 @@ services:
     rootDir: backend
     plan: free
     buildCommand: python -m pip install --require-hashes -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
@@ -1444,63 +2290,221 @@ cd backend
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --require-hashes -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 ````
 
-- [ ] **Step 6: Run repository-wide policy and behavior verification**
+Run the focused policy again in the exact container:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python -m unittest \
+      scripts.tests.test_workflow_security.WorkflowSecurityTests.test_render_and_backend_quick_start_are_exact
+  '
+```
+
+Expected: GREEN. Render still has exactly one free web service, `rootDir: backend`, health path `/api/v1/health`, and `autoDeploy: true`; no service is deployed by this task.
+
+- [ ] **Step 8: Run focused, syntax, runtime, non-drift, residue, and exact-scope gates**
+
+Treat the following as the Task 5-scoped semantic equivalent of a workflow linter:
+
+1. all fourteen production Python workflow files pass the complete current/final two-state normalized full-file digest, all structural rejection mutations, and the six protected-behavior digest mutations;
+2. all workflow files pass the exact seventeen-job global setup-python inventory, the exact seventeen-job direct-interpreter inventory, and the setup/install/smoke/credential/trusted-PR policies with their quoted-space/variable-path/version/shadow-job mutations;
+3. Pages passes raw full-file equality, every direct-key/action-input/context whitelist, and every extra/invalid key/input mutation;
+4. Dependabot retains the exact `group` plus `queue: max` concurrency mapping and rejects queue/extra-key mutations;
+5. every workflow YAML file receives the Ruby AST parse below as a syntax-only check.
+
+The focused workflow-security file is the semantic gate; Ruby/Psych is only the all-file YAML syntax leg and must not be described as semantic validation. Do not add or download external `actionlint` in this task.
 
 Run:
 
 ```bash
-set -e
-! rg -n 'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' .github/workflows render.yaml backend/README.md
-for file in .github/workflows/deploy-pages.yml .github/workflows/tests.yml; do
-  rg -q 'node-version-file: \.node-version' "$file"
-done
-for file in .github/workflows/alpha-routine.yml .github/workflows/chan-stats.yml .github/workflows/daily-digest.yml .github/workflows/daily-screener.yml .github/workflows/feed-validate.yml .github/workflows/funds-13f.yml .github/workflows/hyperliquid-monitor.yml .github/workflows/intraday-report.yml .github/workflows/market-snapshot.yml .github/workflows/monthly-studies.yml .github/workflows/openclaw-notes.yml .github/workflows/premarket-pack.yml; do
-  rg -q 'python-version-file: \.python-version' "$file"
-done
-rg -n 'python-version-file: trusted/\.python-version' .github/workflows/feed-validate.yml
+set -euo pipefail
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
+    /tmp/venv/bin/python -m pip check
+    /tmp/venv/bin/python scripts/tests/test_feed_publication.py
+    /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+  '
+ruby -e '
+  require "yaml"
+  Dir[".github/workflows/*.{yml,yaml}"].sort.each do |path|
+    abort("empty YAML AST: #{path}") unless YAML.parse_file(path)
+  end
+  puts "workflow YAML syntax OK"
+'
+
+if rg -n \
+  'actions/setup-node@v[1-6]|node-version: 20|python-version: "3\.(11|12)"|(^|[[:space:]])pip install -r|rm -rf app/api' \
+  .github/workflows render.yaml backend/README.md; then
+  echo "forbidden workflow or runtime pattern found" >&2
+  exit 1
+else
+  scan_status=$?
+  if [ "$scan_status" -ne 1 ]; then
+    echo "workflow/runtime residue scan failed with status $scan_status" >&2
+    exit "$scan_status"
+  fi
+fi
+IFS= read -r FORBIDDEN_PYTHON_INTERPRETER_PCRE <<'PCRE'
+(?x)(?<![A-Za-z0-9_./$~{}+\-])(?:"(?:(?:[^"\r\n]*/)?python(?:3(?:\.\d+)*)?)"|'(?:(?:[^'\r\n]*/)?python(?:3(?:\.\d+)*)?)'|(?:(?:/|\./|\.\./|~/|\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})/)(?:[^\s"';&|()<>]+/)*|(?:[A-Za-z0-9_.~+${}\-]+/)+)python(?:3(?:\.\d+)*)?|python3(?:\.\d+)*)(?=$|[\s;&|()<>])
+PCRE
+readonly FORBIDDEN_PYTHON_INTERPRETER_PCRE
+if rg -n --pcre2 --glob '*.yml' --glob '*.yaml' -- \
+  "$FORBIDDEN_PYTHON_INTERPRETER_PCRE" .github/workflows; then
+  echo "forbidden Python interpreter token found" >&2
+  exit 1
+else
+  scan_status=$?
+  if [ "$scan_status" -ne 1 ]; then
+    echo "interpreter residue scan failed with status $scan_status" >&2
+    exit "$scan_status"
+  fi
+fi
 test "$(rg -c '^[[:space:]]+- key: PYTHON_VERSION$' render.yaml)" -eq 1
-rg -U -n -- '- key: PYTHON_VERSION\n[[:space:]]+value: "3\.11\.15"' render.yaml
-test "$(rg -c 'python -m pip install --require-hashes -r requirements/automation\.txt' .github/workflows/alpha-routine.yml)" -eq 1
-test "$(rg -c 'python -m pip install --require-hashes -r requirements/automation\.txt' .github/workflows/monthly-studies.yml)" -eq 1
-test "$(rg -c 'PYTHONPATH=backtest:scripts python -c' .github/workflows/alpha-routine.yml)" -eq 1
-test "$(rg -c 'PYTHONPATH=backtest:scripts python -c' .github/workflows/monthly-studies.yml)" -eq 1
+rg -U -q -- '- key: PYTHON_VERSION\n[[:space:]]+value: "3\.11\.15"' render.yaml
 ```
 
-Then run the exact Node container gate from Task 2 Step 6 and both exact Python container gates from Task 4 Step 3. Finally run:
+Run the exact Node container gate from Task 2 Step 6 and both corrected full-image Python container gates from Task 4 Step 3. The Python preambles must prove Git availability and exact non-root UID/GID before venv creation. Then run:
 
 ```bash
+set -euo pipefail
 test -f frontend/app/api/quote/route.ts
 test -f frontend/app/api/ohlcv/route.ts
 test -f frontend/.next/BUILD_ID
 test "$(shasum -a 256 frontend/package-lock.json | awk '{print $1}')" = "97875c90208b25596cae8ea55482f4c38295aba18b77287f4a11e32208b563d1"
-git diff --exit-code HEAD -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts
+git diff --exit-code "$(cat /tmp/stage1b-task5-baseline-head)" -- \
+  .github/workflows/tests.yml scripts/tests/test_validate_feed.py
+
+git ls-files -- \
+  .node-version .python-version backend/runtime.txt \
+  backend/requirements.in backend/requirements.txt \
+  scripts/requirements.in scripts/requirements.txt \
+  scripts/requirements-winter-pg.in scripts/requirements-winter-pg.txt \
+  backtest/requirements.in backtest/requirements.txt \
+  requirements frontend feed \
+  .github/workflows/tests.yml scripts/tests/test_validate_feed.py \
+  | LC_ALL=C sort \
+  | while IFS= read -r tracked_file; do shasum -a 256 "$tracked_file"; done \
+  > /tmp/stage1b-task5-byte-current.sha256
+cmp /tmp/stage1b-task5-byte-baseline.sha256 /tmp/stage1b-task5-byte-current.sha256
+find . -xdev -user root -print | LC_ALL=C sort \
+  > /tmp/stage1b-task5-root-owned-current
+cmp /tmp/stage1b-task5-root-owned-baseline /tmp/stage1b-task5-root-owned-current
+
 test -z "$(git status --porcelain=v1 --untracked-files=all -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts)"
 test -z "$(find frontend -maxdepth 1 \( -name '.out-stage-*' -o -name '.out-backup-*' -o -name '.out-publish.lock*' \) -print -quit)"
+
+cat > /tmp/stage1b-task5-expected-paths <<'EOF'
+.github/workflows/alpha-routine.yml
+.github/workflows/chan-stats.yml
+.github/workflows/daily-digest.yml
+.github/workflows/daily-screener.yml
+.github/workflows/dependabot-automerge.yml
+.github/workflows/deploy-pages.yml
+.github/workflows/feed-validate.yml
+.github/workflows/feed-watchdog.yml
+.github/workflows/funds-13f.yml
+.github/workflows/hyperliquid-monitor.yml
+.github/workflows/intraday-report.yml
+.github/workflows/market-snapshot.yml
+.github/workflows/monthly-studies.yml
+.github/workflows/openclaw-notes.yml
+.github/workflows/premarket-pack.yml
+backend/README.md
+docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md
+render.yaml
+scripts/openclaw_daily.py
+scripts/tests/test_feed_publication.py
+scripts/tests/test_workflow_security.py
+EOF
+git diff --name-only "$(cat /tmp/stage1b-task5-baseline-head)" -- \
+  | LC_ALL=C sort > /tmp/stage1b-task5-actual-paths
+LC_ALL=C sort /tmp/stage1b-task5-expected-paths \
+  > /tmp/stage1b-task5-expected-paths.sorted
+cmp /tmp/stage1b-task5-expected-paths.sorted /tmp/stage1b-task5-actual-paths
+
 git diff --check
 git status --short
 ```
 
 Expected:
 
-- the negative policy scan exits 0 because it finds no prohibited patterns;
-- every listed scheduled workflow reads `.python-version`;
+- both focused files pass, including exact OpenClaw DSN redaction, byte-identical complete current/final workflow snapshots, structural-rejection and protected-behavior mutations, both exact seventeen-job inventories, quoted-space/`$VENV`/`${VENV}`/version direct-interpreter mutations, setup/install/smoke/feed-trust/credential policies, Pages full-file/direct-key/input/context mutations, Render, README, and unchanged publication/retry behavior;
+- Dependabot retains exactly `group: dependabot-automerge-${{ github.repository }}` plus `queue: max`; every workflow parses as YAML in the syntax leg, the task-scoped semantic gate passes, and the negative policy scan finds no prohibited pattern;
+- all sixteen jobs read the correct version file; exactly seven install their exact hashed lock and nine install nothing;
 - Render declares exactly one adjacent `PYTHON_VERSION: 3.11.15` entry in its Blueprint, independent of the repository-root version file;
 - `alpha-routine` and `monthly-studies` each install the combined automation lock and smoke-import their `backtest/` and `scripts/` modules exactly once;
 - both frontend profiles pass and the real `app/api` handlers remain present;
-- both Python versions reproduce their applicable locks and pass all current tests with no broken requirements;
-- API/feed/lock/config inputs remain byte-stable and no private publication residue remains;
+- both full Python images expose Git, run under the exact non-root host identity, reproduce their applicable locks, pass all twenty-two current process-level entrypoints with no broken requirements, and create no new root-owned worktree path;
+- Task 4 workflow/tests, all version/lock/direct-input/frontend/feed bytes, and the package-lock hash remain unchanged;
+- the diff contains exactly the twenty Task 5 product files plus this plan, no private publication residue remains, and `.superpowers/` is neither staged nor included;
 - `git diff --check` reports no whitespace errors;
-- only intended tracked files plus the pre-existing untracked `AGENTS.md` appear in status.
+- no Pages/Render deployment occurs. Funds/intraday/watchdog retry reliability, a global publication queue, and Dependabot concurrency remain recorded Stage 2/P1 work, not silently changed here.
 
-- [ ] **Step 7: Commit deployment and scheduled-workflow integration**
+- [ ] **Step 9: Stage only the exact Task 5 scope and commit**
 
 ```bash
-git add .github/workflows/deploy-pages.yml .github/workflows/alpha-routine.yml .github/workflows/chan-stats.yml .github/workflows/daily-digest.yml .github/workflows/daily-screener.yml .github/workflows/feed-validate.yml .github/workflows/funds-13f.yml .github/workflows/hyperliquid-monitor.yml .github/workflows/intraday-report.yml .github/workflows/market-snapshot.yml .github/workflows/monthly-studies.yml .github/workflows/openclaw-notes.yml .github/workflows/premarket-pack.yml render.yaml backend/README.md
+git add \
+  .github/workflows/alpha-routine.yml \
+  .github/workflows/chan-stats.yml \
+  .github/workflows/daily-digest.yml \
+  .github/workflows/daily-screener.yml \
+  .github/workflows/dependabot-automerge.yml \
+  .github/workflows/deploy-pages.yml \
+  .github/workflows/feed-validate.yml \
+  .github/workflows/feed-watchdog.yml \
+  .github/workflows/funds-13f.yml \
+  .github/workflows/hyperliquid-monitor.yml \
+  .github/workflows/intraday-report.yml \
+  .github/workflows/market-snapshot.yml \
+  .github/workflows/monthly-studies.yml \
+  .github/workflows/openclaw-notes.yml \
+  .github/workflows/premarket-pack.yml \
+  backend/README.md \
+  docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md \
+  render.yaml \
+  scripts/openclaw_daily.py \
+  scripts/tests/test_feed_publication.py \
+  scripts/tests/test_workflow_security.py
 git diff --cached --check
+git diff --cached --name-only | LC_ALL=C sort \
+  | cmp /tmp/stage1b-task5-expected-paths.sorted -
 git commit -m "ci: use pinned toolchains everywhere"
 ```
 
@@ -1508,18 +2512,25 @@ git commit -m "ci: use pinned toolchains everywhere"
 
 ## Final Acceptance Gate
 
-After all six commits, run the exact Node container gate from Task 2 Step 6 and the following two-runtime Python gates once more from a clean checkout. These are intentionally explicit here so the final run cannot fall back to a root/system Python install:
+After the Task 5 commit, run the exact Node container gate from Task 2 Step 6 and the following two-runtime Python gates once more from a clean checkout. These are intentionally explicit here so the final run cannot fall back to a root/system Python install or a Git-less slim image:
 
 ```bash
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.11.15-slim \
+  python:3.11.15 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
     /tmp/venv/bin/python -m pip check
@@ -1559,13 +2570,20 @@ docker run --rm \
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --env EXPECTED_UID="$(id -u)" \
+  --env EXPECTED_GID="$(id -g)" \
   --env HOME=/tmp/home \
   --env PYTHONDONTWRITEBYTECODE=1 \
   --volume "$PWD:/workspace" \
   --workdir /workspace \
-  python:3.12.13-slim \
+  python:3.12.13 \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -c "import sys; assert sys.version_info[:3] == (3, 12, 13), sys.version"
+    git --version
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py312.txt
     /tmp/venv/bin/python -m pip check

@@ -1,6 +1,8 @@
 """Tests for the transitional Stage 1A feed publication allowlist."""
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import pathlib
@@ -980,6 +982,247 @@ class FeedPublicationTests(unittest.TestCase):
                 openclaw_daily.write_daily_analysis("2026-07-16", [])
 
         recorder.assert_not_called()
+
+
+class OpenClawPostgresBoundaryTests(unittest.TestCase):
+    DSN = "postgresql://process-secret-marker"
+    FAILURE_DSN = "postgresql://failure-secret-marker"
+    COMMANDS = [
+        [sys.executable, "scripts/winter_pg/ingest.py"],
+        [sys.executable, "scripts/winter_pg/winrate.py", "--if-due"],
+        [sys.executable, "scripts/winter_pg/event_heat.py"],
+    ]
+    PREFIXES = ("[daily] pg ", "[daily] winrate ", "[daily] event-heat ")
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.home = pathlib.Path(self.temp.name)
+        self.env_file = self.home / ".config/stock-analysis/openclaw.env"
+
+    @contextlib.contextmanager
+    def _isolated_environment(self, dsn: str | None = None):
+        original = dict(os.environ)
+        environment = {"HOME": str(self.home)}
+        if dsn is not None:
+            environment["WINTER_PG_DSN"] = dsn
+        try:
+            with mock.patch.dict(os.environ, environment, clear=True):
+                isolated = dict(os.environ)
+                try:
+                    yield
+                finally:
+                    self.assertEqual(dict(os.environ), isolated)
+        finally:
+            self.assertEqual(dict(os.environ), original)
+
+    @contextlib.contextmanager
+    def _captured_streams(self):
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            yield stdout, stderr
+
+    def _write_local_environment(self, text: str) -> None:
+        self.env_file.parent.mkdir(parents=True, exist_ok=True)
+        self.env_file.write_text(text, encoding="utf-8")
+
+    def _success_results(
+        self, dsn: str
+    ) -> list[subprocess.CompletedProcess[str]]:
+        return [
+            subprocess.CompletedProcess(
+                self.COMMANDS[0],
+                0,
+                stdout=f"ingest completed with {dsn}",
+                stderr="",
+            ),
+            subprocess.CompletedProcess(
+                self.COMMANDS[1],
+                0,
+                stdout="",
+                stderr=f"winrate completed with {dsn}",
+            ),
+            subprocess.CompletedProcess(
+                self.COMMANDS[2],
+                0,
+                stdout=f"event heat completed with {dsn}",
+                stderr=f"event heat diagnostic with {dsn}",
+            ),
+        ]
+
+    def _assert_commands(
+        self,
+        runner: mock.Mock,
+        expected: list[list[str]] | None = None,
+    ) -> None:
+        commands = self.COMMANDS if expected is None else expected
+        self.assertEqual([call.args[0] for call in runner.call_args_list], commands)
+        for call in runner.call_args_list:
+            self.assertEqual(
+                call.kwargs,
+                {
+                    "cwd": fl.REPO_ROOT,
+                    "capture_output": True,
+                    "text": True,
+                },
+            )
+
+    def _assert_safe_output(
+        self,
+        stdout: io.StringIO,
+        stderr: io.StringIO,
+        *,
+        dsn: str,
+        prefixes: tuple[str, ...] = PREFIXES,
+    ) -> None:
+        captured_stdout = stdout.getvalue()
+        captured_stderr = stderr.getvalue()
+        for prefix in prefixes:
+            self.assertIn(prefix, captured_stdout)
+        self.assertIn("[REDACTED]", captured_stdout)
+        self.assertNotIn(dsn, captured_stdout)
+        self.assertNotIn(dsn, captured_stderr)
+
+    def test_archive_pg_skips_without_process_or_local_configuration(self) -> None:
+        with self._isolated_environment(), mock.patch.object(
+            openclaw_daily.subprocess, "run"
+        ) as runner, self._captured_streams() as (stdout, stderr):
+            openclaw_daily.archive_pg()
+
+        runner.assert_not_called()
+        self.assertIn(
+            "[daily] pg skipped: WINTER_PG_DSN not configured",
+            stdout.getvalue(),
+        )
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_archive_pg_redacts_process_dsn_from_success_stdout_and_stderr(
+        self,
+    ) -> None:
+        results = self._success_results(self.DSN)
+        with self._isolated_environment(self.DSN), mock.patch.object(
+            openclaw_daily.subprocess, "run", side_effect=results
+        ) as runner, self._captured_streams() as (stdout, stderr):
+            openclaw_daily.archive_pg()
+
+        self._assert_commands(runner)
+        self._assert_safe_output(stdout, stderr, dsn=self.DSN)
+
+    def test_archive_pg_preserves_supported_local_configuration(self) -> None:
+        local_dsn = "postgresql://local-secret"
+        self._write_local_environment(
+            "\n"
+            "# local OpenClaw configuration\n"
+            "malformed line\n"
+            "OTHER_KEY=ignored\n"
+            " =missing-key\n"
+            f" WINTER_PG_DSN = '{local_dsn}' \n"
+            "WINTER_PG_DSN=postgresql://ignored-duplicate\n"
+        )
+        results = self._success_results(local_dsn)
+
+        with self._isolated_environment(), mock.patch.object(
+            openclaw_daily.subprocess, "run", side_effect=results
+        ) as runner, self._captured_streams() as (stdout, stderr):
+            openclaw_daily.archive_pg()
+
+        self._assert_commands(runner)
+        self._assert_safe_output(stdout, stderr, dsn=local_dsn)
+
+    def test_archive_pg_explicit_empty_process_value_wins(self) -> None:
+        self._write_local_environment(
+            "WINTER_PG_DSN=postgresql://local-must-not-be-used\n"
+        )
+        original = dict(os.environ)
+        environment = {
+            "HOME": str(self.home),
+            "WINTER_PG_DSN": "",
+        }
+        try:
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch.object(
+                openclaw_daily.subprocess, "run"
+            ) as runner, self._captured_streams() as (stdout, stderr):
+                isolated = dict(os.environ)
+                openclaw_daily.archive_pg()
+                self.assertEqual(dict(os.environ), isolated)
+        finally:
+            self.assertEqual(dict(os.environ), original)
+
+        runner.assert_not_called()
+        self.assertIn("WINTER_PG_DSN not configured", stdout.getvalue())
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_archive_pg_first_local_assignment_wins_even_when_empty(self) -> None:
+        local_cases = {
+            "first-empty": (
+                'WINTER_PG_DSN=""\n'
+                "WINTER_PG_DSN=postgresql://ignored-duplicate\n"
+            ),
+            "non-target-only": "OTHER_KEY=postgresql://ignored\n",
+        }
+        for label, contents in local_cases.items():
+            with self.subTest(case=label):
+                self._write_local_environment(contents)
+                with self._isolated_environment(), mock.patch.object(
+                    openclaw_daily.subprocess, "run"
+                ) as runner, self._captured_streams() as (stdout, stderr):
+                    openclaw_daily.archive_pg()
+
+                runner.assert_not_called()
+                self.assertIn("WINTER_PG_DSN not configured", stdout.getvalue())
+                self.assertEqual(stderr.getvalue(), "")
+
+    def _assert_failure_is_fail_fast(
+        self,
+        *,
+        failure_index: int,
+        returncode: int,
+    ) -> None:
+        results = [
+            subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+            for command in self.COMMANDS[:failure_index]
+        ]
+        results.append(
+            subprocess.CompletedProcess(
+                self.COMMANDS[failure_index],
+                returncode,
+                stdout=f"failure stdout {self.FAILURE_DSN}",
+                stderr=f"failure stderr {self.FAILURE_DSN}",
+            )
+        )
+
+        with self._isolated_environment(self.FAILURE_DSN), mock.patch.object(
+            openclaw_daily.subprocess, "run", side_effect=results
+        ) as runner, self._captured_streams() as (stdout, stderr):
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                openclaw_daily.archive_pg()
+
+        self._assert_commands(runner, self.COMMANDS[: failure_index + 1])
+        self._assert_safe_output(
+            stdout,
+            stderr,
+            dsn=self.FAILURE_DSN,
+            prefixes=(self.PREFIXES[failure_index],),
+        )
+        error = raised.exception
+        self.assertEqual(error.returncode, returncode)
+        self.assertEqual(error.cmd, self.COMMANDS[failure_index])
+        self.assertNotIn(self.FAILURE_DSN, error.stdout or "")
+        self.assertNotIn(self.FAILURE_DSN, error.stderr or "")
+        self.assertIn("[REDACTED]", error.stdout or "")
+        self.assertIn("[REDACTED]", error.stderr or "")
+
+    def test_archive_pg_ingest_failure_is_fail_fast(self) -> None:
+        self._assert_failure_is_fail_fast(failure_index=0, returncode=7)
+
+    def test_archive_pg_winrate_failure_is_fail_fast(self) -> None:
+        self._assert_failure_is_fail_fast(failure_index=1, returncode=8)
+
+    def test_archive_pg_event_heat_failure_is_fail_fast(self) -> None:
+        self._assert_failure_is_fail_fast(failure_index=2, returncode=9)
 
 
 if __name__ == "__main__":

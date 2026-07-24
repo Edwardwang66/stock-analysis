@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version-file: .python-version
       - name: 检查/解析 13F
         run: python scripts/funds_13f.py
       - name: 提交 + 新披露开 Issue
@@ -34,7 +34,7 @@ jobs:
             git pull --rebase origin main && git push origin main && break
             sleep 5
           done
-          ASOF=$(python3 -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
+          ASOF=$(python -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
           gh issue create --title "🦅 Situational Awareness LP 新 13F 披露(截至 $ASOF)" \
             --assignee "${{ github.repository_owner }}" \
             --body "新一期 13F 已解析入库 feed/funds/situational-awareness.json,情报看板已自动更新。OpenClaw 将按新持仓调整每日分析池。"

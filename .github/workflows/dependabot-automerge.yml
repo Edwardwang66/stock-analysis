@@ -42,6 +42,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
       - name: 清理旧资格并撤销 auto-merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,7 +63,7 @@ jobs:
             gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
           )" || head_query_failed=1
           if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
-            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+            python - "$REPO" "$PR_NUMBER" <<'PY'
           import sys
 
           sys.path.insert(0, "scripts")
@@ -82,7 +85,7 @@ jobs:
               || cleanup_failed=1
           fi
 
-          python3 - "$REPO" "$PR_NUMBER" <<'PY' || cleanup_failed=1
+          python - "$REPO" "$PR_NUMBER" <<'PY' || cleanup_failed=1
           import sys
 
           sys.path.insert(0, "scripts")
@@ -129,7 +132,7 @@ jobs:
             gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid // empty'
           )" || head_query_failed=1
           if [ "$head_query_failed" -ne 0 ] || [ -z "$current_head" ] || [ "$current_head" != "$HEAD_SHA" ]; then
-            python3 - "$REPO" "$PR_NUMBER" <<'PY'
+            python - "$REPO" "$PR_NUMBER" <<'PY'
           import sys
 
           sys.path.insert(0, "scripts")
@@ -142,7 +145,7 @@ jobs:
           fi
 
           classification="$(
-            python3 scripts/dependabot_merge_gate.py \
+            python scripts/dependabot_merge_gate.py \
               --classify-ecosystem "$PACKAGE_ECOSYSTEM" \
               --classify-update-type "$UPDATE_TYPE"
           )"
@@ -179,7 +182,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          python3 scripts/dependabot_merge_gate.py \
+          python scripts/dependabot_merge_gate.py \
             --repo "$REPO" \
             --pr "$PR_NUMBER"
 
@@ -188,6 +191,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
       - name: 清扫存量 dependabot PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -196,7 +204,7 @@ jobs:
           gh pr list --repo "$REPO" --author 'app/dependabot' --state open \
             --limit 1000 \
             --json number,title > /tmp/prs.json
-          python3 - <<'PY'
+          python - <<'PY'
           import json
           import os
           import sys

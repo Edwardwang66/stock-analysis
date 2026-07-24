@@ -22,12 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
       - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
-            AGE=$(python3 -c "import json,datetime as d; at=json.load(open('/tmp/live_latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
+            AGE=$(python -c "import json,datetime as d; at=json.load(open('/tmp/live_latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
           fi
           echo "live 年龄 ${AGE}s"
           if [ "$AGE" -lt 1800 ]; then echo "盘中流健康,跳过"; exit 0; fi
@@ -35,7 +38,7 @@ jobs:
           git worktree add /tmp/live live 2>/dev/null || true
           mkdir -p /tmp/live/feed/intraday
           cp /tmp/live_latest.json /tmp/live/feed/intraday/latest.json 2>/dev/null || true
-          INTRADAY_OUT=/tmp/live/feed/intraday/latest.json INTRADAY_PRODUCER=watchdog python3 scripts/intraday_report.py || exit 0
+          INTRADAY_OUT=/tmp/live/feed/intraday/latest.json INTRADAY_PRODUCER=watchdog python scripts/intraday_report.py || exit 0
           cd /tmp/live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -45,7 +48,7 @@ jobs:
         id: audit
         run: |
           set +e
-          python3 scripts/audit_feed.py --write | tee /tmp/audit.txt
+          python scripts/audit_feed.py --write | tee /tmp/audit.txt
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           {
             echo "report<<AUDIT_EOF"
