@@ -378,8 +378,313 @@ def load_config(root: Path, path: Path) -> dict:
     return data
 
 
+def yaml_without_inline_comment(value: str) -> str:
+    single_quoted = False
+    double_quoted = False
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if single_quoted:
+            if character == "'" and index + 1 < len(value) and value[index + 1] == "'":
+                index += 2
+                continue
+            if character == "'":
+                single_quoted = False
+        elif double_quoted:
+            if character == '"' and (
+                index == 0 or value[index - 1] != "\\"
+            ):
+                double_quoted = False
+        elif character == "'":
+            single_quoted = True
+        elif character == '"':
+            double_quoted = True
+        elif character == "#" and (
+            index == 0 or value[index - 1].isspace()
+        ):
+            return value[:index].rstrip()
+        index += 1
+    return value.rstrip()
+
+
+def yaml_structure_line(line: str) -> tuple[int, str] | None:
+    indent = len(line) - len(line.lstrip(" "))
+    content = yaml_without_inline_comment(line[indent:]).rstrip()
+    if not content:
+        return None
+    return indent, content
+
+
+def yaml_scalar_text(value: str) -> str:
+    value = yaml_without_inline_comment(value).strip()
+    if (
+        len(value) >= 2
+        and value[0] == value[-1]
+        and value[0] in {'"', "'"}
+    ):
+        return value[1:-1]
+    return value
+
+
+def yaml_direct_value(
+    lines: list[str],
+    start: int,
+    end: int,
+    indent: int,
+    key: str,
+) -> tuple[int, str] | None:
+    pattern = re.compile(rf"{re.escape(key)}:\s*(.*)")
+    for index in range(start, end):
+        parsed = yaml_structure_line(lines[index])
+        if parsed is None or parsed[0] != indent:
+            continue
+        match = pattern.fullmatch(parsed[1])
+        if match:
+            return index, yaml_scalar_text(match.group(1))
+    return None
+
+
+def yaml_block_end(
+    lines: list[str],
+    start: int,
+    end: int,
+    parent_indent: int,
+) -> int:
+    for index in range(start, end):
+        parsed = yaml_structure_line(lines[index])
+        if parsed is not None and parsed[0] <= parent_indent:
+            return index
+    return end
+
+
+def yaml_condition_is_false(value: str | None) -> bool:
+    if value is None:
+        return False
+    normalized = value.strip()
+    if normalized.startswith("${{") and normalized.endswith("}}"):
+        normalized = normalized[3:-2].strip()
+    return normalized.lower() == "false"
+
+
+def actions_python_matrix(
+    lines: list[str],
+    job_start: int,
+    job_end: int,
+) -> list[str]:
+    strategy = yaml_direct_value(lines, job_start + 1, job_end, 4, "strategy")
+    if strategy is None or strategy[1]:
+        return []
+    strategy_end = yaml_block_end(lines, strategy[0] + 1, job_end, 4)
+    matrix = yaml_direct_value(
+        lines, strategy[0] + 1, strategy_end, 6, "matrix"
+    )
+    if matrix is None or matrix[1]:
+        return []
+    matrix_end = yaml_block_end(lines, matrix[0] + 1, strategy_end, 6)
+    include = yaml_direct_value(
+        lines, matrix[0] + 1, matrix_end, 8, "include"
+    )
+    if include is None or include[1]:
+        return []
+    include_end = yaml_block_end(lines, include[0] + 1, matrix_end, 8)
+    item_starts = [
+        index
+        for index in range(include[0] + 1, include_end)
+        if (
+            (parsed := yaml_structure_line(lines[index])) is not None
+            and parsed[0] == 10
+            and parsed[1].startswith("- ")
+        )
+    ]
+    versions: list[str] = []
+    for offset, item_start in enumerate(item_starts):
+        item_end = (
+            item_starts[offset + 1]
+            if offset + 1 < len(item_starts)
+            else include_end
+        )
+        parsed = yaml_structure_line(lines[item_start])
+        assert parsed is not None
+        opener = parsed[1][2:].strip()
+        match = re.fullmatch(r"python_version:\s*(.+)", opener)
+        if match:
+            versions.append(yaml_scalar_text(match.group(1)))
+            continue
+        value = yaml_direct_value(
+            lines, item_start + 1, item_end, 12, "python_version"
+        )
+        if value is not None:
+            versions.append(value[1])
+    return versions
+
+
+def actions_step_value(
+    lines: list[str],
+    step_start: int,
+    step_end: int,
+    key: str,
+) -> tuple[int, int, str] | None:
+    parsed = yaml_structure_line(lines[step_start])
+    assert parsed is not None
+    opener = parsed[1][2:].strip()
+    match = re.fullmatch(rf"{re.escape(key)}:\s*(.*)", opener)
+    if match:
+        return step_start, 6, yaml_scalar_text(match.group(1))
+    direct = yaml_direct_value(lines, step_start + 1, step_end, 8, key)
+    if direct is None:
+        return None
+    return direct[0], 8, direct[1]
+
+
+def actions_step_inputs(
+    lines: list[str],
+    step_start: int,
+    step_end: int,
+) -> dict[str, str]:
+    with_entry = actions_step_value(lines, step_start, step_end, "with")
+    if with_entry is None or with_entry[2]:
+        return {}
+    with_end = yaml_block_end(lines, with_entry[0] + 1, step_end, with_entry[1])
+    inputs: dict[str, str] = {}
+    for index in range(with_entry[0] + 1, with_end):
+        parsed = yaml_structure_line(lines[index])
+        if parsed is None or parsed[0] != with_entry[1] + 2:
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9_-]+):\s*(.*)", parsed[1])
+        if match:
+            inputs[match.group(1)] = yaml_scalar_text(match.group(2))
+    return inputs
+
+
+def actions_step_run_lines(
+    lines: list[str],
+    step_start: int,
+    step_end: int,
+) -> list[str]:
+    run_entry = actions_step_value(lines, step_start, step_end, "run")
+    if run_entry is None:
+        return []
+    run_index, run_indent, value = run_entry
+    if value[:1] not in {"|", ">"}:
+        return [value] if value else []
+    result: list[str] = []
+    for index in range(run_index + 1, step_end):
+        candidate = lines[index]
+        stripped = candidate.lstrip(" ")
+        indent = len(candidate) - len(stripped)
+        if stripped and indent <= run_indent:
+            break
+        command = candidate.strip()
+        if command and not command.startswith("#"):
+            result.append(command)
+    return result
+
+
+def actions_steps(
+    lines: list[str],
+    job_start: int,
+    job_end: int,
+) -> list[dict[str, Any]]:
+    steps_entry = yaml_direct_value(lines, job_start + 1, job_end, 4, "steps")
+    if steps_entry is None or steps_entry[1]:
+        return []
+    steps_end = yaml_block_end(lines, steps_entry[0] + 1, job_end, 4)
+    step_starts = [
+        index
+        for index in range(steps_entry[0] + 1, steps_end)
+        if (
+            (parsed := yaml_structure_line(lines[index])) is not None
+            and parsed[0] == 6
+            and parsed[1].startswith("- ")
+        )
+    ]
+    result: list[dict[str, Any]] = []
+    for offset, step_start in enumerate(step_starts):
+        step_end = (
+            step_starts[offset + 1]
+            if offset + 1 < len(step_starts)
+            else steps_end
+        )
+        uses_entry = actions_step_value(lines, step_start, step_end, "uses")
+        condition_entry = actions_step_value(lines, step_start, step_end, "if")
+        result.append(
+            {
+                "uses": uses_entry[2] if uses_entry is not None else None,
+                "with": actions_step_inputs(lines, step_start, step_end),
+                "run_lines": actions_step_run_lines(
+                    lines, step_start, step_end
+                ),
+                "disabled": yaml_condition_is_false(
+                    condition_entry[2] if condition_entry is not None else None
+                ),
+            }
+        )
+    return result
+
+
+def actions_workflow_jobs(text: str) -> list[dict[str, Any]]:
+    lines = text.splitlines()
+    jobs_index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if yaml_structure_line(line) == (0, "jobs:")
+        ),
+        None,
+    )
+    if jobs_index is None:
+        return []
+    jobs_end = yaml_block_end(lines, jobs_index + 1, len(lines), 0)
+    job_starts: list[tuple[int, str]] = []
+    for index in range(jobs_index + 1, jobs_end):
+        parsed = yaml_structure_line(lines[index])
+        if parsed is None or parsed[0] != 2:
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9_-]+):", parsed[1])
+        if match:
+            job_starts.append((index, match.group(1)))
+    result: list[dict[str, Any]] = []
+    for offset, (job_start, name) in enumerate(job_starts):
+        job_end = (
+            job_starts[offset + 1][0]
+            if offset + 1 < len(job_starts)
+            else jobs_end
+        )
+        condition = yaml_direct_value(
+            lines, job_start + 1, job_end, 4, "if"
+        )
+        result.append(
+            {
+                "name": name,
+                "disabled": yaml_condition_is_false(
+                    condition[1] if condition is not None else None
+                ),
+                "python_versions": actions_python_matrix(
+                    lines, job_start, job_end
+                ),
+                "steps": actions_steps(lines, job_start, job_end),
+            }
+        )
+    return result
+
+
+def actions_active_run_lines(jobs: list[dict[str, Any]]) -> list[str]:
+    return [
+        line
+        for job in jobs
+        if not job["disabled"]
+        for step in job["steps"]
+        if not step["disabled"]
+        for line in step["run_lines"]
+    ]
+
+
 def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
+    expected_python_matrix = [
+        contract["python_primary"],
+        *contract["python_compatibility"],
+    ]
 
     def read_text(relative: str) -> str | None:
         try:
@@ -505,12 +810,14 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
 
     workflow_text = read_text(".github/workflows/tests.yml")
     if workflow_text is not None:
+        workflow_jobs = actions_workflow_jobs(workflow_text)
+        run_lines = actions_active_run_lines(workflow_jobs)
         assertions = (
             f'test "$(node --version)" = "v{contract["node"]}"',
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
         for assertion in assertions:
-            if assertion not in workflow_text:
+            if assertion not in run_lines:
                 errors.append(
                     Diagnostic(
                         ".github/workflows/tests.yml",
@@ -519,17 +826,12 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                         f"missing exact assertion: {assertion}",
                     )
                 )
-        actual_python_matrix = re.findall(
-            r'(?m)^\s*-\s+python_version:\s*["\']'
-            r"([0-9]+\.[0-9]+\.[0-9]+)"
-            r'["\']\s*$',
-            workflow_text,
-        )
-        expected_python_matrix = [
-            contract["python_primary"],
-            *contract["python_compatibility"],
+        matrix_candidates = [
+            job["python_versions"]
+            for job in workflow_jobs
+            if not job["disabled"] and job["python_versions"]
         ]
-        if actual_python_matrix != expected_python_matrix:
+        if matrix_candidates != [expected_python_matrix]:
             errors.append(
                 Diagnostic(
                     ".github/workflows/tests.yml",
@@ -541,13 +843,14 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
 
     deploy_text = read_text(".github/workflows/deploy-pages.yml")
     if deploy_text is not None:
-        required_deploy_lines = (
-            "node-version-file: .node-version",
+        deploy_jobs = actions_workflow_jobs(deploy_text)
+        deploy_run_lines = actions_active_run_lines(deploy_jobs)
+        required_deploy_assertions = (
             f'test "$(node --version)" = "v{contract["node"]}"',
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
-        for required in required_deploy_lines:
-            if required not in deploy_text:
+        for required in required_deploy_assertions:
+            if required not in deploy_run_lines:
                 errors.append(
                     Diagnostic(
                         ".github/workflows/deploy-pages.yml",
@@ -556,26 +859,6 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                         f"missing exact runtime contract line: {required}",
                     )
                 )
-
-    def action_step_blocks(text: str, action: str) -> list[str]:
-        lines = text.splitlines()
-        blocks: list[str] = []
-        for index, line in enumerate(lines):
-            if re.search(rf"-\s+uses:\s*{re.escape(action)}@", line) is None:
-                continue
-            base_indent = len(line) - len(line.lstrip())
-            block = [line]
-            cursor = index + 1
-            while cursor < len(lines):
-                candidate = lines[cursor]
-                stripped = candidate.lstrip()
-                indent = len(candidate) - len(stripped)
-                if stripped and indent <= base_indent:
-                    break
-                block.append(candidate)
-                cursor += 1
-            blocks.append("\n".join(block))
-        return blocks
 
     for workflow in workflow_files(root):
         try:
@@ -590,24 +873,47 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                 )
             )
             continue
-        for block in action_step_blocks(text, "actions/setup-python"):
-            allowed = (
-                "python-version-file: .python-version" in block
-                or "python-version-file: trusted/.python-version" in block
-                or (
-                    workflow.name == "tests.yml"
-                    and "python-version: ${{ matrix.python_version }}" in block
-                )
-            )
-            if not allowed:
-                errors.append(
-                    Diagnostic(
-                        workflow.relative_to(root).as_posix(),
-                        1,
-                        "workflow-python-runtime-drift",
-                        "setup-python must use the repository pin, trusted checkout pin, or exact tested matrix",
+        for job in actions_workflow_jobs(text):
+            if job["disabled"]:
+                continue
+            for step in job["steps"]:
+                if step["disabled"] or step["uses"] is None:
+                    continue
+                action = step["uses"].split("@", 1)[0]
+                inputs = step["with"]
+                if action == "actions/setup-python":
+                    allowed = (
+                        inputs.get("python-version-file")
+                        in {".python-version", "trusted/.python-version"}
+                        or (
+                            workflow.name == "tests.yml"
+                            and inputs.get("python-version")
+                            == "${{ matrix.python_version }}"
+                            and job["python_versions"]
+                            == expected_python_matrix
+                        )
                     )
-                )
+                    if not allowed:
+                        errors.append(
+                            Diagnostic(
+                                workflow.relative_to(root).as_posix(),
+                                1,
+                                "workflow-python-runtime-drift",
+                                "setup-python must use the repository pin, trusted checkout pin, or exact tested matrix",
+                            )
+                        )
+                elif (
+                    action == "actions/setup-node"
+                    and inputs.get("node-version-file") != ".node-version"
+                ):
+                    errors.append(
+                        Diagnostic(
+                            workflow.relative_to(root).as_posix(),
+                            1,
+                            "workflow-node-runtime-drift",
+                            "setup-node must use the repository .node-version pin",
+                        )
+                    )
     return errors
 
 
@@ -911,13 +1217,43 @@ def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
     for relative in maintained:
         path = root / relative
         text = path.read_text(encoding="utf-8")
-        if re.search(r"^> \*\*Last verified commit:\*\* `[^`]+`$", text, re.MULTILINE):
-            text = re.sub(r"^> \*\*Last verified commit:\*\* `[^`]+`$", line, text, count=1, flags=re.MULTILINE)
+        lines = text.splitlines(keepends=True)
+        masked_lines = mask_fenced_code(text).splitlines(keepends=True)
+        header_lines = masked_lines[:12]
+        scope_indices = [
+            index
+            for index, candidate in enumerate(header_lines)
+            if re.fullmatch(
+                r"> \*\*Scope:\*\* .+",
+                candidate.rstrip("\r\n"),
+            )
+        ]
+        if len(scope_indices) != 1:
+            raise ValueError(
+                f"{relative} has no unique Scope line in its header for stamping"
+            )
+        scope_index = scope_indices[0]
+        verified_index = scope_index + 1
+        has_verified_line = (
+            verified_index < len(header_lines)
+            and re.fullmatch(
+                r"> \*\*Last verified commit:\*\* `[^`]+`",
+                header_lines[verified_index].rstrip("\r\n"),
+            )
+            is not None
+        )
+        if has_verified_line:
+            index = verified_index
+            body = lines[index].rstrip("\r\n")
+            lines[index] = line + lines[index][len(body):]
         else:
-            text, count = re.subn(r"^(> \*\*Scope:\*\* .+)$", rf"\1\n{line}", text, count=1, flags=re.MULTILINE)
-            if count != 1:
-                raise ValueError(f"{relative} has no Scope line for stamping")
-        path.write_text(text, encoding="utf-8")
+            index = scope_index
+            body = lines[index].rstrip("\r\n")
+            newline = lines[index][len(body):] or "\n"
+            if not lines[index][len(body):]:
+                lines[index] += newline
+            lines.insert(index + 1, line + newline)
+        path.write_text("".join(lines), encoding="utf-8")
 
 
 def workflow_files(root: Path) -> list[Path]:

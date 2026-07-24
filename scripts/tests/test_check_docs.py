@@ -235,6 +235,40 @@ class DocumentationChecks(TestCase):
             stamp_documents(root, ["README.md"], sha)
             self.assertIn(f"> **Last verified commit:** `{sha}`", page.read_text(encoding="utf-8"))
 
+    def test_stamping_ignores_fenced_and_body_metadata_decoys(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "README.md"
+            sha = "1" * 40
+            fenced_sha = "2" * 40
+            body_sha = "3" * 40
+            original = (
+                "# Project\n\n"
+                "> **Status:** Current\n"
+                "> **Scope:** Test repository.\n\n"
+                "```markdown\n"
+                f"> **Last verified commit:** `{fenced_sha}`\n"
+                "```\n\n"
+                "Body metadata example:\n"
+                f"> **Last verified commit:** `{body_sha}`\n"
+            )
+            expected = (
+                "# Project\n\n"
+                "> **Status:** Current\n"
+                "> **Scope:** Test repository.\n"
+                f"> **Last verified commit:** `{sha}`\n\n"
+                "```markdown\n"
+                f"> **Last verified commit:** `{fenced_sha}`\n"
+                "```\n\n"
+                "Body metadata example:\n"
+                f"> **Last verified commit:** `{body_sha}`\n"
+            )
+            page.write_text(original, encoding="utf-8")
+
+            stamp_documents(root, ["README.md"], sha)
+
+            self.assertEqual(page.read_text(encoding="utf-8"), expected)
+
     def test_metadata_sha_must_resolve_to_an_ancestor_commit(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -959,32 +993,48 @@ class DocumentationChecks(TestCase):
             )
             workflow = workflows / "tests.yml"
             exact_workflow = (
-                "jobs:\n  python:\n    steps:\n"
+                "jobs:\n"
+                "  frontend:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-node@v7\n"
+                "        with:\n"
+                "          node-version-file: .node-version\n"
+                "      - run: |\n"
+                '          test "$(node --version)" = "v20.20.2"\n'
+                '          test "$(npm --version)" = "10.8.2"\n'
+                "  python:\n"
+                "    strategy:\n"
+                "      matrix:\n"
+                "        include:\n"
+                '          - python_version: "3.11.15"\n'
+                '          - python_version: "3.12.13"\n'
+                "    steps:\n"
                 "      - uses: actions/setup-python@v6\n"
                 "        with:\n"
                 "          python-version: ${{ matrix.python_version }}\n"
-                'test "$(node --version)" = "v20.20.2"\n'
-                'test "$(npm --version)" = "10.8.2"\n'
-                '          - python_version: "3.11.15"\n'
-                '          - python_version: "3.12.13"\n'
             )
             workflow.write_text(exact_workflow, encoding="utf-8")
             deploy = workflows / "deploy-pages.yml"
             exact_deploy = (
-                "steps:\n"
-                "  - uses: actions/setup-node@v7\n"
-                "    with:\n"
-                "      node-version-file: .node-version\n"
-                'test "$(node --version)" = "v20.20.2"\n'
-                'test "$(npm --version)" = "10.8.2"\n'
+                "jobs:\n"
+                "  build:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-node@v7\n"
+                "        with:\n"
+                "          node-version-file: .node-version\n"
+                "      - run: |\n"
+                '          test "$(node --version)" = "v20.20.2"\n'
+                '          test "$(npm --version)" = "10.8.2"\n'
             )
             deploy.write_text(exact_deploy, encoding="utf-8")
             production = workflows / "alpha-routine.yml"
             exact_production = (
-                "steps:\n"
-                "  - uses: actions/setup-python@v6\n"
-                "    with:\n"
-                "      python-version-file: .python-version\n"
+                "jobs:\n"
+                "  produce:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                "          python-version-file: .python-version\n"
             )
             production.write_text(exact_production, encoding="utf-8")
             self.track(
@@ -1053,6 +1103,112 @@ class DocumentationChecks(TestCase):
                     target.write_text(replacement, encoding="utf-8")
                     self.assertTrue(check_runtime_contract(root, contract))
                     target.write_text(original, encoding="utf-8")
+
+    def test_runtime_contract_rejects_active_drift_hidden_by_yaml_decoys(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "frontend").mkdir()
+            (root / "backend").mkdir()
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
+            (root / "backend" / "runtime.txt").write_text(
+                "python-3.11.15\n", encoding="utf-8"
+            )
+            (root / "backend" / "Dockerfile").write_text(
+                "FROM python:3.11.15-slim\n", encoding="utf-8"
+            )
+            (root / "render.yaml").write_text(
+                'envVars:\n  - key: PYTHON_VERSION\n    value: "3.11.15"\n',
+                encoding="utf-8",
+            )
+            (root / "frontend" / "package.json").write_text(
+                json.dumps(
+                    {
+                        "packageManager": "npm@10.8.2",
+                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (workflows / "tests.yml").write_text(
+                "jobs:\n"
+                "  frontend:\n"
+                "    env:\n"
+                "      ASSERTION_DECOYS: |\n"
+                '        test "$(node --version)" = "v20.20.2"\n'
+                '        test "$(npm --version)" = "10.8.2"\n'
+                "    steps:\n"
+                "      - uses: actions/setup-node@v7\n"
+                "        with:\n"
+                '          node-version: "18"\n'
+                "  python:\n"
+                "    strategy:\n"
+                "      matrix:\n"
+                '        python_version: ["3.10.0"]\n'
+                "    env:\n"
+                "      MATRIX_DECOY: |\n"
+                '        - python_version: "3.11.15"\n'
+                '        - python_version: "3.12.13"\n'
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                '          python-version: "3.10.0"\n'
+                "          # python-version: ${{ matrix.python_version }}\n",
+                encoding="utf-8",
+            )
+            (workflows / "deploy-pages.yml").write_text(
+                "jobs:\n"
+                "  build:\n"
+                "    env:\n"
+                "      RUNTIME_DECOYS: |\n"
+                "        node-version-file: .node-version\n"
+                '        test "$(node --version)" = "v20.20.2"\n'
+                '        test "$(npm --version)" = "10.8.2"\n'
+                "    steps:\n"
+                "      - uses: actions/setup-node@v7\n"
+                "        with:\n"
+                '          node-version: "18"\n'
+                "          # node-version-file: .node-version\n",
+                encoding="utf-8",
+            )
+            (workflows / "alpha-routine.yml").write_text(
+                "jobs:\n"
+                "  produce:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                "          python-version-file: .python-version\n",
+                encoding="utf-8",
+            )
+            self.track(
+                root,
+                ".github/workflows/tests.yml",
+                ".github/workflows/deploy-pages.yml",
+                ".github/workflows/alpha-routine.yml",
+            )
+            contract = {
+                "node": "20.20.2",
+                "npm": "10.8.2",
+                "python_primary": "3.11.15",
+                "python_compatibility": ["3.12.13"],
+            }
+
+            errors = check_runtime_contract(root, contract)
+            codes = {item.code for item in errors}
+
+            self.assertTrue(
+                {
+                    "workflow-runtime-assertion-drift",
+                    "python-runtime-matrix-drift",
+                    "deployment-runtime-drift",
+                    "workflow-python-runtime-drift",
+                    "workflow-node-runtime-drift",
+                }
+                <= codes,
+                codes,
+            )
 
     def test_archived_metadata_requires_exact_archive_date(self):
         with TemporaryDirectory() as tmp:
