@@ -12,6 +12,262 @@ SHELL_CONTROL = {";", "&&", "||", "|", "&", "(", ")"}
 BLOCK_SCALAR_HEADER = re.compile(
     r"^(?P<style>[|>])(?:(?:[+-][1-9]?|[1-9][+-]?))?(?:[ \t]+#.*)?$"
 )
+GENERATED_FEED_IGNORES = [
+    "feed/crypto/**",
+    "feed/factory/**",
+    "feed/funds/**",
+    "feed/health.json",
+    "feed/index.json",
+    "feed/intraday/**",
+    "feed/market/**",
+    "feed/reports/**",
+    "feed/screener/**",
+    "feed/signals/**",
+    "feed/stock-notes/**",
+    "feed/watchlist.json",
+]
+TOP_LEVEL_WORKFLOW_KEYS = ["name", "on", "permissions", "concurrency", "jobs"]
+JOB_KEYS = ["frontend", "python", "gate"]
+FRONTEND_JOB_KEYS = ["name", "runs-on", "strategy", "defaults", "env", "steps"]
+PYTHON_JOB_KEYS = ["name", "runs-on", "strategy", "env", "steps"]
+GATE_JOB_KEYS = ["name", "if", "needs", "runs-on", "steps"]
+EVENT_POLICY_LINES = [
+    "  push:",
+    "    branches: [main]",
+    "    paths-ignore:",
+    *[f'      - "{path}"' for path in GENERATED_FEED_IGNORES],
+    "  pull_request:",
+    "  workflow_dispatch:",
+]
+CONCURRENCY_LINES = [
+    "  group: ci-${{ github.ref }}",
+    "  cancel-in-progress: true",
+]
+FRONTEND_DEFAULTS_LINES = [
+    "      run:",
+    "        working-directory: frontend",
+]
+FRONTEND_ENV_LINES = [
+    "      # Approved spec still requires Node 20.20.2 even though Node 20 is EOL.",
+    '      NEXT_TELEMETRY_DISABLED: "1"',
+    "      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}",
+]
+PYTHON_ENV_LINES = [
+    '      PYTHONDONTWRITEBYTECODE: "1"',
+    '      PIP_DISABLE_PIP_VERSION_CHECK: "1"',
+]
+COMMON_PYTHON_ENTRYPOINTS = [
+    "python tests/test_backend.py",
+    "python tests/test_api.py",
+    "python scripts/tests/test_chan_engine.py",
+    "python scripts/tests/test_validate_feed.py",
+    "python scripts/tests/test_feed_validation_security.py",
+    "python scripts/tests/test_feed_ingress.py",
+    "python scripts/tests/test_validate_feed_cli.py",
+    "python scripts/tests/test_feed_publication.py",
+    "python scripts/tests/test_dependabot_merge_gate.py",
+    "python scripts/tests/test_workflow_security.py",
+]
+LOCK_COMPILE_FLAGS = [
+    "--generate-hashes",
+    "--allow-unsafe",
+    "--no-reuse-hashes",
+    "--resolver=backtracking",
+    "--no-strip-extras",
+    "--no-header",
+]
+FRONTEND_STRATEGY_LINES = [
+    "      fail-fast: false",
+    "      matrix:",
+    "        include:",
+    "          - profile: static",
+    "            base_path: /stock-analysis",
+    "          - profile: server",
+    '            base_path: ""',
+]
+PYTHON_STRATEGY_LINES = [
+    "      fail-fast: false",
+    "      matrix:",
+    "        include:",
+    '          - python_version: "3.11.15"',
+    "            lockfile: requirements/ci-py311.txt",
+    '          - python_version: "3.12.13"',
+    "            lockfile: requirements/ci-py312.txt",
+]
+PY311_LOCK_REPRODUCTIONS = [
+    ("backend/requirements.txt", "backend.txt", "backend/requirements.in"),
+    ("scripts/requirements.txt", "scripts.txt", "scripts/requirements.in"),
+    (
+        "scripts/requirements-winter-pg.txt",
+        "winter-pg.txt",
+        "scripts/requirements-winter-pg.in",
+    ),
+    ("backtest/requirements.txt", "backtest.txt", "backtest/requirements.in"),
+    (
+        "requirements/automation.txt",
+        "automation.txt",
+        "requirements/automation.in",
+    ),
+    ("requirements/ci-py311.txt", "ci-py311.txt", "requirements/ci.in"),
+]
+PY312_LOCK_REPRODUCTIONS = [
+    ("requirements/ci-py312.txt", "ci-py312.txt", "requirements/ci.in"),
+]
+FRONTEND_STEP_BLOCKS = [
+    "\n".join(
+        [
+            "      - uses: actions/checkout@v7",
+            "        with:",
+            "          persist-credentials: false",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - uses: actions/setup-node@v7",
+            "        with:",
+            "          node-version-file: .node-version",
+            "          cache: npm",
+            "          cache-dependency-path: frontend/package-lock.json",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - name: Verify exact Node and npm",
+            "        run: |",
+            '          test "$(node --version)" = "v20.20.2"',
+            '          test "$(npm --version)" = "10.8.2"',
+        ]
+    ),
+    "      - run: npm ci",
+    "      - run: npm run lint",
+    "      - run: npm run typecheck",
+    "      - run: npm run test:scripts",
+    "\n".join(
+        [
+            "      - if: matrix.profile == 'static'",
+            "        run: npm run build:static",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - if: matrix.profile == 'static'",
+            "        run: npm run smoke:static",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - if: matrix.profile == 'server'",
+            "        run: npm run build:server",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - if: matrix.profile == 'server'",
+            "        run: npm run smoke:server",
+        ]
+    ),
+]
+
+
+def expected_reproduction_step(
+    name: str,
+    version: str,
+    rows: list[tuple[str, str, str]],
+) -> str:
+    compile_flags = " ".join(LOCK_COMPILE_FLAGS)
+    lines = [
+        f"      - name: {name}",
+        f"        if: matrix.python_version == '{version}'",
+        "        shell: bash",
+        "        run: |",
+        "          set -euo pipefail",
+        '          tmp="$(mktemp -d)"',
+        "          trap 'rm -rf \"$tmp\"' EXIT",
+    ]
+    lines.extend(
+        f'          cp {committed} "$tmp/{temporary}"'
+        for committed, temporary, _ in rows
+    )
+    lines.extend(
+        "          python -m piptools compile "
+        f'{compile_flags} --output-file="$tmp/{temporary}" {direct_input}'
+        for _, temporary, direct_input in rows
+    )
+    lines.extend(
+        f'          cmp "$tmp/{temporary}" {committed}'
+        for committed, temporary, _ in rows
+    )
+    return "\n".join(lines)
+
+
+PYTHON_STEP_BLOCKS = [
+    "\n".join(
+        [
+            "      - uses: actions/checkout@v7",
+            "        with:",
+            "          persist-credentials: false",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - uses: actions/setup-python@v6",
+            "        with:",
+            "          python-version: ${{ matrix.python_version }}",
+            "          cache: pip",
+            "          cache-dependency-path: ${{ matrix.lockfile }}",
+        ]
+    ),
+    '      - run: python -m pip install --require-hashes -r "${{ matrix.lockfile }}"',
+    "      - run: python -m pip check",
+    expected_reproduction_step(
+        "Reproduce Python 3.11 locks from direct inputs",
+        "3.11.15",
+        PY311_LOCK_REPRODUCTIONS,
+    ),
+    expected_reproduction_step(
+        "Reproduce Python 3.12 lock from direct inputs",
+        "3.12.13",
+        PY312_LOCK_REPRODUCTIONS,
+    ),
+    "\n".join(
+        [
+            "      - name: Backend HTTP and data-layer tests",
+            "        working-directory: backend",
+            "        run: |",
+            "          python tests/test_backend.py",
+            "          python tests/test_api.py",
+        ]
+    ),
+    "\n".join(
+        [
+            "      - name: Automation and feed-validation tests",
+            "        run: |",
+            *[f"          {command}" for command in COMMON_PYTHON_ENTRYPOINTS[2:]],
+        ]
+    ),
+    "\n".join(
+        [
+            "      - name: Primary-runtime lock consistency",
+            "        if: matrix.python_version == '3.11.15'",
+            "        run: |",
+            "          python scripts/tests/test_check_lock_consistency.py",
+            "          python scripts/check_lock_consistency.py --root .",
+        ]
+    ),
+]
+GATE_STEP_BLOCKS = [
+    "\n".join(
+        [
+            "      - name: Require every runtime matrix to pass",
+            "        env:",
+            "          FRONTEND_RESULT: ${{ needs.frontend.result }}",
+            "          PYTHON_RESULT: ${{ needs.python.result }}",
+            "        run: |",
+            '          test "$FRONTEND_RESULT" = success',
+            '          test "$PYTHON_RESULT" = success',
+        ]
+    )
+]
 
 
 def workflow_run_scripts(text: str) -> list[tuple[int, str]]:
@@ -110,29 +366,423 @@ def broad_feed_adds(text: str) -> list[tuple[int, str]]:
 
 def top_level_mapping_block(text: str, key: str) -> str:
     """Return one top-level YAML mapping block without parsing YAML."""
+    return mapping_block(text, key, indent=0)
+
+
+def mapping_block(text: str, key: str, indent: int) -> str:
+    """Return one YAML mapping body at the requested indentation."""
     lines = text.splitlines()
-    starts = [index for index, line in enumerate(lines) if line == f"{key}:"]
+    header = f"{' ' * indent}{key}:"
+    starts = [index for index, line in enumerate(lines) if line == header]
     if len(starts) != 1:
-        raise AssertionError(f"expected one top-level {key!r} block, found {len(starts)}")
+        raise AssertionError(
+            f"expected one indent-{indent} {key!r} block, found {len(starts)}"
+        )
     block: list[str] = []
     for line in lines[starts[0] + 1 :]:
-        if line and not line[0].isspace():
+        line_indent = len(line) - len(line.lstrip())
+        if line.strip() and line_indent <= indent:
             break
         block.append(line)
     return "\n".join(block)
 
 
+def direct_mapping_keys(text: str, indent: int) -> list[str]:
+    """Return every direct mapping key, rejecting unsupported key syntax."""
+    key_pattern = re.compile(
+        rf"^{' ' * indent}"
+        r"(?P<key>[A-Za-z0-9_-]+|\"[^\"]+\"|'[^']+')\s*:"
+    )
+    keys: list[str] = []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        line_indent = len(line) - len(line.lstrip())
+        if line_indent != indent:
+            continue
+        match = key_pattern.match(line)
+        if match is None:
+            keys.append(f"<invalid:{line.strip()}>")
+            continue
+        key = match.group("key")
+        if key[:1] in {'"', "'"} and key[-1:] == key[:1]:
+            key = key[1:-1]
+        keys.append(key)
+    return keys
+
+
+def workflow_step_blocks(job_block: str) -> list[str]:
+    """Return step-local blocks so policy strings cannot satisfy another step."""
+    lines = job_block.splitlines()
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if re.match(r"^ {6}-(?:\s|$)", line)
+    ]
+    return [
+        "\n".join(lines[start : starts[offset + 1] if offset + 1 < len(starts) else None])
+        for offset, start in enumerate(starts)
+    ]
+
+
+def normalized_step_blocks(job_block: str) -> list[str]:
+    """Return exact step blocks while ignoring only trailing blank separators."""
+    return [block.rstrip() for block in workflow_step_blocks(job_block)]
+
+
+def only_block_containing(blocks: list[str], marker: str) -> str:
+    matches = [block for block in blocks if marker in block]
+    if len(matches) != 1:
+        raise AssertionError(
+            f"expected one block containing {marker!r}, found {len(matches)}"
+        )
+    return matches[0]
+
+
+def command_lines(*blocks: str) -> list[str]:
+    """Return process-level commands from one or more scoped run-step blocks."""
+    commands: list[str] = []
+    for block in blocks:
+        commands.extend(
+            line.strip()
+            for line in block.splitlines()
+            if line.strip().startswith("python ")
+        )
+    return commands
+
+
+def step_if_expressions(step: str) -> list[str]:
+    """Return every step-level if expression without matching job-level policy."""
+    return [
+        match.group(1).strip()
+        for match in re.finditer(
+            r"(?m)^(?:      - |        )if:\s*(.+)$",
+            step,
+        )
+    ]
+
+
+def step_run_scripts(step: str) -> list[str]:
+    """Return normalized run bodies from exactly one scoped step."""
+    return [
+        "\n".join(line.strip() for line in script.strip().splitlines())
+        for _, script in workflow_run_scripts(step)
+    ]
+
+
+def reproduction_lines(block: str, prefix: str) -> list[str]:
+    """Return ordered, normalized shell lines for one reproduction operation."""
+    return [
+        line.strip()
+        for line in block.splitlines()
+        if line.strip().startswith(prefix)
+    ]
+
+
 class WorkflowSecurityTests(unittest.TestCase):
-    def test_workflow_scan_ci_triggers_on_every_workflow_change(self) -> None:
+    def assert_required_job_is_fail_closed(self, job: str) -> None:
+        self.assertNotRegex(
+            job,
+            r"(?m)^\s+(?:-\s+)?"
+            r"(?:continue-on-error|\"continue-on-error\"|'continue-on-error')\s*:",
+        )
+        self.assertNotIn("|| true", job)
+
+    def assert_reproduction_is_exact(
+        self,
+        block: str,
+        rows: list[tuple[str, str, str]],
+    ) -> None:
+        self.assertEqual(
+            reproduction_lines(block, "cp "),
+            [
+                f'cp {committed} "$tmp/{temporary}"'
+                for committed, temporary, _ in rows
+            ],
+        )
+        compile_flags = " ".join(LOCK_COMPILE_FLAGS)
+        self.assertEqual(
+            reproduction_lines(block, "python -m piptools compile "),
+            [
+                "python -m piptools compile "
+                f'{compile_flags} --output-file="$tmp/{temporary}" {direct_input}'
+                for _, temporary, direct_input in rows
+            ],
+        )
+        self.assertEqual(
+            reproduction_lines(block, "cmp "),
+            [
+                f'cmp "$tmp/{temporary}" {committed}'
+                for committed, temporary, _ in rows
+            ],
+        )
+
+    def test_tests_workflow_event_policy_is_scoped_and_exact(self) -> None:
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
             encoding="utf-8"
         )
+        events = top_level_mapping_block(text, "on")
+        jobs = top_level_mapping_block(text, "jobs")
+        push = mapping_block(events, "push", indent=2)
+        pull_request = mapping_block(events, "pull_request", indent=2)
+        paths_ignore = mapping_block(push, "paths-ignore", indent=4)
+        permissions = top_level_mapping_block(text, "permissions")
+        concurrency = top_level_mapping_block(text, "concurrency")
 
-        self.assertEqual(text.count('      - ".github/workflows/**"'), 2)
+        self.assertEqual(direct_mapping_keys(text, 0), TOP_LEVEL_WORKFLOW_KEYS)
+        self.assertEqual(direct_mapping_keys(jobs, 2), JOB_KEYS)
+        self.assertEqual(events.splitlines(), EVENT_POLICY_LINES)
+        self.assertIn("    branches: [main]", push)
         self.assertEqual(
-            re.findall(r'^\s+- "\.github/workflows/[^*\"]+"$', text, re.MULTILINE),
-            [],
+            paths_ignore.splitlines(),
+            [f'      - "{path}"' for path in GENERATED_FEED_IGNORES],
         )
+        self.assertEqual(pull_request.strip(), "")
+        self.assertEqual(permissions.splitlines(), ["  contents: read"])
+        self.assertEqual(concurrency.splitlines(), CONCURRENCY_LINES)
+        for covered_path in ("feed/inbox/**", "feed/schema/**", "feed/README.md"):
+            self.assertNotIn(covered_path, paths_ignore)
+
+    def test_tests_workflow_frontend_matrix_and_steps_are_scoped(self) -> None:
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+        jobs = top_level_mapping_block(text, "jobs")
+        frontend = mapping_block(jobs, "frontend", indent=2)
+        strategy = mapping_block(frontend, "strategy", indent=4)
+        defaults = mapping_block(frontend, "defaults", indent=4)
+        env = mapping_block(frontend, "env", indent=4)
+        steps = normalized_step_blocks(frontend)
+
+        self.assert_required_job_is_fail_closed(frontend)
+        self.assertEqual(direct_mapping_keys(frontend, 4), FRONTEND_JOB_KEYS)
+        self.assertEqual(strategy.splitlines(), FRONTEND_STRATEGY_LINES)
+        self.assertEqual(defaults.splitlines(), FRONTEND_DEFAULTS_LINES)
+        self.assertEqual(env.splitlines(), FRONTEND_ENV_LINES)
+        self.assertEqual(steps, FRONTEND_STEP_BLOCKS)
+        self.assertEqual(
+            re.findall(
+                r"(?m)^          - profile: ([^\n]+)\n"
+                r"            base_path: ([^\n]+)$",
+                frontend,
+            ),
+            [("static", "/stock-analysis"), ("server", '""')],
+        )
+        self.assertIn("      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}", frontend)
+
+        checkout = only_block_containing(steps, "uses: actions/checkout@v7")
+        self.assertIn("persist-credentials: false", checkout)
+        setup_node = only_block_containing(steps, "uses: actions/setup-node@v7")
+        self.assertIn("node-version-file: .node-version", setup_node)
+        self.assertIn("cache-dependency-path: frontend/package-lock.json", setup_node)
+
+        versions = only_block_containing(steps, "name: Verify exact Node and npm")
+        self.assertIn('test "$(node --version)" = "v20.20.2"', versions)
+        self.assertIn('test "$(npm --version)" = "10.8.2"', versions)
+        common_steps = [checkout, setup_node, versions]
+        for command in (
+            "npm ci",
+            "npm run lint",
+            "npm run typecheck",
+            "npm run test:scripts",
+        ):
+            command_step = only_block_containing(steps, f"- run: {command}")
+            self.assertRegex(
+                command_step,
+                rf"(?m)^      - run: {re.escape(command)}$",
+            )
+            common_steps.append(command_step)
+        for step in common_steps:
+            self.assertEqual(step_if_expressions(step), [], step)
+
+        for profile, command in (
+            ("static", "npm run build:static"),
+            ("static", "npm run smoke:static"),
+            ("server", "npm run build:server"),
+            ("server", "npm run smoke:server"),
+        ):
+            profile_step = only_block_containing(steps, f"run: {command}")
+            self.assertEqual(
+                step_if_expressions(profile_step),
+                [f"matrix.profile == '{profile}'"],
+                (profile, command),
+            )
+            self.assertEqual(step_run_scripts(profile_step), [command])
+
+    def test_tests_workflow_python_matrix_locks_and_entrypoints_are_scoped(
+        self,
+    ) -> None:
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+        jobs = top_level_mapping_block(text, "jobs")
+        python_job = mapping_block(jobs, "python", indent=2)
+        strategy = mapping_block(python_job, "strategy", indent=4)
+        env = mapping_block(python_job, "env", indent=4)
+        steps = normalized_step_blocks(python_job)
+
+        self.assert_required_job_is_fail_closed(python_job)
+        self.assertEqual(direct_mapping_keys(python_job, 4), PYTHON_JOB_KEYS)
+        self.assertEqual(strategy.splitlines(), PYTHON_STRATEGY_LINES)
+        self.assertEqual(env.splitlines(), PYTHON_ENV_LINES)
+        self.assertEqual(steps, PYTHON_STEP_BLOCKS)
+        python_rows = re.findall(
+            r'(?m)^          - python_version: "([^"]+)"\n'
+            r"            lockfile: ([^\n]+)$",
+            python_job,
+        )
+        self.assertEqual(
+            python_rows,
+            [
+                ("3.11.15", "requirements/ci-py311.txt"),
+                ("3.12.13", "requirements/ci-py312.txt"),
+            ],
+        )
+        checkout = only_block_containing(steps, "uses: actions/checkout@v7")
+        self.assertIn("persist-credentials: false", checkout)
+        setup_python = only_block_containing(steps, "uses: actions/setup-python@v6")
+        self.assertIn("python-version: ${{ matrix.python_version }}", setup_python)
+        install = only_block_containing(
+            steps,
+            'python -m pip install --require-hashes -r "${{ matrix.lockfile }}"',
+        )
+        self.assertNotIn("--upgrade", install)
+        self.assertEqual(
+            step_run_scripts(install),
+            ['python -m pip install --require-hashes -r "${{ matrix.lockfile }}"'],
+        )
+        pip_check = only_block_containing(steps, "run: python -m pip check")
+        self.assertEqual(step_run_scripts(pip_check), ["python -m pip check"])
+
+        reproduce_311 = only_block_containing(
+            steps, "name: Reproduce Python 3.11 locks from direct inputs"
+        )
+        reproduce_312 = only_block_containing(
+            steps, "name: Reproduce Python 3.12 lock from direct inputs"
+        )
+        self.assertEqual(
+            step_if_expressions(reproduce_311),
+            ["matrix.python_version == '3.11.15'"],
+        )
+        self.assertEqual(
+            step_if_expressions(reproduce_312),
+            ["matrix.python_version == '3.12.13'"],
+        )
+        self.assert_reproduction_is_exact(reproduce_311, PY311_LOCK_REPRODUCTIONS)
+        self.assert_reproduction_is_exact(reproduce_312, PY312_LOCK_REPRODUCTIONS)
+        for block, expected_compile_count in (
+            (reproduce_311, 6),
+            (reproduce_312, 1),
+        ):
+            compile_lines = [
+                line.strip()
+                for line in block.splitlines()
+                if "piptools compile" in line
+            ]
+            self.assertEqual(len(compile_lines), expected_compile_count)
+            self.assertNotIn("--upgrade", block)
+            self.assertLess(block.index("\n          cp "), block.index("piptools compile"))
+            for compile_line in compile_lines:
+                for flag in LOCK_COMPILE_FLAGS:
+                    self.assertIn(flag, compile_line)
+
+        backend_tests = only_block_containing(
+            steps, "name: Backend HTTP and data-layer tests"
+        )
+        automation_tests = only_block_containing(
+            steps, "name: Automation and feed-validation tests"
+        )
+        self.assertEqual(
+            re.findall(
+                r"(?m)^        working-directory:\s*(\S.*?)\s*$",
+                backend_tests,
+            ),
+            ["backend"],
+        )
+        for step in (
+            checkout,
+            setup_python,
+            install,
+            pip_check,
+            backend_tests,
+            automation_tests,
+        ):
+            self.assertEqual(step_if_expressions(step), [], step)
+        self.assertEqual(
+            command_lines(backend_tests, automation_tests),
+            COMMON_PYTHON_ENTRYPOINTS,
+        )
+        primary_locks = only_block_containing(
+            steps, "name: Primary-runtime lock consistency"
+        )
+        self.assertEqual(
+            step_if_expressions(primary_locks),
+            ["matrix.python_version == '3.11.15'"],
+        )
+        primary_commands = command_lines(primary_locks)
+        self.assertEqual(
+            primary_commands,
+            [
+                "python scripts/tests/test_check_lock_consistency.py",
+                "python scripts/check_lock_consistency.py --root .",
+            ],
+        )
+        expanded_process_entrypoints = (
+            len(python_rows)
+            * len(command_lines(backend_tests, automation_tests))
+            + len(primary_commands)
+        )
+        self.assertEqual(expanded_process_entrypoints, 22)
+
+    def test_tests_workflow_stable_gate_requires_both_matrices(self) -> None:
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+        jobs = top_level_mapping_block(text, "jobs")
+        gate = mapping_block(jobs, "gate", indent=2)
+        steps = normalized_step_blocks(gate)
+
+        self.assert_required_job_is_fail_closed(gate)
+        self.assertEqual(direct_mapping_keys(gate, 4), GATE_JOB_KEYS)
+        self.assertEqual(steps, GATE_STEP_BLOCKS)
+        self.assertEqual(
+            re.findall(r"(?m)^    name:\s*(.+)$", gate),
+            ["Tests (单元测试闸门)"],
+        )
+        self.assertEqual(
+            re.findall(r"(?m)^    if:\s*(.+)$", gate),
+            ["${{ always() }}"],
+        )
+        self.assertEqual(
+            re.findall(r"(?m)^    needs:\s*(.+)$", gate),
+            ["[frontend, python]"],
+        )
+        requirement = only_block_containing(
+            steps, "name: Require every runtime matrix to pass"
+        )
+        self.assertEqual(step_if_expressions(requirement), [], requirement)
+        self.assertIn("FRONTEND_RESULT: ${{ needs.frontend.result }}", requirement)
+        self.assertIn("PYTHON_RESULT: ${{ needs.python.result }}", requirement)
+        self.assertIn('test "$FRONTEND_RESULT" = success', requirement)
+        self.assertIn('test "$PYTHON_RESULT" = success', requirement)
+        self.assertEqual(
+            step_run_scripts(requirement),
+            [
+                'test "$FRONTEND_RESULT" = success\n'
+                'test "$PYTHON_RESULT" = success'
+            ],
+        )
+
+    def test_required_job_fail_closed_recognizes_quoted_keys(self) -> None:
+        for line in (
+            "    continue-on-error: false",
+            '    "continue-on-error": false',
+            "    'continue-on-error': false",
+            '      - "continue-on-error": false',
+        ):
+            with self.subTest(line=line):
+                with self.assertRaises(AssertionError):
+                    self.assert_required_job_is_fail_closed(line)
 
     def test_broad_staging_detector_covers_yaml_shell_and_pathspec_variants(self) -> None:
         dangerous = {
