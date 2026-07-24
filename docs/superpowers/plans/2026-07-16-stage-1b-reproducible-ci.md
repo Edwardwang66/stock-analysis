@@ -1,5 +1,9 @@
 # Stage 1B Reproducible Toolchain and CI Implementation Plan
 
+> **Status:** Accepted implementation plan
+> **Scope:** Stage 1B reproducible toolchain and CI implementation slice.
+> **Last verified commit:** `806ea6515c22af521929b1e485c37cf754cd0c27`
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Establish deterministic Node and Python installations, explicit static and server frontend builds, offline route smoke tests, and an all-PR CI matrix without changing application behavior or deleting source directories during a build.

@@ -1,5 +1,9 @@
 # Stage 1C Truth-First Documentation Implementation Plan
 
+> **Status:** Accepted implementation plan
+> **Scope:** Stage 1C truth-first documentation implementation slice.
+> **Last verified commit:** `806ea6515c22af521929b1e485c37cf754cd0c27`
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the repository's stale product narrative with a verifiable, truth-first entry point and a small authoritative documentation system that distinguishes current behavior, accepted target architecture, historical research, and archived pre-refactor plans.

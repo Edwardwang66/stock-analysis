@@ -1,8 +1,10 @@
 # Stock Analysis 个人研究工作台整体重构设计
 
-- Status: Draft for written review; design sections approved in conversation
+> **Status:** Accepted
+> **Scope:** Repository-wide architecture, migration, testing, security, and documentation program design.
+> **Last verified commit:** `806ea6515c22af521929b1e485c37cf754cd0c27`
+
 - Date: 2026-07-16
-- Scope: repository-wide architecture, migration, testing, security, and documentation
 - Baseline commit: `3fe79bfc748e83b6f9ee16e17fe75bf11ceddadc`
 
 ## 1. Decision summary

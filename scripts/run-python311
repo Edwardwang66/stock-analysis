@@ -1,0 +1,115 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+expected_uid=$(id -u)
+expected_gid=$(id -g)
+snapshot_root=
+snapshot_gitfile=
+
+cleanup() {
+  if [ -n "$snapshot_root" ] && [ -d "$snapshot_root" ]; then
+    rm -rf "$snapshot_root"
+  fi
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [ "$expected_uid" -eq 0 ]; then
+  echo "scripts/run-python311 refuses to mount the worktree as root" >&2
+  exit 1
+fi
+
+if [ -f "$repo_root/.git" ]; then
+  git_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-dir)
+  git_common_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir)
+  case "$git_dir" in
+    "$git_common_dir"/*)
+      git_dir_relative=${git_dir#"$git_common_dir"/}
+      ;;
+    *)
+      echo "scripts/run-python311 could not relate the worktree Git directory to its common directory" >&2
+      exit 1
+      ;;
+  esac
+
+  umask 077
+  snapshot_root=$(mktemp -d "$repo_root/.run-python311-git.XXXXXX")
+  mkdir "$snapshot_root/common"
+  cp -R "$git_common_dir/." "$snapshot_root/common/"
+  snapshot_name=${snapshot_root##*/}
+  snapshot_gitfile="$snapshot_root/gitfile"
+  printf 'gitdir: /workspace/%s/common/%s\n' \
+    "$snapshot_name" "$git_dir_relative" > "$snapshot_gitfile"
+elif [ ! -d "$repo_root/.git" ]; then
+  echo "scripts/run-python311 requires a Git worktree" >&2
+  exit 1
+fi
+
+run_container() {
+  if [ -n "$snapshot_gitfile" ]; then
+    docker run --rm --init \
+      --user "$expected_uid:$expected_gid" \
+      --env EXPECTED_UID="$expected_uid" \
+      --env EXPECTED_GID="$expected_gid" \
+      --env HOME=/tmp/home \
+      --env PYTHONDONTWRITEBYTECODE=1 \
+      --tmpfs /tmp/home:rw,exec,mode=1777 \
+      --volume "$repo_root:/workspace" \
+      --volume "$snapshot_gitfile:/workspace/.git:ro" \
+      --volume "$snapshot_root/common:/workspace/${snapshot_root##*/}/common:ro" \
+      --workdir /workspace \
+      python:3.11.15 \
+      sh -lc '
+        set -eu
+        if [ ! -f /workspace/.python-version ] || [ ! -d /workspace/scripts ]; then
+          echo "scripts/run-python311: Docker cannot read the checkout root; configure Docker/Colima file sharing for this path" >&2
+          exit 1
+        fi
+        test "$(python --version 2>&1)" = "Python 3.11.15"
+        git --version >/dev/null
+        test "$(id -u)" = "$EXPECTED_UID"
+        test "$(id -g)" = "$EXPECTED_GID"
+        test "$(id -u)" -ne 0
+        git config --global --add safe.directory /workspace
+        test "$(git rev-parse --show-toplevel)" = "/workspace"
+        exec "$@"
+      ' sh "$@"
+  else
+    docker run --rm --init \
+      --user "$expected_uid:$expected_gid" \
+      --env EXPECTED_UID="$expected_uid" \
+      --env EXPECTED_GID="$expected_gid" \
+      --env HOME=/tmp/home \
+      --env PYTHONDONTWRITEBYTECODE=1 \
+      --tmpfs /tmp/home:rw,exec,mode=1777 \
+      --volume "$repo_root:/workspace" \
+      --workdir /workspace \
+      python:3.11.15 \
+      sh -lc '
+        set -eu
+        if [ ! -f /workspace/.python-version ] || [ ! -d /workspace/scripts ]; then
+          echo "scripts/run-python311: Docker cannot read the checkout root; configure Docker/Colima file sharing for this path" >&2
+          exit 1
+        fi
+        test "$(python --version 2>&1)" = "Python 3.11.15"
+        git --version >/dev/null
+        test "$(id -u)" = "$EXPECTED_UID"
+        test "$(id -g)" = "$EXPECTED_GID"
+        test "$(id -u)" -ne 0
+        git config --global --add safe.directory /workspace
+        test "$(git rev-parse --show-toplevel)" = "/workspace"
+        exec "$@"
+      ' sh "$@"
+  fi
+}
+
+if run_container "$@"; then
+  status=0
+else
+  status=$?
+fi
+exit "$status"
