@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-07-24T2116Z",
+  "kind": "routine",
+  "produced_at": "2026-07-24T21:16:12Z",
+  "asof_data": "2026-07-24",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/30127119791"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "CASHCAT 资金费年化 69%(OI $11M)——挤压/单边持仓信号。",
+      "tickers": [
+        "CASHCAT"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "WLD 资金费年化 -67%(OI $40M)——挤压/单边持仓信号。",
+      "tickers": [
+        "WLD"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.11% (mark 7403.8,$450M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:16 流动永续持仓面,跨所错位 86,HIP-3 24/7 资产 88。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "44e4fdf8fff207695f6f1fff7dae1f89a1286be241f4119c623c63f4ca65cfa6"
+  }
+}
