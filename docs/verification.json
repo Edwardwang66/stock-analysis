@@ -9,7 +9,10 @@
     "python_compatibility": ["3.12.13"]
   },
   "maintained_documents": [
+    "backtest/README.md",
+    "backtest/FEATURES.md",
     "docs/README.md",
+    "docs/research/index.md",
     "docs/current-architecture.md",
     "docs/configuration.md",
     "docs/deployment-matrix.md",
@@ -41,7 +44,26 @@
     "docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md",
     "docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md"
   ],
-  "historical_documents": [],
+  "historical_documents": [
+    "backtest/README_tqm.md",
+    "backtest/README_binance.md",
+    "backtest/README_crypto.md",
+    "backtest/README_crypto_pipeline.md",
+    "backtest/README_pipeline.md",
+    "backtest/README_statarb.md",
+    "backtest/README_xs.md",
+    "docs/study-downshift-2026-06-10.md",
+    "docs/study-downshift-2026-07-02.md",
+    "docs/study-overnight-gap-2026-06-10.md",
+    "docs/study-pbo-2026-06-10.md",
+    "docs/study-pbo-2026-07-02.md",
+    "docs/study-pit-bite-2026-06-10.md",
+    "docs/study-pit-membership-2026-06-10.md",
+    "docs/hyperliquid-integration.md",
+    "docs/survivorship-bias-data-sources.md",
+    "research/ai-agents-skills-market-scan.md",
+    "research/quant-factor-deep-research.md"
+  ],
   "archived_documents": [
     "docs/archive/iteration-log.md",
     "docs/archive/pre-refactor/roadmap.md",
@@ -53,7 +75,8 @@
     "docs/archive/pre-refactor/optimization-2026-06.md",
     "docs/archive/pre-refactor/positioning.md",
     "docs/archive/pre-refactor/cost-estimate-2026-06.md",
-    "docs/archive/pre-refactor/self-improving-alpha-loop.md"
+    "docs/archive/pre-refactor/self-improving-alpha-loop.md",
+    "docs/archive/pre-refactor/backtest-features.md"
   ],
   "classification_exemptions": [
     "feed/screener/*.md",

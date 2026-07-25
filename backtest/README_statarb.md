@@ -1,5 +1,8 @@
 # 流 B —— 条件因子统计套利 做多/做空引擎(`statarb.py`)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 这是按设计文档(US Equity Mid-Frequency Hybrid Quant System v1.0)**优化后的做多做空逻辑**,
 取代旧 `xs_portfolio.py` 的「raw 因子分层多空」(那是流 A:毛口径、含幸存者偏差、无成本)。
 

@@ -1,5 +1,8 @@
 # 加密多因子研究 + 拟合(Hyperliquid 永续)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 按研报 §3/§6 实现的**加密横截面多因子模型**,并按你的要求"先手配权重、最后做拟合"。
 数据:Hyperliquid `info` API,20 个流动性最高的永续币,日线最多 4 年、资金费最多 2 年,无未来函数。
 

@@ -1,5 +1,8 @@
 # 完整因子测试体系(预处理 → IC/IR → 分层 → 无未来函数 1 月验证)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 `factor_pipeline.py` 严格按标准量化流程实现,全程无未来函数(rebalance 日只用 ≤d 数据)。
 universe = 514 只(S&P500 ∪ Nasdaq-100),月度(21 交易日)非重叠,持有期 H=21 日。
 

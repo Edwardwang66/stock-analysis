@@ -1,5 +1,8 @@
 # Hyperliquid 接口全图 → 信息缺口填补方案(2026-06-10 实测)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 > 全部免 key,`POST https://api.hyperliquid.xyz/info`(WebSocket: `wss://api.hyperliquid.xyz/ws`)。
 > 本文档:① API 面板实测结果;② 每个接口填我们哪个缺口;③ 已落地与路线图。
 

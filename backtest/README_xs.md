@@ -1,5 +1,8 @@
 # 美股横截面多因子研究(Rank-IC / 分层 / Purged walk-forward)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 按 `research/quant-factor-deep-research.md` §6 蓝图实现的**横截面**多因子模型。
 与第一版(`backtest/factors.py` 的时序择时信号)不同,这里做的是"同一时点给所有股票排序"
 的横截面因子,用**学术标准口径 Rank-IC** 评估,而非命中率。

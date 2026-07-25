@@ -1,5 +1,8 @@
 # 长历史(2017–2026)加密因子测试 —— Binance 8 年数据补足样本
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 `binance_pipeline.py`。用 Binance.vision 镜像(绕开 api.binance.com 的 451 地理封锁)拉到
 **~8.8 年现货日线**,把之前 Hyperliquid 仅 ~2 年(违反 MinBTL)的硬伤补上,并做**真正的时间切分样本外**。
 

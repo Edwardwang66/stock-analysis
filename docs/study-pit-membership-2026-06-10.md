@@ -1,5 +1,8 @@
 # S&P500 时点成分与幸存者偏差量化(2026-06-10)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 数据:Wikipedia 当前成分(503)+ 变更史(399 件,最早 1976-07-01)。
 流失名单抽样 30 个,Yahoo 仍可得 **40%**(不可得率 60%)。
 

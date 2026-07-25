@@ -1,5 +1,8 @@
 # 消幸存者偏差的数据源调研(2026-06-10)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 > 背景:本仓所有回测结论都带「universe=当前成分股 → 幸存者偏差,结果高估」的诚实声明。
 > 本调研回答:免费/低成本路径能把这个偏差消掉多少?
 
@@ -24,7 +27,7 @@
 
 ## 对本仓的行动建议(按性价比排序)
 
-1. **免费第一步(下一迭代实现)**:`scripts/pit_membership.py` 从 Wikipedia 变更表重建
+1. **免费第一步(下一迭代实现)**:`backtest/pit_membership.py` 从 Wikipedia 变更表重建
    S&P500 时点成分 → 回测横截面只取「当日确实在指数里且有数据」的票,
    并输出**缺失率曲线**(每个时点:应在成分里但无价格数据的比例)——把"偏差多大"从未知变成可测。
 2. **量化偏差上界**:用缺失率 × 退市股平均超额(-X%,文献区间 1-4%/年)给现有结论打折,写进报告 notes。

@@ -1,5 +1,8 @@
 # 量化因子设计与多周期价格预测 — 深度研究报告
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 > 目的:为"设计一个能同时用于美股与加密、覆盖次日/周/月/年多周期的可回测因子"做方法论铺垫。
 > 方法:5 个角度并行检索(fan-out)→ 每角度 ~20 条可证伪结论 + 一手来源 → 关键结论独立核验 → 合成。
 > 日期:2026-06-06。所有关键数字均标注来源 URL 与可信度(高/中/低)。
