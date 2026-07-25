@@ -51,7 +51,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - name: Verify exact Python, Git, and non-root identity
@@ -1348,7 +1348,7 @@ class DocumentationChecks(TestCase):
             '          - python_version: "3.11.15"\n'
             '          - python_version: "3.12.13"\n'
             "    steps:\n"
-            "      - uses: actions/setup-python@v6\n"
+            "      - uses: actions/setup-python@v7\n"
             "        with:\n"
             "          python-version: ${{ matrix.python_version }}\n"
         )
@@ -1461,7 +1461,7 @@ class DocumentationChecks(TestCase):
                 '          - python_version: "3.11.15"\n'
                 '          - python_version: "3.12.13"\n'
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 "          python-version: ${{ matrix.python_version }}\n"
             )
@@ -1484,7 +1484,7 @@ class DocumentationChecks(TestCase):
                 "jobs:\n"
                 "  produce:\n"
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 "          python-version-file: .python-version\n"
             )
@@ -1576,7 +1576,7 @@ class DocumentationChecks(TestCase):
                 "      - run: echo matrix only\n"
                 "  python:\n"
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 "          python-version-file: .python-version\n"
             )
@@ -1608,12 +1608,12 @@ class DocumentationChecks(TestCase):
     def test_runtime_contract_rejects_unsupported_yaml_runtime_structures(self):
         cases = {
             "flow": (
-                "jobs: {produce: {steps: [{uses: actions/setup-python@v6, "
+                "jobs: {produce: {steps: [{uses: actions/setup-python@v7, "
                 "with: {python-version: '3.10.0'}}]}}\n"
             ),
             "alias": (
                 "bad_step: &bad_step\n"
-                "  uses: actions/setup-python@v6\n"
+                "  uses: actions/setup-python@v7\n"
                 "  with:\n"
                 '    python-version: "3.10.0"\n'
                 "jobs:\n"
@@ -1625,7 +1625,7 @@ class DocumentationChecks(TestCase):
                 '"jobs":\n'
                 "  produce:\n"
                 '    "steps":\n'
-                '      - "uses": actions/setup-python@v6\n'
+                '      - "uses": actions/setup-python@v7\n'
                 '        "with":\n'
                 '          "python-version": "3.10.0"\n'
             ),
@@ -1634,7 +1634,7 @@ class DocumentationChecks(TestCase):
                 "  produce:\n"
                 "    steps:\n"
                 "      - uses: >-\n"
-                "          actions/setup-python@v6\n"
+                "          actions/setup-python@v7\n"
                 "        with:\n"
                 '          python-version: "3.10.0"\n'
             ),
@@ -1675,13 +1675,13 @@ class DocumentationChecks(TestCase):
                 '          - python_version: "3.11.15"\n'
                 '          - python_version: "3.12.13"\n'
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 "          python-version: ${{ matrix.python_version }}\n"
                 "  disabled_decoy:\n"
                 "    if: 0\n"
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 '          python-version: "3.10.0"\n'
                 "      - run: |\n"
@@ -1735,7 +1735,7 @@ class DocumentationChecks(TestCase):
                     '          - python_version: "3.11.15"\n'
                     '          - python_version: "3.12.13"\n'
                     "    steps:\n"
-                    "      - uses: actions/setup-python@v6\n"
+                    "      - uses: actions/setup-python@v7\n"
                     "        with:\n"
                     "          python-version: ${{ matrix.python_version }}\n"
                 )
@@ -1756,7 +1756,7 @@ class DocumentationChecks(TestCase):
                     "  produce:\n"
                     f"    if: {condition}\n"
                     "    steps:\n"
-                    "      - uses: actions/setup-python@v6\n"
+                    "      - uses: actions/setup-python@v7\n"
                     "        with:\n"
                     '          python-version: "3.10.0"\n'
                 )
@@ -1799,7 +1799,7 @@ class DocumentationChecks(TestCase):
             '          - python_version: "3.11.15"\n'
             '          - python_version: "3.12.13"\n'
             "    steps:\n"
-            "      - uses: actions/setup-python@v6\n"
+            "      - uses: actions/setup-python@v7\n"
             "        with:\n"
             "          python-version: ${{ matrix.python_version }}\n"
         )
@@ -1820,7 +1820,7 @@ class DocumentationChecks(TestCase):
             "  produce:\n"
             f"    if: {conditional}\n"
             "    steps:\n"
-            "      - uses: actions/setup-python@v6\n"
+            "      - uses: actions/setup-python@v7\n"
             "        with:\n"
             '          python-version: "3.10.0"\n'
         )
@@ -1891,7 +1891,7 @@ class DocumentationChecks(TestCase):
                 '                    - python_version: "3.11.15"\n'
                 '                    - python_version: "3.12.13"\n'
                 "        steps:\n"
-                "            - uses: actions/setup-python@v6\n"
+                "            - uses: actions/setup-python@v7\n"
                 "              with:\n"
                 "                  python-version: ${{ matrix.python_version }}\n",
                 encoding="utf-8",
@@ -1912,7 +1912,7 @@ class DocumentationChecks(TestCase):
                 "jobs:\n"
                 "    produce:\n"
                 "        steps:\n"
-                "            - uses: actions/setup-python@v6\n"
+                "            - uses: actions/setup-python@v7\n"
                 "              with:\n"
                 '                  python-version: "3.10.0"\n',
                 encoding="utf-8",
@@ -1985,7 +1985,7 @@ class DocumentationChecks(TestCase):
                 '        - python_version: "3.11.15"\n'
                 '        - python_version: "3.12.13"\n'
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 '          python-version: "3.10.0"\n'
                 "          # python-version: ${{ matrix.python_version }}\n",
@@ -2010,7 +2010,7 @@ class DocumentationChecks(TestCase):
                 "jobs:\n"
                 "  produce:\n"
                 "    steps:\n"
-                "      - uses: actions/setup-python@v6\n"
+                "      - uses: actions/setup-python@v7\n"
                 "        with:\n"
                 "          python-version-file: .python-version\n",
                 encoding="utf-8",
@@ -2095,7 +2095,7 @@ class DocumentationChecks(TestCase):
         )
         self.assertRegex(
             workflow,
-            r"(?m)^      - uses: actions/setup-python@v6\n"
+            r"(?m)^      - uses: actions/setup-python@v7\n"
             r"        with:\n"
             r"          python-version-file: .python-version$",
         )

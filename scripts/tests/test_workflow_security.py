@@ -116,47 +116,47 @@ APPROVED_PYTHON_RUN_BODY_KEYS = {
     ("feed-watchdog.yml", "audit", "运行审计并写 health.json"),
 }
 
-CURRENT_SETUP_311 = """      - uses: actions/setup-python@v6
+CURRENT_SETUP_311 = """      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 """
-CURRENT_SETUP_312 = """      - uses: actions/setup-python@v6
+CURRENT_SETUP_312 = """      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 """
-CURRENT_SETUP_311_OPENCLAW = """      - uses: actions/setup-python@v6
+CURRENT_SETUP_311_OPENCLAW = """      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
 """
-FINAL_SETUP_STANDARD = """      - uses: actions/setup-python@v6
+FINAL_SETUP_STANDARD = """      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
 """
-FINAL_SETUP_STANDARD_OPENCLAW = """      - uses: actions/setup-python@v6
+FINAL_SETUP_STANDARD_OPENCLAW = """      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
 
 """
-FINAL_SETUP_AUTOMATION = """      - uses: actions/setup-python@v6
+FINAL_SETUP_AUTOMATION = """      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
           cache: pip
           cache-dependency-path: requirements/automation.txt
 """
-FINAL_SETUP_BACKEND = """      - uses: actions/setup-python@v6
+FINAL_SETUP_BACKEND = """      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
           cache: pip
           cache-dependency-path: backend/requirements.txt
 """
-FINAL_SETUP_SCRIPTS = """      - uses: actions/setup-python@v6
+FINAL_SETUP_SCRIPTS = """      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
           cache: pip
           cache-dependency-path: scripts/requirements.txt
 """
-FINAL_SETUP_TRUSTED = """      - uses: actions/setup-python@v6
+FINAL_SETUP_TRUSTED = """      - uses: actions/setup-python@v7
         with:
           python-version-file: trusted/.python-version
           cache: pip
@@ -1421,7 +1421,7 @@ PYTHON_STEP_BLOCKS = [
     ),
     "\n".join(
         [
-            "      - uses: actions/setup-python@v6",
+            "      - uses: actions/setup-python@v7",
             "        with:",
             "          python-version: ${{ matrix.python_version }}",
             "          cache: pip",
@@ -3557,7 +3557,7 @@ def enforce_python_workflow_policy(
         )
         _, action = entries[0]
         require_workflow_policy(
-            action == "actions/setup-python@v6",
+            action == "actions/setup-python@v7",
             f"setup-python action is not v6: {site!r}",
         )
     docs_setup = setup_inventory[DOCUMENTATION_PYTHON_JOB][0][0]["raw"]
@@ -4374,7 +4374,7 @@ class WorkflowSecurityTests(unittest.TestCase):
             "\n  shadow-setup:\n"
             "    runs-on: ubuntu-latest\n"
             "    steps:\n"
-            "      - uses: actions/setup-python@v6\n"
+            "      - uses: actions/setup-python@v7\n"
             "        with:\n"
             "          python-version-file: .python-version\n"
         )
@@ -4571,14 +4571,14 @@ class WorkflowSecurityTests(unittest.TestCase):
         wrong_action["daily-digest.yml"] = final[
             "daily-digest.yml"
         ].replace(
-            "actions/setup-python@v6",
+            "actions/setup-python@v7",
             "actions/setup-python@v5",
             1,
         )
 
         outside_step = dict(final)
         outside_step["daily-digest.yml"] = (
-            "# actions/setup-python@v6 must not hide outside a parsed step\n"
+            "# actions/setup-python@v7 must not hide outside a parsed step\n"
             + final["daily-digest.yml"]
         )
 
@@ -4588,7 +4588,7 @@ class WorkflowSecurityTests(unittest.TestCase):
     steps:
       - run: |
           cat <<'EOF'
-          uses: actions/setup-python@v6
+          uses: actions/setup-python@v7
           EOF
 """
 
@@ -5092,7 +5092,7 @@ class WorkflowSecurityTests(unittest.TestCase):
         )
         checkout = only_block_containing(steps, "uses: actions/checkout@v7")
         self.assertIn("persist-credentials: false", checkout)
-        setup_python = only_block_containing(steps, "uses: actions/setup-python@v6")
+        setup_python = only_block_containing(steps, "uses: actions/setup-python@v7")
         self.assertIn("python-version: ${{ matrix.python_version }}", setup_python)
         install = only_block_containing(
             steps,

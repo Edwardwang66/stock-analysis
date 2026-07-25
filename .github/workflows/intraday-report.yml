@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - name: 准备 live 工作树

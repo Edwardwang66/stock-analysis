@@ -120,7 +120,7 @@ class ValidateFeedCliTests(unittest.TestCase):
         )[1].split("- name: Checkout untrusted submission as data only", 1)[0]
         head_block = workflow.split(
             "- name: Checkout untrusted submission as data only", 1
-        )[1].split("- uses: actions/setup-python@v6", 1)[0]
+        )[1].split("- uses: actions/setup-python@v7", 1)[0]
 
         self.assertEqual(workflow.count(unsafe_input), 1)
         self.assertNotIn(unsafe_input, trusted_block)
