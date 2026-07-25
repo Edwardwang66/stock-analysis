@@ -25,7 +25,7 @@ The FastAPI clients concatenate `API_BASE` or `NEXT_PUBLIC_API_BASE` literally w
 | `NEXT_PUBLIC_EDGE_BASE` | Frontend deployer | Optional | Same origin on a browser `*.vercel.app` host; otherwise the hard-coded hosted deployment | No | `frontend/lib/datasource.ts` Edge quote and OHLCV stage |
 | `NEXT_PUBLIC_FEED_BASE` | Frontend deployer | Optional | Raw GitHub `main/feed` URL for this repository | No | `frontend/lib/feed.ts` |
 
-When nonempty, `NEXT_PUBLIC_BASE_PATH` must begin with `/` and must not end with `/`. `NEXT_PUBLIC_API_BASE` must omit a trailing slash. An unset value skips browser calls to FastAPI. `NEXT_PUBLIC_FEED_BASE` changes the raw-feed origin; a failed raw artifact request still falls back to the same-origin bundled artifact.
+When nonempty, `NEXT_PUBLIC_BASE_PATH` must begin with `/` and must not end with `/`. `NEXT_PUBLIC_API_BASE` must omit a trailing slash. An unset value skips browser calls to FastAPI. `NEXT_PUBLIC_FEED_BASE` changes the raw-feed origin. Most artifact readers retry a failed raw request for the same relative path from the same-origin bundled feed; live intraday is remote-only and has no bundled fallback.
 
 An unset `NEXT_PUBLIC_EDGE_BASE` does not disable Edge requests. When the browser is not already on a same-origin Vercel host, any request that reaches the Edge stage still attempts `https://stock-analysis-ten-phi.vercel.app`. No supported current setting disables that attempt entirely.
 
