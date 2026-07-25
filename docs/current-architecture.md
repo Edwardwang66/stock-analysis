@@ -95,7 +95,7 @@ Feed artifacts have multiple writers and uneven schema coverage. `feed/schema/re
 
 The current `FEED_PUBLICATION_MANIFEST` is only the Stage 1A workflow-local Git-staging allowlist. Producer helpers update that temporary manifest with an atomic file replacement, and `scripts/feed_publication.py stage` stages only its recorded paths. Several other workflows still stage explicit feed files directly. This manifest is not a reader-facing snapshot, does not describe artifact completeness or cross-artifact exposure, provides no previous-complete rollback contract, and is not fetched by the frontend.
 
-The current `publish_report` path validates its report and updates `index.json` after its derived files, with atomic replacement for individual JSON files. That ordering applies only to this publisher path and is not a complete multi-writer snapshot protocol.
+The current `publish_report` path validates its report, writes the report and any derived files directly, then rebuilds and writes `index.json`. That ordering applies only to this publisher path; the individual file writes are not atomic replacements, and there is no cross-file transaction or complete multi-writer snapshot protocol.
 
 A reader-facing atomic snapshot manifest written last, completeness validation across the snapshot, and fallback to the previous complete snapshot are **Planned**. They are not current behavior.
 

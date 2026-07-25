@@ -5,7 +5,7 @@
 
 Current replacement: use the [accepted migration program](../../superpowers/specs/2026-07-16-stock-analysis-refactor-design.md).
 
-> 配套:[`architecture.md`](architecture.md) · [`../research/ai-agents-skills-market-scan.md`](../research/ai-agents-skills-market-scan.md)
+> 配套:[`architecture.md`](../../architecture.md) · [`../research/ai-agents-skills-market-scan.md`](../../../research/ai-agents-skills-market-scan.md)
 
 本平台采用「**先窄后宽、先免费源后付费源、先看板后 AI**」的演进策略。
 
