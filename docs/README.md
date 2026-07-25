@@ -1,0 +1,80 @@
+# Documentation
+
+> **Status:** Current
+> **Scope:** Status catalog and navigation for maintained, target, historical, and archived documentation.
+> **Last verified commit:** `f28c966fa399753505b71d38a9c2d5867554b02f`
+
+## Start here
+
+- Current implementation authority: [`current-architecture.md`](current-architecture.md)
+- Accepted target summary: [`rfcs/target-architecture.md`](rfcs/target-architecture.md)
+- Full accepted refactor design: [`superpowers/specs/2026-07-16-stock-analysis-refactor-design.md`](superpowers/specs/2026-07-16-stock-analysis-refactor-design.md)
+- Repository entry point: [`../README.md`](../README.md)
+
+The current architecture describes what this checkout implements. The target RFC and program design describe accepted migration direction and must not be read as present capability.
+
+## Current system
+
+- [`current-architecture.md`](current-architecture.md) — current runtime variants, data paths, persistence, trust boundaries, and limitations.
+- [`../backend/README.md`](../backend/README.md) — optional FastAPI entry points and local runtime notes.
+- [`../feed/README.md`](../feed/README.md) — current report-feed conventions and consumer path.
+- [`../backtest/README.md`](../backtest/README.md) and the other `backtest/README*.md` files — research entry points and recorded limitations.
+
+Subsystem READMEs are useful operational references. When they conflict with the current architecture or source, the verified current architecture and implementation are authoritative.
+
+## Configuration, deployment, operations, and contracts
+
+These existing pre-refactor references remain available while later documentation slices classify and refresh them:
+
+- [`deploy-backend.md`](deploy-backend.md) and [`../backend/README.md`](../backend/README.md) — optional backend deployment and startup.
+- [`endpoints.md`](endpoints.md) and [`working-apis.md`](working-apis.md) — endpoint and upstream-source references.
+- [`data-model-api.md`](data-model-api.md) — legacy model and API design notes; it is not the accepted cross-language contract authority.
+- [`openclaw-integration.md`](openclaw-integration.md) and [`../feed/README.md`](../feed/README.md) — external report ingress and feed conventions.
+- [`compliance.md`](compliance.md) — licensing and use constraints.
+
+These pages are not substitutes for checking current code and deployment configuration.
+
+## Research
+
+- [`../backtest/README.md`](../backtest/README.md), [`../backtest/README_statarb.md`](../backtest/README_statarb.md), and [`../backtest/README_xs.md`](../backtest/README_xs.md) — major equity research tracks.
+- [`../backtest/README_crypto.md`](../backtest/README_crypto.md), [`../backtest/README_crypto_pipeline.md`](../backtest/README_crypto_pipeline.md), and [`../backtest/README_binance.md`](../backtest/README_binance.md) — crypto research tracks.
+- [`study-pbo-2026-06-10.md`](study-pbo-2026-06-10.md), [`study-pbo-2026-07-02.md`](study-pbo-2026-07-02.md), [`study-downshift-2026-06-10.md`](study-downshift-2026-06-10.md), and [`study-downshift-2026-07-02.md`](study-downshift-2026-07-02.md) — dated validation snapshots.
+- [`study-overnight-gap-2026-06-10.md`](study-overnight-gap-2026-06-10.md), [`study-pit-bite-2026-06-10.md`](study-pit-bite-2026-06-10.md), and [`study-pit-membership-2026-06-10.md`](study-pit-membership-2026-06-10.md) — dated market-structure and point-in-time studies.
+
+Research pages record methods and observations at a particular cutoff. They do not define the current runtime architecture.
+
+## Accepted design and RFCs
+
+- [`rfcs/target-architecture.md`](rfcs/target-architecture.md) — concise accepted target and migration invariants.
+- [`superpowers/specs/2026-07-16-stock-analysis-refactor-design.md`](superpowers/specs/2026-07-16-stock-analysis-refactor-design.md) — full accepted program design.
+- [`superpowers/plans/2026-07-16-stage-1a-feed-security.md`](superpowers/plans/2026-07-16-stage-1a-feed-security.md) — accepted Stage 1A implementation plan.
+- [`superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md`](superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md) — accepted Stage 1B implementation plan.
+- [`superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md`](superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md) — accepted Stage 1C implementation plan.
+
+Accepted design records decisions. A component becomes current only after implementation, verification, and a corresponding current-document update.
+
+## Historical snapshots
+
+The following pages preserve useful pre-refactor context but are not current architecture authorities:
+
+- [`optimization-2026-06.md`](optimization-2026-06.md) and [`need-to-fix.md`](need-to-fix.md)
+- [`hyperliquid-integration.md`](hyperliquid-integration.md) and [`survivorship-bias-data-sources.md`](survivorship-bias-data-sources.md)
+- [`positioning.md`](positioning.md), [`cost-estimate.md`](cost-estimate.md), and [`self-improving-alpha-loop.md`](self-improving-alpha-loop.md)
+- [`openclaw-stock-notes.md`](openclaw-stock-notes.md)
+
+Treat dates, external availability, costs, and deployment observations in these snapshots as time-bound.
+
+## Archived pre-refactor material
+
+- [`archive/iteration-log.md`](archive/iteration-log.md) — preserved continuous-development record.
+- [`archive/pre-refactor/roadmap.md`](archive/pre-refactor/roadmap.md) — superseded roadmap preserved for provenance.
+
+Archived pages are not maintained and must not be used as current implementation guidance.
+
+## Documentation maintenance rules
+
+1. Maintained documents declare an exact `Status`, a non-empty `Scope`, and a stamped `Last verified commit`.
+2. Current claims must be traceable to repository code, configuration, tests, or workflows at the stamped commit.
+3. Target components and migrations are labeled **Accepted** or **Planned**, never presented as implemented.
+4. Historical and archived pages retain their original record; current replacements live in maintained documents.
+5. Run `scripts/run-python311 python scripts/check_docs.py` after changing maintained documentation or the verification manifest.
