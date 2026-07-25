@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
+  viewBox="0 0 1200 630" role="img"
+  aria-label="Edward Wang Multi-Market Workbench share card">
+  <defs>
+    <radialGradient id="glow" cx="78%" cy="43%" r="42%">
+      <stop offset="0" stop-color="#4c8dff" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#080c12" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="signal" x1="0" x2="1">
+      <stop offset="0" stop-color="#26a69a"/>
+      <stop offset=".52" stop-color="#4c8dff"/>
+      <stop offset="1" stop-color="#4c8dff"/>
+    </linearGradient>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse">
+      <path d="M54 0H0V54" fill="none" stroke="#26313e"
+        stroke-opacity=".25" stroke-width="1"/>
+    </pattern>
+    <clipPath id="frame-clip">
+      <rect x="44.5" y="44.5" width="1111" height="541" rx="18"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="630" fill="#080c12"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g clip-path="url(#frame-clip)">
+    <rect x="44.5" y="44.5" width="617" height="541" fill="#0d1219"/>
+    <rect x="661.5" y="44.5" width="494" height="541" fill="#0a0f15"/>
+    <rect x="661.5" y="44.5" width="494" height="541" fill="url(#grid)"/>
+  </g>
+  <rect x="44.5" y="44.5" width="1111" height="541" rx="18"
+    fill="none" stroke="#2a3543"/>
+  <line x1="661.5" y1="44.5" x2="661.5" y2="585.5"
+    stroke="#2a3543"/>
+
+  <g font-family="Menlo, Consolas, monospace">
+    <text x="96" y="108" fill="#26a69a" font-size="14"
+      font-weight="700" letter-spacing="2.2">
+      EDWARD WANG / INDEPENDENT RESEARCH
+    </text>
+    <text x="96" y="225" fill="#f5f7f9"
+      font-family="Arial, Helvetica, sans-serif" font-size="68"
+      font-weight="800" letter-spacing="-3">
+      <tspan x="96" dy="0">MULTI-MARKET</tspan>
+      <tspan x="96" dy="64">WORKBENCH</tspan>
+    </text>
+    <text x="96" y="350" fill="#919dab" font-size="17"
+      font-weight="700" letter-spacing="1.7">
+      MARKETS · SIGNALS · EVIDENCE
+    </text>
+
+    <g data-market-pill="us" transform="translate(96 512)">
+      <rect width="54" height="30" rx="15" fill="none" stroke="#344150"/>
+      <text x="27" y="20" text-anchor="middle" fill="#7d8997"
+        font-size="11" font-weight="700">US</text>
+    </g>
+    <g data-market-pill="hk" transform="translate(162 512)">
+      <rect width="54" height="30" rx="15" fill="none" stroke="#344150"/>
+      <text x="27" y="20" text-anchor="middle" fill="#7d8997"
+        font-size="11" font-weight="700">HK</text>
+    </g>
+    <g data-market-pill="cn" transform="translate(228 512)">
+      <rect width="54" height="30" rx="15" fill="none" stroke="#344150"/>
+      <text x="27" y="20" text-anchor="middle" fill="#7d8997"
+        font-size="11" font-weight="700">CN</text>
+    </g>
+    <g data-market-pill="crypto" transform="translate(294 512)">
+      <rect width="88" height="30" rx="15" fill="none" stroke="#344150"/>
+      <text x="44" y="20" text-anchor="middle" fill="#7d8997"
+        font-size="11" font-weight="700">CRYPTO</text>
+    </g>
+    <g data-market-pill="index" transform="translate(394 512)">
+      <rect width="78" height="30" rx="15" fill="none" stroke="#344150"/>
+      <text x="39" y="20" text-anchor="middle" fill="#7d8997"
+        font-size="11" font-weight="700">INDEX</text>
+    </g>
+
+    <text x="699.5" y="91" fill="#6f7c8c" font-size="13"
+      font-weight="700" letter-spacing="2">RESEARCH MATRIX / 04</text>
+    <path d="M699.5 111.5V274.5H1119" fill="none"
+      stroke="#2a3543" stroke-width="1"/>
+    <path d="M699.5 220 L742 202 L784 211 L829 172 L874 185
+      L920 146 L967 160 L1015 119 L1066 137 L1119 110"
+      fill="none" stroke="url(#signal)" stroke-width="4"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="1015" cy="119" r="6" fill="#26a69a"/>
+
+    <g data-market-window="equities" transform="translate(699.5 299.5)">
+      <rect width="203.5" height="118.5" rx="12" fill="#080c12"
+        fill-opacity=".94" stroke="#26a69a" stroke-opacity=".55"/>
+      <circle cx="22" cy="28" r="4" fill="#26a69a"/>
+      <text x="34" y="33" fill="#26a69a" font-size="12"
+        font-weight="700" letter-spacing="1.5">EQUITIES</text>
+      <text x="20" y="82" fill="#26a69a" font-size="22"
+        font-weight="700">US / HK</text>
+    </g>
+    <g data-market-window="mainland" transform="translate(915.5 299.5)">
+      <rect width="203.5" height="118.5" rx="12" fill="#080c12"
+        fill-opacity=".94" stroke="#4c8dff" stroke-opacity=".55"/>
+      <circle cx="22" cy="28" r="4" fill="#4c8dff"/>
+      <text x="34" y="33" fill="#4c8dff" font-size="12"
+        font-weight="700" letter-spacing="1.5">MAINLAND</text>
+      <text x="20" y="82" fill="#4c8dff" font-size="22"
+        font-weight="700">CN</text>
+    </g>
+    <g data-market-window="digital" transform="translate(699.5 430.5)">
+      <rect width="203.5" height="118.5" rx="12" fill="#080c12"
+        fill-opacity=".94" stroke="#ef5350" stroke-opacity=".52"/>
+      <circle cx="22" cy="28" r="4" fill="#ef5350"/>
+      <text x="34" y="33" fill="#ef5350" font-size="12"
+        font-weight="700" letter-spacing="1.5">DIGITAL</text>
+      <text x="20" y="82" fill="#ef5350" font-size="22"
+        font-weight="700">24 / 7</text>
+    </g>
+    <g data-market-window="benchmarks" transform="translate(915.5 430.5)">
+      <rect width="203.5" height="118.5" rx="12" fill="#080c12"
+        fill-opacity=".94" stroke="#d8a64b" stroke-opacity=".55"/>
+      <circle cx="22" cy="28" r="4" fill="#d8a64b"/>
+      <text x="34" y="33" fill="#d8a64b" font-size="12"
+        font-weight="700" letter-spacing="1.5">BENCHMARKS</text>
+      <text x="20" y="82" fill="#d8a64b" font-size="22"
+        font-weight="700">INDEX</text>
+    </g>
+  </g>
+</svg>

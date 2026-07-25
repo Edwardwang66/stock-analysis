@@ -15,7 +15,7 @@
     "start": "next start",
     "lint": "next lint --max-warnings=0",
     "typecheck": "tsc --project tsconfig.json --noEmit --incremental false",
-    "test:scripts": "node --test scripts/tests/build-profile-publication.test.mjs scripts/tests/public-site-url.test.mjs scripts/tests/smoke-server.test.mjs",
+    "test:scripts": "node --test scripts/tests/build-profile-publication.test.mjs scripts/tests/og-card-asset.test.mjs scripts/tests/public-site-url.test.mjs scripts/tests/smoke-server.test.mjs",
     "smoke": "npm run smoke:server",
     "smoke:static": "node scripts/smoke-static.mjs",
     "smoke:server": "node scripts/smoke-server.mjs",
