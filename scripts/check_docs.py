@@ -415,6 +415,52 @@ def yaml_structure_line(line: str) -> tuple[int, str] | None:
     return indent, content
 
 
+def yaml_sequence_item(content: str) -> tuple[int, str] | None:
+    prefix = re.match(r"-\s+", content)
+    if prefix is None:
+        return None
+    return prefix.end(), content[prefix.end():].strip()
+
+
+def yaml_structural_lines(
+    lines: list[str],
+    start: int,
+    end: int,
+) -> list[tuple[int, int, str]]:
+    result: list[tuple[int, int, str]] = []
+    block_scalar_indent: int | None = None
+    for index in range(start, end):
+        parsed = yaml_structure_line(lines[index])
+        if parsed is None:
+            continue
+        indent, content = parsed
+        if block_scalar_indent is not None:
+            if indent > block_scalar_indent:
+                continue
+            block_scalar_indent = None
+        result.append((index, indent, content))
+        if re.search(r":\s*[|>][1-9+-]{0,2}\s*$", content):
+            item = yaml_sequence_item(content)
+            block_scalar_indent = indent + (item[0] if item is not None else 0)
+    return result
+
+
+def yaml_child_indent(
+    lines: list[str],
+    start: int,
+    end: int,
+    parent_indent: int,
+) -> int | None:
+    return min(
+        (
+            indent
+            for _, indent, _ in yaml_structural_lines(lines, start, end)
+            if indent > parent_indent
+        ),
+        default=None,
+    )
+
+
 def yaml_scalar_text(value: str) -> str:
     value = yaml_without_inline_comment(value).strip()
     if (
@@ -434,11 +480,12 @@ def yaml_direct_value(
     key: str,
 ) -> tuple[int, str] | None:
     pattern = re.compile(rf"{re.escape(key)}:\s*(.*)")
-    for index in range(start, end):
-        parsed = yaml_structure_line(lines[index])
-        if parsed is None or parsed[0] != indent:
+    for index, candidate_indent, content in yaml_structural_lines(
+        lines, start, end
+    ):
+        if candidate_indent != indent:
             continue
-        match = pattern.fullmatch(parsed[1])
+        match = pattern.fullmatch(content)
         if match:
             return index, yaml_scalar_text(match.group(1))
     return None
@@ -471,30 +518,59 @@ def actions_python_matrix(
     job_start: int,
     job_end: int,
 ) -> list[str]:
-    strategy = yaml_direct_value(lines, job_start + 1, job_end, 4, "strategy")
+    parsed_job = yaml_structure_line(lines[job_start])
+    assert parsed_job is not None
+    job_field_indent = yaml_child_indent(
+        lines, job_start, job_end, parsed_job[0]
+    )
+    if job_field_indent is None:
+        return []
+    strategy = yaml_direct_value(
+        lines, job_start, job_end, job_field_indent, "strategy"
+    )
     if strategy is None or strategy[1]:
         return []
-    strategy_end = yaml_block_end(lines, strategy[0] + 1, job_end, 4)
+    strategy_indent = job_field_indent
+    strategy_end = yaml_block_end(
+        lines, strategy[0] + 1, job_end, strategy_indent
+    )
+    matrix_indent = yaml_child_indent(
+        lines, strategy[0], strategy_end, strategy_indent
+    )
+    if matrix_indent is None:
+        return []
     matrix = yaml_direct_value(
-        lines, strategy[0] + 1, strategy_end, 6, "matrix"
+        lines, strategy[0], strategy_end, matrix_indent, "matrix"
     )
     if matrix is None or matrix[1]:
         return []
-    matrix_end = yaml_block_end(lines, matrix[0] + 1, strategy_end, 6)
+    matrix_end = yaml_block_end(
+        lines, matrix[0] + 1, strategy_end, matrix_indent
+    )
+    include_indent = yaml_child_indent(
+        lines, matrix[0], matrix_end, matrix_indent
+    )
+    if include_indent is None:
+        return []
     include = yaml_direct_value(
-        lines, matrix[0] + 1, matrix_end, 8, "include"
+        lines, matrix[0], matrix_end, include_indent, "include"
     )
     if include is None or include[1]:
         return []
-    include_end = yaml_block_end(lines, include[0] + 1, matrix_end, 8)
+    include_end = yaml_block_end(
+        lines, include[0] + 1, matrix_end, include_indent
+    )
+    item_indent = yaml_child_indent(
+        lines, include[0], include_end, include_indent
+    )
+    if item_indent is None:
+        return []
     item_starts = [
         index
-        for index in range(include[0] + 1, include_end)
-        if (
-            (parsed := yaml_structure_line(lines[index])) is not None
-            and parsed[0] == 10
-            and parsed[1].startswith("- ")
+        for index, indent, content in yaml_structural_lines(
+            lines, include[0] + 1, include_end
         )
+        if indent == item_indent and yaml_sequence_item(content) is not None
     ]
     versions: list[str] = []
     for offset, item_start in enumerate(item_starts):
@@ -505,13 +581,16 @@ def actions_python_matrix(
         )
         parsed = yaml_structure_line(lines[item_start])
         assert parsed is not None
-        opener = parsed[1][2:].strip()
+        item = yaml_sequence_item(parsed[1])
+        assert item is not None
+        item_key_indent = parsed[0] + item[0]
+        opener = item[1]
         match = re.fullmatch(r"python_version:\s*(.+)", opener)
         if match:
             versions.append(yaml_scalar_text(match.group(1)))
             continue
         value = yaml_direct_value(
-            lines, item_start + 1, item_end, 12, "python_version"
+            lines, item_start, item_end, item_key_indent, "python_version"
         )
         if value is not None:
             versions.append(value[1])
@@ -526,14 +605,19 @@ def actions_step_value(
 ) -> tuple[int, int, str] | None:
     parsed = yaml_structure_line(lines[step_start])
     assert parsed is not None
-    opener = parsed[1][2:].strip()
+    item = yaml_sequence_item(parsed[1])
+    assert item is not None
+    step_field_indent = parsed[0] + item[0]
+    opener = item[1]
     match = re.fullmatch(rf"{re.escape(key)}:\s*(.*)", opener)
     if match:
-        return step_start, 6, yaml_scalar_text(match.group(1))
-    direct = yaml_direct_value(lines, step_start + 1, step_end, 8, key)
+        return step_start, step_field_indent, yaml_scalar_text(match.group(1))
+    direct = yaml_direct_value(
+        lines, step_start, step_end, step_field_indent, key
+    )
     if direct is None:
         return None
-    return direct[0], 8, direct[1]
+    return direct[0], step_field_indent, direct[1]
 
 
 def actions_step_inputs(
@@ -545,12 +629,18 @@ def actions_step_inputs(
     if with_entry is None or with_entry[2]:
         return {}
     with_end = yaml_block_end(lines, with_entry[0] + 1, step_end, with_entry[1])
+    input_indent = yaml_child_indent(
+        lines, with_entry[0], with_end, with_entry[1]
+    )
+    if input_indent is None:
+        return {}
     inputs: dict[str, str] = {}
-    for index in range(with_entry[0] + 1, with_end):
-        parsed = yaml_structure_line(lines[index])
-        if parsed is None or parsed[0] != with_entry[1] + 2:
+    for _, indent, content in yaml_structural_lines(
+        lines, with_entry[0] + 1, with_end
+    ):
+        if indent != input_indent:
             continue
-        match = re.fullmatch(r"([A-Za-z0-9_-]+):\s*(.*)", parsed[1])
+        match = re.fullmatch(r"([A-Za-z0-9_-]+):\s*(.*)", content)
         if match:
             inputs[match.group(1)] = yaml_scalar_text(match.group(2))
     return inputs
@@ -585,18 +675,32 @@ def actions_steps(
     job_start: int,
     job_end: int,
 ) -> list[dict[str, Any]]:
-    steps_entry = yaml_direct_value(lines, job_start + 1, job_end, 4, "steps")
+    parsed_job = yaml_structure_line(lines[job_start])
+    assert parsed_job is not None
+    job_field_indent = yaml_child_indent(
+        lines, job_start, job_end, parsed_job[0]
+    )
+    if job_field_indent is None:
+        return []
+    steps_entry = yaml_direct_value(
+        lines, job_start, job_end, job_field_indent, "steps"
+    )
     if steps_entry is None or steps_entry[1]:
         return []
-    steps_end = yaml_block_end(lines, steps_entry[0] + 1, job_end, 4)
+    steps_end = yaml_block_end(
+        lines, steps_entry[0] + 1, job_end, job_field_indent
+    )
+    step_indent = yaml_child_indent(
+        lines, steps_entry[0], steps_end, job_field_indent
+    )
+    if step_indent is None:
+        return []
     step_starts = [
         index
-        for index in range(steps_entry[0] + 1, steps_end)
-        if (
-            (parsed := yaml_structure_line(lines[index])) is not None
-            and parsed[0] == 6
-            and parsed[1].startswith("- ")
+        for index, indent, content in yaml_structural_lines(
+            lines, steps_entry[0] + 1, steps_end
         )
+        if indent == step_indent and yaml_sequence_item(content) is not None
     ]
     result: list[dict[str, Any]] = []
     for offset, step_start in enumerate(step_starts):
@@ -635,12 +739,16 @@ def actions_workflow_jobs(text: str) -> list[dict[str, Any]]:
     if jobs_index is None:
         return []
     jobs_end = yaml_block_end(lines, jobs_index + 1, len(lines), 0)
+    job_indent = yaml_child_indent(lines, jobs_index, jobs_end, 0)
+    if job_indent is None:
+        return []
     job_starts: list[tuple[int, str]] = []
-    for index in range(jobs_index + 1, jobs_end):
-        parsed = yaml_structure_line(lines[index])
-        if parsed is None or parsed[0] != 2:
+    for index, indent, content in yaml_structural_lines(
+        lines, jobs_index + 1, jobs_end
+    ):
+        if indent != job_indent:
             continue
-        match = re.fullmatch(r"([A-Za-z0-9_-]+):", parsed[1])
+        match = re.fullmatch(r"([A-Za-z0-9_-]+):", content)
         if match:
             job_starts.append((index, match.group(1)))
     result: list[dict[str, Any]] = []
@@ -650,9 +758,12 @@ def actions_workflow_jobs(text: str) -> list[dict[str, Any]]:
             if offset + 1 < len(job_starts)
             else jobs_end
         )
-        condition = yaml_direct_value(
-            lines, job_start + 1, job_end, 4, "if"
+        job_field_indent = yaml_child_indent(
+            lines, job_start, job_end, job_indent
         )
+        condition = yaml_direct_value(
+            lines, job_start, job_end, job_field_indent, "if"
+        ) if job_field_indent is not None else None
         result.append(
             {
                 "name": name,
@@ -1216,7 +1327,7 @@ def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
     line = f"> **Last verified commit:** `{sha}`"
     for relative in maintained:
         path = root / relative
-        text = path.read_text(encoding="utf-8")
+        text = path.read_bytes().decode("utf-8")
         lines = text.splitlines(keepends=True)
         masked_lines = mask_fenced_code(text).splitlines(keepends=True)
         header_lines = masked_lines[:12]
@@ -1247,13 +1358,18 @@ def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
             body = lines[index].rstrip("\r\n")
             lines[index] = line + lines[index][len(body):]
         else:
+            if verified_index >= 12:
+                raise ValueError(
+                    f"{relative} cannot fit Last verified commit within "
+                    "the first 12 lines"
+                )
             index = scope_index
             body = lines[index].rstrip("\r\n")
             newline = lines[index][len(body):] or "\n"
             if not lines[index][len(body):]:
                 lines[index] += newline
             lines.insert(index + 1, line + newline)
-        path.write_text("".join(lines), encoding="utf-8")
+        path.write_bytes("".join(lines).encode("utf-8"))
 
 
 def workflow_files(root: Path) -> list[Path]:

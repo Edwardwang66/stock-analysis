@@ -269,6 +269,57 @@ class DocumentationChecks(TestCase):
 
             self.assertEqual(page.read_text(encoding="utf-8"), expected)
 
+    def test_stamping_preserves_crlf_bytes_outside_the_header_sha(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "README.md"
+            sha = "1" * 40
+            old_sha = "2" * 40
+            fenced_sha = "3" * 40
+            body_sha = "4" * 40
+            original = (
+                b"# Project\r\n"
+                b"\r\n"
+                b"> **Status:** Current\r\n"
+                b"> **Scope:** Test repository.\r\n"
+                + f"> **Last verified commit:** `{old_sha}`\r\n".encode()
+                + b"\r\n"
+                + b"```markdown\r\n"
+                + f"> **Last verified commit:** `{fenced_sha}`\r\n".encode()
+                + b"```\r\n"
+                + b"\r\n"
+                + f"Body decoy `{body_sha}` remains byte-identical.\r\n".encode()
+            )
+            expected = original.replace(
+                old_sha.encode(),
+                sha.encode(),
+                1,
+            )
+            self.assertEqual(original.count(b"\r\n"), 11)
+            page.write_bytes(original)
+
+            stamp_documents(root, ["README.md"], sha)
+
+            self.assertEqual(page.read_bytes(), expected)
+
+    def test_stamping_rejects_scope_on_the_twelfth_header_line(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "README.md"
+            original = (
+                "# Project\n\n"
+                "> **Status:** Current\n"
+                + "\n" * 8
+                + "> **Scope:** Too late to stamp safely.\n"
+                "Body remains unchanged.\n"
+            ).encode()
+            page.write_bytes(original)
+
+            with self.assertRaisesRegex(ValueError, "first 12 lines"):
+                stamp_documents(root, ["README.md"], "1" * 40)
+
+            self.assertEqual(page.read_bytes(), original)
+
     def test_metadata_sha_must_resolve_to_an_ancestor_commit(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1103,6 +1154,97 @@ class DocumentationChecks(TestCase):
                     target.write_text(replacement, encoding="utf-8")
                     self.assertTrue(check_runtime_contract(root, contract))
                     target.write_text(original, encoding="utf-8")
+
+    def test_runtime_contract_parses_four_space_workflow_indentation(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "frontend").mkdir()
+            (root / "backend").mkdir()
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
+            (root / "backend" / "runtime.txt").write_text(
+                "python-3.11.15\n", encoding="utf-8"
+            )
+            (root / "backend" / "Dockerfile").write_text(
+                "FROM python:3.11.15-slim\n", encoding="utf-8"
+            )
+            (root / "render.yaml").write_text(
+                'envVars:\n  - key: PYTHON_VERSION\n    value: "3.11.15"\n',
+                encoding="utf-8",
+            )
+            (root / "frontend" / "package.json").write_text(
+                json.dumps(
+                    {
+                        "packageManager": "npm@10.8.2",
+                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (workflows / "tests.yml").write_text(
+                "jobs:\n"
+                "    frontend:\n"
+                "        steps:\n"
+                "            - uses: actions/setup-node@v7\n"
+                "              with:\n"
+                "                  node-version-file: .node-version\n"
+                "            - run: |\n"
+                '                  test "$(node --version)" = "v20.20.2"\n'
+                '                  test "$(npm --version)" = "10.8.2"\n'
+                "    python:\n"
+                "        strategy:\n"
+                "            matrix:\n"
+                "                include:\n"
+                '                    - python_version: "3.11.15"\n'
+                '                    - python_version: "3.12.13"\n'
+                "        steps:\n"
+                "            - uses: actions/setup-python@v6\n"
+                "              with:\n"
+                "                  python-version: ${{ matrix.python_version }}\n",
+                encoding="utf-8",
+            )
+            (workflows / "deploy-pages.yml").write_text(
+                "jobs:\n"
+                "    build:\n"
+                "        steps:\n"
+                "            - uses: actions/setup-node@v7\n"
+                "              with:\n"
+                "                  node-version-file: .node-version\n"
+                "            - run: |\n"
+                '                  test "$(node --version)" = "v20.20.2"\n'
+                '                  test "$(npm --version)" = "10.8.2"\n',
+                encoding="utf-8",
+            )
+            (workflows / "alpha-routine.yml").write_text(
+                "jobs:\n"
+                "    produce:\n"
+                "        steps:\n"
+                "            - uses: actions/setup-python@v6\n"
+                "              with:\n"
+                '                  python-version: "3.10.0"\n',
+                encoding="utf-8",
+            )
+            self.track(
+                root,
+                ".github/workflows/tests.yml",
+                ".github/workflows/deploy-pages.yml",
+                ".github/workflows/alpha-routine.yml",
+            )
+            contract = {
+                "node": "20.20.2",
+                "npm": "10.8.2",
+                "python_primary": "3.11.15",
+                "python_compatibility": ["3.12.13"],
+            }
+
+            errors = check_runtime_contract(root, contract)
+
+            self.assertEqual(
+                {item.code for item in errors},
+                {"workflow-python-runtime-drift"},
+            )
 
     def test_runtime_contract_rejects_active_drift_hidden_by_yaml_decoys(self):
         with TemporaryDirectory() as tmp:
