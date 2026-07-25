@@ -361,11 +361,17 @@ class DocumentationChecks(TestCase):
             )
             page.write_bytes(original)
             page.chmod(0o640)
+            real_replace = os.replace
+            replace_count = 0
 
-            with mock.patch(
-                "os.replace",
-                side_effect=OSError("replace failed"),
-            ):
+            def fail_first_replace(source, destination):
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 1:
+                    raise OSError("replace failed")
+                real_replace(source, destination)
+
+            with mock.patch("os.replace", side_effect=fail_first_replace):
                 with self.assertRaisesRegex(OSError, "replace failed"):
                     stamp_documents(root, ["README.md"], "1" * 40)
 
@@ -374,6 +380,98 @@ class DocumentationChecks(TestCase):
             self.assertEqual(
                 sorted(path.name for path in root.iterdir()),
                 ["README.md"],
+            )
+
+    def test_stamping_second_replace_failure_rolls_back_all_documents(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "first.md"
+            second = root / "second.md"
+            first_original = (
+                b"# First\n\n"
+                b"> **Status:** Current\n"
+                b"> **Scope:** First document.\n"
+            )
+            second_original = (
+                b"# Second\n\n"
+                b"> **Status:** Current\n"
+                b"> **Scope:** Second document.\n"
+            )
+            first.write_bytes(first_original)
+            second.write_bytes(second_original)
+            first.chmod(0o640)
+            second.chmod(0o600)
+            real_replace = os.replace
+            replace_count = 0
+
+            def fail_second_replace(source, destination):
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("second replace failed")
+                real_replace(source, destination)
+
+            with mock.patch("os.replace", side_effect=fail_second_replace):
+                with self.assertRaisesRegex(OSError, "second replace failed"):
+                    stamp_documents(
+                        root,
+                        ["first.md", "second.md"],
+                        "1" * 40,
+                    )
+
+            self.assertEqual(first.read_bytes(), first_original)
+            self.assertEqual(second.read_bytes(), second_original)
+            self.assertEqual(stat.S_IMODE(first.stat().st_mode), 0o640)
+            self.assertEqual(stat.S_IMODE(second.stat().st_mode), 0o600)
+            self.assertEqual(
+                sorted(path.name for path in root.iterdir()),
+                ["first.md", "second.md"],
+            )
+
+    def test_stamping_reports_rollback_failure_explicitly(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("first.md", "second.md"):
+                (root / name).write_text(
+                    f"# {name}\n\n"
+                    "> **Status:** Current\n"
+                    f"> **Scope:** {name} document.\n",
+                    encoding="utf-8",
+                )
+            real_replace = os.replace
+            replace_count = 0
+
+            def fail_commit_and_rollback(source, destination):
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("second replace failed")
+                if replace_count == 4:
+                    raise OSError("rollback replace failed")
+                real_replace(source, destination)
+
+            with mock.patch(
+                "os.replace",
+                side_effect=fail_commit_and_rollback,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "rollback",
+                ) as raised:
+                    stamp_documents(
+                        root,
+                        ["first.md", "second.md"],
+                        "1" * 40,
+                    )
+
+            self.assertIsInstance(raised.exception.__cause__, OSError)
+            self.assertIn(
+                "rollback replace failed",
+                str(raised.exception.__cause__),
+            )
+            self.assertEqual(
+                sorted(path.name for path in root.iterdir()),
+                ["first.md", "second.md"],
             )
 
     def test_stamping_atomically_replaces_in_same_directory_and_preserves_mode(self):
@@ -717,6 +815,104 @@ class DocumentationChecks(TestCase):
             contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "command-wrong-ci-cwd" for item in errors))
+
+    def test_ci_command_in_never_run_job_or_step_is_not_accepted(self):
+        cases = (
+            ("job", "false"),
+            ("job", "0.0"),
+            ("step", "${{ false && true }}"),
+            ("step", "${{ 1 == 0 }}"),
+        )
+        for scope, condition in cases:
+            with (
+                self.subTest(scope=scope, condition=condition),
+                TemporaryDirectory() as tmp,
+            ):
+                root = Path(tmp)
+                frontend = root / "frontend"
+                frontend.mkdir()
+                (frontend / "package.json").write_text(
+                    '{"scripts":{"lint":"next lint"}}',
+                    encoding="utf-8",
+                )
+                workflows = root / ".github" / "workflows"
+                workflows.mkdir(parents=True)
+                job_condition = (
+                    f"    if: {condition}\n" if scope == "job" else ""
+                )
+                step_condition = (
+                    f"        if: {condition}\n" if scope == "step" else ""
+                )
+                (workflows / "tests.yml").write_text(
+                    "jobs:\n"
+                    "  frontend:\n"
+                    f"{job_condition}"
+                    "    defaults:\n"
+                    "      run:\n"
+                    "        working-directory: frontend\n"
+                    "    steps:\n"
+                    "      - run: npm run lint\n"
+                    f"{step_condition}",
+                    encoding="utf-8",
+                )
+                page = root / "README.md"
+                page.write_text("\nnpm run lint\n", encoding="utf-8")
+                contracts = [
+                    {
+                        "document": "README.md",
+                        "cwd": "frontend",
+                        "command": "npm run lint",
+                        "kind": "ci",
+                        "runtime": "node",
+                        "workflow": ".github/workflows/tests.yml",
+                        "job": "frontend",
+                    }
+                ]
+
+                errors = check_command_contracts(root, contracts)
+
+                self.assertTrue(
+                    any(item.code == "command-not-in-ci" for item in errors),
+                    errors,
+                )
+
+    def test_ci_command_in_conditional_matrix_path_is_accepted(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            frontend = root / "frontend"
+            frontend.mkdir()
+            (frontend / "package.json").write_text(
+                '{"scripts":{"lint":"next lint"}}',
+                encoding="utf-8",
+            )
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (workflows / "tests.yml").write_text(
+                "jobs:\n"
+                "  frontend:\n"
+                "    defaults:\n"
+                "      run:\n"
+                "        working-directory: frontend\n"
+                "    steps:\n"
+                "      - run: npm run lint\n"
+                "        if: matrix.profile == 'static'\n",
+                encoding="utf-8",
+            )
+            page = root / "README.md"
+            page.write_text("\nnpm run lint\n", encoding="utf-8")
+            contracts = [
+                {
+                    "document": "README.md",
+                    "cwd": "frontend",
+                    "command": "npm run lint",
+                    "kind": "ci",
+                    "runtime": "node",
+                    "workflow": ".github/workflows/tests.yml",
+                    "job": "frontend",
+                }
+            ]
+
+            self.assertEqual(check_command_contracts(root, contracts), [])
 
     def test_unhashed_pip_install_contract_is_rejected(self):
         with TemporaryDirectory() as tmp:
@@ -1396,6 +1592,15 @@ class DocumentationChecks(TestCase):
                 '        "with":\n'
                 '          "python-version": "3.10.0"\n'
             ),
+            "folded-uses": (
+                "jobs:\n"
+                "  produce:\n"
+                "    steps:\n"
+                "      - uses: >-\n"
+                "          actions/setup-python@v6\n"
+                "        with:\n"
+                '          python-version: "3.10.0"\n'
+            ),
         }
         for label, workflow in cases.items():
             with self.subTest(label=label), TemporaryDirectory() as tmp:
@@ -1459,6 +1664,149 @@ class DocumentationChecks(TestCase):
             self.assertEqual(
                 codes,
                 {"workflow-runtime-assertion-drift"},
+            )
+
+    def test_runtime_contract_rejects_never_run_condition_proofs(self):
+        never_conditions = (
+            "0.0",
+            "-0.0",
+            "null",
+            '""',
+            "${{ !true }}",
+            "${{ false && true }}",
+            "${{ false || false }}",
+            "${{ 1 == 0 }}",
+        )
+        for condition in never_conditions:
+            with self.subTest(condition=condition), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                tests_workflow = (
+                    "jobs:\n"
+                    "  frontend:\n"
+                    f"    if: {condition}\n"
+                    "    steps:\n"
+                    "      - uses: actions/setup-node@v7\n"
+                    "        with:\n"
+                    "          node-version-file: .node-version\n"
+                    "      - run: |\n"
+                    '          test "$(node --version)" = "v20.20.2"\n'
+                    '          test "$(npm --version)" = "10.8.2"\n'
+                    "  python:\n"
+                    "    strategy:\n"
+                    "      matrix:\n"
+                    "        include:\n"
+                    '          - python_version: "3.11.15"\n'
+                    '          - python_version: "3.12.13"\n'
+                    "    steps:\n"
+                    "      - uses: actions/setup-python@v6\n"
+                    "        with:\n"
+                    "          python-version: ${{ matrix.python_version }}\n"
+                )
+                deploy_workflow = (
+                    "jobs:\n"
+                    "  build:\n"
+                    f"    if: {condition}\n"
+                    "    steps:\n"
+                    "      - uses: actions/setup-node@v7\n"
+                    "        with:\n"
+                    "          node-version-file: .node-version\n"
+                    "      - run: |\n"
+                    '          test "$(node --version)" = "v20.20.2"\n'
+                    '          test "$(npm --version)" = "10.8.2"\n'
+                )
+                never_drift = (
+                    "jobs:\n"
+                    "  produce:\n"
+                    f"    if: {condition}\n"
+                    "    steps:\n"
+                    "      - uses: actions/setup-python@v6\n"
+                    "        with:\n"
+                    '          python-version: "3.10.0"\n'
+                )
+                contract = self._write_runtime_fixture(
+                    root,
+                    tests_workflow,
+                    deploy_workflow,
+                    {"alpha-routine.yml": never_drift},
+                )
+
+                codes = {
+                    item.code for item in check_runtime_contract(root, contract)
+                }
+
+                self.assertEqual(
+                    codes,
+                    {
+                        "workflow-runtime-assertion-drift",
+                        "deployment-runtime-drift",
+                    },
+                )
+
+    def test_runtime_contract_requires_unconditional_positive_proofs(self):
+        conditional = "${{ matrix.profile == 'static' }}"
+        tests_workflow = (
+            "jobs:\n"
+            "  frontend:\n"
+            f"    if: {conditional}\n"
+            "    steps:\n"
+            "      - uses: actions/setup-node@v7\n"
+            "        with:\n"
+            "          node-version-file: .node-version\n"
+            "      - run: |\n"
+            '          test "$(node --version)" = "v20.20.2"\n'
+            '          test "$(npm --version)" = "10.8.2"\n'
+            "  python:\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            "        include:\n"
+            '          - python_version: "3.11.15"\n'
+            '          - python_version: "3.12.13"\n'
+            "    steps:\n"
+            "      - uses: actions/setup-python@v6\n"
+            "        with:\n"
+            "          python-version: ${{ matrix.python_version }}\n"
+        )
+        deploy_workflow = (
+            "jobs:\n"
+            "  build:\n"
+            "    steps:\n"
+            "      - uses: actions/setup-node@v7\n"
+            f"        if: {conditional}\n"
+            "        with:\n"
+            "          node-version-file: .node-version\n"
+            "      - run: |\n"
+            '          test "$(node --version)" = "v20.20.2"\n'
+            '          test "$(npm --version)" = "10.8.2"\n'
+        )
+        conditional_drift = (
+            "jobs:\n"
+            "  produce:\n"
+            f"    if: {conditional}\n"
+            "    steps:\n"
+            "      - uses: actions/setup-python@v6\n"
+            "        with:\n"
+            '          python-version: "3.10.0"\n'
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = self._write_runtime_fixture(
+                root,
+                tests_workflow,
+                deploy_workflow,
+                {"alpha-routine.yml": conditional_drift},
+            )
+
+            codes = {
+                item.code for item in check_runtime_contract(root, contract)
+            }
+
+            self.assertEqual(
+                codes,
+                {
+                    "workflow-runtime-assertion-drift",
+                    "deployment-runtime-drift",
+                    "workflow-python-runtime-drift",
+                },
             )
 
     def test_runtime_contract_parses_four_space_workflow_indentation(self):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import fnmatch
 import json
 import os
@@ -521,13 +522,154 @@ def yaml_block_end(
     return end
 
 
-def yaml_condition_is_false(value: str | None) -> bool:
+CONDITION_ALWAYS = "always"
+CONDITION_NEVER = "never"
+CONDITION_CONDITIONAL = "conditional"
+UNKNOWN_CONDITION_VALUE = object()
+
+
+def github_condition_python_expression(value: str) -> str:
+    result: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(value):
+        character = value[index]
+        if quote is not None:
+            result.append(character)
+            if character == "\\" and index + 1 < len(value):
+                index += 1
+                result.append(value[index])
+            elif character == quote:
+                quote = None
+            index += 1
+            continue
+        if character in {'"', "'"}:
+            quote = character
+            result.append(character)
+            index += 1
+            continue
+        if value.startswith("&&", index):
+            result.append(" and ")
+            index += 2
+            continue
+        if value.startswith("||", index):
+            result.append(" or ")
+            index += 2
+            continue
+        if character == "!" and not value.startswith("!=", index):
+            result.append(" not ")
+            index += 1
+            continue
+        identifier = re.match(r"[A-Za-z_][A-Za-z0-9_]*", value[index:])
+        if identifier is not None:
+            token = identifier.group(0)
+            result.append(
+                {
+                    "true": "True",
+                    "false": "False",
+                    "null": "None",
+                }.get(token.lower(), token)
+            )
+            index += len(token)
+            continue
+        result.append(character)
+        index += 1
+    return "".join(result).strip()
+
+
+def constant_condition_value(node: ast.AST) -> Any:
+    if isinstance(node, ast.Constant) and type(node.value) in {
+        bool,
+        int,
+        float,
+        str,
+        type(None),
+    }:
+        return node.value
+    if isinstance(node, ast.UnaryOp):
+        operand = constant_condition_value(node.operand)
+        if operand is UNKNOWN_CONDITION_VALUE:
+            return UNKNOWN_CONDITION_VALUE
+        if isinstance(node.op, ast.Not):
+            return not bool(operand)
+        if (
+            isinstance(node.op, (ast.UAdd, ast.USub))
+            and type(operand) in {int, float}
+        ):
+            return +operand if isinstance(node.op, ast.UAdd) else -operand
+        return UNKNOWN_CONDITION_VALUE
+    if isinstance(node, ast.BoolOp):
+        states = [
+            condition_state_from_constant(
+                constant_condition_value(candidate)
+            )
+            for candidate in node.values
+        ]
+        if isinstance(node.op, ast.And):
+            if CONDITION_NEVER in states:
+                return False
+            if all(state == CONDITION_ALWAYS for state in states):
+                return True
+            return UNKNOWN_CONDITION_VALUE
+        if isinstance(node.op, ast.Or):
+            if CONDITION_ALWAYS in states:
+                return True
+            if all(state == CONDITION_NEVER for state in states):
+                return False
+            return UNKNOWN_CONDITION_VALUE
+        return UNKNOWN_CONDITION_VALUE
+    if isinstance(node, ast.Compare):
+        values = [
+            constant_condition_value(node.left),
+            *(
+                constant_condition_value(comparator)
+                for comparator in node.comparators
+            ),
+        ]
+        if UNKNOWN_CONDITION_VALUE in values:
+            return UNKNOWN_CONDITION_VALUE
+        for left, operator, right in zip(values, node.ops, values[1:]):
+            try:
+                comparison = {
+                    ast.Eq: lambda: left == right,
+                    ast.NotEq: lambda: left != right,
+                    ast.Lt: lambda: left < right,
+                    ast.LtE: lambda: left <= right,
+                    ast.Gt: lambda: left > right,
+                    ast.GtE: lambda: left >= right,
+                }.get(type(operator))
+                if comparison is None or not comparison():
+                    return False
+            except (TypeError, ValueError):
+                return UNKNOWN_CONDITION_VALUE
+        return True
+    return UNKNOWN_CONDITION_VALUE
+
+
+def condition_state_from_constant(value: Any) -> str:
+    if value is UNKNOWN_CONDITION_VALUE:
+        return CONDITION_CONDITIONAL
+    return CONDITION_ALWAYS if bool(value) else CONDITION_NEVER
+
+
+def actions_condition_state(value: str | None) -> str:
     if value is None:
-        return False
+        return CONDITION_ALWAYS
     normalized = value.strip()
     if normalized.startswith("${{") and normalized.endswith("}}"):
         normalized = normalized[3:-2].strip()
-    return normalized.lower() in {"", "false", "null", "0", "-0"}
+    if not normalized:
+        return CONDITION_NEVER
+    try:
+        expression = ast.parse(
+            github_condition_python_expression(normalized),
+            mode="eval",
+        )
+    except (SyntaxError, ValueError):
+        return CONDITION_CONDITIONAL
+    return condition_state_from_constant(
+        constant_condition_value(expression.body)
+    )
 
 
 def actions_python_matrix(
@@ -614,6 +756,72 @@ def actions_python_matrix(
     return versions
 
 
+def actions_job_default_working_directory(
+    lines: list[str],
+    job_start: int,
+    job_end: int,
+    job_field_indent: int | None,
+) -> str:
+    if job_field_indent is None:
+        return "."
+    defaults = yaml_direct_value(
+        lines,
+        job_start,
+        job_end,
+        job_field_indent,
+        "defaults",
+    )
+    if defaults is None or defaults[1]:
+        return "."
+    defaults_end = yaml_block_end(
+        lines,
+        defaults[0] + 1,
+        job_end,
+        job_field_indent,
+    )
+    run_indent = yaml_child_indent(
+        lines,
+        defaults[0],
+        defaults_end,
+        job_field_indent,
+    )
+    if run_indent is None:
+        return "."
+    run = yaml_direct_value(
+        lines,
+        defaults[0],
+        defaults_end,
+        run_indent,
+        "run",
+    )
+    if run is None or run[1]:
+        return "."
+    run_end = yaml_block_end(
+        lines,
+        run[0] + 1,
+        defaults_end,
+        run_indent,
+    )
+    working_directory_indent = yaml_child_indent(
+        lines,
+        run[0],
+        run_end,
+        run_indent,
+    )
+    if working_directory_indent is None:
+        return "."
+    working_directory = yaml_direct_value(
+        lines,
+        run[0],
+        run_end,
+        working_directory_indent,
+        "working-directory",
+    )
+    if working_directory is None or not working_directory[1]:
+        return "."
+    return working_directory[1]
+
+
 def actions_step_value(
     lines: list[str],
     step_start: int,
@@ -661,6 +869,15 @@ def actions_step_inputs(
         if match:
             inputs[match.group(1)] = yaml_scalar_text(match.group(2))
     return inputs
+
+
+def actions_uses_scalar_is_supported(value: str) -> bool:
+    return (
+        bool(value)
+        and value[:1] not in {"|", ">", "*", "&", "[", "{"}
+        and "${{" not in value
+        and re.fullmatch(r"\S+", value) is not None
+    )
 
 
 def actions_step_run_lines(
@@ -728,15 +945,31 @@ def actions_steps(
         )
         uses_entry = actions_step_value(lines, step_start, step_end, "uses")
         condition_entry = actions_step_value(lines, step_start, step_end, "if")
+        working_directory_entry = actions_step_value(
+            lines,
+            step_start,
+            step_end,
+            "working-directory",
+        )
         result.append(
             {
                 "uses": uses_entry[2] if uses_entry is not None else None,
+                "uses_supported": (
+                    uses_entry is None
+                    or actions_uses_scalar_is_supported(uses_entry[2])
+                ),
                 "with": actions_step_inputs(lines, step_start, step_end),
                 "run_lines": actions_step_run_lines(
                     lines, step_start, step_end
                 ),
-                "disabled": yaml_condition_is_false(
+                "condition_state": actions_condition_state(
                     condition_entry[2] if condition_entry is not None else None
+                ),
+                "working_directory": (
+                    working_directory_entry[2]
+                    if working_directory_entry is not None
+                    and working_directory_entry[2]
+                    else None
                 ),
             }
         )
@@ -784,8 +1017,16 @@ def actions_workflow_jobs(text: str) -> list[dict[str, Any]]:
         result.append(
             {
                 "name": name,
-                "disabled": yaml_condition_is_false(
+                "condition_state": actions_condition_state(
                     condition[1] if condition is not None else None
+                ),
+                "default_working_directory": (
+                    actions_job_default_working_directory(
+                        lines,
+                        job_start,
+                        job_end,
+                        job_field_indent,
+                    )
                 ),
                 "python_versions": actions_python_matrix(
                     lines, job_start, job_end
@@ -800,15 +1041,19 @@ def actions_active_run_lines(jobs: list[dict[str, Any]]) -> list[str]:
     return [
         line
         for job in jobs
-        if not job["disabled"]
+        if job["condition_state"] == CONDITION_ALWAYS
         for step in job["steps"]
-        if not step["disabled"]
+        if step["condition_state"] == CONDITION_ALWAYS
         for line in step["run_lines"]
     ]
 
 
 def actions_job_active_steps(job: dict[str, Any]) -> list[dict[str, Any]]:
-    return [step for step in job["steps"] if not step["disabled"]]
+    return [
+        step
+        for step in job["steps"]
+        if step["condition_state"] == CONDITION_ALWAYS
+    ]
 
 
 def actions_job_run_lines(job: dict[str, Any]) -> list[str]:
@@ -853,6 +1098,12 @@ def actions_runtime_structure_issues(
     ]
     if sorted(visible_setups) != sorted(parsed_setups):
         issues.add("unparsed setup action")
+    if any(
+        not step["uses_supported"]
+        for job in jobs
+        for step in job["steps"]
+    ):
+        issues.add("unsupported uses scalar")
     return sorted(issues)
 
 
@@ -992,7 +1243,11 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
             f'test "$(node --version)" = "v{contract["node"]}"',
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
-        active_jobs = [job for job in workflow_jobs if not job["disabled"]]
+        active_jobs = [
+            job
+            for job in workflow_jobs
+            if job["condition_state"] == CONDITION_ALWAYS
+        ]
         frontend_runtime_is_bound = any(
             any(
                 step["with"].get("node-version-file") == ".node-version"
@@ -1052,7 +1307,7 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
         deploy_runtime_is_bound = any(
-            not job["disabled"]
+            job["condition_state"] == CONDITION_ALWAYS
             and any(
                 step["with"].get("node-version-file") == ".node-version"
                 for step in actions_job_setup_steps(
@@ -1103,10 +1358,13 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                 )
             )
         for job in workflow_jobs:
-            if job["disabled"]:
+            if job["condition_state"] == CONDITION_NEVER:
                 continue
             for step in job["steps"]:
-                if step["disabled"] or step["uses"] is None:
+                if (
+                    step["condition_state"] == CONDITION_NEVER
+                    or step["uses"] is None
+                ):
                     continue
                 action = step["uses"].split("@", 1)[0]
                 inputs = step["with"]
@@ -1517,14 +1775,33 @@ def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("stamp requires a full 40-character Git SHA")
     line = f"> **Last verified commit:** `{sha}`"
-    prepared: list[tuple[Path, bytes, int]] = []
+    prepared: list[tuple[Path, bytes, bytes, int]] = []
     for relative in maintained:
         path = root / relative
         original = path.read_bytes()
         payload = stamped_document_payload(relative, original, line)
-        prepared.append((path, payload, path.stat().st_mode))
-    for path, payload, mode in prepared:
-        atomic_replace_bytes(path, payload, mode)
+        prepared.append((path, original, payload, path.stat().st_mode))
+    attempted: list[tuple[Path, bytes, int]] = []
+    try:
+        for path, original, payload, mode in prepared:
+            attempted.append((path, original, mode))
+            atomic_replace_bytes(path, payload, mode)
+    except Exception as commit_error:
+        rollback_errors: list[tuple[Path, Exception]] = []
+        for path, original, mode in reversed(attempted):
+            try:
+                atomic_replace_bytes(path, original, mode)
+            except Exception as rollback_error:
+                rollback_errors.append((path, rollback_error))
+        if rollback_errors:
+            failed_paths = ", ".join(
+                path.name for path, _ in rollback_errors
+            )
+            raise RuntimeError(
+                "document stamp rollback failed for "
+                f"{failed_paths} after {commit_error}"
+            ) from rollback_errors[0][1]
+        raise
 
 
 def workflow_files(root: Path) -> list[Path]:
@@ -1680,87 +1957,6 @@ def check_environment_document(root: Path, names: set[str], relative: str) -> li
     ]
 
 
-def yaml_scalar(value: str) -> str:
-    try:
-        tokens = shlex.split(value, comments=True, posix=True)
-    except ValueError:
-        return value.strip().strip("\"'")
-    return tokens[0] if len(tokens) == 1 else value.strip().strip("\"'")
-
-
-def yaml_job_default_working_directory(text: str) -> str:
-    defaults_indent: int | None = None
-    run_indent: int | None = None
-    for line in text.splitlines():
-        stripped = line.lstrip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        indent = len(line) - len(stripped)
-        if defaults_indent is None:
-            if stripped == "defaults:":
-                defaults_indent = indent
-            continue
-        if indent <= defaults_indent:
-            defaults_indent = None
-            run_indent = None
-            continue
-        if run_indent is None:
-            if stripped == "run:":
-                run_indent = indent
-            continue
-        if indent <= run_indent:
-            run_indent = None
-            continue
-        match = re.fullmatch(r"working-directory:\s*(.+)", stripped)
-        if match:
-            return yaml_scalar(match.group(1))
-    return "."
-
-
-def yaml_step_blocks(text: str) -> list[str]:
-    lines = text.splitlines()
-    blocks: list[list[str]] = []
-    steps_indent: int | None = None
-    step_indent: int | None = None
-    current: list[str] = []
-    for line in lines:
-        stripped = line.lstrip()
-        indent = len(line) - len(stripped)
-        if steps_indent is None:
-            if stripped == "steps:":
-                steps_indent = indent
-            continue
-        if stripped and indent <= steps_indent:
-            break
-        if stripped.startswith("- "):
-            if step_indent is None:
-                step_indent = indent
-            if indent == step_indent:
-                if current:
-                    blocks.append(current)
-                current = [line]
-                continue
-        if current:
-            current.append(line)
-    if current:
-        blocks.append(current)
-    return ["\n".join(block) for block in blocks]
-
-
-def yaml_ci_run_records(job_text: str) -> list[tuple[str, str]]:
-    default_cwd = yaml_job_default_working_directory(job_text)
-    records: list[tuple[str, str]] = []
-    for block in yaml_step_blocks(job_text):
-        step_cwd = default_cwd
-        for line in block.splitlines():
-            match = re.fullmatch(r"\s*working-directory:\s*(.+)", line)
-            if match:
-                step_cwd = yaml_scalar(match.group(1))
-                break
-        records.extend((command, step_cwd) for command in yaml_run_lines(block))
-    return records
-
-
 def normalize_cwd(value: str) -> str:
     normalized = value.strip().replace("\\", "/")
     while normalized.startswith("./"):
@@ -1804,12 +2000,21 @@ def check_command_contracts(root: Path, contracts: list[dict]) -> list[Diagnosti
                 continue
             workflow = root / workflow_name
             text = workflow.read_text(encoding="utf-8") if workflow.is_file() else ""
-            job_match = re.search(
-                rf"(?ms)^  {re.escape(job_name)}:\s*\n(.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)",
-                text,
-            )
-            job_text = job_match.group(1) if job_match else ""
-            records = yaml_ci_run_records(job_text)
+            records = [
+                (
+                    candidate,
+                    (
+                        step["working_directory"]
+                        or job["default_working_directory"]
+                    ),
+                )
+                for job in actions_workflow_jobs(text)
+                if job["name"] == job_name
+                and job["condition_state"] != CONDITION_NEVER
+                for step in job["steps"]
+                if step["condition_state"] != CONDITION_NEVER
+                for candidate in step["run_lines"]
+            ]
             command_cwds = [normalize_cwd(cwd) for candidate, cwd in records if candidate == command]
             if not command_cwds:
                 errors.append(Diagnostic(".github/workflows", 1, "command-not-in-ci", command))
