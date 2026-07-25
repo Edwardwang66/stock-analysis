@@ -1,11 +1,13 @@
 import contextlib
 import io
 import json
+import os
+import stat
 import sys
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase, main
+from unittest import TestCase, main, mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -319,6 +321,85 @@ class DocumentationChecks(TestCase):
                 stamp_documents(root, ["README.md"], "1" * 40)
 
             self.assertEqual(page.read_bytes(), original)
+
+    def test_stamping_validates_all_documents_before_writing(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            good = root / "good.md"
+            bad = root / "bad.md"
+            good_original = (
+                b"# Good\n\n"
+                b"> **Status:** Current\n"
+                b"> **Scope:** Valid document.\n"
+            )
+            bad_original = (
+                b"# Bad\n\n"
+                b"> **Status:** Current\n"
+                b"Missing Scope metadata.\n"
+            )
+            good.write_bytes(good_original)
+            bad.write_bytes(bad_original)
+
+            with self.assertRaisesRegex(ValueError, "bad.md"):
+                stamp_documents(
+                    root,
+                    ["good.md", "bad.md"],
+                    "1" * 40,
+                )
+
+            self.assertEqual(good.read_bytes(), good_original)
+            self.assertEqual(bad.read_bytes(), bad_original)
+
+    def test_stamping_replace_failure_preserves_original_and_removes_temp(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "README.md"
+            original = (
+                b"# Project\n\n"
+                b"> **Status:** Current\n"
+                b"> **Scope:** Atomic replacement.\n"
+            )
+            page.write_bytes(original)
+            page.chmod(0o640)
+
+            with mock.patch(
+                "os.replace",
+                side_effect=OSError("replace failed"),
+            ):
+                with self.assertRaisesRegex(OSError, "replace failed"):
+                    stamp_documents(root, ["README.md"], "1" * 40)
+
+            self.assertEqual(page.read_bytes(), original)
+            self.assertEqual(stat.S_IMODE(page.stat().st_mode), 0o640)
+            self.assertEqual(
+                sorted(path.name for path in root.iterdir()),
+                ["README.md"],
+            )
+
+    def test_stamping_atomically_replaces_in_same_directory_and_preserves_mode(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "README.md"
+            original = (
+                b"# Project\n\n"
+                b"> **Status:** Current\n"
+                b"> **Scope:** Atomic replacement.\n"
+            )
+            page.write_bytes(original)
+            page.chmod(0o640)
+
+            with mock.patch("os.replace", wraps=os.replace) as replace:
+                stamp_documents(root, ["README.md"], "1" * 40)
+
+            replace.assert_called_once()
+            temporary, destination = map(Path, replace.call_args.args)
+            self.assertEqual(temporary.parent, root)
+            self.assertEqual(destination, page)
+            self.assertEqual(stat.S_IMODE(page.stat().st_mode), 0o640)
+            self.assertEqual(
+                sorted(path.name for path in root.iterdir()),
+                ["README.md"],
+            )
 
     def test_metadata_sha_must_resolve_to_an_ancestor_commit(self):
         with TemporaryDirectory() as tmp:
@@ -1015,6 +1096,93 @@ class DocumentationChecks(TestCase):
             path.write_text(json.dumps(base), encoding="utf-8")
             self.assertEqual(load_config(root, path), base)
 
+    @staticmethod
+    def _valid_runtime_tests_workflow() -> str:
+        return (
+            "jobs:\n"
+            "  frontend:\n"
+            "    steps:\n"
+            "      - uses: actions/setup-node@v7\n"
+            "        with:\n"
+            "          node-version-file: .node-version\n"
+            "      - run: |\n"
+            '          test "$(node --version)" = "v20.20.2"\n'
+            '          test "$(npm --version)" = "10.8.2"\n'
+            "  python:\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            "        include:\n"
+            '          - python_version: "3.11.15"\n'
+            '          - python_version: "3.12.13"\n'
+            "    steps:\n"
+            "      - uses: actions/setup-python@v6\n"
+            "        with:\n"
+            "          python-version: ${{ matrix.python_version }}\n"
+        )
+
+    @staticmethod
+    def _valid_runtime_deploy_workflow() -> str:
+        return (
+            "jobs:\n"
+            "  build:\n"
+            "    steps:\n"
+            "      - uses: actions/setup-node@v7\n"
+            "        with:\n"
+            "          node-version-file: .node-version\n"
+            "      - run: |\n"
+            '          test "$(node --version)" = "v20.20.2"\n'
+            '          test "$(npm --version)" = "10.8.2"\n'
+        )
+
+    def _write_runtime_fixture(
+        self,
+        root: Path,
+        tests_workflow: str,
+        deploy_workflow: str,
+        extra_workflows: dict[str, str] | None = None,
+    ) -> dict:
+        (root / "frontend").mkdir()
+        (root / "backend").mkdir()
+        workflows = root / ".github" / "workflows"
+        workflows.mkdir(parents=True)
+        (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+        (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
+        (root / "backend" / "runtime.txt").write_text(
+            "python-3.11.15\n", encoding="utf-8"
+        )
+        (root / "backend" / "Dockerfile").write_text(
+            "FROM python:3.11.15-slim\n", encoding="utf-8"
+        )
+        (root / "render.yaml").write_text(
+            'envVars:\n  - key: PYTHON_VERSION\n    value: "3.11.15"\n',
+            encoding="utf-8",
+        )
+        (root / "frontend" / "package.json").write_text(
+            json.dumps(
+                {
+                    "packageManager": "npm@10.8.2",
+                    "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        workflow_texts = {
+            "tests.yml": tests_workflow,
+            "deploy-pages.yml": deploy_workflow,
+            **(extra_workflows or {}),
+        }
+        tracked: list[str] = []
+        for name, text in workflow_texts.items():
+            (workflows / name).write_text(text, encoding="utf-8")
+            tracked.append(f".github/workflows/{name}")
+        self.track(root, *tracked)
+        return {
+            "node": "20.20.2",
+            "npm": "10.8.2",
+            "python_primary": "3.11.15",
+            "python_compatibility": ["3.12.13"],
+        }
+
     def test_runtime_contract_detects_version_and_matrix_drift(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1154,6 +1322,144 @@ class DocumentationChecks(TestCase):
                     target.write_text(replacement, encoding="utf-8")
                     self.assertTrue(check_runtime_contract(root, contract))
                     target.write_text(original, encoding="utf-8")
+
+    def test_runtime_contract_binds_runtime_proofs_to_their_setup_jobs(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tests_workflow = (
+                "jobs:\n"
+                "  assertions_decoy:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                '          test "$(node --version)" = "v20.20.2"\n'
+                '          test "$(npm --version)" = "10.8.2"\n'
+                "  matrix_decoy:\n"
+                "    strategy:\n"
+                "      matrix:\n"
+                "        include:\n"
+                '          - python_version: "3.11.15"\n'
+                '          - python_version: "3.12.13"\n'
+                "    steps:\n"
+                "      - run: echo matrix only\n"
+                "  python:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                "          python-version-file: .python-version\n"
+            )
+            deploy_workflow = (
+                "jobs:\n"
+                "  assertions_only:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                '          test "$(node --version)" = "v20.20.2"\n'
+                '          test "$(npm --version)" = "10.8.2"\n'
+            )
+            contract = self._write_runtime_fixture(
+                root, tests_workflow, deploy_workflow
+            )
+
+            codes = {
+                item.code for item in check_runtime_contract(root, contract)
+            }
+
+            self.assertEqual(
+                codes,
+                {
+                    "workflow-runtime-assertion-drift",
+                    "python-runtime-matrix-drift",
+                    "deployment-runtime-drift",
+                },
+            )
+
+    def test_runtime_contract_rejects_unsupported_yaml_runtime_structures(self):
+        cases = {
+            "flow": (
+                "jobs: {produce: {steps: [{uses: actions/setup-python@v6, "
+                "with: {python-version: '3.10.0'}}]}}\n"
+            ),
+            "alias": (
+                "bad_step: &bad_step\n"
+                "  uses: actions/setup-python@v6\n"
+                "  with:\n"
+                '    python-version: "3.10.0"\n'
+                "jobs:\n"
+                "  produce:\n"
+                "    steps:\n"
+                "      - *bad_step\n"
+            ),
+            "quoted-keys": (
+                '"jobs":\n'
+                "  produce:\n"
+                '    "steps":\n'
+                '      - "uses": actions/setup-python@v6\n'
+                '        "with":\n'
+                '          "python-version": "3.10.0"\n'
+            ),
+        }
+        for label, workflow in cases.items():
+            with self.subTest(label=label), TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                contract = self._write_runtime_fixture(
+                    root,
+                    self._valid_runtime_tests_workflow(),
+                    self._valid_runtime_deploy_workflow(),
+                    {"alpha-routine.yml": workflow},
+                )
+
+                codes = {
+                    item.code for item in check_runtime_contract(root, contract)
+                }
+
+                self.assertEqual(
+                    codes,
+                    {"unsupported-workflow-runtime-structure"},
+                )
+
+    def test_runtime_contract_treats_if_zero_as_disabled(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tests_workflow = (
+                "jobs:\n"
+                "  frontend:\n"
+                "    steps:\n"
+                "      - uses: actions/setup-node@v7\n"
+                "        with:\n"
+                "          node-version-file: .node-version\n"
+                "  python:\n"
+                "    strategy:\n"
+                "      matrix:\n"
+                "        include:\n"
+                '          - python_version: "3.11.15"\n'
+                '          - python_version: "3.12.13"\n'
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                "          python-version: ${{ matrix.python_version }}\n"
+                "  disabled_decoy:\n"
+                "    if: 0\n"
+                "    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                '          python-version: "3.10.0"\n'
+                "      - run: |\n"
+                '          test "$(node --version)" = "v20.20.2"\n'
+                '          test "$(npm --version)" = "10.8.2"\n'
+            )
+            contract = self._write_runtime_fixture(
+                root,
+                tests_workflow,
+                self._valid_runtime_deploy_workflow(),
+            )
+
+            codes = {
+                item.code for item in check_runtime_contract(root, contract)
+            }
+
+            self.assertEqual(
+                codes,
+                {"workflow-runtime-assertion-drift"},
+            )
 
     def test_runtime_contract_parses_four_space_workflow_indentation(self):
         with TemporaryDirectory() as tmp:

@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import os
 import re
 import shlex
+import stat
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path, PurePosixPath
@@ -87,6 +90,20 @@ ENTRYPOINT_COMMAND_KEYS = frozenset(
     {"document", "cwd", "command", "kind", "runtime"}
 )
 CI_COMMAND_KEYS = ENTRYPOINT_COMMAND_KEYS | {"workflow", "job"}
+YAML_QUOTED_RUNTIME_KEY_RE = re.compile(
+    r"""^["'](?:jobs|steps|strategy|matrix|include|with|uses|run|if)["']\s*:"""
+)
+YAML_FLOW_RUNTIME_KEY_RE = re.compile(
+    r"""^(?:-\s+)?(?:["']?(?:jobs|steps|strategy|matrix|include|with)["']?)"""
+    r"""\s*:\s*[\[{]"""
+)
+YAML_ANCHOR_OR_ALIAS_RE = re.compile(
+    r"""(?:^|:\s+|-\s+)[&*][A-Za-z0-9_-]+(?:\s|$)"""
+)
+YAML_SETUP_USES_RE = re.compile(
+    r"""(?:^|[\[,{]\s*|-\s+)(?:["']uses["']|uses)\s*:\s*["']?"""
+    r"""(actions/setup-(?:python|node)@[^"'\s,\]}]+)"""
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -510,7 +527,7 @@ def yaml_condition_is_false(value: str | None) -> bool:
     normalized = value.strip()
     if normalized.startswith("${{") and normalized.endswith("}}"):
         normalized = normalized[3:-2].strip()
-    return normalized.lower() == "false"
+    return normalized.lower() in {"", "false", "null", "0", "-0"}
 
 
 def actions_python_matrix(
@@ -790,6 +807,55 @@ def actions_active_run_lines(jobs: list[dict[str, Any]]) -> list[str]:
     ]
 
 
+def actions_job_active_steps(job: dict[str, Any]) -> list[dict[str, Any]]:
+    return [step for step in job["steps"] if not step["disabled"]]
+
+
+def actions_job_run_lines(job: dict[str, Any]) -> list[str]:
+    return actions_active_run_lines([job])
+
+
+def actions_job_setup_steps(
+    job: dict[str, Any],
+    action: str,
+) -> list[dict[str, Any]]:
+    return [
+        step
+        for step in actions_job_active_steps(job)
+        if step["uses"] is not None
+        and step["uses"].split("@", 1)[0] == action
+    ]
+
+
+def actions_runtime_structure_issues(
+    text: str,
+    jobs: list[dict[str, Any]],
+) -> list[str]:
+    lines = text.splitlines()
+    structural = yaml_structural_lines(lines, 0, len(lines))
+    issues: set[str] = set()
+    visible_setups: list[str] = []
+    for _, _, content in structural:
+        if YAML_QUOTED_RUNTIME_KEY_RE.match(content):
+            issues.add("quoted runtime structural key")
+        if YAML_FLOW_RUNTIME_KEY_RE.match(content):
+            issues.add("flow-style runtime structure")
+        if YAML_ANCHOR_OR_ALIAS_RE.search(content):
+            issues.add("YAML anchor or alias")
+        visible_setups.extend(YAML_SETUP_USES_RE.findall(content))
+    parsed_setups = [
+        step["uses"]
+        for job in jobs
+        for step in job["steps"]
+        if step["uses"] is not None
+        and step["uses"].split("@", 1)[0]
+        in {"actions/setup-python", "actions/setup-node"}
+    ]
+    if sorted(visible_setups) != sorted(parsed_setups):
+        issues.add("unparsed setup action")
+    return sorted(issues)
+
+
 def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
     expected_python_matrix = [
@@ -922,27 +988,53 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
     workflow_text = read_text(".github/workflows/tests.yml")
     if workflow_text is not None:
         workflow_jobs = actions_workflow_jobs(workflow_text)
-        run_lines = actions_active_run_lines(workflow_jobs)
         assertions = (
             f'test "$(node --version)" = "v{contract["node"]}"',
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
-        for assertion in assertions:
-            if assertion not in run_lines:
-                errors.append(
-                    Diagnostic(
-                        ".github/workflows/tests.yml",
-                        1,
-                        "workflow-runtime-assertion-drift",
-                        f"missing exact assertion: {assertion}",
-                    )
+        active_jobs = [job for job in workflow_jobs if not job["disabled"]]
+        frontend_runtime_is_bound = any(
+            any(
+                step["with"].get("node-version-file") == ".node-version"
+                for step in actions_job_setup_steps(
+                    job, "actions/setup-node"
                 )
+            )
+            and all(
+                assertion in actions_job_run_lines(job)
+                for assertion in assertions
+            )
+            for job in active_jobs
+        )
+        if not frontend_runtime_is_bound:
+            errors.append(
+                Diagnostic(
+                    ".github/workflows/tests.yml",
+                    1,
+                    "workflow-runtime-assertion-drift",
+                    "an active job must bind setup-node to both exact Node/npm assertions",
+                )
+            )
         matrix_candidates = [
             job["python_versions"]
-            for job in workflow_jobs
-            if not job["disabled"] and job["python_versions"]
+            for job in active_jobs
+            if job["python_versions"]
         ]
-        if matrix_candidates != [expected_python_matrix]:
+        python_runtime_is_bound = any(
+            job["python_versions"] == expected_python_matrix
+            and any(
+                step["with"].get("python-version")
+                == "${{ matrix.python_version }}"
+                for step in actions_job_setup_steps(
+                    job, "actions/setup-python"
+                )
+            )
+            for job in active_jobs
+        )
+        if (
+            matrix_candidates != [expected_python_matrix]
+            or not python_runtime_is_bound
+        ):
             errors.append(
                 Diagnostic(
                     ".github/workflows/tests.yml",
@@ -955,21 +1047,33 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
     deploy_text = read_text(".github/workflows/deploy-pages.yml")
     if deploy_text is not None:
         deploy_jobs = actions_workflow_jobs(deploy_text)
-        deploy_run_lines = actions_active_run_lines(deploy_jobs)
         required_deploy_assertions = (
             f'test "$(node --version)" = "v{contract["node"]}"',
             f'test "$(npm --version)" = "{contract["npm"]}"',
         )
-        for required in required_deploy_assertions:
-            if required not in deploy_run_lines:
-                errors.append(
-                    Diagnostic(
-                        ".github/workflows/deploy-pages.yml",
-                        1,
-                        "deployment-runtime-drift",
-                        f"missing exact runtime contract line: {required}",
-                    )
+        deploy_runtime_is_bound = any(
+            not job["disabled"]
+            and any(
+                step["with"].get("node-version-file") == ".node-version"
+                for step in actions_job_setup_steps(
+                    job, "actions/setup-node"
                 )
+            )
+            and all(
+                assertion in actions_job_run_lines(job)
+                for assertion in required_deploy_assertions
+            )
+            for job in deploy_jobs
+        )
+        if not deploy_runtime_is_bound:
+            errors.append(
+                Diagnostic(
+                    ".github/workflows/deploy-pages.yml",
+                    1,
+                    "deployment-runtime-drift",
+                    "an active job must bind setup-node to both exact Node/npm assertions",
+                )
+            )
 
     for workflow in workflow_files(root):
         try:
@@ -984,7 +1088,21 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                 )
             )
             continue
-        for job in actions_workflow_jobs(text):
+        workflow_jobs = actions_workflow_jobs(text)
+        structure_issues = actions_runtime_structure_issues(
+            text, workflow_jobs
+        )
+        if structure_issues:
+            errors.append(
+                Diagnostic(
+                    workflow.relative_to(root).as_posix(),
+                    1,
+                    "unsupported-workflow-runtime-structure",
+                    "cannot prove runtime setup structure: "
+                    + ", ".join(structure_issues),
+                )
+            )
+        for job in workflow_jobs:
             if job["disabled"]:
                 continue
             for step in job["steps"]:
@@ -1321,55 +1439,92 @@ def check_metadata(
     return errors
 
 
+def stamped_document_payload(
+    relative: str,
+    original: bytes,
+    line: str,
+) -> bytes:
+    text = original.decode("utf-8")
+    lines = text.splitlines(keepends=True)
+    masked_lines = mask_fenced_code(text).splitlines(keepends=True)
+    header_lines = masked_lines[:12]
+    scope_indices = [
+        index
+        for index, candidate in enumerate(header_lines)
+        if re.fullmatch(
+            r"> \*\*Scope:\*\* .+",
+            candidate.rstrip("\r\n"),
+        )
+    ]
+    if len(scope_indices) != 1:
+        raise ValueError(
+            f"{relative} has no unique Scope line in its header for stamping"
+        )
+    scope_index = scope_indices[0]
+    verified_index = scope_index + 1
+    has_verified_line = (
+        verified_index < len(header_lines)
+        and re.fullmatch(
+            r"> \*\*Last verified commit:\*\* `[^`]+`",
+            header_lines[verified_index].rstrip("\r\n"),
+        )
+        is not None
+    )
+    if has_verified_line:
+        index = verified_index
+        body = lines[index].rstrip("\r\n")
+        lines[index] = line + lines[index][len(body):]
+    else:
+        if verified_index >= 12:
+            raise ValueError(
+                f"{relative} cannot fit Last verified commit within "
+                "the first 12 lines"
+            )
+        index = scope_index
+        body = lines[index].rstrip("\r\n")
+        newline = lines[index][len(body):] or "\n"
+        if not lines[index][len(body):]:
+            lines[index] += newline
+        lines.insert(index + 1, line + newline)
+    return "".join(lines).encode("utf-8")
+
+
+def atomic_replace_bytes(path: Path, payload: bytes, mode: int) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            descriptor = -1
+            handle.write(payload)
+            os.fchmod(handle.fileno(), stat.S_IMODE(mode))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("stamp requires a full 40-character Git SHA")
     line = f"> **Last verified commit:** `{sha}`"
+    prepared: list[tuple[Path, bytes, int]] = []
     for relative in maintained:
         path = root / relative
-        text = path.read_bytes().decode("utf-8")
-        lines = text.splitlines(keepends=True)
-        masked_lines = mask_fenced_code(text).splitlines(keepends=True)
-        header_lines = masked_lines[:12]
-        scope_indices = [
-            index
-            for index, candidate in enumerate(header_lines)
-            if re.fullmatch(
-                r"> \*\*Scope:\*\* .+",
-                candidate.rstrip("\r\n"),
-            )
-        ]
-        if len(scope_indices) != 1:
-            raise ValueError(
-                f"{relative} has no unique Scope line in its header for stamping"
-            )
-        scope_index = scope_indices[0]
-        verified_index = scope_index + 1
-        has_verified_line = (
-            verified_index < len(header_lines)
-            and re.fullmatch(
-                r"> \*\*Last verified commit:\*\* `[^`]+`",
-                header_lines[verified_index].rstrip("\r\n"),
-            )
-            is not None
-        )
-        if has_verified_line:
-            index = verified_index
-            body = lines[index].rstrip("\r\n")
-            lines[index] = line + lines[index][len(body):]
-        else:
-            if verified_index >= 12:
-                raise ValueError(
-                    f"{relative} cannot fit Last verified commit within "
-                    "the first 12 lines"
-                )
-            index = scope_index
-            body = lines[index].rstrip("\r\n")
-            newline = lines[index][len(body):] or "\n"
-            if not lines[index][len(body):]:
-                lines[index] += newline
-            lines.insert(index + 1, line + newline)
-        path.write_bytes("".join(lines).encode("utf-8"))
+        original = path.read_bytes()
+        payload = stamped_document_payload(relative, original, line)
+        prepared.append((path, payload, path.stat().st_mode))
+    for path, payload, mode in prepared:
+        atomic_replace_bytes(path, payload, mode)
 
 
 def workflow_files(root: Path) -> list[Path]:
