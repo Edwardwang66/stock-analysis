@@ -9,8 +9,10 @@
     "python_compatibility": ["3.12.13"]
   },
   "maintained_documents": [
+    "backend/README.md",
     "backtest/README.md",
     "backtest/FEATURES.md",
+    "feed/README.md",
     "docs/README.md",
     "docs/research/index.md",
     "docs/current-architecture.md",
@@ -94,5 +96,85 @@
     "RUNNER_TEMP"
   ],
   "workflow_inventory_document": "docs/operations/workflows.md",
-  "verified_commands": []
+  "verified_commands": [
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python -m pip install --require-hashes -r requirements.txt",
+      "kind": "entrypoint",
+      "runtime": "python"
+    },
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python tests/test_backend.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python tests/test_api.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_validation_security.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_ingress.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed_cli.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_publication.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_workflow_security.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    }
+  ]
 }
