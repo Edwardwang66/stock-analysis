@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 const SOURCES = [
   ["NEXT_PUBLIC_SITE_URL", false],
   ["VERCEL_PROJECT_PRODUCTION_URL", true],
@@ -46,11 +48,23 @@ function candidateUrl(name, value, vercelHost) {
   return result;
 }
 
-function localHostname(hostname) {
-  return hostname === "localhost"
-    || hostname.endsWith(".localhost")
-    || hostname === "127.0.0.1"
-    || hostname === "[::1]";
+function canonicalHostname(hostname) {
+  let result = hostname.toLowerCase();
+  while (result.endsWith(".")) result = result.slice(0, -1);
+  return result;
+}
+
+function unbracketIpv6(hostname) {
+  return hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+}
+
+function nonPublicDeploymentHostname(hostname) {
+  const canonical = canonicalHostname(hostname);
+  return canonical === "localhost"
+    || canonical.endsWith(".localhost")
+    || isIP(unbracketIpv6(canonical)) !== 0;
 }
 
 export function resolvePublicSiteUrl(env = process.env) {
@@ -69,8 +83,8 @@ export function resolvePublicSiteUrl(env = process.env) {
         `${name} pathname must match NEXT_PUBLIC_BASE_PATH "${basePath}"`,
       );
     }
-    if (deploymentEnvironment(env) && localHostname(result.hostname)) {
-      throw new Error(`${name} must not resolve to localhost when deployed`);
+    if (deploymentEnvironment(env) && nonPublicDeploymentHostname(result.hostname)) {
+      throw new Error(`${name} must use a public hostname when deployed`);
     }
     return result;
   }

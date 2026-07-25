@@ -100,13 +100,29 @@ test("deployment environments require a non-local public URL", () => {
   ]) {
     assert.throws(() => resolvePublicSiteUrl(flag), /public site URL/i);
   }
-  for (const hostname of ["localhost", "app.localhost", "127.0.0.1", "[::1]"]) {
+  for (const hostname of [
+    "localhost",
+    "localhost.",
+    "app.localhost",
+    "app.localhost.",
+    "127.0.0.1",
+    "127.0.0.2",
+    "0.0.0.0",
+    "10.0.0.1",
+    "172.16.0.1",
+    "192.168.1.10",
+    "[::]",
+    "[::1]",
+    "[fe80::1]",
+    "[fc00::1]",
+  ]) {
     assert.throws(
       () => resolvePublicSiteUrl({
         CI: "true",
         NEXT_PUBLIC_SITE_URL: `http://${hostname}/`,
       }),
-      /localhost/i,
+      /public hostname/i,
+      hostname,
     );
   }
 });
