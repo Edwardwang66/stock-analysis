@@ -8,6 +8,7 @@ import re
 import shlex
 import subprocess
 import unittest
+from urllib.parse import urlsplit
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -3164,6 +3165,148 @@ def enforce_pages_workflow_policy(text: str) -> None:
         raise ValueError(f"invalid Pages workflow structure: {exc}") from exc
 
 
+def enforce_pages_public_site_url_policy(text: str) -> None:
+    """Validate the Pages public root independently of the exact snapshot."""
+    jobs = top_level_mapping_block(text, "jobs")
+    build = mapping_block(jobs, "build", indent=2)
+    build_step = only_block_containing(
+        normalized_step_blocks(build),
+        "name: Build and smoke static profile",
+    )
+    build_env = mapping_block(build_step, "env", indent=8)
+    enforce_public_site_url_policy(
+        label="Pages",
+        base_path=yaml_scalar(
+            optional_direct_mapping_value(
+                build_env,
+                "NEXT_PUBLIC_BASE_PATH",
+                indent=10,
+            )
+        ),
+        site_url=yaml_scalar(
+            optional_direct_mapping_value(
+                build_env,
+                "NEXT_PUBLIC_SITE_URL",
+                indent=10,
+            )
+        ),
+    )
+
+
+def enforce_tests_frontend_public_site_url_policy(text: str) -> None:
+    """Validate CI matrix public roots independently of exact row literals."""
+    jobs = top_level_mapping_block(text, "jobs")
+    frontend = mapping_block(jobs, "frontend", indent=2)
+    strategy = mapping_block(frontend, "strategy", indent=4)
+    matrix = mapping_block(strategy, "matrix", indent=6)
+    include = mapping_block(matrix, "include", indent=8)
+    rows = sequence_mapping_rows(include, item_indent=10, value_indent=12)
+    for row in rows:
+        case = yaml_scalar(row.get("case", "")) or "<missing>"
+        enforce_public_site_url_policy(
+            label=f"CI case {case}",
+            base_path=yaml_scalar(row.get("base_path", "")),
+            site_url=yaml_scalar(row.get("site_url", "")),
+        )
+
+
+def optional_direct_mapping_value(text: str, key: str, indent: int) -> str:
+    """Return zero or one direct mapping value for semantic policy checks."""
+    key_pattern = re.compile(
+        rf"^{' ' * indent}{re.escape(key)}:\s*(?P<value>.*)$"
+    )
+    values = [
+        match.group("value")
+        for line in text.splitlines()
+        if (match := key_pattern.match(line)) is not None
+    ]
+    require_workflow_policy(
+        len(values) <= 1,
+        f"duplicate semantic policy value: {key}",
+    )
+    return values[0] if values else ""
+
+
+def sequence_mapping_rows(
+    text: str,
+    *,
+    item_indent: int,
+    value_indent: int,
+) -> list[dict[str, str]]:
+    """Parse flat YAML sequence mappings used by exact workflow matrices."""
+    item_pattern = re.compile(
+        rf"^{' ' * item_indent}- "
+        r"(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)$"
+    )
+    value_pattern = re.compile(
+        rf"^{' ' * value_indent}"
+        r"(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)$"
+    )
+    rows: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for line in text.splitlines():
+        item_match = item_pattern.match(line)
+        if item_match is not None:
+            current = {
+                item_match.group("key"): item_match.group("value"),
+            }
+            rows.append(current)
+            continue
+        value_match = value_pattern.match(line)
+        if value_match is not None and current is not None:
+            key = value_match.group("key")
+            require_workflow_policy(
+                key not in current,
+                f"duplicate CI matrix field: {key}",
+            )
+            current[key] = value_match.group("value")
+    return rows
+
+
+def yaml_scalar(value: str) -> str:
+    """Unquote the simple YAML scalars used by the workflow matrices."""
+    if (
+        len(value) >= 2
+        and value[0] in {'"', "'"}
+        and value[-1] == value[0]
+    ):
+        return value[1:-1]
+    return value
+
+
+def enforce_public_site_url_policy(
+    *,
+    label: str,
+    base_path: str,
+    site_url: str,
+) -> None:
+    """Require one absolute, non-local public root aligned to its base path."""
+    require_workflow_policy(
+        bool(site_url),
+        f"{label} public site URL is required",
+    )
+    parsed = urlsplit(site_url)
+    require_workflow_policy(
+        parsed.scheme in {"http", "https"} and bool(parsed.netloc),
+        f"{label} public site URL must be an absolute HTTP(S) URL",
+    )
+    hostname = (parsed.hostname or "").lower()
+    require_workflow_policy(
+        not (
+            hostname == "localhost"
+            or hostname.endswith(".localhost")
+            or hostname == "127.0.0.1"
+            or hostname == "::1"
+        ),
+        f"{label} public site URL must not use localhost",
+    )
+    expected_path = f"{base_path}/" if base_path else "/"
+    require_workflow_policy(
+        parsed.path == expected_path,
+        f"{label} public site URL path must match base path",
+    )
+
+
 def enforce_render_and_backend_runtime_contract(
     render_text: str,
     readme_text: str,
@@ -3739,18 +3882,6 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}\n"
                 "          UNDECLARED_CONTEXT: ${{ github.token }}\n",
             ),
-            "missing Pages site URL": mutate(
-                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
-                "",
-            ),
-            "localhost Pages site URL": mutate(
-                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
-                "          NEXT_PUBLIC_SITE_URL: http://localhost:3000/\n",
-            ),
-            "base-path-mismatched Pages site URL": mutate(
-                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
-                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/\n",
-            ),
             "substituted context": mutate(
                 "          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}\n",
                 "          NEXT_PUBLIC_API_BASE: ${{ secrets.API_BASE }}\n",
@@ -3769,6 +3900,97 @@ class WorkflowSecurityTests(unittest.TestCase):
             ROOT / ".github" / "workflows" / "deploy-pages.yml"
         ).read_text(encoding="utf-8")
         enforce_pages_workflow_policy(actual)
+
+    def test_workflow_public_site_url_mutations_fail_semantically(self) -> None:
+        pages = (
+            ROOT / ".github" / "workflows" / "deploy-pages.yml"
+        ).read_text(encoding="utf-8")
+        tests = (
+            ROOT / ".github" / "workflows" / "tests.yml"
+        ).read_text(encoding="utf-8")
+        enforce_pages_public_site_url_policy(pages)
+        enforce_tests_frontend_public_site_url_policy(tests)
+
+        def mutate(text: str, old: str, new: str, label: str) -> str:
+            self.assertEqual(text.count(old), 1, label)
+            return text.replace(old, new, 1)
+
+        pages_site_url = (
+            "          NEXT_PUBLIC_SITE_URL: "
+            "https://${{ github.repository_owner }}.github.io/"
+            "${{ github.event.repository.name }}/\n"
+        )
+        pages_mutations = [
+            (
+                "missing Pages site URL",
+                mutate(pages, pages_site_url, "", "missing Pages site URL"),
+                r"^Pages public site URL is required$",
+            ),
+            (
+                "localhost Pages site URL",
+                mutate(
+                    pages,
+                    pages_site_url,
+                    "          NEXT_PUBLIC_SITE_URL: http://localhost:3000/"
+                    "${{ github.event.repository.name }}/\n",
+                    "localhost Pages site URL",
+                ),
+                r"^Pages public site URL must not use localhost$",
+            ),
+            (
+                "base-path-mismatched Pages site URL",
+                mutate(
+                    pages,
+                    pages_site_url,
+                    "          NEXT_PUBLIC_SITE_URL: "
+                    "https://${{ github.repository_owner }}.github.io/\n",
+                    "base-path-mismatched Pages site URL",
+                ),
+                r"^Pages public site URL path must match base path$",
+            ),
+        ]
+        for label, workflow, message in pages_mutations:
+            with self.subTest(mutation=label):
+                with self.assertRaisesRegex(ValueError, message):
+                    enforce_pages_public_site_url_policy(workflow)
+
+        ci_site_url = (
+            "            site_url: "
+            "https://stock-analysis.example.test/stock-analysis/\n"
+        )
+        ci_mutations = [
+            (
+                "missing CI site URL",
+                mutate(tests, ci_site_url, "", "missing CI site URL"),
+                r"^CI case static-pages public site URL is required$",
+            ),
+            (
+                "localhost CI site URL",
+                mutate(
+                    tests,
+                    ci_site_url,
+                    "            site_url: "
+                    "http://localhost:3000/stock-analysis/\n",
+                    "localhost CI site URL",
+                ),
+                r"^CI case static-pages public site URL must not use localhost$",
+            ),
+            (
+                "base-path-mismatched CI site URL",
+                mutate(
+                    tests,
+                    ci_site_url,
+                    "            site_url: "
+                    "https://stock-analysis.example.test/\n",
+                    "base-path-mismatched CI site URL",
+                ),
+                r"^CI case static-pages public site URL path must match base path$",
+            ),
+        ]
+        for label, workflow, message in ci_mutations:
+            with self.subTest(mutation=label):
+                with self.assertRaisesRegex(ValueError, message):
+                    enforce_tests_frontend_public_site_url_policy(workflow)
 
     def test_render_and_backend_runtime_contracts_are_exact(self) -> None:
         enforce_render_and_backend_runtime_contract(
@@ -4823,27 +5045,6 @@ class WorkflowSecurityTests(unittest.TestCase):
         )
         with self.subTest(workflow="actual"):
             assert_frontend_policy(text)
-
-        site_url_mutations = {
-            "missing CI site URL": (
-                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
-                "",
-            ),
-            "localhost CI site URL": (
-                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
-                "            site_url: http://localhost:3000/stock-analysis/\n",
-            ),
-            "base-path-mismatched CI site URL": (
-                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
-                "            site_url: https://stock-analysis.example.test/\n",
-            ),
-        }
-        for label, (old, new) in site_url_mutations.items():
-            self.assertEqual(text.count(old), 1, label)
-            mutation = text.replace(old, new, 1)
-            with self.subTest(mutation=label):
-                with self.assertRaises(AssertionError):
-                    assert_frontend_policy(mutation)
 
     def test_tests_workflow_python_matrix_locks_and_entrypoints_are_scoped(
         self,
