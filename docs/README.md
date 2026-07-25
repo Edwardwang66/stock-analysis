@@ -2,11 +2,16 @@
 
 > **Status:** Current
 > **Scope:** Status catalog and navigation for maintained, target, historical, and archived documentation.
-> **Last verified commit:** `f28c966fa399753505b71d38a9c2d5867554b02f`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 ## Start here
 
 - Current implementation authority: [`current-architecture.md`](current-architecture.md)
+- Current configuration authority: [`configuration.md`](configuration.md)
+- Current deployment authority: [`deployment-matrix.md`](deployment-matrix.md)
+- Current workflow authority: [`operations/workflows.md`](operations/workflows.md)
+- Current feed-contract authority: [`data-contracts/feed.md`](data-contracts/feed.md)
+- Research catalog: [`research/index.md`](research/index.md)
 - Accepted target summary: [`rfcs/target-architecture.md`](rfcs/target-architecture.md)
 - Full accepted refactor design: [`superpowers/specs/2026-07-16-stock-analysis-refactor-design.md`](superpowers/specs/2026-07-16-stock-analysis-refactor-design.md)
 - Repository entry point: [`../README.md`](../README.md)
@@ -18,24 +23,34 @@ The current architecture describes what this checkout implements. The target RFC
 - [`current-architecture.md`](current-architecture.md) — current runtime variants, data paths, persistence, trust boundaries, and limitations.
 - [`../backend/README.md`](../backend/README.md) — optional FastAPI entry points and local runtime notes.
 - [`../feed/README.md`](../feed/README.md) — current report-feed conventions and consumer path.
-- [`../backtest/README.md`](../backtest/README.md) and the other `backtest/README*.md` files — research entry points and recorded limitations.
+- [`openclaw-integration.md`](openclaw-integration.md) and [`openclaw-stock-notes.md`](openclaw-stock-notes.md) — current external report ingress and stock-note contracts.
+- [`../backtest/README.md`](../backtest/README.md) and [`../backtest/FEATURES.md`](../backtest/FEATURES.md) — maintained backtest entry points, capabilities, and recorded limitations.
 
 Subsystem READMEs are useful operational references. When they conflict with the current architecture or source, the verified current architecture and implementation are authoritative.
 
 ## Configuration, deployment, operations, and contracts
 
-These existing pre-refactor references remain available while later documentation slices classify and refresh them:
+The maintained operational authorities are:
 
-- [`deploy-backend.md`](deploy-backend.md) and [`../backend/README.md`](../backend/README.md) — optional backend deployment and startup.
-- [`endpoints.md`](endpoints.md) and [`working-apis.md`](working-apis.md) — endpoint and upstream-source references.
-- [`data-model-api.md`](data-model-api.md) — legacy model and API design notes; it is not the accepted cross-language contract authority.
-- [`openclaw-integration.md`](openclaw-integration.md) and [`../feed/README.md`](../feed/README.md) — external report ingress and feed conventions.
+- [`configuration.md`](configuration.md) — environment variables, secrets, defaults, and ownership.
+- [`deployment-matrix.md`](deployment-matrix.md) — static, server, FastAPI, Pages, and Render variants and their current limitations.
+- [`operations/workflows.md`](operations/workflows.md) — GitHub Actions triggers, permissions, writers, and recovery.
+- [`data-contracts/feed.md`](data-contracts/feed.md) — feed families, producers, consumers, validation, and publication boundaries.
+- [`../backend/README.md`](../backend/README.md) — optional backend startup and runtime details.
 - [`compliance.md`](compliance.md) — licensing and use constraints.
 
-These pages are not substitutes for checking current code and deployment configuration.
+### Current compatibility routes
+
+These maintained routes preserve former URLs while pointing to current authorities or archived records:
+
+- [`architecture.md`](architecture.md), [`roadmap.md`](roadmap.md), and [`iteration-log.md`](iteration-log.md)
+- [`deploy-backend.md`](deploy-backend.md), [`data-model-api.md`](data-model-api.md), [`endpoints.md`](endpoints.md), and [`working-apis.md`](working-apis.md)
+- [`need-to-fix.md`](need-to-fix.md) and [`optimization-2026-06.md`](optimization-2026-06.md)
+- [`positioning.md`](positioning.md), [`cost-estimate.md`](cost-estimate.md), and [`self-improving-alpha-loop.md`](self-improving-alpha-loop.md)
 
 ## Research
 
+- [`research/index.md`](research/index.md) — maintained catalog for research tracks, dated studies, evidence levels, and limitations.
 - [`../backtest/README.md`](../backtest/README.md), [`../backtest/README_statarb.md`](../backtest/README_statarb.md), and [`../backtest/README_xs.md`](../backtest/README_xs.md) — major equity research tracks.
 - [`../backtest/README_crypto.md`](../backtest/README_crypto.md), [`../backtest/README_crypto_pipeline.md`](../backtest/README_crypto_pipeline.md), and [`../backtest/README_binance.md`](../backtest/README_binance.md) — crypto research tracks.
 - [`study-pbo-2026-06-10.md`](study-pbo-2026-06-10.md), [`study-pbo-2026-07-02.md`](study-pbo-2026-07-02.md), [`study-downshift-2026-06-10.md`](study-downshift-2026-06-10.md), and [`study-downshift-2026-07-02.md`](study-downshift-2026-07-02.md) — dated validation snapshots.
@@ -57,10 +72,9 @@ Accepted design records decisions. A component becomes current only after implem
 
 The following pages preserve useful pre-refactor context but are not current architecture authorities:
 
-- [`optimization-2026-06.md`](optimization-2026-06.md) and [`need-to-fix.md`](need-to-fix.md)
 - [`hyperliquid-integration.md`](hyperliquid-integration.md) and [`survivorship-bias-data-sources.md`](survivorship-bias-data-sources.md)
-- [`positioning.md`](positioning.md), [`cost-estimate.md`](cost-estimate.md), and [`self-improving-alpha-loop.md`](self-improving-alpha-loop.md)
-- [`openclaw-stock-notes.md`](openclaw-stock-notes.md)
+- [`../research/ai-agents-skills-market-scan.md`](../research/ai-agents-skills-market-scan.md) and [`../research/quant-factor-deep-research.md`](../research/quant-factor-deep-research.md)
+- The dated studies and historical `backtest/README*.md` pages cataloged in [`research/index.md`](research/index.md)
 
 Treat dates, external availability, costs, and deployment observations in these snapshots as time-bound.
 

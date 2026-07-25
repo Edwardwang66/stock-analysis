@@ -3,7 +3,7 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use the [current architecture](../../current-architecture.md) and [configuration reference](../../configuration.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use the [current architecture](../../current-architecture.md) and [configuration reference](../../configuration.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
 > 本文件给**其他任务/Agent**速查:本平台**用到的所有端点** —— 分两层:
@@ -11,7 +11,7 @@ Current replacement: use the [current architecture](../../current-architecture.m
 > 2. **本平台对外 API 端点**(FastAPI 后端 `/api/v1/*`)
 >
 > 实测时间 2026-06。来源真实性、CORS/key、替代源详见 [`working-apis.md`](working-apis.md)。
-> ⚠️ 上游均为**免费源,仅供演示/自用**,非投资建议;商用须换授权源(见 [`compliance.md`](compliance.md))。
+> ⚠️ 上游均为**免费源,仅供演示/自用**,非投资建议;商用须换授权源(见 [`compliance.md`](../../compliance.md))。
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Status:** Accepted implementation plan
 > **Scope:** Stage 1A feed security implementation slice.
-> **Last verified commit:** `806ea6515c22af521929b1e485c37cf754cd0c27`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

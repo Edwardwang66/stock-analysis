@@ -3,10 +3,10 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use the [current architecture](../../current-architecture.md) and the [backend README](../../../backend/README.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use the [current architecture](../../current-architecture.md) and the [backend README](../../../backend/README.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
-> 配套:[`architecture.md`](architecture.md)(§5 数据服务层 · §6 AI 层)· [`roadmap.md`](roadmap.md)
+> 配套:[`architecture.md`](../../architecture.md)(§5 数据服务层 · §6 AI 层)· [`roadmap.md`](roadmap.md)
 > 目的:把架构里的"统一数据模型 + 可插拔适配器"落成**具体 schema 与 REST/WS 契约**,供 P1 编码直接对照。
 
 ---

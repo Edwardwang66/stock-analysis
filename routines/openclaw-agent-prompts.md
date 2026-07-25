@@ -1,7 +1,7 @@
 # OpenClaw Agent Prompt 骨架(5 角色,可直接投产)
 > **Status:** Current
 > **Scope:** External-agent prompt playbook; schema validity and candidate fields do not constitute analytical approval.
-> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 > 每个 agent = 一个 Claude 实例 + 下面对应的 **system prompt**。Orchestrator 按 [OpenClaw 集成 §1.2](../docs/openclaw-integration.md#12-调度orchestrator)
 > 调度它们,产出**必须是合法的 `feed/schema/report.schema.json`**,签名后用 `scripts/openclaw_client.py` 投递。

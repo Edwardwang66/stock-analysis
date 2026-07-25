@@ -28,6 +28,43 @@ from scripts.check_docs import (
     stamp_documents,
 )
 
+EXPECTED_DOCUMENTATION_WORKFLOW = """name: Documentation checks
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - name: Verify exact Python, Git, and non-root identity
+        run: |
+          test "$(python --version 2>&1)" = "Python 3.11.15"
+          git --version >/dev/null
+          test "$(id -u)" -ne 0
+      - name: Unit tests
+        run: python scripts/tests/test_check_docs.py
+      - name: Repository documentation contract
+        run: python scripts/check_docs.py
+"""
+
 
 class DocumentationChecks(TestCase):
     @staticmethod
@@ -2031,6 +2068,46 @@ class DocumentationChecks(TestCase):
                 root, [], [], ["archive.md"], archive_date="2026-07-24"
             )
             self.assertTrue(any(item.code == "invalid-archive-date" for item in errors))
+
+    def test_docs_workflow_is_the_exact_required_guard(self):
+        path = ROOT / ".github" / "workflows" / "docs.yml"
+        self.assertTrue(path.is_file(), "documentation workflow is missing")
+        self.assertEqual(
+            path.read_text(encoding="utf-8"),
+            EXPECTED_DOCUMENTATION_WORKFLOW,
+        )
+
+    def test_docs_workflow_fetches_full_history_for_ancestor_checks(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github" / "workflows" / "docs.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertRegex(
+            workflow,
+            r"(?m)^      - uses: actions/checkout@v7\n"
+            r"        with:\n"
+            r"          fetch-depth: 0\n"
+            r"          persist-credentials: false$",
+        )
+        self.assertIn(
+            'test "$(python --version 2>&1)" = "Python 3.11.15"',
+            workflow,
+        )
+        self.assertRegex(
+            workflow,
+            r"(?m)^      - uses: actions/setup-python@v6\n"
+            r"        with:\n"
+            r"          python-version-file: .python-version$",
+        )
+        self.assertIn("git --version >/dev/null", workflow)
+        self.assertIn('test "$(id -u)" -ne 0', workflow)
+
+    def test_repository_documentation_contract_passes(self):
+        root = Path(__file__).resolve().parents[2]
+        from scripts.check_docs import check_repository
+
+        errors = check_repository(root, root / "docs" / "verification.json")
+        self.assertEqual([item.render() for item in errors], [])
 
     def test_cli_rejects_config_path_escape_without_traceback(self):
         stderr = io.StringIO()

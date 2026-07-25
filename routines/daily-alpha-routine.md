@@ -1,7 +1,7 @@
 # Routine:每日/每小时做多做空模型优化与情报投递
 > **Status:** Current
 > **Scope:** Implemented alpha-routine playbook plus explicitly labeled planned LLM extension.
-> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 Current runtime and publication authorities: [Workflow Operations](../docs/operations/workflows.md) and [Feed Data Contracts](../docs/data-contracts/feed.md).
 

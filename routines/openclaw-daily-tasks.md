@@ -1,7 +1,7 @@
 # OpenClaw 每日任务清单(Playbook)
 > **Status:** Current
 > **Scope:** External OpenClaw operator playbook; current authentication, schema, and failure authorities govern every task.
-> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 > 这是给**你本地的外部 OpenClaw**(Claude agent)每天照着执行的任务清单。
 > 仓库已铺好契约/投递/接收/展示;OpenClaw 负责**真分析**并把结果投递回来。

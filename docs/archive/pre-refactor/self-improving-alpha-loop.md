@@ -3,7 +3,7 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use [workflow operations](../../operations/workflows.md) and the [documentation index](../../README.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use [workflow operations](../../operations/workflows.md) and the [documentation index](../../README.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
 > 把设计文档(US Equity Mid-Frequency Hybrid Quant System v1.0)落成一个**持续运转的回路**:
@@ -41,14 +41,14 @@ Current replacement: use [workflow operations](../../operations/workflows.md) an
 
 `backtest/statarb.py` —— 流 B 条件因子统计套利残差均值回归引擎:
 **残差(SPY+行业 ETF 回归)→ OU s-score → 滞回开/平 → 协整断裂熔断 → Garleanu-Pedersen aim 组合
-→ 分层限额 + 容量地板 → 净·扣成本评估 + Deflated Sharpe**。详见 [`backtest/README_statarb.md`](../backtest/README_statarb.md)。
+→ 分层限额 + 容量地板 → 净·扣成本评估 + Deflated Sharpe**。详见 [`backtest/README_statarb.md`](../../../backtest/README_statarb.md)。
 
 **诚实结论**:在免费数据(含幸存者偏差的流动大盘)上净 Sharpe 为负 —— 实证了设计文档第 10 章:
 真 alpha 在容量受限冷门层,免费数据触及不到。引擎是正确脚手架,转正靠**更冷门 universe + PIT 数据**。
 
 ## 2. LLM 每天/每小时优化模型 + 不断 post 报告(Part 2/3)
 
-- **Routine**:[`routines/daily-alpha-routine.md`](../routines/daily-alpha-routine.md) 是 Claude 可执行的 playbook;
+- **Routine**:[`routines/daily-alpha-routine.md`](../../../routines/daily-alpha-routine.md) 是 Claude 可执行的 playbook;
   `scripts/run_routine.py` 是自动实现;`.github/workflows/alpha-routine.yml` 定时(盘中每小时 + EOD)跑并 commit `feed/`。
 - **LLM 角色**:只在第 4 步生成**可审计公式因子**(Alpha101 风格)+ 过**六门控**,**不决策**(R6);
   默认关闭,接入指引见 routine 文档。Claude Code 里可用 `/loop 60m python scripts/run_routine.py` 定时。
@@ -61,7 +61,7 @@ Current replacement: use [workflow operations](../../operations/workflows.md) an
 
 ## 4. OpenClaw 完整方案(Part 5)
 
-[`docs/openclaw-integration.md`](openclaw-integration.md):agent 名册、调度、六门控、三种投递通道
+[`docs/openclaw-integration.md`](../../openclaw-integration.md):agent 名册、调度、六门控、三种投递通道
 (github-api / repository_dispatch / PR)、HMAC 签名、最小权限、CI 安全闸门、提示词注入防御。
 参考客户端 `scripts/openclaw_client.py`,投递契约 = `feed/schema/report.schema.json`。
 

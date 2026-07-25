@@ -2,7 +2,7 @@
 
 > **Status:** Current compatibility page
 > **Scope:** Preserve the former feature-inventory URL and direct readers to maintained research guidance.
-> **Last verified commit:** `74c5bb4931cb792c69b95f4c0912778da09ec908`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 This path is a compatibility page, not a current feature claim or result summary.
 

@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Compatibility pointer for the former endpoint inventory.
-> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 The historical inventory is preserved at [archive/pre-refactor/endpoints.md](archive/pre-refactor/endpoints.md).
 

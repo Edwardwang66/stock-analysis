@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Catalog of repository research methods, executable entry points, dated findings, and methodological limitations.
-> **Last verified commit:** `9d3e39fd8c75d2ea18f6879dc7d74ddbd5efcfd2`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 ## How to read research status
 

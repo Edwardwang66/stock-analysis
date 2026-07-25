@@ -3,10 +3,10 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use the [repository README](../../../README.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use the [repository README](../../../README.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
-> 配套:[`architecture.md`](architecture.md) · [`../research/ai-agents-skills-market-scan.md`](../research/ai-agents-skills-market-scan.md)(数据源价格来源)
+> 配套:[`architecture.md`](../../architecture.md) · [`../research/ai-agents-skills-market-scan.md`](../../../research/ai-agents-skills-market-scan.md)(数据源价格来源)
 > ⚠️ 本文为**量级估算**(order-of-magnitude),用于决策,非财务承诺。价格为 2026-06 检索值,会变动。
 
 按三档规模测算月成本:**1k / 10k / 100k 月活(MAU)**。
@@ -89,4 +89,4 @@ Current replacement: use the [repository README](../../../README.md); historical
 - **早期(1k)≈ $1k/月**,可控,免费数据源足够。
 - **AI 调用是边际成本主项**,务必从 P3(AI 上线)起就做缓存 + 分级 + 批处理。
 - **数据源在商用阶段才是大头**(因重分发授权),MVP 阶段几乎免费。
-- 监控必须包含 **token 成本 / 缓存命中率 / 数据源命中率**(见 [`architecture.md`](architecture.md) §8)。
+- 监控必须包含 **token 成本 / 缓存命中率 / 数据源命中率**(见 [`architecture.md`](../../architecture.md) §8)。

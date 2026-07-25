@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Compatibility pointer for the former data-model and API proposal.
-> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 The historical proposal is preserved at [archive/pre-refactor/data-model-api.md](archive/pre-refactor/data-model-api.md).
 

@@ -2,7 +2,7 @@
 
 > **Status:** Accepted
 > **Scope:** Repository-wide architecture, migration, testing, security, and documentation program design.
-> **Last verified commit:** `806ea6515c22af521929b1e485c37cf754cd0c27`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 - Date: 2026-07-16
 - Baseline commit: `3fe79bfc748e83b6f9ee16e17fe75bf11ceddadc`

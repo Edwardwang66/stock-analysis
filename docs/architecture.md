@@ -2,7 +2,7 @@
 
 > **Status:** Current compatibility page
 > **Scope:** Preserve the former architecture URL and direct readers to current and target architecture authorities.
-> **Last verified commit:** `f28c966fa399753505b71d38a9c2d5867554b02f`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 This path is not current implementation guidance.
 

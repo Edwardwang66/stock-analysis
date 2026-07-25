@@ -962,8 +962,10 @@ FORBIDDEN_INTERPRETER_MUTATIONS = (
     "'python3.11' scripts/daily_digest.py",
     "python3.12 scripts/daily_digest.py",
 )
+DOCUMENTATION_PYTHON_JOB = ("docs.yml", "docs")
 EXPECTED_PYTHON_POLICY_JOBS = set(PRODUCTION_PYTHON_JOBS) | {
-    ("tests.yml", "python")
+    ("tests.yml", "python"),
+    DOCUMENTATION_PYTHON_JOB,
 }
 EXPECTED_FALSE_CHECKOUT_COUNTS = {
     ("dependabot-automerge.yml", "on-pr"): 1,
@@ -3369,7 +3371,7 @@ def enforce_python_workflow_policy(
         set(interpreter_inventory) == EXPECTED_PYTHON_POLICY_JOBS,
         "direct Python interpreter job inventory changed",
     )
-    for site in PRODUCTION_PYTHON_JOBS:
+    for site in set(PRODUCTION_PYTHON_JOBS) | {DOCUMENTATION_PYTHON_JOB}:
         tokens = interpreter_inventory.get(site, [])
         require_workflow_policy(
             bool(tokens) and all(token == "python" for token in tokens),
@@ -3377,7 +3379,9 @@ def enforce_python_workflow_policy(
         )
 
     require_workflow_policy(
-        raw_setup_count == parsed_setup_count == 17,
+        raw_setup_count
+        == parsed_setup_count
+        == len(EXPECTED_PYTHON_POLICY_JOBS),
         "setup-python raw/parsed occurrence count changed",
     )
     require_workflow_policy(
@@ -3394,6 +3398,11 @@ def enforce_python_workflow_policy(
             action == "actions/setup-python@v6",
             f"setup-python action is not v6: {site!r}",
         )
+    docs_setup = setup_inventory[DOCUMENTATION_PYTHON_JOB][0][0]["raw"]
+    require_workflow_policy(
+        docs_setup == FINAL_SETUP_STANDARD,
+        "docs.yml/docs setup exception changed",
+    )
 
     expected_install_sites = DEPENDENCY_JOBS | {("tests.yml", "python")}
     require_workflow_policy(

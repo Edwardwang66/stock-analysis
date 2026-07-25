@@ -3,10 +3,10 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use the [repository README](../../../README.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use the [repository README](../../../README.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
-> 配套:[`../research/ai-agents-skills-market-scan.md`](../research/ai-agents-skills-market-scan.md)(竞品全景)· [`architecture.md`](architecture.md)
+> 配套:[`../research/ai-agents-skills-market-scan.md`](../../../research/ai-agents-skills-market-scan.md)(竞品全景)· [`architecture.md`](../../architecture.md)
 
 平台定位:**多市场(美/港/A/加密)统一数据看板 + AI 助手**。本文回答:市面竞品已经很多,**我们的切入点和差异化在哪**。
 
@@ -73,5 +73,5 @@ Current replacement: use the [repository README](../../../README.md); historical
 | 风险 | 应对 |
 |------|------|
 | 巨头(东方财富/Perplexity)横向扩市场 | 先用"中立 + 中文 + 加密"形成差异;速度取胜 |
-| 数据合规/重分发(见 [`compliance.md`](compliance.md)) | 免费源仅自用,商用采购授权 |
-| AI 成本(见 [`cost-estimate.md`](cost-estimate.md)) | 缓存 + 分级模型 + 批处理控成本 |
+| 数据合规/重分发(见 [`compliance.md`](../../compliance.md)) | 免费源仅自用,商用采购授权 |
+| AI 成本(见 [`cost-estimate.md`](cost-estimate-2026-06.md)) | 缓存 + 分级模型 + 批处理控成本 |

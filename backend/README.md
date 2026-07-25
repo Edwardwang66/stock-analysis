@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Optional server-profile market-data, cache, OHLCV, and compatibility-analysis service.
-> **Last verified commit:** `9e8ea546f3a43456f3579a14b752d27142cdf58e`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 ## Role and optionality
 

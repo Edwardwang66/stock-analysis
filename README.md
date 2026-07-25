@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Repository entry point, runtime selection, verified quick start, and product limitations.
-> **Last verified commit:** `5ab9e2711e46dd501f2140a0149aa133fc83bbc1`
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 面向个人研究与自托管的多市场行情、技术分析和自动化情报工作台。
 

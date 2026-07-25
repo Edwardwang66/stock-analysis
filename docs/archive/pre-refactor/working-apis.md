@@ -3,12 +3,12 @@
 > **Scope:** Historical pre-refactor record preserved for provenance.
 > **Archived on:** 2026-07-24
 
-Current replacement: use the [current architecture](../../current-architecture.md); historical relative links below are preserved verbatim and may not resolve from this archived location.
+Current replacement: use the [current architecture](../../current-architecture.md); historical prose below is preserved, and moved local link targets are redirected to their current repository locations.
 
 
 > 实测自本仓库环境;标注**是否能在浏览器(静态站点)直接调用**(CORS)、是否需 key。
 > 站内有交互版:前端 **`/sources`** 页(`frontend/app/sources/page.tsx`)带实时演示 + 登记表。
-> ⚠️ 均为免费源,**仅供演示/自用**;商用对外须换授权源(见 [`compliance.md`](compliance.md))。
+> ⚠️ 均为免费源,**仅供演示/自用**;商用对外须换授权源(见 [`compliance.md`](../../compliance.md))。
 
 ## ✅ 已接入(浏览器直连,零/免费 key)
 
