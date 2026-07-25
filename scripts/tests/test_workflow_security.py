@@ -3290,7 +3290,11 @@ def enforce_public_site_url_policy(
         parsed.scheme in {"http", "https"} and bool(parsed.netloc),
         f"{label} public site URL must be an absolute HTTP(S) URL",
     )
-    hostname = (parsed.hostname or "").lower()
+    require_workflow_policy(
+        bool(parsed.hostname),
+        f"{label} public site URL must include a hostname",
+    )
+    hostname = parsed.hostname.lower()
     require_workflow_policy(
         not (
             hostname == "localhost"
@@ -3991,6 +3995,17 @@ class WorkflowSecurityTests(unittest.TestCase):
             with self.subTest(mutation=label):
                 with self.assertRaisesRegex(ValueError, message):
                     enforce_tests_frontend_public_site_url_policy(workflow)
+
+    def test_public_site_url_policy_requires_a_hostname(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Synthetic public site URL must include a hostname$",
+        ):
+            enforce_public_site_url_policy(
+                label="Synthetic",
+                base_path="",
+                site_url="https://@/",
+            )
 
     def test_render_and_backend_runtime_contracts_are_exact(self) -> None:
         enforce_render_and_backend_runtime_contract(
