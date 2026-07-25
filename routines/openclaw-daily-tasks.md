@@ -1,10 +1,15 @@
 # OpenClaw 每日任务清单(Playbook)
+> **Status:** Current
+> **Scope:** External OpenClaw operator playbook; current authentication, schema, and failure authorities govern every task.
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
 > 这是给**你本地的外部 OpenClaw**(Claude agent)每天照着执行的任务清单。
 > 仓库已铺好契约/投递/接收/展示;OpenClaw 负责**真分析**并把结果投递回来。
 > 配套:[`openclaw-agent-prompts.md`](openclaw-agent-prompts.md)(量化 5 角色 prompt)、
 > [`../docs/openclaw-stock-notes.md`](../docs/openclaw-stock-notes.md)(个股解读契约)。
 > 铁律(R6):**LLM 是研究放大器,不决策;数值必须有来源;不编造;一律"非投资建议"。**
+> 当前投递边界与失败语义见 [`../docs/openclaw-integration.md`](../docs/openclaw-integration.md) 和
+> [`../docs/operations/workflows.md`](../docs/operations/workflows.md)。
 
 ---
 
@@ -19,8 +24,8 @@
 - [ ] 环境变量:
   - `GITHUB_TOKEN` = 有本仓 `contents:write` 的 PAT(个股解读 PUT 用)
   - `FEED_HMAC_SECRET` = 与仓库 Secret 同值(量化报告签名用)
-  - `OPENCLAW_REPO=edwardwang66/stock-analysis`、`OPENCLAW_BRANCH=main`
-  - `OPENCLAW_MODEL=gpt-5.5`(你的 OpenClaw 模型;会写进报告/解读的 `model` 字段)
+  - `OPENCLAW_REPO=edwardwang66/stock-analysis`、`OPENCLAW_BRANCH=main`(stock-note Contents 写入分支;dispatch 忽略)
+  - `OPENCLAW_MODEL=gpt-5.5`(仅作为报告/解读的 `model` provenance 字段;不选择模型服务)
 - [ ] ~~维护本地 `watchlist.txt`~~ **已废弃(2026-06-09)**:自选清单以仓库
   [`feed/watchlist.json`](../feed/watchlist.json) 为唯一真相源(Edward/Claude 维护,你只读)。
 
@@ -60,6 +65,8 @@
   ```bash
   python scripts/openclaw_client.py --mode github-api --stock-note <US:XXXX> --report-file note.json
   ```
+- [ ] 此通道是 privileged direct write,不经 stock-note schema/HMAC/path containment;只使用可信、已审阅输入,并按
+      [stock-note authority](../docs/openclaw-stock-notes.md) 核对实际分支与索引。
 - [ ] 验收:打开 `https://edwardwang66.github.io/stock-analysis/symbol/?s=<US:XXXX>` → 「🤖 AI 解读」卡片更新为今天
 
 **产出**:`feed/stock-notes/<MARKET>-<CODE>.json` 每只一份。
@@ -102,9 +109,10 @@
 - **美股收盘后**(北京时间次日早)跑一轮:任务 A(个股)+ 任务 B(5 角色)+ 任务 C(综述)
 - 盘中如需,只跑任务 A 的自选子集 + `crowding-monitor`/`event-risk`
 - 把本清单设为 OpenClaw 的每日 routine;失败重试 + 把 run_url 填进报告 `producer.run_url` 便于溯源
+- 报告相同 id 重投会被拒绝;先核对 GitHub event、workflow 和 commit 状态,再为独立新投递生成新 id
 
-> 可执行骨架见 [`../scripts/openclaw_daily.py`](../scripts/openclaw_daily.py):已写好"拉清单→遍历→投递"的管道,
-> 只需把其中的 `analyze_stock()` / `analyze_role()` 接到你的 OpenClaw/Claude。
+> 可执行骨架见 [`../scripts/openclaw_daily.py`](../scripts/openclaw_daily.py):已实现确定性的清单、OHLCV/SEC 分析、
+> 遍历与投递路径。只有在明确接入外部分析服务时才替换该分析边界;当前脚本会捕获部分失败并可能正常退出。
 
 ---
 

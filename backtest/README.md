@@ -1,124 +1,95 @@
-# TQM 选股因子与全市场回测
+# Backtest and Research
 
-对 **标普 500 ∪ 纳斯达克-100(去重 516 只,514 只有效)** 的近 10 年日线做的
-因子设计 + 回测工程。代码纯 numpy/标准库,无未来函数(no look-ahead)。
+> **Status:** Current
+> **Scope:** Installation, entry points, outputs, and limitations for the Python research subsystem.
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
-> ⚠️ 先说结论(重要,关乎你提的 85-90% 目标):
-> **严格样本外(walk-forward,训练段绝不含测试数据)下,方向正确率只有 ~57~61%**(见第三节)。
-> §二 里 62~67% 的数字是 **in-sample(同段数据既选参数又测正确率)**,含"数据窥探溢价",不算数。
-> 想看到 85-90% 的数字,靠的不是预测力,而是**改变"正确"的定义**(止盈+不止损的路径标签),
-> 那会换来"胜率高但单笔亏损巨大、负偏"的副作用。下面用真实回测把这两件事都拆给你看。
+## Scope
 
----
+This directory contains executable research code for US equities, statistical arbitrage, crypto factors, point-in-time membership experiments, and dated study generation. It is not a production trading engine. The current code entry points are listed below; measured results remain in historical result snapshots and are not repeated here.
 
-## 一、因子怎么设计的:TQM = 趋势 × 质量 × 动量
+## Requirements and installation
 
-选股因子的本质是:**用一个可计算的分数,把"未来更可能上涨"的股票从全市场里筛出来。**
-我没有堆砌一堆指标,而是抓住学术与业界验证过、相互正交的三个维度(`factors.py`):
-
-| 支柱 | 含义 | 计算 | 为什么有效 |
-|------|------|------|-----------|
-| **T 趋势** Trend | 是否处于健康上升趋势 | 价>200日线(0.4)+ 50日线>200日线(0.3)+ 价>50日线(0.3),满分 1.0 | 趋势跟随:规避"下跌中接刀",只在多头排列里做多 |
-| **Q 质量** Quality | 趋势"涨得稳不稳" | 近 126 日「收益/波动」年化信息比(≈Sharpe) | 低波动异象:稳步上行的股票比暴涨暴跌的更可持续 |
-| **M 动量** Momentum | 中期涨势强度 | 12-1 动量(过去 252 日收益,跳过最近 21 日) | Jegadeesh-Titman 动量效应,跨市场长期稳健 |
-
-**买入信号 `tqm_signal`**:同时满足 ①趋势分=1.0(完美多头排列)②12-1 动量≥5%
-③质量(年化Sharpe)≥0.5 ④RSI<80(不追极端超买)。
-即「**在确认的、走得稳的、有上行动量的趋势里做多,且不追高**」。
-
-设计哲学:三个维度彼此独立(趋势看位置、质量看路径平滑度、动量看速度),
-合取(AND)能显著抬高样本质量;任何单因子都做不到。
-
----
-
-## 二、真实回测结果(`run.py`)
-
-全市场、逐 bar 触发信号、非重叠样本、复权价计算前瞻收益:
-
-| 持有期 H | 信号数 | 绝对正确率 | 相对正确率(跑赢SPY) | 均值收益 | 超额 | 基准正比例 |
-|---------|-------|-----------|------------------|---------|------|-----------|
-| 21 日 | 22,665 | 56.0% | 48.6% | +1.0% | +0.1% | 57.4% |
-| 63 日 | 9,347 | 58.8% | 48.0% | +3.3% | +0.3% | 61.3% |
-| 126 日 | 5,350 | 62.2% | 46.8% | +7.2% | +0.8% | 65.0% |
-| 252 日 | 3,055 | **66.3%** | 47.6% | +16.3% | +2.2% | 68.7% |
-
-**怎么读这张表(关键):**
-- **绝对正确率 66%** 看着不错,但最右列「基准正比例」告诉你:**不挑信号、随便买、随便拿 1 年,本来就有 68.7% 是涨的**。美股长期上行漂移(beta)才是这 66% 的主要来源。
-- **相对正确率只有 ~47-48%**:按"是否跑赢 SPY"这个真 alpha 口径,因子并不能稳定战胜指数。
-- 逐年看(H=126):牛市 2017/2020/2023 正确率 73-77%,但 **2022 熊市掉到 37%**。方向性因子躲不过系统性下跌。
-
-> 一句话:这个因子有**正的超额(+2.2%/年)和正向选股倾斜**,是个站得住的真因子;
-> 但它的"正确率"绝大部分是市场 beta,不是预测魔法。
-
----
-
-## 三、严格样本外验证 —— 训练段绝不含测试数据(`walkforward.py`)
-
-§二 有个致命方法论问题:**阈值是看着整段数据挑的,再回到同段数据报正确率 = 数据窥探(in-sample 作弊)。**
-正确做法是 **走向前(walk-forward)+ embargo 隔离带**:
-
-1. **时间切分**:测试年 Y 的所有判断,只允许用 Y 之前的数据拟合参数/模型。
-2. **Embargo**:标签是"未来 H 日收益",训练段末尾样本的标签窗口会探入测试段,
-   故训练样本须满足 `entry_date + H < test_start`,否则丢弃(purged,这里 H=63 日)。
-3. 因子产出**冻结**后,只在它从没见过的测试段评估。
-
-| 策略 | 训练集(in-sample) | **样本外 OOS** | 2022 熊市 OOS |
-|------|------------------|---------------|--------------|
-| A:TQM 阈值(训练段网格搜索后冻结) | ~60% | **57.5%** | 40.9% |
-| B:逻辑回归 P(涨)(训练段拟合后冻结,取信心最高 15%) | ~67% | **60.9%** | 57.4% |
-
-**这张表就是对"作弊"的修正与证明:**
-- 策略 B **训练 67% → 样本外 61%,6 个点的落差就是"数据窥探溢价"**——把它扣掉才是真实水平。
-- 美股大盘股**真实可达的样本外方向正确率 ≈ 57~61%**(已是只取最高信心 15% 的优选子集)。
-  比随机/基准高,是真有边际;但**距 85-90% 差了 25-30 个点,靠预测力补不上**。
-- 2022 熊市样本外正确率塌方,再次说明:纯多头方向因子躲不开系统性下跌。
-
----
-
-## 四、那 85-90% 怎么来?—— 拆穿这个数字(`barrier.py`)
-
-我试过把阈值收紧到极致、再叠加"只在 SPY 站上 200 日线的牛市里开仓"的大盘择时
-(`experiment_regime.py`),绝对正确率**也只是从 66.3% 爬到 67.6%,卡死在天花板**。
-方向性预测做不到 85%。
-
-唯一能合法刷到 85-90% 的办法,是**换掉"正确"的定义**——用止盈/止损的路径化标签
-(triple-barrier,逐日沿真实路径模拟,仍无未来函数、可真实成交):
-
-| 止盈/止损/期限 | 笔数 | 胜率 | 平均盈 | 平均亏 | 期望/笔 |
-|---------------|------|------|-------|-------|--------|
-| +15% / −15% / 1年(对称,公平口径) | 3,419 | 62.5% | +14.3% | −14.0% | +3.7% |
-| +10% / −10% / 1年 | 3,419 | 61.6% | +9.9% | −9.9% | +2.3% |
-| +10% / 不止损 / 1年 | 3,419 | **80.3%** | +9.8% | −17.9% | +4.3% |
-| +8% / 不止损 / 1年 | 3,419 | **83.1%** | +7.9% | −18.5% | +3.4% |
-| +10% / 不止损 / **2年** | 2,169 | **87.9%** | +9.8% | **−21.4%** | +6.0% |
-
-**机制一目了然:**
-- 对称障碍(15%/15%)= 公平的方向胜率,只有 **62.5%**——这才是因子的真实边际。
-- 一旦**撤掉止损、止盈又设得不高、再拉长到期**,大部分单子在 2 年内总能摸到 +10% 先平掉(记为赢),
-  只有少数被套到底的才算输 —— 胜率被推到 **87.9%**,达成你的 85-90% 目标。
-- **但代价写在表里**:平均亏损 −21.4% 是平均盈利 +9.8% 的两倍多(负偏)。
-  **胜率高 ≠ 赚得多**。这正是"用胜率忽悠人"的经典套路。
-
-如果哪个策略/课程宣称"正确率 90%",它几乎一定是在用上面这种(或更糟的、带未来函数的)定义。
-真正该看的是**期望(每笔平均收益)、夏普、最大回撤**,而不是胜率。
-
----
-
-## 五、复现
+The repository runtime contract is Python `3.11.15`. Create an environment with that exact interpreter and install the hash-locked research dependencies from the repository root:
 
 ```bash
-cd backtest
-pip install -r requirements.txt
-python data.py                 # 下载 516+2 只标的 10 年日线到 data_cache/(~25s)
-python run.py                  # §二 in-sample 多 horizon 正确率表
-python walkforward.py          # §三 严格样本外(走向前+embargo)—— 真实水平
-python experiment_regime.py    # 大盘择时闸门实验(看天花板)
-python barrier.py              # §四 路径标签实验(看 85-90% 怎么来的)
+python3.11 -m venv .venv
+.venv/bin/python -m pip install --require-hashes -r backtest/requirements.txt
+.venv/bin/python --version
 ```
 
-## 六、诚实声明(这些会让真实表现更差)
+The final command must report `Python 3.11.15`. `backtest/requirements.in` is the editable dependency source; `backtest/requirements.txt` is the installation and CI lock. Scripts that publish feed artifacts are run by automation with `requirements/automation.txt`, but direct research execution uses the backtest lock.
 
-1. **幸存者偏差**:universe 用的是**当前**成分股,退市/被剔除的失败者不在内 —— 真实历史会更低。
-2. **交易成本/滑点/冲击**未计;高频触发时影响显著。
-3. **样本期偏牛**:近 10 年美股大牛市,换 2000-2010 结果会差很多。
-4. 仅供研究学习,**非投资建议**。
+## Data and cache boundaries
+
+- A clean checkout has no market-data cache. `data.py`, `cryptodata.py`, and `binancedata.py` require public network services before their analyzers can run.
+- Yahoo data is stored in ignored `backtest/data_cache/`. Hyperliquid and Binance data are stored in ignored `backtest/crypto_cache/` and `backtest/binance_cache/`.
+- Every `cryptodata.py` and `binancedata.py` CLI run live-selects liquidity and rewrites tracked `crypto_universe.json` or `binance_universe.json`. Existing per-symbol cache files are then reused indefinitely; only missing files are fetched. The CLIs expose no force flag, so delete the relevant cache files or call the fetch functions programmatically with `force=True` to refresh them. `pit_membership.py` and `study_downshift.py` can also rewrite tracked universe snapshots. Review those diffs rather than treating a refresh as disposable cache.
+- Cache-only analyzers do not silently reproduce their historical result pages. Most print to stdout. `run.py` overwrites tracked `results/backtest_report.json`; dated study scripts write or overwrite `docs/study-<name>-<date>.md`.
+- `--publish` is an explicit additional write to `feed/`. It is not needed for research reproduction.
+
+## Entry-point matrix
+
+All tracked Python files in this directory with a `__main__` entry point are included. “Cache-only” means the script itself does not fetch missing inputs.
+
+| Script | Method | Network and cache boundary | Output or result document | Strongest known limitation |
+|---|---|---|---|---|
+| [`barrier.py`](barrier.py) | TQM triple-barrier label demonstration | Cache-only; requires Yahoo equity cache | Stdout; historical [`README_tqm.md`](README_tqm.md) | Demonstrates label sensitivity, not execution-grade P&L; exact intraday barrier fills and costs are not modeled. |
+| [`binance_pipeline.py`](binance_pipeline.py) | Binance cross-sectional factor pipeline with a calendar split | Cache-only; requires tracked universe and ignored Binance caches | Stdout; historical [`README_binance.md`](README_binance.md) | Uses a current-listed universe, treats a fixed crypto-calendar cadence as “monthly,” and annualizes with a trading-day convention. |
+| [`binancedata.py`](binancedata.py) | Binance market and funding loader | Every CLI run live-selects and rewrites the tracked universe; existing ignored cache files are reused indefinitely and only missing files use live mirror/ZIP endpoints. Delete files or call `fetch_klines(..., force=True)` and `fetch_funding(..., force=True)` to refresh | Cache producer; historical [`README_binance.md`](README_binance.md) | Current-volume/current-listed selection creates future-membership and survivorship bias; a newly selected universe can be paired with stale per-symbol caches, and missing funding downloads can be skipped. |
+| [`crypto_backtest.py`](crypto_backtest.py) | Hyperliquid factor Rank-IC and Ridge evaluation | Cache-only; requires tracked universe and ignored Hyperliquid caches | Stdout; historical [`README_crypto.md`](README_crypto.md) | Its fixed rebalance-step embargo is not horizon-aware, so long-horizon Ridge labels are not strictly purged. |
+| [`crypto_pipeline.py`](crypto_pipeline.py) | Neutralized Hyperliquid factor pipeline | Cache-only; requires tracked universe and ignored Hyperliquid caches | Stdout; historical [`README_crypto_pipeline.md`](README_crypto_pipeline.md) | Selects the factor on the full sample before displaying the final weeks; that block is not an independent holdout. |
+| [`crypto_pnl.py`](crypto_pnl.py) | Hyperliquid factor portfolios and Ridge P&L diagnostic | Cache-only; requires tracked universe and ignored Hyperliquid caches | Stdout; historical [`README_crypto.md`](README_crypto.md) | Shares the non-horizon-aware purge boundary and does not model trading costs. |
+| [`cryptodata.py`](cryptodata.py) | Hyperliquid candles and funding loader | Every CLI run live-selects and rewrites the tracked universe; existing ignored cache files are reused indefinitely and only missing files use live APIs. Delete files or call `fetch_candles(..., force=True)` and `fetch_funding(..., force=True)` to refresh | Cache producer; historical [`README_crypto.md`](README_crypto.md) and [`README_crypto_pipeline.md`](README_crypto_pipeline.md) | A live-selected universe can be paired with stale per-symbol caches; short, drifting history also prevents byte-for-byte reproduction of old snapshots. |
+| [`data.py`](data.py) | Yahoo daily OHLCV acquisition | Uses Yahoo network; writes ignored equity cache | Cache producer; consumers are cataloged below | Unofficial provider/current-symbol availability; its default universe fetch omits the sector ETFs needed by `statarb.py`. |
+| [`experiment_regime.py`](experiment_regime.py) | TQM regime and threshold sensitivity | Cache-only; requires equity and SPY caches | Stdout; historical [`README_tqm.md`](README_tqm.md) | Post-hoc sensitivity demonstration, not a held-out strategy estimate. |
+| [`factor_factory.py`](factor_factory.py) | Deterministic formula-candidate factory with statistical and cost gates | Cache-only; the workflow prefetches equity prices, the SPY benchmark, and sector ETFs. PIT is read from tracked `pit_sp500.json`, is not refreshed automatically, and a missing/invalid file causes the filter to be skipped after a warning | Stdout; optional feed report; no dedicated Markdown result | The breadth gate is explicitly unimplemented, the split is retrospective, and a missing/stale PIT snapshot weakens membership filtering without stopping the run. |
+| [`factor_pipeline.py`](factor_pipeline.py) | Neutralized equity factor IC, layers, and moving holdout | Cache-only; requires equity, sector map, and SPY caches | Stdout; historical [`README_pipeline.md`](README_pipeline.md) | The displayed rolling reconstruction overlaps the factor-selection sample except for the final moving month; it is not an independent multi-month OOS test. |
+| [`pit_membership.py`](pit_membership.py) | S&P membership reconstruction and missing-price estimate | Reuses tracked `pit_sp500.json` by default; Wikipedia refresh and Yahoo availability checks use network/cache | Writes a dated study; historical [`study-pit-membership-2026-06-10.md`](../docs/study-pit-membership-2026-06-10.md) | Yahoo/provider failures are counted like unavailable securities, and membership history cannot restore delisted prices. |
+| [`run.py`](run.py) | TQM multi-horizon threshold evaluation | Cache-only; requires equity and SPY caches | Overwrites [`results/backtest_report.json`](results/backtest_report.json); historical [`README_tqm.md`](README_tqm.md) | Evaluation is in-sample on current survivors, omits costs, and the JSON has no generation time or data cutoff. The real CLI option is `--horizons` (plural). |
+| [`statarb.py`](statarb.py) | Residual/OU statistical arbitrage with modeled costs | Cache-only. From the repository root, prefetch with `cd backtest && ../.venv/bin/python -c "import data,statarb as sa; data.fetch_universe(sa.DEMO_UNIVERSE+sa.SECTOR_ETFS+['SPY'])"` | Stdout; historical [`README_statarb.md`](README_statarb.md) | The post-2025 split was chosen retrospectively; borrow/locate is absent and costs are modeled rather than realized. The code's `build_demo_cache()` hint names no real function. |
+| [`study_downshift.py`](study_downshift.py) | Large-cap versus sampled current-small-cap statarb comparison | Uses tracked S&P sample plus Yahoo; fetches small caps, sector ETFs, and SPY but assumes large-universe caches already exist | Writes dated studies; historical [`2026-06-10`](../docs/study-downshift-2026-06-10.md) and [`2026-07-02`](../docs/study-downshift-2026-07-02.md) | The standalone fresh-checkout command is incomplete without a separate large-universe prefetch; survivorship and borrow costs remain. |
+| [`study_overnight_gap.py`](study_overnight_gap.py) | HIP-3 overnight proxy information study | Always uses live Hyperliquid data plus Yahoo cache/network; raw Hyperliquid inputs are not frozen | Writes a dated study; historical [`2026-06-10`](../docs/study-overnight-gap-2026-06-10.md) | Proxy agreement is not forward tradable alpha; the short, drifting sample can complete with partial pairs. |
+| [`study_pbo.py`](study_pbo.py) | Stat-arb parameter grid and CSCV-PBO | Cache-only; requires prefetched large-universe, sector ETF, and SPY caches | Writes dated studies; historical [`2026-06-10`](../docs/study-pbo-2026-06-10.md) and [`2026-07-02`](../docs/study-pbo-2026-07-02.md) | CSCV consumes the full series including the nominal retrospective holdout and measures only this declared grid, not all project trials. |
+| [`study_pit_bite.py`](study_pit_bite.py) | PIT-on/off factor-factory comparison | Uses tracked PIT/universe inputs and Yahoo cache or network | Writes a dated study; historical [`2026-06-10`](../docs/study-pit-bite-2026-06-10.md) | Applies S&P membership to the entire S&P-plus-NDX union, so the comparison also removes NDX-only names; delisted history remains absent. |
+| [`walkforward.py`](walkforward.py) | Annual TQM grid and logistic-regression time splits with embargo | Cache-only; requires equity cache | Stdout; historical [`README_tqm.md`](README_tqm.md) | Chronological folds are retrospective research on current survivors, not an untouched prospective test. |
+| [`xs_backtest.py`](xs_backtest.py) | Equity cross-sectional Rank-IC, layers, and rolling-IC composite | Cache-only; requires equity and SPY caches | Stdout; historical [`README_xs.md`](README_xs.md) | Single-factor and equal-composite tables are full-sample in-sample; only the rolling-IC weights are past-only. |
+| [`xs_portfolio.py`](xs_portfolio.py) | Equity decile long-short P&L | Cache-only; requires equity and SPY caches | Stdout; historical [`README_xs.md`](README_xs.md) | Gross/cost-free; turnover compares row indices rather than ticker identities, and ranking and execution both use the rebalance close. |
+
+Files without `__main__`—`costs.py`, `engine.py`, `factors.py`, `factors_xs.py`, `crypto_factors.py`, and `validation.py`—are imported helpers, not standalone entry points.
+
+## Outputs
+
+Historical Markdown pages are evidence snapshots, not automatically generated current truth. The loader and study commands can modify tracked universe, report, documentation, or feed paths in addition to ignored caches. Before keeping any generated output, inspect `git status`, record the input data cutoff and provider, and confirm that unrelated tracked snapshots did not change.
+
+## Minimal offline verification
+
+The following checks syntax and the tracked JSON result shape without importing dependencies, reading caches, using the network, or regenerating results:
+
+```bash
+.venv/bin/python -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('backtest').glob('*.py')]"
+.venv/bin/python -c "import json,pathlib; json.loads(pathlib.Path('backtest/results/backtest_report.json').read_text(encoding='utf-8'))"
+```
+
+This is only an offline integrity check. It does not validate numerical results or reproduce a historical study.
+
+## Research catalog
+
+Use the maintained [Research Index](../docs/research/index.md) to find executable methods, dated result pages, and the strongest known methodological limitation for each study family. The former feature inventory is preserved only for provenance at [the archived pre-refactor page](../docs/archive/pre-refactor/backtest-features.md).
+
+## Reproducibility rules
+
+1. Record the Git commit, exact Python version, hash-locked requirements, command, arguments, provider, data cutoff, tracked universe files, and cache provenance.
+2. Treat live-loader output as a new dataset. Do not compare a rerun to a historical page as if inputs were frozen.
+3. Treat “holdout” labels as method descriptions, not proof of prospective isolation. Several splits were selected after their dates existed, and some displayed windows overlap factor selection.
+4. A dated study script can overwrite the same-day document or create a new unclassified path. Review the body, add historical metadata, and register a new path in `docs/verification.json` before committing it.
+5. Run without `--publish` unless a feed write is explicitly intended and separately reviewed.
+
+## Known limitations
+
+- Equity and crypto universes are primarily current constituents or current liquid listings, so survivorship and future-membership bias remain.
+- Free providers do not supply complete delisted histories, point-in-time fundamentals, borrow availability, or execution-quality fills.
+- Results depend on ignored local caches and live external services; the repository does not retain immutable raw inputs for every study.
+- Crypto loader CLIs refresh the tracked universe but reuse existing per-symbol caches indefinitely; refresh caches explicitly before claiming a new data cutoff.
+- Some historical claims use stronger OOS or purge language than current code supports. Historical metadata preserves those claims as snapshots rather than current guarantees.
+- Research outputs are not investment advice and are not evidence of production readiness.

@@ -2,7 +2,8 @@
 
 把外部投递当作不可信输入对待(投递者 = 任何能向本仓 PR/commit 的人):
   1. JSON 解析 + schema 校验(report.schema.json)。
-  2. 签名校验:设了 FEED_HMAC_SECRET 时,openclaw 类报告必须带有效 HMAC 签名,否则拒绝。
+  2. 签名校验:OpenClaw / manual 外部投递必须配置非空 FEED_HMAC_SECRET
+     并提供有效 HMAC;缺失 secret 时 fail closed(拒绝)。
   3. 幂等:同 id 已存在则跳过(防重复投递)。
   4. 内容边界:openclaw 投递不得自带 kind=routine 冒充本仓任务;大小/字段数上限防滥用。
 
@@ -22,88 +23,153 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import feed_lib as fl  # noqa: E402
+from feed_publication import record_tracked_deletion  # noqa: E402
 
 MAX_BYTES = 512 * 1024          # 单份投递 ≤512KB
 MAX_POSITIONS = 400
 MAX_CANDIDATES = 50
 
 
-def _expand(paths: list[str]) -> list[str]:
-    out: list[str] = []
-    for p in paths:
-        out.extend(sorted(glob.glob(p)) if any(c in p for c in "*?[") else [p])
-    return [p for p in out if os.path.isfile(p)]
+def _expand(paths: list[str]) -> tuple[list[str], list[str]]:
+    files: list[str] = []
+    missing: list[str] = []
+    for requested in paths:
+        candidates = (
+            sorted(glob.glob(requested))
+            if any(char in requested for char in "*?[")
+            else [requested]
+        )
+        matches = [candidate for candidate in candidates if os.path.isfile(candidate)]
+        if not matches:
+            missing.append(requested)
+        files.extend(matches)
+    return list(dict.fromkeys(files)), missing
 
 
-def check_one(path: str, require_sig: bool, secret: str | None) -> tuple[bool, list[str], dict | None]:
+def check_report(
+    report: dict,
+    *,
+    require_sig: bool,
+    secret: str | None,
+    size_bytes: int | None = None,
+) -> tuple[bool, list[str]]:
     errs: list[str] = []
-    if os.path.getsize(path) > MAX_BYTES:
-        return False, [f"文件过大 >{MAX_BYTES} 字节"], None
-    try:
-        with open(path, encoding="utf-8") as f:
-            report = json.load(f)
-    except Exception as e:  # noqa: BLE001
-        return False, [f"JSON 解析失败: {e}"], None
+    if size_bytes is not None and size_bytes > MAX_BYTES:
+        return False, [f"文件过大 >{MAX_BYTES} 字节"]
 
-    ok, schema_errs = fl.validate_report(report)
-    errs += schema_errs
+    _, schema_errs = fl.validate_report(report)
+    errs.extend(schema_errs)
 
-    # 内容边界
     if report.get("kind") == "routine":
-        errs.append("外部投递不得使用 kind=routine(冒充本仓任务);应为 openclaw。")
-    pos = (report.get("book", {}) or {}).get("positions", []) or []
-    if len(pos) > MAX_POSITIONS:
-        errs.append(f"positions 过多 ({len(pos)}>{MAX_POSITIONS})")
-    if len(report.get("factory_candidates", []) or []) > MAX_CANDIDATES:
+        errs.append("外部投递不得使用 kind=routine(冒充本仓任务);应为 openclaw 或 manual。")
+
+    book = report.get("book")
+    if book is None:
+        positions: object = []
+    elif not isinstance(book, dict):
+        positions = []
+        errs.append("book 必须是 JSON object。")
+    else:
+        positions = book.get("positions", [])
+    if not isinstance(positions, list):
+        errs.append("book.positions 必须是 JSON array。")
+    elif len(positions) > MAX_POSITIONS:
+        errs.append(f"positions 过多 ({len(positions)}>{MAX_POSITIONS})")
+
+    candidates = report.get("factory_candidates", [])
+    if not isinstance(candidates, list):
+        errs.append("factory_candidates 必须是 JSON array。")
+    elif len(candidates) > MAX_CANDIDATES:
         errs.append(f"factory_candidates 过多 (>{MAX_CANDIDATES})")
 
-    # 签名
-    if secret and report.get("kind") == "openclaw":
-        if not fl.verify_signature(report, secret):
-            errs.append("HMAC 签名缺失或无效(openclaw 投递必须签名)。")
-    elif require_sig and not fl.verify_signature(report, secret or ""):
-        errs.append("--require-signature 指定但签名无效。")
+    must_verify = require_sig or report.get("kind") in ("openclaw", "manual")
+    if must_verify:
+        if not secret:
+            errs.append("FEED_HMAC_SECRET 未配置，拒绝需要签名的外部投递。")
+        elif not fl.verify_signature(report, secret):
+            errs.append("HMAC 签名缺失或无效。")
 
-    # 幂等
-    if report.get("id") and fl.has_report(report["id"]):
-        errs.append(f"幂等冲突:报告 id={report['id']} 已存在于 feed/reports/(重复投递)。")
+    report_id: str | None
+    try:
+        report_id = fl.require_report_id(report.get("id"))
+    except ValueError:
+        report_id = None
+    if report_id is not None and fl.has_report(report_id):
+        errs.append(f"幂等冲突:报告 id={report_id} 已存在于 feed/reports/(重复投递)。")
 
-    return (len(errs) == 0), errs, (report if len(errs) == 0 else None)
+    return len(errs) == 0, errs
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("paths", nargs="+")
-    ap.add_argument("--merge", action="store_true", help="校验通过则并入 feed/reports/ 并重建 index")
-    ap.add_argument("--require-signature", action="store_true")
-    args = ap.parse_args()
+def check_one(
+    path: str,
+    require_sig: bool,
+    secret: str | None,
+) -> tuple[bool, list[str], dict | None]:
+    size_bytes = os.path.getsize(path)
+    if size_bytes > MAX_BYTES:
+        return False, [f"文件过大 >{MAX_BYTES} 字节"], None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            report = json.load(handle, parse_constant=fl.reject_json_constant)
+    except Exception as exc:  # noqa: BLE001
+        return False, [f"JSON 解析失败: {exc}"], None
+    if not isinstance(report, dict):
+        return False, ["报告顶层必须是 JSON object。"], None
+
+    passed, errs = check_report(
+        report,
+        require_sig=require_sig,
+        secret=secret,
+        size_bytes=size_bytes,
+    )
+    return passed, errs, report if passed else None
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("paths", nargs="+")
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        help="校验通过则并入 feed/reports/ 并重建 index",
+    )
+    parser.add_argument("--require-signature", action="store_true")
+    args = parser.parse_args(argv)
     secret = os.environ.get("FEED_HMAC_SECRET")
 
-    files = _expand(args.paths)
+    files, missing = _expand(args.paths)
+    if missing:
+        for requested in missing:
+            print(f"没有匹配到投递文件: {requested}", file=sys.stderr)
+        return 2
     if not files:
-        print("没有匹配到投递文件(inbox 为空)——通过。")
-        return
+        print("没有可校验的普通文件，拒绝空校验。", file=sys.stderr)
+        return 2
+
     all_ok = True
     merged = 0
     for path in files:
-        ok, errs, report = check_one(path, args.require_signature, secret)
-        tag = "✓" if ok else "✗"
+        passed, errors, report = check_one(path, args.require_signature, secret)
+        tag = "✓" if passed else "✗"
         print(f"{tag} {path}")
-        for e in errs:
-            print(f"    - {e}")
-        if ok and args.merge and report is not None:
+        for error in errors:
+            print(f"    - {error}")
+        if passed and args.merge and report is not None:
             fl.write_report_files(report)
             os.remove(path)
+            record_tracked_deletion(path)
             merged += 1
-        all_ok = all_ok and ok
+        all_ok = all_ok and passed
+
     if args.merge and merged:
-        idx = fl.rebuild_index()
-        print(f"已并入 {merged} 份投递,feed 现有 {idx['stats']['total_reports']} 份报告。")
+        index = fl.rebuild_index()
+        print(f"已并入 {merged} 份投递,feed 现有 {index['stats']['total_reports']} 份报告。")
     if not all_ok:
-        print("\n校验失败:存在无效投递。")
-        sys.exit(1)
+        print("\n校验失败:存在无效投递。", file=sys.stderr)
+        return 1
     print("\n全部投递校验通过。")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

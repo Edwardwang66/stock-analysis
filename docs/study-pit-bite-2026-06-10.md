@@ -1,5 +1,8 @@
 # PIT 过滤咬合量化:516 全名单(2026-06-10)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 **咬合度:剔除 3604/32832(11.0%) 名·期** —— 这就是「用今天的成分回测过去」在真实研究 universe 上的前视暴露面。
 
 | 面板 | 期数 | 平均横截面 | 过六门候选 | top1 |t| | top1 表达式 |

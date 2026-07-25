@@ -1,97 +1,161 @@
 name: Feed validate (OpenClaw 投递校验闸门)
 
-# 外部投递(OpenClaw / 其他 agent)进入本仓的安全闸门:
-#   - push 改动 feed/inbox/**:校验(schema + 签名 + 边界),通过后并入 feed/reports/ 并推送。
-#   - pull_request 改动 feed/inbox/**:仅校验(schema + 签名 + 边界),失败则阻止合并。
-#   - repository_dispatch(openclaw-report):接收 payload 里的报告,校验通过则并入 feed/reports/ 并推送。
-#
-# 把外部投递当不可信输入:openclaw 报告必须带有效 HMAC 签名(共享密钥 FEED_HMAC_SECRET)。
-
 on:
   push:
     branches: [main]
     paths: ["feed/inbox/**"]
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
     paths: ["feed/inbox/**"]
   repository_dispatch:
     types: [openclaw-report]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: feed-validate-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  validate:
+  pr-validate:
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted base validator
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Checkout untrusted submission as data only
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: submission
+          persist-credentials: false
+          allow-unsafe-pr-checkout: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: trusted/.python-version
+          cache: pip
+          cache-dependency-path: trusted/scripts/requirements.txt
+      - name: Install trusted validator dependencies
+        run: python -m pip install --require-hashes -r trusted/scripts/requirements.txt
+      - name: Validate signed PR inbox files with trusted code
+        env:
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+        run: |
+          inbox="$GITHUB_WORKSPACE/submission/feed/inbox"
+          entry_list="$RUNNER_TEMP/pr-inbox-entries"
+          if ! find "$inbox" -mindepth 1 -print0 > "$entry_list"; then
+            echo "find 无法完整枚举 feed/inbox，拒绝校验。" >&2
+            exit 1
+          fi
+          files=()
+          invalid=0
+          while IFS= read -r -d '' entry; do
+            relative="${entry#"$inbox"/}"
+            name="${entry##*/}"
+            if [[ "$relative" == */* || "$name" == .* || ! -f "$entry" || -L "$entry" || "$name" != *.json ]]; then
+              printf 'PR 不允许的 feed/inbox 条目: %s\n' "$relative" >&2
+              invalid=1
+              continue
+            fi
+            files+=("$entry")
+          done < "$entry_list"
+          if (( invalid != 0 )); then
+            exit 1
+          fi
+          if (( ${#files[@]} == 0 )); then
+            echo "PR 没有可校验的 feed/inbox JSON 普通文件。" >&2
+            exit 1
+          fi
+          PYTHONPATH="$GITHUB_WORKSPACE/trusted/scripts" \
+            python "$GITHUB_WORKSPACE/trusted/scripts/validate_feed.py" \
+              --require-signature "${files[@]}"
+
+  publish:
+    if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
-      - run: pip install -r scripts/requirements.txt
-
-      # PR:只校验 inbox,不合并(失败即红,阻止合并)
-      - name: 校验 PR 投递
-        if: github.event_name == 'pull_request'
-        env:
-          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
-        run: |
-          shopt -s nullglob
-          files=(feed/inbox/*.json)
-          if [ ${#files[@]} -eq 0 ]; then echo "inbox 为空,通过。"; exit 0; fi
-          python scripts/validate_feed.py "${files[@]}"
-
-      - name: 合并 push 投递
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+      - run: python -m pip install --require-hashes -r scripts/requirements.txt
+      - name: Merge signed push submission
         if: github.event_name == 'push'
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
         run: |
-          shopt -s nullglob
-          files=(feed/inbox/*.json)
-          if [ ${#files[@]} -eq 0 ]; then echo "inbox 为空,通过。"; exit 0; fi
-          python scripts/validate_feed.py --merge "${files[@]}"
-          git config user.name  "feed-validate[bot]"
-          git config user.email "actions@github.com"
-          git add feed/
-          if git diff --cached --quiet; then
-            echo "无变化。"
-          else
-            git commit -m "openclaw: 并入 push 投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
-            for i in 1 2 3 4; do
-              git pull --rebase origin main
-              git pull --rebase origin main && git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
-            done
+          inbox="feed/inbox"
+          entry_list="$RUNNER_TEMP/push-inbox-entries"
+          if ! find "$inbox" -mindepth 1 -print0 > "$entry_list"; then
+            echo "find 无法完整枚举 feed/inbox，拒绝校验。" >&2
+            exit 1
           fi
-
-      # repository_dispatch:落 payload -> 校验+合并 -> 推送
-      - name: 接收并合并 dispatch 投递
+          files=()
+          invalid=0
+          while IFS= read -r -d '' entry; do
+            relative="${entry#"$inbox"/}"
+            name="${entry##*/}"
+            if [[ "$relative" == */* || "$name" == .* || ! -f "$entry" || -L "$entry" || "$name" != *.json ]]; then
+              printf 'push 不允许的 feed/inbox 条目: %s\n' "$relative" >&2
+              invalid=1
+              continue
+            fi
+            files+=("$entry")
+          done < "$entry_list"
+          if (( invalid != 0 )); then
+            exit 1
+          fi
+          if (( ${#files[@]} == 0 )); then
+            echo "feed/inbox 没有可校验的顶层 JSON 普通文件，拒绝空合并。" >&2
+            exit 1
+          fi
+          python scripts/validate_feed.py --merge --require-signature "${files[@]}"
+          git config user.name "feed-validate[bot]"
+          git config user.email "actions@github.com"
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
+          if ! git diff --cached --quiet; then
+            git commit -m "openclaw: 并入 push 投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
+            pushed=0
+            for i in 1 2 3 4; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
+            done
+            if [ "$pushed" -ne 1 ]; then echo "push 重试耗尽。" >&2; exit 1; fi
+          fi
+      - name: Receive and merge signed dispatch submission
         if: github.event_name == 'repository_dispatch'
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
           PAYLOAD: ${{ toJson(github.event.client_payload.report) }}
         run: |
-          python - <<'PY'
-          import json, os, sys
-          sys.path.insert(0, "scripts")
-          import feed_lib as fl
-          report = json.loads(os.environ["PAYLOAD"])
-          rid = report.get("id", "openclaw-unknown")
-          fl.save_json(os.path.join(fl.FEED, "inbox", f"{rid}.json"), report)
-          print("收到投递:", rid)
-          PY
-          python scripts/validate_feed.py --merge feed/inbox/*.json
-          git config user.name  "feed-validate[bot]"
+          dispatch_path_file="$RUNNER_TEMP/dispatch-path.txt"
+          python scripts/feed_ingress.py --path-output "$dispatch_path_file"
+          dispatch_path="$(<"$dispatch_path_file")"
+          python scripts/validate_feed.py --merge --require-signature "$dispatch_path"
+          git config user.name "feed-validate[bot]"
           git config user.email "actions@github.com"
-          git add feed/
-          if git diff --cached --quiet; then
-            echo "无变化。"
-          else
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
+          if ! git diff --cached --quiet; then
             git commit -m "openclaw: 并入投递 ($(date -u +%Y-%m-%dT%H:%MZ))"
+            pushed=0
             for i in 1 2 3 4; do
-              git pull --rebase origin main && git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
             done
+            if [ "$pushed" -ne 1 ]; then echo "push 重试耗尽。" >&2; exit 1; fi
           fi

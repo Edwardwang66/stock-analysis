@@ -1,5 +1,8 @@
 # 消幸存者偏差的数据源调研(2026-06-10)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 > 背景:本仓所有回测结论都带「universe=当前成分股 → 幸存者偏差,结果高估」的诚实声明。
 > 本调研回答:免费/低成本路径能把这个偏差消掉多少?
 

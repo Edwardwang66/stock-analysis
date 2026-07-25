@@ -1,12 +1,14 @@
 # Render Blueprint —— 一键部署后端 FastAPI。
-# 用法:Render 控制台 → New → Blueprint → 连接本仓库,Render 会自动读取本文件。
 services:
   - type: web
     name: stock-dashboard-api
     runtime: python
     rootDir: backend
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: python -m pip install --require-hashes -r requirements.txt
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
     autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.15"

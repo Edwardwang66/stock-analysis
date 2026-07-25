@@ -1,5 +1,8 @@
 # 完整因子测试体系 × 加密(`crypto_pipeline.py`)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 把股票那套体系(去极值/标准化/**中性化** → IC/IR → 分层 → 无未来函数验证)接到 Hyperliquid 永续因子上。
 加密无 GICS 行业,故按 Liu-Tsyvinski-Wu"市场+规模+动量"框架,**中性化对象 = size(log 日均成交额)+ BTC-beta(市场暴露)**。
 周频 rebalance(step=7)、周持有(H=7),20 币,205 期。

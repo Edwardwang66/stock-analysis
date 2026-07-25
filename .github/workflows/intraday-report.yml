@@ -32,7 +32,7 @@ jobs:
           ref: main
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version-file: .python-version
       - name: 准备 live 工作树
         run: |
           git fetch origin live:live 2>/dev/null || git branch live
@@ -44,7 +44,7 @@ jobs:
           for i in 1 2 3; do
             cd /tmp/live && git pull --ff-only origin live 2>/dev/null || true
             cd "$GITHUB_WORKSPACE"
-            AGE=$(python3 -c "import json,datetime as d; at=json.load(open('/tmp/live/feed/intraday/latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
+            AGE=$(python -c "import json,datetime as d; at=json.load(open('/tmp/live/feed/intraday/latest.json')).get('at',''); print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(at)).total_seconds()) if at else 99999)" 2>/dev/null || echo 99999)
             echo "第 ${i} 轮:live 数据年龄 ${AGE}s"
             if [ "$AGE" -ge 290 ]; then
               mkdir -p /tmp/live/feed/intraday

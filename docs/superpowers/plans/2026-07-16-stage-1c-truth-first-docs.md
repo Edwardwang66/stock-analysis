@@ -1,5 +1,9 @@
 # Stage 1C Truth-First Documentation Implementation Plan
 
+> **Status:** Accepted implementation plan
+> **Scope:** Stage 1C truth-first documentation implementation slice.
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the repository's stale product narrative with a verifiable, truth-first entry point and a small authoritative documentation system that distinguishes current behavior, accepted target architecture, historical research, and archived pre-refactor plans.
@@ -11,21 +15,24 @@
 ## Global Constraints
 
 - Stage 1A security fixes and Stage 1B reproducible CI must be complete before this plan starts. Documentation must describe their merged behavior, not the pre-fix behavior.
-- Stage 1B owns public verification command names. This plan must use exactly: `npm ci`, `npm run lint`, `npm run typecheck`, `npm run build:static`, `npm run smoke:static`, `npm run build:server`, `npm run smoke:server`, plus the existing direct Python test commands.
-- Node.js 20 and Python 3.11 are the documented primary runtimes. Python 3.12 compatibility may be mentioned only if Stage 1B actually verifies it.
+- Stage 1B owns public verification command names. This plan must use exactly: `npm ci`, `npm run lint`, `npm run typecheck`, `npm run test:scripts`, `npm run build:static`, `npm run smoke:static`, `npm run build:server`, `npm run smoke:server`, plus the existing direct Python test commands.
+- The exact runtime contract is Node.js `20.20.2`, npm `10.8.2`, Python `3.11.15` primary, and Python `3.12.13` compatibility. Product prose may use the shorter Node 20 / Python 3.11 family names, but every installation, deployment, CI, and verification contract must retain the exact patch versions.
 - Static and server profiles receive equal documentation prominence, but current differences must remain explicit until Stage 2 proves semantic parity.
 - Do not claim that current quote, OHLCV, or analysis results are same-source or semantically identical across profiles.
-- Deterministic interactive technical analysis is rule-based. OpenClaw notes and hypothesis-factory content are externally generated AI artifacts delivered through the feed; do not describe the whole product as either “all AI” or “entirely non-LLM.”
+- Deterministic interactive technical analysis, the Actions stock-note fallback, and the current local formula-factor factory are rule-based or deterministic and do not call an LLM. Feed provenance is mixed: externally submitted OpenClaw narrative/agent artifacts may be AI-generated, while local factory candidates and fallback notes may be non-LLM. Classify each artifact from its producer, model, and source-report metadata; do not describe the whole product as either “all AI” or “entirely non-LLM.” The factor-factory LLM proposer remains Planned.
 - Do not hard-code workflow counts, file counts, refresh counts, transient backtest results, or dated iteration summaries in the root README.
-- Do not present TanStack Query, Zustand, Tailwind/shadcn, JWT, Redis, PostgreSQL/TimescaleDB, S3, Celery, RAG, DataGateway, analysis-core, stock_core, or manifest publication as current unless the implementation exists at the Stage 1C baseline.
+- Do not present TanStack Query, Zustand, Tailwind/shadcn, JWT, Redis, PostgreSQL/TimescaleDB, S3, Celery, RAG, DataGateway, analysis-core, stock_core, or reader-facing atomic manifest publication as current unless the implementation exists at the Stage 1C baseline.
+- `FEED_PUBLICATION_MANIFEST` is the current Stage 1A workflow-local Git-staging allowlist. It is not a reader-facing snapshot manifest, completeness contract, manifest-written-last transaction, or previous-complete-snapshot fallback.
 - Every Current or Accepted document declares `Status`, `Scope`, and `Last verified commit`. Historical and Archived pages declare that they are not current implementation guidance.
 - `Last verified commit` is never typed as a placeholder. `python scripts/check_docs.py --stamp-current` obtains the exact value from `git rev-parse HEAD` and inserts it into every maintained document.
 - The stamping command runs before documentation commits, so the recorded commit is the code baseline that was reviewed, not a self-referential documentation commit.
 - Preserve existing user-facing documentation URLs with short compatibility pages whenever a current file is moved.
 - Documentation and checker code use only repository files and recorded facts; the checker and its unit tests perform no network calls. The reused Stage 1B acceptance gates still require Docker image, npm, and PyPI registry access unless those artifacts are already cached.
-- Repository-local documentation commands run through `scripts/run-python311`, which uses the exact `python:3.11.15-bookworm` container and the mounted worktree's Git history. Direct `python scripts/check_docs.py` remains the public command for users already inside the pinned Python environment and for CI.
-- Frontend and dependency-bearing Python acceptance commands reuse Stage 1B's exact Node 20 and Python container gates; do not claim verification from the host's unrelated Node/Python versions.
-- Keep the untracked `AGENTS.md` out of every commit.
+- Repository-local documentation commands run through `scripts/run-python311`, which uses the full exact `python:3.11.15` image, proves Git is available, and proves the mounted worktree runs under the non-root host UID/GID. Direct `python scripts/check_docs.py` remains the public command for users already inside the pinned Python environment and for CI.
+- Docker or Colima must be able to bind-read/write the checkout root. `scripts/run-python311` fails with an actionable file-sharing error when the checkout itself is invisible to the daemon; it does not implement a risky mirror-and-writeback fallback. For a Docker-visible linked worktree whose `.git` file points outside the shared root, the wrapper copies Git metadata into a mode-`0700` temporary directory inside that worktree, overlays a read-only gitfile/common-directory view in the container, and removes the snapshot on success, ordinary failure, or handled HUP/INT/TERM. Stage 1C runs in the established Docker-visible `/private/tmp` worktree and proves the primary-checkout layout separately with a temporary standalone clone nested under that same visible worktree anchor; it does not reconfigure or restart Colima.
+- Frontend and dependency-bearing Python acceptance commands reuse Stage 1B's exact Node `20.20.2` / npm `10.8.2`, full Python `3.11.15`, and full Python `3.12.13` container gates; do not claim verification from the host's unrelated Node/Python versions.
+- Current Vercel behavior must be split into three facts: the Next quote/OHLCV route implementation is Implemented; the hard-coded hosted deployment attempted by default is External; and a custom `NEXT_PUBLIC_EDGE_BASE` or self-owned hosted deployment is Optional. There is no supported current configuration that disables the hard-coded Edge attempt entirely.
+- Keep the untracked `AGENTS.md` and `.superpowers/` scratch tree out of every commit.
 
 ---
 
@@ -73,6 +80,7 @@
 - `docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md`
 - `docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md`
 - `docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md`
+- `scripts/tests/test_workflow_security.py` — extend the closed Python-job policy for the focused documentation workflow.
 - Every `routines/*.md` active playbook — add Current metadata and keep links on maintained authorities.
 
 ### Move, then replace old path with a compatibility page
@@ -90,6 +98,10 @@
 - `docs/cost-estimate.md` → `docs/archive/pre-refactor/cost-estimate-2026-06.md`.
 - `docs/self-improving-alpha-loop.md` → `docs/archive/pre-refactor/self-improving-alpha-loop.md`.
 - `backtest/FEATURES.md` → `docs/archive/pre-refactor/backtest-features.md`, then recreate `backtest/FEATURES.md` as a compatibility page.
+
+### Move, then recreate old path as a current entry point
+
+- `backtest/README.md` → `backtest/README_tqm.md`, then recreate `backtest/README.md` as the maintained backtest subsystem entry point.
 
 ### Preserve in place and classify as historical research
 
@@ -139,6 +151,13 @@ python scripts/check_docs.py --config docs/verification.json
 {
   "schema_version": 1,
   "check_all_tracked_markdown": true,
+  "archive_date": "2026-07-24",
+  "runtime_contract": {
+    "node": "20.20.2",
+    "npm": "10.8.2",
+    "python_primary": "3.11.15",
+    "python_compatibility": ["3.12.13"]
+  },
   "maintained_documents": [],
   "historical_documents": [],
   "archived_documents": [],
@@ -150,50 +169,97 @@ python scripts/check_docs.py --config docs/verification.json
 }
 ```
 
-Every verified CI command object contains `document`, `cwd`, `command`, `kind`, `workflow`, and `job`; entrypoint-only commands omit `workflow` and `job`. For CI entries, the checker requires an exact non-comment `run` line inside the named job and proves that the matching step's `working-directory`, or its job-level `defaults.run.working-directory`, equals `cwd`; mere appearance elsewhere is insufficient. The checker requires every tracked Markdown path to appear in exactly one status array or match exactly one declared generated-artifact exemption. Task 7 installs the complete final manifest listed there rather than leaving array population to implementer judgment.
+The top-level key set is exact and closed: no key may be missing or added. JSON duplicate keys and non-standard numeric constants fail before schema validation. `schema_version` is the non-Boolean integer `1`; `check_all_tracked_markdown` is Boolean; `archive_date` is the exact Stage 1C archive date `2026-07-24`; and `runtime_contract` has exactly the four keys shown above. Arrays contain unique values, the three document categories are mutually exclusive, and every repository path is canonical POSIX-relative text that resolves inside the repository without a symlink escape. Classification exemptions may use one terminal `*.md` component but may not use `**`, `?`, `[]`, backslashes, absolute paths, `.` segments, or `..` segments; the terminal `*` matches only a direct child filename and never crosses `/`.
+
+Every verified CI command object contains exactly `document`, `cwd`, `command`, `kind`, `runtime`, `workflow`, and `job`; entrypoint-only commands contain exactly the first five keys. `kind` is only `ci` or `entrypoint`, and `runtime` is only `node` or `python`. Node commands begin with `npm`; Python commands begin with `python`; CI workflow paths remain inside `.github/workflows/` and end in `.yml` or `.yaml`; entrypoints may not smuggle in `workflow` or `job`. For CI entries, the checker requires an exact non-comment `run` line inside the named job and proves that the matching step's `working-directory`, or its job-level `defaults.run.working-directory`, equals `cwd`; mere appearance elsewhere is insufficient. The checker cross-checks the runtime contract against `.node-version`, `.python-version`, `frontend/package.json`, `backend/runtime.txt`, `backend/Dockerfile`, `render.yaml`, the exact runtime assertions/matrix in `.github/workflows/tests.yml`, the Pages deployment assertions, and every tracked production `setup-python` pin. Workflow inventory is likewise derived from tracked `git ls-files` output, so untracked scratch YAML cannot become documentation policy. The checker requires every tracked Markdown path to appear in exactly one status array or match exactly one declared generated-artifact exemption. Task 7 installs the complete final manifest listed there rather than leaving array population to implementer judgment.
 
 ### Controlled Stage 1B acceptance gates
 
-Every later instruction to run the **Node gate** means this exact repository-root command from Stage 1B Task 2 Step 6:
+Every later instruction to run the **Node gate** means this exact repository-root command. It runs as the non-root host identity, asserts the exact toolchain, executes `npm ci` plus seven npm scripts, and proves the build left protected source, the lock, generated declarations, and private publication state unchanged:
 
 ```bash
+expected_uid=$(id -u)
+expected_gid=$(id -g)
+test "$expected_uid" -ne 0
+
 docker run --rm \
-  --user "$(id -u):$(id -g)" \
+  --user "$expected_uid:$expected_gid" \
+  --env EXPECTED_UID="$expected_uid" \
+  --env EXPECTED_GID="$expected_gid" \
   --env HOME=/tmp/home \
+  --tmpfs /tmp/home:rw,exec,mode=1777 \
   --tmpfs /workspace/frontend/node_modules:rw,exec,mode=1777 \
   --volume "$PWD:/workspace" \
   --workdir /workspace/frontend \
   node:20.20.2-bookworm-slim \
-  sh -lc 'npm ci && npm run lint && npm run typecheck && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run build:static && NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run smoke:static && env -u NEXT_PUBLIC_BASE_PATH npm run build:server && env -u NEXT_PUBLIC_BASE_PATH npm run smoke:server'
-test -f frontend/app/api/quote/route.ts
-test -f frontend/app/api/ohlcv/route.ts
-git diff --exit-code -- frontend/app/api/quote/route.ts frontend/app/api/ohlcv/route.ts
-test -f frontend/.next/BUILD_ID
-```
-
-Every later instruction to run the **Python 3.11 gate** means this exact repository-root command from Stage 1B's final acceptance gate. It installs only the committed hash lock into a temporary venv, regenerates all six 3.11 locks to a temporary directory, and executes the complete primary-runtime suite without root-owned worktree artifacts:
-
-```bash
-docker run --rm \
-  --user "$(id -u):$(id -g)" \
-  --env HOME=/tmp/home \
-  --env PYTHONDONTWRITEBYTECODE=1 \
-  --volume "$PWD:/workspace" \
-  --workdir /workspace \
-  python:3.11.15-slim \
   sh -lc '
     set -eu
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    test "$(node --version)" = "v20.20.2"
+    test "$(npm --version)" = "10.8.2"
+    npm ci
+    npm run lint
+    npm run typecheck
+    npm run test:scripts
+    NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run build:static
+    NEXT_PUBLIC_BASE_PATH=/stock-analysis npm run smoke:static
+    env -u NEXT_PUBLIC_BASE_PATH npm run build:server
+    env -u NEXT_PUBLIC_BASE_PATH npm run smoke:server
+  '
+
+test -f frontend/app/api/quote/route.ts
+test -f frontend/app/api/ohlcv/route.ts
+test -f frontend/.next/BUILD_ID
+test "$(shasum -a 256 frontend/package-lock.json | awk '{print $1}')" = "97875c90208b25596cae8ea55482f4c38295aba18b77287f4a11e32208b563d1"
+git diff --exit-code HEAD -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts
+test -z "$(git status --porcelain=v1 --untracked-files=all -- frontend/app/api frontend/public/feed frontend/package-lock.json frontend/tsconfig.json frontend/next-env.d.ts)"
+test -z "$(find frontend -maxdepth 1 \( -name '.out-stage-*' -o -name '.out-backup-*' -o -name '.out-publish.lock*' \) -print -quit)"
+git diff --check
+```
+
+Every later instruction to run the **Python 3.11 gate** means this exact repository-root command. It uses the full Git-capable image, proves the exact non-root identity before creating a venv, installs only the committed hash lock, seeds all six temporary outputs from their committed locks, fetches authoritative hashes without upgrading reviewed pins, and executes ten common entry points plus the two primary-only lock-consistency entry points:
+
+```bash
+expected_uid=$(id -u)
+expected_gid=$(id -g)
+test "$expected_uid" -ne 0
+
+docker run --rm \
+  --user "$expected_uid:$expected_gid" \
+  --env EXPECTED_UID="$expected_uid" \
+  --env EXPECTED_GID="$expected_gid" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --tmpfs /tmp/home:rw,exec,mode=1777 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.11.15 \
+  sh -lc '
+    set -eu
+    test "$(python --version 2>&1)" = "Python 3.11.15"
+    git --version >/dev/null
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
     python -m venv /tmp/venv
     /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py311.txt
     /tmp/venv/bin/python -m pip check
     tmp="$(mktemp -d)"
     trap "rm -rf \"$tmp\"" EXIT
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
-    /tmp/venv/bin/python -m piptools compile --generate-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
+    cp backend/requirements.txt "$tmp/backend.txt"
+    cp scripts/requirements.txt "$tmp/scripts.txt"
+    cp scripts/requirements-winter-pg.txt "$tmp/winter-pg.txt"
+    cp backtest/requirements.txt "$tmp/backtest.txt"
+    cp requirements/automation.txt "$tmp/automation.txt"
+    cp requirements/ci-py311.txt "$tmp/ci-py311.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backend.txt" backend/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/scripts.txt" scripts/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/winter-pg.txt" scripts/requirements-winter-pg.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/backtest.txt" backtest/requirements.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/automation.txt" requirements/automation.in
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py311.txt" requirements/ci.in
     cmp "$tmp/backend.txt" backend/requirements.txt
     cmp "$tmp/scripts.txt" scripts/requirements.txt
     cmp "$tmp/winter-pg.txt" scripts/requirements-winter-pg.txt
@@ -210,10 +276,57 @@ docker run --rm \
     /tmp/venv/bin/python scripts/tests/test_feed_publication.py
     /tmp/venv/bin/python scripts/tests/test_dependabot_merge_gate.py
     /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+    /tmp/venv/bin/python scripts/tests/test_check_lock_consistency.py
+    /tmp/venv/bin/python scripts/check_lock_consistency.py --root .
   '
 ```
 
-Do not shorten either gate to host `npm`/`python`, and do not omit the lock-regeneration comparisons when a task says to run a gate.
+Every later instruction to run the **Python 3.12 gate** means this exact repository-root command. It uses the full Git-capable compatibility image, seeds and byte-compares the one compatibility lock, and executes the same ten common entry points:
+
+```bash
+expected_uid=$(id -u)
+expected_gid=$(id -g)
+test "$expected_uid" -ne 0
+
+docker run --rm \
+  --user "$expected_uid:$expected_gid" \
+  --env EXPECTED_UID="$expected_uid" \
+  --env EXPECTED_GID="$expected_gid" \
+  --env HOME=/tmp/home \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --tmpfs /tmp/home:rw,exec,mode=1777 \
+  --volume "$PWD:/workspace" \
+  --workdir /workspace \
+  python:3.12.13 \
+  sh -lc '
+    set -eu
+    test "$(python --version 2>&1)" = "Python 3.12.13"
+    git --version >/dev/null
+    test "$(id -u)" = "$EXPECTED_UID"
+    test "$(id -g)" = "$EXPECTED_GID"
+    test "$(id -u)" -ne 0
+    python -m venv /tmp/venv
+    /tmp/venv/bin/python -m pip install --require-hashes -r requirements/ci-py312.txt
+    /tmp/venv/bin/python -m pip check
+    tmp="$(mktemp -d)"
+    trap "rm -rf \"$tmp\"" EXIT
+    cp requirements/ci-py312.txt "$tmp/ci-py312.txt"
+    /tmp/venv/bin/python -m piptools compile --generate-hashes --allow-unsafe --no-reuse-hashes --resolver=backtracking --no-strip-extras --no-header --output-file="$tmp/ci-py312.txt" requirements/ci.in
+    cmp "$tmp/ci-py312.txt" requirements/ci-py312.txt
+    (cd backend && /tmp/venv/bin/python tests/test_backend.py)
+    (cd backend && /tmp/venv/bin/python tests/test_api.py)
+    /tmp/venv/bin/python scripts/tests/test_chan_engine.py
+    /tmp/venv/bin/python scripts/tests/test_validate_feed.py
+    /tmp/venv/bin/python scripts/tests/test_feed_validation_security.py
+    /tmp/venv/bin/python scripts/tests/test_feed_ingress.py
+    /tmp/venv/bin/python scripts/tests/test_validate_feed_cli.py
+    /tmp/venv/bin/python scripts/tests/test_feed_publication.py
+    /tmp/venv/bin/python scripts/tests/test_dependabot_merge_gate.py
+    /tmp/venv/bin/python scripts/tests/test_workflow_security.py
+  '
+```
+
+Do not shorten any gate to host `npm`/`python`, substitute a `-slim` Python image, omit the copy-first lock seeds, omit `--allow-unsafe` or `--no-reuse-hashes`, or omit any lock comparison. The exact acceptance total is eight npm process invocations, six Python 3.11 lock comparisons plus one Python 3.12 lock comparison, twelve Python 3.11 process entry points plus ten Python 3.12 process entry points, and therefore twenty-two expanded Python process entry points across the runtime matrix.
 
 ---
 
@@ -242,30 +355,158 @@ Create executable `scripts/run-python311`:
 set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-exec docker run --rm --init \
-  --user "$(id -u):$(id -g)" \
-  --env HOME=/tmp/home \
-  --env PYTHONDONTWRITEBYTECODE=1 \
-  --volume "$repo_root:/workspace" \
-  --workdir /workspace \
-  python:3.11.15-bookworm "$@"
+expected_uid=$(id -u)
+expected_gid=$(id -g)
+snapshot_root=
+snapshot_gitfile=
+
+cleanup() {
+  if [ -n "$snapshot_root" ] && [ -d "$snapshot_root" ]; then
+    rm -rf "$snapshot_root"
+  fi
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [ "$expected_uid" -eq 0 ]; then
+  echo "scripts/run-python311 refuses to mount the worktree as root" >&2
+  exit 1
+fi
+
+if [ -f "$repo_root/.git" ]; then
+  git_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-dir)
+  git_common_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir)
+  case "$git_dir" in
+    "$git_common_dir"/*)
+      git_dir_relative=${git_dir#"$git_common_dir"/}
+      ;;
+    *)
+      echo "scripts/run-python311 could not relate the worktree Git directory to its common directory" >&2
+      exit 1
+      ;;
+  esac
+
+  umask 077
+  snapshot_root=$(mktemp -d "$repo_root/.run-python311-git.XXXXXX")
+  mkdir "$snapshot_root/common"
+  cp -R "$git_common_dir/." "$snapshot_root/common/"
+  snapshot_name=${snapshot_root##*/}
+  snapshot_gitfile="$snapshot_root/gitfile"
+  printf 'gitdir: /workspace/%s/common/%s\n' \
+    "$snapshot_name" "$git_dir_relative" > "$snapshot_gitfile"
+elif [ ! -d "$repo_root/.git" ]; then
+  echo "scripts/run-python311 requires a Git worktree" >&2
+  exit 1
+fi
+
+run_container() {
+  if [ -n "$snapshot_gitfile" ]; then
+    docker run --rm --init \
+      --user "$expected_uid:$expected_gid" \
+      --env EXPECTED_UID="$expected_uid" \
+      --env EXPECTED_GID="$expected_gid" \
+      --env HOME=/tmp/home \
+      --env PYTHONDONTWRITEBYTECODE=1 \
+      --tmpfs /tmp/home:rw,exec,mode=1777 \
+      --volume "$repo_root:/workspace" \
+      --volume "$snapshot_gitfile:/workspace/.git:ro" \
+      --volume "$snapshot_root/common:/workspace/${snapshot_root##*/}/common:ro" \
+      --workdir /workspace \
+      python:3.11.15 \
+      sh -lc '
+        set -eu
+        if [ ! -f /workspace/.python-version ] || [ ! -d /workspace/scripts ]; then
+          echo "scripts/run-python311: Docker cannot read the checkout root; configure Docker/Colima file sharing for this path" >&2
+          exit 1
+        fi
+        test "$(python --version 2>&1)" = "Python 3.11.15"
+        git --version >/dev/null
+        test "$(id -u)" = "$EXPECTED_UID"
+        test "$(id -g)" = "$EXPECTED_GID"
+        test "$(id -u)" -ne 0
+        git config --global --add safe.directory /workspace
+        test "$(git rev-parse --show-toplevel)" = "/workspace"
+        exec "$@"
+      ' sh "$@"
+  else
+    docker run --rm --init \
+      --user "$expected_uid:$expected_gid" \
+      --env EXPECTED_UID="$expected_uid" \
+      --env EXPECTED_GID="$expected_gid" \
+      --env HOME=/tmp/home \
+      --env PYTHONDONTWRITEBYTECODE=1 \
+      --tmpfs /tmp/home:rw,exec,mode=1777 \
+      --volume "$repo_root:/workspace" \
+      --workdir /workspace \
+      python:3.11.15 \
+      sh -lc '
+        set -eu
+        if [ ! -f /workspace/.python-version ] || [ ! -d /workspace/scripts ]; then
+          echo "scripts/run-python311: Docker cannot read the checkout root; configure Docker/Colima file sharing for this path" >&2
+          exit 1
+        fi
+        test "$(python --version 2>&1)" = "Python 3.11.15"
+        git --version >/dev/null
+        test "$(id -u)" = "$EXPECTED_UID"
+        test "$(id -g)" = "$EXPECTED_GID"
+        test "$(id -u)" -ne 0
+        git config --global --add safe.directory /workspace
+        test "$(git rev-parse --show-toplevel)" = "/workspace"
+        exec "$@"
+      ' sh "$@"
+  fi
+}
+
+if run_container "$@"; then
+  status=0
+else
+  status=$?
+fi
+exit "$status"
 ```
 
 Run:
 
 ```bash
+set -eu
 chmod +x scripts/run-python311
 scripts/run-python311 python -c 'import sys; assert sys.version_info[:3] == (3, 11, 15), sys.version'
 scripts/run-python311 git --version
+scripts/run-python311 sh -c 'test "$(id -u)" -ne 0'
+host_head=$(git rev-parse HEAD)
+test "$(scripts/run-python311 git rev-parse HEAD)" = "$host_head"
+test "$(scripts/run-python311 git ls-files '*.md' | wc -l | tr -d ' ')" = "$(git ls-files '*.md' | wc -l | tr -d ' ')"
+scripts/run-python311 sh -c '
+  set -eu
+  tmp=$(mktemp -d)
+  trap "rm -rf \"$tmp\"" EXIT
+  cd "$tmp"
+  git init -q
+  printf "probe\n" > sample.txt
+  git add sample.txt
+  test "$(git ls-files)" = "sample.txt"
+  test -z "${GIT_DIR:-}"
+  test -z "${GIT_WORK_TREE:-}"
+'
+run_result=0
+scripts/run-python311 sh -c 'exit 7' || run_result=$?
+test "$run_result" -eq 7
+test -z "$(find . -maxdepth 1 -name '.run-python311-git.*' -print -quit)"
 ```
 
-Expected: the exact Python assertion passes and Git is available inside the same container, which is required by metadata stamping and ancestor checks.
+Expected: the linked-worktree regression that previously failed now resolves the exact host `HEAD`; tracked Markdown inventory is identical; the command runs as the non-root host UID/GID; an unrelated temporary repository remains independent; status `7` is propagated exactly; and no `.run-python311-git.*` snapshot remains. The copied snapshot is private on the host and overlaid read-only in the container. A daemon that cannot see the checkout root fails before Git discovery with the exact file-sharing diagnostic above. Step 9 proves the same wrapper from a Docker-visible primary checkout with a real `.git` directory.
 
 - [ ] **Step 2: Write failing unit tests for links, metadata, stamping, environments, commands, and workflows**
 
 Create `scripts/tests/test_check_docs.py` with standard-library `unittest`. The tests must construct isolated temporary repositories or call focused pure functions. Include these assertions verbatim in the corresponding tests:
 
 ```python
+import contextlib
+import io
+import json
 import sys
 import subprocess
 from pathlib import Path
@@ -276,19 +517,33 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from scripts.check_docs import (
+    ConfigError,
     check_classification,
     check_command_contracts,
     check_environment_document,
     check_local_links,
     check_metadata,
+    check_runtime_contract,
     check_workflow_inventory,
     discover_environment_names,
     github_slug,
+    load_config,
+    main as check_docs_main,
     stamp_documents,
 )
 
 
 class DocumentationChecks(TestCase):
+    @staticmethod
+    def track(root: Path, *relative_paths: str) -> None:
+        if not (root / ".git").exists():
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "add", "--", *relative_paths],
+            cwd=root,
+            check=True,
+        )
+
     def test_missing_local_link_is_reported(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -628,7 +883,7 @@ class DocumentationChecks(TestCase):
                 encoding="utf-8",
             )
             (scripts / "run-python311").write_text(
-                "docker run --env HOME=/tmp/home python:3.11.15-bookworm python\n",
+                "docker run --env HOME=/tmp/home python:3.11.15 python\n",
                 encoding="utf-8",
             )
             workflows = root / ".github" / "workflows"
@@ -646,9 +901,23 @@ class DocumentationChecks(TestCase):
                 "        value: '3.11.15'\n",
                 encoding="utf-8",
             )
+            frontend_scripts = root / "frontend" / "scripts"
+            frontend_scripts.mkdir(parents=True)
+            (frontend_scripts / "smoke-server.mjs").write_text(
+                'spawn("node", [], {env: {...process.env, NODE_ENV: "production"}})\n',
+                encoding="utf-8",
+            )
+            self.track(root, ".github/workflows/feed.yaml")
             names = discover_environment_names(root, [])
             self.assertTrue(
-                {"FEED_PUBLICATION_MANIFEST", "PAYLOAD", "PORT", "PYTHON_VERSION", "HOME"}
+                {
+                    "FEED_PUBLICATION_MANIFEST",
+                    "PAYLOAD",
+                    "PORT",
+                    "PYTHON_VERSION",
+                    "HOME",
+                    "NODE_ENV",
+                }
                 <= names
             )
 
@@ -670,6 +939,7 @@ class DocumentationChecks(TestCase):
                 "            python scripts/check_docs.py\n",
                 encoding="utf-8",
             )
+            self.track(root, ".github/workflows/docs.yml")
             names = discover_environment_names(root, [])
             self.assertTrue(
                 {"GITHUB_OUTPUT", "GITHUB_WORKSPACE", "RUNNER_TEMP", "PYTHONPATH"}
@@ -684,7 +954,7 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text('{"scripts":{"lint":"eslint ."}}', encoding="utf-8")
             page = root / "README.md"
             page.write_text("```bash\nnpm run build:static\n```\n", encoding="utf-8")
-            contracts = [{"document": "README.md", "cwd": "frontend", "command": "npm run build:static", "kind": "entrypoint"}]
+            contracts = [{"document": "README.md", "cwd": "frontend", "command": "npm run build:static", "kind": "entrypoint", "runtime": "node"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any("build:static" in item.message for item in errors))
 
@@ -701,7 +971,7 @@ class DocumentationChecks(TestCase):
             )
             page = root / "README.md"
             page.write_text("```bash\nnpm run lint\n```\n", encoding="utf-8")
-            contracts = [{"document": "README.md", "cwd": "frontend", "command": "npm run lint", "kind": "ci", "workflow": ".github/workflows/tests.yml", "job": "frontend"}]
+            contracts = [{"document": "README.md", "cwd": "frontend", "command": "npm run lint", "kind": "ci", "runtime": "node", "workflow": ".github/workflows/tests.yml", "job": "frontend"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "command-not-in-ci" for item in errors))
 
@@ -722,7 +992,7 @@ class DocumentationChecks(TestCase):
             )
             page = root / "README.md"
             page.write_text("\nnpm run lint\n", encoding="utf-8")
-            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"}]
+            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "command-not-in-ci" for item in errors))
 
@@ -743,7 +1013,7 @@ class DocumentationChecks(TestCase):
             )
             page = root / "README.md"
             page.write_text("\nnpm run lint\n", encoding="utf-8")
-            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"}]
+            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "command-not-in-ci" for item in errors))
 
@@ -764,7 +1034,7 @@ class DocumentationChecks(TestCase):
             )
             page = root / "README.md"
             page.write_text("\nnpm run lint\n", encoding="utf-8")
-            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"}]
+            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"}]
             self.assertEqual(check_command_contracts(root, contracts), [])
 
     def test_ci_command_in_wrong_working_directory_is_rejected(self):
@@ -784,7 +1054,7 @@ class DocumentationChecks(TestCase):
             )
             page = root / "README.md"
             page.write_text("\nnpm run lint\n", encoding="utf-8")
-            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"}]
+            contracts = [{"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "command-wrong-ci-cwd" for item in errors))
 
@@ -797,7 +1067,7 @@ class DocumentationChecks(TestCase):
             page = backend / "README.md"
             command = "python -m pip install -r requirements.txt"
             page.write_text(f"\n{command}\n", encoding="utf-8")
-            contracts = [{"document":"backend/README.md","cwd":"backend","command":command,"kind":"entrypoint"}]
+            contracts = [{"document":"backend/README.md","cwd":"backend","command":command,"kind":"entrypoint","runtime":"python"}]
             errors = check_command_contracts(root, contracts)
             self.assertTrue(any(item.code == "unhashed-pip-install" for item in errors))
 
@@ -810,6 +1080,7 @@ class DocumentationChecks(TestCase):
             inventory = root / "docs" / "operations" / "workflows.md"
             inventory.parent.mkdir(parents=True)
             inventory.write_text("# Workflows\n", encoding="utf-8")
+            self.track(root, ".github/workflows/tests.yml")
             errors = check_workflow_inventory(root, "docs/operations/workflows.md")
             self.assertTrue(any("tests.yml" in item.message for item in errors))
 
@@ -822,6 +1093,7 @@ class DocumentationChecks(TestCase):
             inventory = root / "docs" / "operations" / "workflows.md"
             inventory.parent.mkdir(parents=True)
             inventory.write_text("# Workflows\n", encoding="utf-8")
+            self.track(root, ".github/workflows/guard.yaml")
             errors = check_workflow_inventory(root, "docs/operations/workflows.md")
             self.assertTrue(any("guard.yaml" in item.message for item in errors))
 
@@ -837,8 +1109,33 @@ class DocumentationChecks(TestCase):
                 "# Workflows\n\nThe `tests.yml` workflow runs tests.\n",
                 encoding="utf-8",
             )
+            self.track(root, ".github/workflows/tests.yml")
             errors = check_workflow_inventory(root, "docs/operations/workflows.md")
             self.assertTrue(any("tests.yml" in item.message for item in errors))
+
+    def test_untracked_workflow_scratch_is_not_part_of_inventory(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (workflows / "tests.yml").write_text("name: Tests\n", encoding="utf-8")
+            (workflows / "scratch.yml").write_text(
+                "name: Untracked scratch\n", encoding="utf-8"
+            )
+            inventory = root / "docs" / "operations" / "workflows.md"
+            inventory.parent.mkdir(parents=True)
+            inventory.write_text(
+                "# Workflows\n\n"
+                "| Workflow | Purpose | Trigger | Command | Target | Permissions | Concurrency | Configuration |\n"
+                "|---|---|---|---|---|---|---|---|\n"
+                "| `tests.yml` | tests | PR | command | none | read | ci | none |\n",
+                encoding="utf-8",
+            )
+            self.track(root, ".github/workflows/tests.yml")
+            self.assertEqual(
+                check_workflow_inventory(root, "docs/operations/workflows.md"),
+                [],
+            )
 
     def test_workflow_inventory_rejects_duplicates_stale_rows_and_wrong_columns(self):
         with TemporaryDirectory() as tmp:
@@ -858,6 +1155,7 @@ class DocumentationChecks(TestCase):
                 "| `short.yml` | too few | PR |\n",
                 encoding="utf-8",
             )
+            self.track(root, ".github/workflows/tests.yml")
             errors = check_workflow_inventory(root, "docs/operations/workflows.md")
             codes = {item.code for item in errors}
             self.assertTrue(
@@ -887,6 +1185,414 @@ class DocumentationChecks(TestCase):
             }
             errors = check_classification(root, config, [a, b])
             self.assertTrue(any(item.code == "overlapping-document-status" for item in errors))
+
+    def test_classification_exemptions_match_direct_children_only(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            direct = root / "feed" / "screener" / "direct.md"
+            nested = root / "feed" / "screener" / "nested" / "child.md"
+            nested.parent.mkdir(parents=True)
+            direct.write_text("# Direct\n", encoding="utf-8")
+            nested.write_text("# Nested\n", encoding="utf-8")
+            config = {
+                "maintained_documents": [],
+                "historical_documents": [],
+                "archived_documents": [],
+                "classification_exemptions": ["feed/screener/*.md"],
+            }
+            errors = check_classification(root, config, [direct, nested])
+            self.assertFalse(any(item.path == "feed/screener/direct.md" for item in errors))
+            self.assertTrue(
+                any(
+                    item.path == "feed/screener/nested/child.md"
+                    and item.code == "unclassified-markdown"
+                    for item in errors
+                )
+            )
+
+    def _write_valid_config(self, root: Path) -> Path:
+        (root / "docs").mkdir(exist_ok=True)
+        (root / "docs" / "plan.md").write_text("# Plan\n", encoding="utf-8")
+        (root / "feed" / "screener").mkdir(parents=True, exist_ok=True)
+        (root / "frontend" / "public" / "feed" / "screener").mkdir(
+            parents=True, exist_ok=True
+        )
+        config = {
+            "schema_version": 1,
+            "check_all_tracked_markdown": False,
+            "archive_date": "2026-07-24",
+            "runtime_contract": {
+                "node": "20.20.2",
+                "npm": "10.8.2",
+                "python_primary": "3.11.15",
+                "python_compatibility": ["3.12.13"],
+            },
+            "maintained_documents": ["docs/plan.md"],
+            "historical_documents": [],
+            "archived_documents": [],
+            "classification_exemptions": [
+                "feed/screener/*.md",
+                "frontend/public/feed/screener/*.md",
+            ],
+            "environment_document": None,
+            "platform_environment_names": [],
+            "workflow_inventory_document": None,
+            "verified_commands": [],
+        }
+        path = root / "docs" / "verification.json"
+        path.write_text(json.dumps(config), encoding="utf-8")
+        return path
+
+    def test_config_loader_rejects_duplicate_keys_and_nonstandard_constants(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self._write_valid_config(root)
+            for raw in (
+                '{"schema_version":1,"schema_version":1}',
+                '{"schema_version":1,"value":NaN}',
+                '{"schema_version":1,"value":Infinity}',
+            ):
+                with self.subTest(raw=raw):
+                    path.write_text(raw, encoding="utf-8")
+                    with self.assertRaises(ConfigError):
+                        load_config(root, path)
+
+    def test_config_loader_rejects_missing_unknown_wrong_type_and_duplicates(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self._write_valid_config(root)
+            base = json.loads(path.read_text(encoding="utf-8"))
+            cases = []
+
+            missing = json.loads(json.dumps(base))
+            missing.pop("verified_commands")
+            cases.append(("missing-key", missing))
+
+            unknown = json.loads(json.dumps(base))
+            unknown["unknown"] = True
+            cases.append(("unknown-key", unknown))
+
+            boolean_schema = json.loads(json.dumps(base))
+            boolean_schema["schema_version"] = True
+            cases.append(("boolean-schema", boolean_schema))
+
+            wrong_boolean = json.loads(json.dumps(base))
+            wrong_boolean["check_all_tracked_markdown"] = "false"
+            cases.append(("wrong-boolean", wrong_boolean))
+
+            bad_date = json.loads(json.dumps(base))
+            bad_date["archive_date"] = "2026-7-24"
+            cases.append(("bad-date", bad_date))
+
+            wrong_canonical_date = json.loads(json.dumps(base))
+            wrong_canonical_date["archive_date"] = "2026-07-23"
+            cases.append(("wrong-canonical-date", wrong_canonical_date))
+
+            wrong_runtime = json.loads(json.dumps(base))
+            wrong_runtime["runtime_contract"]["python_compatibility"] = "3.12.13"
+            cases.append(("wrong-runtime-type", wrong_runtime))
+
+            extra_runtime = json.loads(json.dumps(base))
+            extra_runtime["runtime_contract"]["extra"] = "not-allowed"
+            cases.append(("extra-runtime-key", extra_runtime))
+
+            repeated_compatibility = json.loads(json.dumps(base))
+            repeated_compatibility["runtime_contract"]["python_compatibility"] = [
+                "3.12.13",
+                "3.12.13",
+            ]
+            cases.append(("duplicate-compatibility", repeated_compatibility))
+
+            primary_is_compatibility = json.loads(json.dumps(base))
+            primary_is_compatibility["runtime_contract"]["python_compatibility"] = [
+                "3.11.15"
+            ]
+            cases.append(("primary-is-compatibility", primary_is_compatibility))
+
+            duplicate_document = json.loads(json.dumps(base))
+            duplicate_document["maintained_documents"] *= 2
+            cases.append(("duplicate-document", duplicate_document))
+
+            overlap = json.loads(json.dumps(base))
+            overlap["historical_documents"] = ["docs/plan.md"]
+            cases.append(("overlapping-document", overlap))
+
+            invalid_environment = json.loads(json.dumps(base))
+            invalid_environment["platform_environment_names"] = ["bad-name"]
+            cases.append(("invalid-environment", invalid_environment))
+
+            duplicate_environment = json.loads(json.dumps(base))
+            duplicate_environment["platform_environment_names"] = ["PORT", "PORT"]
+            cases.append(("duplicate-environment", duplicate_environment))
+
+            invalid_exemption = json.loads(json.dumps(base))
+            invalid_exemption["classification_exemptions"] = ["feed/**/*.md"]
+            cases.append(("recursive-exemption", invalid_exemption))
+
+            for label, value in cases:
+                with self.subTest(label=label):
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    with self.assertRaises(ConfigError):
+                        load_config(root, path)
+
+    def test_config_loader_rejects_paths_outside_the_repository(self):
+        with TemporaryDirectory() as tmp:
+            outer = Path(tmp)
+            root = outer / "repo"
+            root.mkdir()
+            path = self._write_valid_config(root)
+            base = json.loads(path.read_text(encoding="utf-8"))
+            outside = outer / "outside.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            link = root / "docs" / "linked.md"
+            link.symlink_to(outside)
+            for label, relative in (
+                ("absolute", str(outside)),
+                ("parent", "../outside.md"),
+                ("backslash", r"docs\plan.md"),
+                ("dot-segment", "docs/./plan.md"),
+                ("symlink", "docs/linked.md"),
+            ):
+                with self.subTest(label=label):
+                    value = json.loads(json.dumps(base))
+                    value["maintained_documents"] = [relative]
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    with self.assertRaises(ConfigError):
+                        load_config(root, path)
+
+    def test_config_loader_enforces_command_kind_runtime_and_exact_keys(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self._write_valid_config(root)
+            base = json.loads(path.read_text(encoding="utf-8"))
+            readme = root / "README.md"
+            readme.write_text("# Project\n", encoding="utf-8")
+            (root / "frontend").mkdir(exist_ok=True)
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (workflows / "tests.yml").write_text(
+                "jobs:\n  frontend:\n    steps: []\n", encoding="utf-8"
+            )
+            base["maintained_documents"].append("README.md")
+            valid_ci = {
+                "document": "README.md",
+                "cwd": "frontend",
+                "command": "npm run lint",
+                "kind": "ci",
+                "runtime": "node",
+                "workflow": ".github/workflows/tests.yml",
+                "job": "frontend",
+            }
+            cases = []
+            for label, mutation in (
+                ("invalid-kind", {"kind": "maybe"}),
+                ("non-string-kind", {"kind": []}),
+                ("invalid-runtime", {"runtime": "ruby"}),
+                ("non-string-runtime", {"runtime": []}),
+                ("runtime-mismatch", {"runtime": "python"}),
+                ("cwd-escape", {"cwd": "../frontend"}),
+                ("workflow-escape", {"workflow": "../tests.yml"}),
+                ("invalid-job", {"job": "bad job"}),
+                ("extra-key", {"extra": True}),
+                ("glued-semicolon", {"command": "npm run lint;echo injected"}),
+                ("glued-pipe", {"command": "npm run lint|cat"}),
+                ("redirection", {"command": "npm run lint>captured.txt"}),
+                ("command-substitution", {"command": "npm run lint$(echo injected)"}),
+                ("backtick-substitution", {"command": "npm run lint`echo injected`"}),
+            ):
+                item = dict(valid_ci)
+                item.update(mutation)
+                cases.append((label, [item]))
+            missing_job = dict(valid_ci)
+            missing_job.pop("job")
+            cases.append(("ci-missing-job", [missing_job]))
+            entrypoint_with_ci_location = dict(valid_ci)
+            entrypoint_with_ci_location["kind"] = "entrypoint"
+            cases.append(("entrypoint-with-ci-location", [entrypoint_with_ci_location]))
+            cases.append(("duplicate-contract", [valid_ci, dict(valid_ci)]))
+
+            for label, commands in cases:
+                with self.subTest(label=label):
+                    value = json.loads(json.dumps(base))
+                    value["verified_commands"] = commands
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    with self.assertRaises(ConfigError):
+                        load_config(root, path)
+
+    def test_config_loader_accepts_repository_root_command_cwd(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self._write_valid_config(root)
+            base = json.loads(path.read_text(encoding="utf-8"))
+            base["verified_commands"] = [
+                {
+                    "document": "docs/plan.md",
+                    "cwd": ".",
+                    "command": "python scripts/check_docs.py",
+                    "kind": "entrypoint",
+                    "runtime": "python",
+                }
+            ]
+            path.write_text(json.dumps(base), encoding="utf-8")
+            self.assertEqual(load_config(root, path), base)
+
+    def test_runtime_contract_detects_version_and_matrix_drift(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "frontend").mkdir()
+            (root / "backend").mkdir()
+            workflows = root / ".github" / "workflows"
+            workflows.mkdir(parents=True)
+            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
+            backend_runtime = root / "backend" / "runtime.txt"
+            backend_runtime.write_text("python-3.11.15\n", encoding="utf-8")
+            dockerfile = root / "backend" / "Dockerfile"
+            dockerfile.write_text("FROM python:3.11.15-slim\n", encoding="utf-8")
+            render = root / "render.yaml"
+            render.write_text(
+                'envVars:\n  - key: PYTHON_VERSION\n    value: "3.11.15"\n',
+                encoding="utf-8",
+            )
+            (root / "frontend" / "package.json").write_text(
+                json.dumps(
+                    {
+                        "packageManager": "npm@10.8.2",
+                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            workflow = workflows / "tests.yml"
+            exact_workflow = (
+                "jobs:\n  python:\n    steps:\n"
+                "      - uses: actions/setup-python@v6\n"
+                "        with:\n"
+                "          python-version: ${{ matrix.python_version }}\n"
+                'test "$(node --version)" = "v20.20.2"\n'
+                'test "$(npm --version)" = "10.8.2"\n'
+                '          - python_version: "3.11.15"\n'
+                '          - python_version: "3.12.13"\n'
+            )
+            workflow.write_text(exact_workflow, encoding="utf-8")
+            deploy = workflows / "deploy-pages.yml"
+            exact_deploy = (
+                "steps:\n"
+                "  - uses: actions/setup-node@v7\n"
+                "    with:\n"
+                "      node-version-file: .node-version\n"
+                'test "$(node --version)" = "v20.20.2"\n'
+                'test "$(npm --version)" = "10.8.2"\n'
+            )
+            deploy.write_text(exact_deploy, encoding="utf-8")
+            production = workflows / "alpha-routine.yml"
+            exact_production = (
+                "steps:\n"
+                "  - uses: actions/setup-python@v6\n"
+                "    with:\n"
+                "      python-version-file: .python-version\n"
+            )
+            production.write_text(exact_production, encoding="utf-8")
+            self.track(
+                root,
+                ".github/workflows/tests.yml",
+                ".github/workflows/deploy-pages.yml",
+                ".github/workflows/alpha-routine.yml",
+            )
+            contract = {
+                "node": "20.20.2",
+                "npm": "10.8.2",
+                "python_primary": "3.11.15",
+                "python_compatibility": ["3.12.13"],
+            }
+            self.assertEqual(check_runtime_contract(root, contract), [])
+            mutations = (
+                (root / ".node-version", "20.20.3\n"),
+                (root / ".python-version", "3.11.14\n"),
+                (backend_runtime, "python-3.11.14\n"),
+                (dockerfile, "FROM python:3.11.14-slim\n"),
+                (
+                    render,
+                    'envVars:\n  - key: PYTHON_VERSION\n    value: "3.11.14"\n',
+                ),
+                (
+                    render,
+                    'envVars:\n'
+                    '  - key: PYTHON_VERSION\n'
+                    '    value: "3.11.14"\n'
+                    '  - key: UNRELATED_VERSION\n'
+                    '    value: "3.11.15"\n',
+                ),
+                (
+                    render,
+                    'envVars:\n'
+                    '  - key: PYTHON_VERSION\n'
+                    '    value: "3.11.15"\n'
+                    '  - key: PYTHON_VERSION\n'
+                    '    value: "3.11.15"\n',
+                ),
+                (
+                    root / "frontend" / "package.json",
+                    '{"packageManager":"npm@10.8.1","engines":{"node":"20.20.2","npm":"10.8.1"}}',
+                ),
+                (
+                    workflow,
+                    exact_workflow.replace(
+                        '          - python_version: "3.12.13"\n', ""
+                    ),
+                ),
+                (
+                    deploy,
+                    exact_deploy.replace("v20.20.2", "v20.20.1"),
+                ),
+                (
+                    production,
+                    exact_production.replace(
+                        "python-version-file: .python-version",
+                        'python-version: "3.11.14"',
+                    ),
+                ),
+            )
+            for target, replacement in mutations:
+                with self.subTest(target=target.name):
+                    original = target.read_text(encoding="utf-8")
+                    target.write_text(replacement, encoding="utf-8")
+                    self.assertTrue(check_runtime_contract(root, contract))
+                    target.write_text(original, encoding="utf-8")
+
+    def test_archived_metadata_requires_exact_archive_date(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            page = root / "archive.md"
+            page.write_text(
+                "# Archive\n\n"
+                "> **Status:** Archived; not current implementation guidance\n"
+                "> **Scope:** Historical record.\n",
+                encoding="utf-8",
+            )
+            errors = check_metadata(
+                root, [], [], ["archive.md"], archive_date="2026-07-24"
+            )
+            self.assertTrue(any(item.code == "missing-archive-date" for item in errors))
+            page.write_text(
+                "# Archive\n\n"
+                "> **Status:** Archived; not current implementation guidance\n"
+                "> **Scope:** Historical record.\n"
+                "> **Archived on:** 2026-07-16\n",
+                encoding="utf-8",
+            )
+            errors = check_metadata(
+                root, [], [], ["archive.md"], archive_date="2026-07-24"
+            )
+            self.assertTrue(any(item.code == "invalid-archive-date" for item in errors))
+
+    def test_cli_rejects_config_path_escape_without_traceback(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            returncode = check_docs_main(["--config", "../outside.json"])
+        self.assertEqual(returncode, 2)
+        self.assertIn("documentation configuration error:", stderr.getvalue())
+        self.assertNotIn("Traceback", stderr.getvalue())
 
 
 if __name__ == "__main__":
@@ -918,7 +1624,9 @@ import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
-from pathlib import Path
+from datetime import date
+from pathlib import Path, PurePosixPath
+from typing import Any
 from urllib.parse import unquote, urlsplit
 
 
@@ -958,6 +1666,43 @@ DOCKER_ENV_RE = re.compile(r"(?m)^ENV\s+([A-Z][A-Z0-9_]*)=")
 DOCKER_ENV_FLAG_RE = re.compile(
     r"(?:^|[ \t])(?:--env|-e)[ \t]+([A-Z][A-Z0-9_]*)(?:=|\b)"
 )
+JS_ENV_BLOCK_RE = re.compile(r"\benv\s*:\s*\{(.*?)\}", re.DOTALL)
+JS_ENV_OBJECT_KEY_RE = re.compile(
+    r"(?:^|,)\s*([A-Z][A-Z0-9_]*)\s*:", re.MULTILINE
+)
+VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+JOB_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+TOP_LEVEL_KEYS = frozenset(
+    {
+        "schema_version",
+        "check_all_tracked_markdown",
+        "archive_date",
+        "runtime_contract",
+        "maintained_documents",
+        "historical_documents",
+        "archived_documents",
+        "classification_exemptions",
+        "environment_document",
+        "platform_environment_names",
+        "workflow_inventory_document",
+        "verified_commands",
+    }
+)
+RUNTIME_KEYS = frozenset(
+    {"node", "npm", "python_primary", "python_compatibility"}
+)
+EXPECTED_ARCHIVE_DATE = "2026-07-24"
+EXPECTED_RUNTIME_CONTRACT = {
+    "node": "20.20.2",
+    "npm": "10.8.2",
+    "python_primary": "3.11.15",
+    "python_compatibility": ["3.12.13"],
+}
+ENTRYPOINT_COMMAND_KEYS = frozenset(
+    {"document", "cwd", "command", "kind", "runtime"}
+)
+CI_COMMAND_KEYS = ENTRYPOINT_COMMAND_KEYS | {"workflow", "job"}
 
 
 @dataclass(frozen=True, order=True)
@@ -971,11 +1716,515 @@ class Diagnostic:
         return f"{self.path}:{self.line}: {self.message} [{self.code}]"
 
 
-def load_config(path: Path) -> dict:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema_version") != 1:
-        raise ValueError("docs verification schema_version must be 1")
+class ConfigError(ValueError):
+    """Fail-closed documentation manifest error."""
+
+
+def reject_duplicate_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ConfigError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def reject_config_constant(value: str) -> None:
+    raise ConfigError(f"non-standard JSON constant is forbidden: {value}")
+
+
+def require_exact_keys(value: Any, expected: frozenset[str], label: str) -> dict:
+    if type(value) is not dict:
+        raise ConfigError(f"{label} must be an object")
+    actual = frozenset(value)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        unknown = sorted(actual - expected)
+        raise ConfigError(f"{label} keys mismatch; missing={missing}, unknown={unknown}")
+    return value
+
+
+def require_unique_strings(value: Any, label: str) -> list[str]:
+    if type(value) is not list:
+        raise ConfigError(f"{label} must be a list")
+    if any(type(item) is not str or not item for item in value):
+        raise ConfigError(f"{label} must contain non-empty strings")
+    if len(value) != len(set(value)):
+        raise ConfigError(f"{label} contains duplicates")
+    return value
+
+
+def canonical_repo_path(
+    root: Path,
+    raw: Any,
+    label: str,
+    *,
+    suffix: str | None = None,
+    directory: bool = False,
+) -> Path:
+    if type(raw) is not str or not raw or "\\" in raw:
+        raise ConfigError(f"{label} must be non-empty POSIX-relative text")
+    if raw == ".":
+        if not directory:
+            raise ConfigError(f"{label} must name a file, not the repository root")
+        try:
+            resolved_root = root.resolve(strict=True)
+        except (OSError, RuntimeError) as exc:
+            raise ConfigError("repository root is unavailable") from exc
+        if not resolved_root.is_dir():
+            raise ConfigError("repository root is not a directory")
+        return root
+    pure = PurePosixPath(raw)
+    if (
+        pure.is_absolute()
+        or not pure.parts
+        or any(part in {"", ".", ".."} for part in pure.parts)
+        or pure.as_posix() != raw
+    ):
+        raise ConfigError(f"{label} is not a canonical repository-relative path: {raw}")
+    if suffix is not None and pure.suffix != suffix:
+        raise ConfigError(f"{label} must end in {suffix}: {raw}")
+    candidate = root.joinpath(*pure.parts)
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved = candidate.resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise ConfigError(f"{label} does not resolve: {raw}") from exc
+    if resolved != resolved_root and resolved_root not in resolved.parents:
+        raise ConfigError(f"{label} escapes the repository: {raw}")
+    if directory and not resolved.is_dir():
+        raise ConfigError(f"{label} is not a directory: {raw}")
+    if not directory and not resolved.is_file():
+        raise ConfigError(f"{label} is not a regular file: {raw}")
+    return candidate
+
+
+def validate_exemption(root: Path, raw: str) -> None:
+    if (
+        "\\" in raw
+        or "**" in raw
+        or "?" in raw
+        or "[" in raw
+        or "]" in raw
+        or raw.count("*") != 1
+    ):
+        raise ConfigError(f"invalid classification exemption: {raw}")
+    pure = PurePosixPath(raw)
+    if (
+        pure.is_absolute()
+        or not pure.parts
+        or any(part in {"", ".", ".."} for part in pure.parts)
+        or pure.as_posix() != raw
+        or pure.name != "*.md"
+    ):
+        raise ConfigError(f"invalid classification exemption: {raw}")
+    parent = pure.parent.as_posix()
+    if parent == ".":
+        if not root.resolve(strict=True).is_dir():
+            raise ConfigError("repository root is unavailable")
+    else:
+        canonical_repo_path(root, parent, "classification exemption parent", directory=True)
+
+
+def validate_command_contract(
+    root: Path,
+    maintained: set[str],
+    item: Any,
+) -> dict:
+    if type(item) is not dict:
+        raise ConfigError("verified command must be an object")
+    kind = item.get("kind")
+    if type(kind) is not str:
+        raise ConfigError("verified command kind must be a string")
+    expected = CI_COMMAND_KEYS if kind == "ci" else ENTRYPOINT_COMMAND_KEYS
+    if kind not in {"ci", "entrypoint"}:
+        raise ConfigError(f"invalid command kind: {kind}")
+    require_exact_keys(item, expected, "verified command")
+    runtime = item["runtime"]
+    if type(runtime) is not str:
+        raise ConfigError("verified command runtime must be a string")
+    if runtime not in {"node", "python"}:
+        raise ConfigError(f"invalid command runtime: {runtime}")
+    document = item["document"]
+    canonical_repo_path(root, document, "command document", suffix=".md")
+    if document not in maintained:
+        raise ConfigError(f"command document is not maintained: {document}")
+    canonical_repo_path(root, item["cwd"], "command cwd", directory=True)
+    command = item["command"]
+    if type(command) is not str or not command or "\n" in command or "\r" in command:
+        raise ConfigError("verified command must be one non-empty line")
+    if "$(" in command or "`" in command:
+        raise ConfigError(f"verified command contains command substitution: {command}")
+    try:
+        lexer = shlex.shlex(
+            command,
+            posix=True,
+            punctuation_chars=";&|<>()",
+        )
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        tokens = list(lexer)
+    except ValueError as exc:
+        raise ConfigError(f"verified command is not shell-parseable: {command}") from exc
+    if not tokens or any(
+        token and all(character in ";&|<>()" for character in token)
+        for token in tokens
+    ):
+        raise ConfigError(f"verified command is not one simple process: {command}")
+    expected_program = "npm" if runtime == "node" else "python"
+    if tokens[0] != expected_program:
+        raise ConfigError(
+            f"{runtime} command must begin with {expected_program}: {command}"
+        )
+    if kind == "ci":
+        workflow = item["workflow"]
+        workflow_path = canonical_repo_path(root, workflow, "command workflow")
+        pure = PurePosixPath(workflow)
+        if (
+            pure.parts[:2] != (".github", "workflows")
+            or pure.suffix not in {".yml", ".yaml"}
+            or not workflow_path.is_file()
+        ):
+            raise ConfigError(f"CI workflow is outside .github/workflows: {workflow}")
+        job = item["job"]
+        if type(job) is not str or JOB_NAME_RE.fullmatch(job) is None:
+            raise ConfigError(f"invalid CI job name: {job}")
+    return item
+
+
+def load_config(root: Path, path: Path) -> dict:
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved_path = path.resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise ConfigError(f"configuration path does not resolve: {path}") from exc
+    if resolved_path != resolved_root and resolved_root not in resolved_path.parents:
+        raise ConfigError(f"configuration path escapes the repository: {path}")
+    try:
+        data = json.loads(
+            resolved_path.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_object,
+            parse_constant=reject_config_constant,
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ConfigError(f"configuration is unreadable: {path}") from exc
+    data = require_exact_keys(data, TOP_LEVEL_KEYS, "docs verification manifest")
+    if type(data["schema_version"]) is not int or data["schema_version"] != 1:
+        raise ConfigError("docs verification schema_version must be integer 1")
+    if type(data["check_all_tracked_markdown"]) is not bool:
+        raise ConfigError("check_all_tracked_markdown must be Boolean")
+    archive_date = data["archive_date"]
+    if type(archive_date) is not str:
+        raise ConfigError("archive_date must be an ISO date string")
+    try:
+        parsed_date = date.fromisoformat(archive_date)
+    except ValueError as exc:
+        raise ConfigError("archive_date must be YYYY-MM-DD") from exc
+    if parsed_date.isoformat() != archive_date:
+        raise ConfigError("archive_date must be canonical YYYY-MM-DD")
+    if archive_date != EXPECTED_ARCHIVE_DATE:
+        raise ConfigError(
+            f"archive_date must equal the Stage 1C archive date "
+            f"{EXPECTED_ARCHIVE_DATE}"
+        )
+
+    runtime = require_exact_keys(
+        data["runtime_contract"], RUNTIME_KEYS, "runtime_contract"
+    )
+    for name in ("node", "npm", "python_primary"):
+        if type(runtime[name]) is not str or VERSION_RE.fullmatch(runtime[name]) is None:
+            raise ConfigError(f"runtime_contract.{name} must be an exact patch version")
+    compatibility = require_unique_strings(
+        runtime["python_compatibility"], "runtime_contract.python_compatibility"
+    )
+    if not compatibility or any(VERSION_RE.fullmatch(value) is None for value in compatibility):
+        raise ConfigError("python_compatibility must contain exact patch versions")
+    if runtime["python_primary"] in compatibility:
+        raise ConfigError("python primary runtime may not also be compatibility-only")
+    if runtime != EXPECTED_RUNTIME_CONTRACT:
+        raise ConfigError(
+            "runtime_contract must equal the approved exact Node/npm/Python matrix"
+        )
+
+    category_names = (
+        "maintained_documents",
+        "historical_documents",
+        "archived_documents",
+    )
+    categories = {
+        name: require_unique_strings(data[name], name) for name in category_names
+    }
+    for name, values in categories.items():
+        for value in values:
+            canonical_repo_path(root, value, name, suffix=".md")
+    all_category_paths = [value for values in categories.values() for value in values]
+    if len(all_category_paths) != len(set(all_category_paths)):
+        raise ConfigError("document status arrays must be mutually exclusive")
+
+    exemptions = require_unique_strings(
+        data["classification_exemptions"], "classification_exemptions"
+    )
+    for pattern in exemptions:
+        validate_exemption(root, pattern)
+
+    maintained = set(categories["maintained_documents"])
+    for name in ("environment_document", "workflow_inventory_document"):
+        value = data[name]
+        if value is not None:
+            canonical_repo_path(root, value, name, suffix=".md")
+            if value not in maintained:
+                raise ConfigError(f"{name} must name a maintained document")
+
+    environment_names = require_unique_strings(
+        data["platform_environment_names"], "platform_environment_names"
+    )
+    if any(ENV_NAME_RE.fullmatch(value) is None for value in environment_names):
+        raise ConfigError("platform_environment_names contains an invalid name")
+
+    commands = data["verified_commands"]
+    if type(commands) is not list:
+        raise ConfigError("verified_commands must be a list")
+    normalized_commands: set[str] = set()
+    for item in commands:
+        validated = validate_command_contract(root, maintained, item)
+        encoded = json.dumps(validated, ensure_ascii=False, sort_keys=True)
+        if encoded in normalized_commands:
+            raise ConfigError("verified_commands contains a duplicate contract")
+        normalized_commands.add(encoded)
     return data
+
+
+def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
+    errors: list[Diagnostic] = []
+
+    def read_text(relative: str) -> str | None:
+        try:
+            return (root / relative).read_text(encoding="utf-8")
+        except OSError:
+            errors.append(
+                Diagnostic(
+                    relative,
+                    1,
+                    "missing-runtime-contract-source",
+                    "runtime contract source is missing or unreadable",
+                )
+            )
+            return None
+
+    node_version = read_text(".node-version")
+    if node_version is not None and node_version.strip() != contract["node"]:
+        errors.append(
+            Diagnostic(
+                ".node-version",
+                1,
+                "node-runtime-drift",
+                f"expected exact Node {contract['node']}",
+            )
+        )
+    python_version = read_text(".python-version")
+    if (
+        python_version is not None
+        and python_version.strip() != contract["python_primary"]
+    ):
+        errors.append(
+            Diagnostic(
+                ".python-version",
+                1,
+                "python-runtime-drift",
+                f"expected exact primary Python {contract['python_primary']}",
+            )
+        )
+
+    backend_runtime = read_text("backend/runtime.txt")
+    if (
+        backend_runtime is not None
+        and backend_runtime.strip() != f"python-{contract['python_primary']}"
+    ):
+        errors.append(
+            Diagnostic(
+                "backend/runtime.txt",
+                1,
+                "backend-runtime-drift",
+                f"expected python-{contract['python_primary']}",
+            )
+        )
+    dockerfile = read_text("backend/Dockerfile")
+    expected_from = f"FROM python:{contract['python_primary']}-slim"
+    if dockerfile is not None and re.search(
+        rf"(?m)^{re.escape(expected_from)}\s*$", dockerfile
+    ) is None:
+        errors.append(
+            Diagnostic(
+                "backend/Dockerfile",
+                1,
+                "docker-runtime-drift",
+                f"expected exact base image declaration {expected_from}",
+            )
+        )
+    render = read_text("render.yaml")
+    render_versions = (
+        re.findall(
+            r'''(?m)^[ \t]*-[ \t]+key:[ \t]*PYTHON_VERSION[ \t]*(?:#.*)?\n'''
+            r'''[ \t]+value:[ \t]*["']?([^"'#\s]+)["']?[ \t]*(?:#.*)?$''',
+            render,
+        )
+        if render is not None
+        else []
+    )
+    if render is not None and render_versions != [contract["python_primary"]]:
+        errors.append(
+            Diagnostic(
+                "render.yaml",
+                1,
+                "render-runtime-drift",
+                "Render PYTHON_VERSION must match python_primary exactly",
+            )
+        )
+
+    package_text = read_text("frontend/package.json")
+    if package_text is not None:
+        try:
+            package = json.loads(
+                package_text,
+                object_pairs_hook=reject_duplicate_object,
+                parse_constant=reject_config_constant,
+            )
+        except (ConfigError, json.JSONDecodeError) as exc:
+            errors.append(
+                Diagnostic(
+                    "frontend/package.json",
+                    1,
+                    "invalid-runtime-package-json",
+                    str(exc),
+                )
+            )
+        else:
+            engines = package.get("engines") if type(package) is dict else None
+            package_manager = (
+                package.get("packageManager") if type(package) is dict else None
+            )
+            expected_package_manager = f"npm@{contract['npm']}"
+            if (
+                package_manager != expected_package_manager
+                or type(engines) is not dict
+                or engines.get("node") != contract["node"]
+                or engines.get("npm") != contract["npm"]
+            ):
+                errors.append(
+                    Diagnostic(
+                        "frontend/package.json",
+                        1,
+                        "package-runtime-drift",
+                        "packageManager and engines must match runtime_contract exactly",
+                    )
+                )
+
+    workflow_text = read_text(".github/workflows/tests.yml")
+    if workflow_text is not None:
+        assertions = (
+            f'test "$(node --version)" = "v{contract["node"]}"',
+            f'test "$(npm --version)" = "{contract["npm"]}"',
+        )
+        for assertion in assertions:
+            if assertion not in workflow_text:
+                errors.append(
+                    Diagnostic(
+                        ".github/workflows/tests.yml",
+                        1,
+                        "workflow-runtime-assertion-drift",
+                        f"missing exact assertion: {assertion}",
+                    )
+                )
+        actual_python_matrix = re.findall(
+            r'(?m)^\s*-\s+python_version:\s*["\']'
+            r"([0-9]+\.[0-9]+\.[0-9]+)"
+            r'["\']\s*$',
+            workflow_text,
+        )
+        expected_python_matrix = [
+            contract["python_primary"],
+            *contract["python_compatibility"],
+        ]
+        if actual_python_matrix != expected_python_matrix:
+            errors.append(
+                Diagnostic(
+                    ".github/workflows/tests.yml",
+                    1,
+                    "python-runtime-matrix-drift",
+                    "Python matrix must exactly match primary then compatibility runtimes",
+                )
+            )
+
+    deploy_text = read_text(".github/workflows/deploy-pages.yml")
+    if deploy_text is not None:
+        required_deploy_lines = (
+            "node-version-file: .node-version",
+            f'test "$(node --version)" = "v{contract["node"]}"',
+            f'test "$(npm --version)" = "{contract["npm"]}"',
+        )
+        for required in required_deploy_lines:
+            if required not in deploy_text:
+                errors.append(
+                    Diagnostic(
+                        ".github/workflows/deploy-pages.yml",
+                        1,
+                        "deployment-runtime-drift",
+                        f"missing exact runtime contract line: {required}",
+                    )
+                )
+
+    def action_step_blocks(text: str, action: str) -> list[str]:
+        lines = text.splitlines()
+        blocks: list[str] = []
+        for index, line in enumerate(lines):
+            if re.search(rf"-\s+uses:\s*{re.escape(action)}@", line) is None:
+                continue
+            base_indent = len(line) - len(line.lstrip())
+            block = [line]
+            cursor = index + 1
+            while cursor < len(lines):
+                candidate = lines[cursor]
+                stripped = candidate.lstrip()
+                indent = len(candidate) - len(stripped)
+                if stripped and indent <= base_indent:
+                    break
+                block.append(candidate)
+                cursor += 1
+            blocks.append("\n".join(block))
+        return blocks
+
+    for workflow in workflow_files(root):
+        try:
+            text = workflow.read_text(encoding="utf-8")
+        except OSError:
+            errors.append(
+                Diagnostic(
+                    workflow.relative_to(root).as_posix(),
+                    1,
+                    "unreadable-workflow-runtime",
+                    "tracked workflow is unreadable",
+                )
+            )
+            continue
+        for block in action_step_blocks(text, "actions/setup-python"):
+            allowed = (
+                "python-version-file: .python-version" in block
+                or "python-version-file: trusted/.python-version" in block
+                or (
+                    workflow.name == "tests.yml"
+                    and "python-version: ${{ matrix.python_version }}" in block
+                )
+            )
+            if not allowed:
+                errors.append(
+                    Diagnostic(
+                        workflow.relative_to(root).as_posix(),
+                        1,
+                        "workflow-python-runtime-drift",
+                        "setup-python must use the repository pin, trusted checkout pin, or exact tested matrix",
+                    )
+                )
+    return errors
 
 
 def github_slug(text: str) -> str:
@@ -1104,7 +2353,13 @@ def check_local_links(root: Path, files: list[Path]) -> list[Diagnostic]:
     return errors
 
 
-def check_metadata(root: Path, maintained: list[str], historical: list[str], archived: list[str]) -> list[Diagnostic]:
+def check_metadata(
+    root: Path,
+    maintained: list[str],
+    historical: list[str],
+    archived: list[str],
+    archive_date: str = EXPECTED_ARCHIVE_DATE,
+) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
     for relative in maintained:
         path = root / relative
@@ -1166,9 +2421,27 @@ def check_metadata(root: Path, maintained: list[str], historical: list[str], arc
             ) if exists.returncode == 0 else None
             if exists.returncode != 0 or ancestor is None or ancestor.returncode != 0:
                 errors.append(Diagnostic(relative, 1, "unresolvable-verified-commit", f"{sha} is not a commit reachable from HEAD"))
-    for relative, status, status_code, scope_code in (
-        *[(value, HISTORICAL_STATUS, "missing-historical-status", "missing-historical-scope") for value in historical],
-        *[(value, ARCHIVED_STATUS, "missing-archived-status", "missing-archived-scope") for value in archived],
+    for relative, status, status_code, scope_code, is_archived in (
+        *[
+            (
+                value,
+                HISTORICAL_STATUS,
+                "missing-historical-status",
+                "missing-historical-scope",
+                False,
+            )
+            for value in historical
+        ],
+        *[
+            (
+                value,
+                ARCHIVED_STATUS,
+                "missing-archived-status",
+                "missing-archived-scope",
+                True,
+            )
+            for value in archived
+        ],
     ):
         path = root / relative
         text = path.read_text(encoding="utf-8") if path.exists() else ""
@@ -1186,14 +2459,64 @@ def check_metadata(root: Path, maintained: list[str], historical: list[str], arc
         scope_lines = [line for _, line in scope_positions]
         if len(scope_lines) != 1 or not scope_lines[0].removeprefix("> **Scope:** ").strip():
             errors.append(Diagnostic(relative, 1, scope_code, "document needs Scope in the first 12 lines"))
-        if any(line.startswith(("> **Status:**", "> **Scope:**")) for line in fence_masked_lines[12:]):
+        archived_positions = [
+            (index, line)
+            for index, line in enumerate(header_lines)
+            if line.startswith("> **Archived on:**")
+        ]
+        if is_archived and not archived_positions:
+            errors.append(
+                Diagnostic(
+                    relative,
+                    1,
+                    "missing-archive-date",
+                    f"archived document needs Archived on: {archive_date}",
+                )
+            )
+        elif is_archived and [line for _, line in archived_positions] != [
+            f"> **Archived on:** {archive_date}"
+        ]:
+            errors.append(
+                Diagnostic(
+                    relative,
+                    1,
+                    "invalid-archive-date",
+                    f"Archived on must equal {archive_date}",
+                )
+            )
+        if any(
+            line.startswith(("> **Status:**", "> **Scope:**", "> **Archived on:**"))
+            for line in fence_masked_lines[12:]
+        ):
             errors.append(Diagnostic(relative, 1, "metadata-not-in-header", "metadata must appear in the first 12 lines"))
-        if (
+        ordered = (
             title_is_valid
             and len(status_positions) == len(scope_positions) == 1
-            and not nonblank_lines[0][0] < status_positions[0][0] < scope_positions[0][0]
+            and nonblank_lines[0][0] < status_positions[0][0] < scope_positions[0][0]
+        )
+        if is_archived:
+            ordered = (
+                ordered
+                and len(archived_positions) == 1
+                and archived_positions[0][0] == scope_positions[0][0] + 1
+            )
+        if (
+            title_is_valid
+            and not ordered
         ):
-            errors.append(Diagnostic(relative, 1, "invalid-metadata-order", "header order must be H1, Status, Scope"))
+            expected = (
+                "H1, Status, Scope, immediately followed by Archived on"
+                if is_archived
+                else "H1, Status, Scope"
+            )
+            errors.append(
+                Diagnostic(
+                    relative,
+                    1,
+                    "invalid-metadata-order",
+                    f"header order must be {expected}",
+                )
+            )
     return errors
 
 
@@ -1214,8 +2537,24 @@ def stamp_documents(root: Path, maintained: list[str], sha: str) -> None:
 
 
 def workflow_files(root: Path) -> list[Path]:
-    directory = root / ".github" / "workflows"
-    return sorted([*directory.glob("*.yml"), *directory.glob("*.yaml")])
+    result = subprocess.run(
+        ["git", "ls-files", "--", ".github/workflows"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    directory = PurePosixPath(".github/workflows")
+    relative_paths = [
+        PurePosixPath(value)
+        for value in result.stdout.splitlines()
+        if value
+    ]
+    return [
+        root.joinpath(*relative.parts)
+        for relative in sorted(relative_paths)
+        if relative.parent == directory and relative.suffix in {".yml", ".yaml"}
+    ]
 
 
 def yaml_environment_names(text: str) -> set[str]:
@@ -1329,6 +2668,9 @@ def discover_environment_names(root: Path, platform_names: list[str]) -> set[str
             names.update(shell_inline_environment_names(shell))
             names.update(DOCKER_ENV_FLAG_RE.findall(shell))
         else:
+            if path.suffix.lower() in {".js", ".mjs", ".ts", ".tsx"}:
+                for block in JS_ENV_BLOCK_RE.findall(text):
+                    names.update(JS_ENV_OBJECT_KEY_RE.findall(block))
             for constant, value in INDIRECT_ENV_RE.findall(text):
                 if f"os.environ.get({constant}" in text or f"process.env[{constant}" in text:
                     names.add(value)
@@ -1536,15 +2878,21 @@ def tracked_markdown(root: Path) -> list[Path]:
 def check_classification(root: Path, config: dict, files: list[Path]) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
     categories = {
-        "maintained": set(config.get("maintained_documents", [])),
-        "historical": set(config.get("historical_documents", [])),
-        "archived": set(config.get("archived_documents", [])),
+        "maintained": set(config["maintained_documents"]),
+        "historical": set(config["historical_documents"]),
+        "archived": set(config["archived_documents"]),
     }
-    exemptions = config.get("classification_exemptions", [])
+    exemptions = config["classification_exemptions"]
     for path in files:
         relative = path.relative_to(root).as_posix()
         memberships = [name for name, values in categories.items() if relative in values]
-        exemption_matches = [pattern for pattern in exemptions if fnmatch.fnmatchcase(relative, pattern)]
+        relative_path = PurePosixPath(relative)
+        exemption_matches = [
+            pattern
+            for pattern in exemptions
+            if relative_path.parent == PurePosixPath(pattern).parent
+            and fnmatch.fnmatchcase(relative_path.name, PurePosixPath(pattern).name)
+        ]
         if len(memberships) + len(exemption_matches) == 0:
             errors.append(Diagnostic(relative, 1, "unclassified-markdown", "tracked Markdown needs one status or generated-artifact exemption"))
         if len(memberships) + len(exemption_matches) > 1:
@@ -1553,24 +2901,39 @@ def check_classification(root: Path, config: dict, files: list[Path]) -> list[Di
 
 
 def check_repository(root: Path, config_path: Path) -> list[Diagnostic]:
-    config = load_config(config_path)
-    maintained = config.get("maintained_documents", [])
-    historical = config.get("historical_documents", [])
-    archived = config.get("archived_documents", [])
+    config = load_config(root, config_path)
+    maintained = config["maintained_documents"]
+    historical = config["historical_documents"]
+    archived = config["archived_documents"]
     tracked = tracked_markdown(root)
-    files = tracked if config.get("check_all_tracked_markdown") else [root / value for value in maintained]
+    files = (
+        tracked
+        if config["check_all_tracked_markdown"]
+        else [root / value for value in maintained]
+    )
     errors = check_local_links(root, files)
-    errors.extend(check_metadata(root, maintained, historical, archived))
-    if config.get("check_all_tracked_markdown"):
+    errors.extend(
+        check_metadata(
+            root,
+            maintained,
+            historical,
+            archived,
+            config["archive_date"],
+        )
+    )
+    errors.extend(check_runtime_contract(root, config["runtime_contract"]))
+    if config["check_all_tracked_markdown"]:
         errors.extend(check_classification(root, config, tracked))
-    environment_document = config.get("environment_document")
+    environment_document = config["environment_document"]
     if environment_document:
-        names = discover_environment_names(root, config.get("platform_environment_names", []))
+        names = discover_environment_names(
+            root, config["platform_environment_names"]
+        )
         errors.extend(check_environment_document(root, names, environment_document))
-    workflow_document = config.get("workflow_inventory_document")
+    workflow_document = config["workflow_inventory_document"]
     if workflow_document:
         errors.extend(check_workflow_inventory(root, workflow_document))
-    errors.extend(check_command_contracts(root, config.get("verified_commands", [])))
+    errors.extend(check_command_contracts(root, config["verified_commands"]))
     return sorted(set(errors))
 
 
@@ -1579,8 +2942,8 @@ def stamp_current(
     config_path: Path,
     documents: list[str] | None = None,
 ) -> str:
-    config = load_config(config_path)
-    maintained = config.get("maintained_documents", [])
+    config = load_config(root, config_path)
+    maintained = config["maintained_documents"]
     selected = documents if documents else maintained
     unknown = sorted(set(selected) - set(maintained))
     if unknown:
@@ -1598,8 +2961,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stamp-current", action="store_true")
     parser.add_argument("--document", action="append", default=[])
     args = parser.parse_args(argv)
-    config_path = ROOT / args.config
     try:
+        config_path = canonical_repo_path(
+            ROOT,
+            args.config,
+            "--config",
+            suffix=".json",
+        )
+        config = load_config(ROOT, config_path)
         if args.stamp_current:
             print(
                 "stamped documentation baseline: "
@@ -1614,13 +2983,12 @@ def main(argv: list[str] | None = None) -> int:
         for error in errors:
             print(error.render(), file=sys.stderr)
         return 1
-    config = load_config(config_path)
     print(
         "docs check passed: "
         f"{len(tracked_markdown(ROOT))} markdown files, "
-        f"{len(config.get('maintained_documents', []))} maintained documents, "
+        f"{len(config['maintained_documents'])} maintained documents, "
         f"{len(workflow_files(ROOT))} workflows, "
-        f"{len(config.get('verified_commands', []))} verified commands"
+        f"{len(config['verified_commands'])} verified commands"
     )
     return 0
 
@@ -1637,6 +3005,13 @@ Create `docs/verification.json` with the approved program design and its three a
 {
   "schema_version": 1,
   "check_all_tracked_markdown": false,
+  "archive_date": "2026-07-24",
+  "runtime_contract": {
+    "node": "20.20.2",
+    "npm": "10.8.2",
+    "python_primary": "3.11.15",
+    "python_compatibility": ["3.12.13"]
+  },
   "maintained_documents": [
     "docs/superpowers/specs/2026-07-16-stock-analysis-refactor-design.md",
     "docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md",
@@ -1697,6 +3072,44 @@ git commit -m "test(docs): add documentation contract checker"
 
 Expected: one commit containing only the checker, tests, bootstrap manifest, and accepted design metadata.
 
+- [ ] **Step 9: Prove the committed wrapper from a primary checkout layout**
+
+Create a temporary non-linked clone inside the already Docker-visible Stage 1C worktree anchor, run the committed wrapper there, and remove it on every exit. Do not create a new top-level `/private/tmp` bind root: the current Colima daemon exposes the established worktree root but does not reliably discover newly created sibling bind roots.
+
+```bash
+set -eu
+mkdir -p .superpowers
+proof_root=$(mktemp -d "$PWD/.superpowers/primary-proof.XXXXXX")
+cleanup_proof() { rm -rf "$proof_root"; }
+trap cleanup_proof EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+branch=$(git branch --show-current)
+expected_head=$(git rev-parse HEAD)
+git clone --no-local --quiet --branch "$branch" --single-branch "$PWD" "$proof_root/repo"
+test -d "$proof_root/repo/.git"
+test ! -f "$proof_root/repo/.git"
+test "$("$proof_root/repo/scripts/run-python311" git rev-parse HEAD)" = "$expected_head"
+test "$("$proof_root/repo/scripts/run-python311" git ls-files '*.md' | wc -l | tr -d ' ')" = "$(git ls-files '*.md' | wc -l | tr -d ' ')"
+"$proof_root/repo/scripts/run-python311" sh -c '
+  set -eu
+  tmp=$(mktemp -d)
+  trap "rm -rf \"$tmp\"" EXIT
+  cd "$tmp"
+  git init -q
+  printf "probe\n" > sample.txt
+  git add sample.txt
+  test "$(git ls-files)" = "sample.txt"
+'
+cleanup_proof
+trap - EXIT HUP INT TERM
+test ! -e "$proof_root"
+test -z "$(find .superpowers -maxdepth 1 -name 'primary-proof.*' -print -quit)"
+```
+
+Expected: the standalone clone has a real `.git` directory, the exact committed `HEAD` and Markdown inventory match the source checkout, the independent temporary repository works, and the proof directory is absent afterward. This proves the primary-checkout code path without copying uncommitted files into `main` or changing Colima configuration. It does not waive the explicit checkout-root file-sharing prerequisite.
+
 ---
 
 ### Task 2: Separate Current Architecture, Accepted Target, and Archived Plans
@@ -1725,7 +3138,7 @@ git status --short
 git rev-parse HEAD
 ```
 
-Expected: status shows no tracked changes and may show only `?? AGENTS.md`; `git rev-parse HEAD` prints one 40-character SHA. Do not copy it manually into files; the stamping command performs that action after the manifest is updated.
+Expected: status shows no tracked changes and may show only the known untracked `AGENTS.md` and `.superpowers/` scratch paths; `git rev-parse HEAD` prints one 40-character SHA. Do not copy it manually into files; the stamping command performs that action after the manifest is updated.
 
 - [ ] **Step 2: Move the historical files without rewriting their history**
 
@@ -1799,11 +3212,11 @@ Record these facts without upgrade language:
 - The catalog has US, CN, HK, CRYPTO, JP, KR, DE, GB, plus IDX; capability depth varies by source and market.
 - Stage 1B's static builder copies the complete frontend into a private temporary tree, removes `app/api` only from that copy, and leaves the tracked frontend plus bundled feed untouched; the server/Vercel build retains quote and OHLCV route handlers.
 - Current frontend source selection is concentrated in `frontend/lib/datasource.ts` but still spans FastAPI, Edge, raw feed, browser sources, and browser cache.
-- The Edge base is not purely configuration-driven: absent `NEXT_PUBLIC_EDGE_BASE` and a same-origin `*.vercel.app` host, current code falls back to the hard-coded `https://stock-analysis-ten-phi.vercel.app` deployment.
+- The Next quote/OHLCV route implementation is **Implemented**. The hard-coded `https://stock-analysis-ten-phi.vercel.app` deployment attempted by default is **External**. A custom `NEXT_PUBLIC_EDGE_BASE` or a self-owned hosted deployment is **Optional**. Absent `NEXT_PUBLIC_EDGE_BASE` and a same-origin `*.vercel.app` host, current code attempts that hard-coded deployment; there is no supported current setting that disables this attempt entirely.
 - Quote and OHLCV requests have distinct source chains. Quotes use fresh memory/browser cache, optional FastAPI for non-index symbols, Edge for non-crypto symbols, a fresh live snapshot when at least three stock quotes remain, direct Binance/Yahoo paths, then a bounded stale quote. OHLCV uses fresh browser cache, Edge first for every market including crypto, optional FastAPI for non-index symbols, direct Binance/Yahoo paths, then a bounded stale bar series.
 - Deterministic analysis has duplicate TypeScript and Python implementations.
 - Backend persistence is SQLite by default; PostgreSQL is optional Winter tooling, not a base runtime requirement.
-- Feed artifacts have multiple writers and uneven schema coverage; atomic manifests are not current behavior.
+- Feed artifacts have multiple writers and uneven schema coverage. The current `FEED_PUBLICATION_MANIFEST` is only the Stage 1A workflow-local Git-staging allowlist. A reader-facing atomic snapshot manifest written last, completeness validation, and fallback to the previous complete snapshot are **Planned**, not current behavior.
 
 - [ ] **Step 5: Create `docs/README.md` and compatibility pages**
 
@@ -1874,7 +3287,7 @@ Insert immediately below each title:
 ```markdown
 > **Status:** Archived; not current implementation guidance
 > **Scope:** Historical pre-refactor record preserved for provenance.
-> **Archived on:** 2026-07-16
+> **Archived on:** 2026-07-24
 ```
 
 Add one sentence linking the current replacement. Do not rewrite the archived body.
@@ -2005,6 +3418,7 @@ CACHE_STALE_GRACE
 CACHE_MAX_ENTRIES
 API_BASE
 AUTOMERGE_ELIGIBLE_LABEL
+AUTOMERGE_ATTESTATION_CONTEXT
 EDGE_BASE
 FEED_HMAC_SECRET
 GITHUB_TOKEN
@@ -2033,15 +3447,20 @@ PAYLOAD
 REPO
 PR_NUMBER
 REPORT
+HEAD_SHA
+FRONTEND_RESULT
+PYTHON_RESULT
 UPDATE_TYPE
 PYTHONDONTWRITEBYTECODE
 PYTHONUNBUFFERED
 PIP_DISABLE_PIP_VERSION_CHECK
 PYTHONPATH
 PYTHON_VERSION
+EXPECTED_UID
+EXPECTED_GID
 ```
 
-Separate user-facing configuration from internal build/workflow plumbing. `NEXT_BUILD_PROFILE`, `STATIC_FEED_SOURCE`, `SMOKE_PORT`, `NEXT_TELEMETRY_DISABLED`, `NODE_ENV`, `FEED_PUBLICATION_MANIFEST`, `PAYLOAD`, `REPO`, `PR_NUMBER`, `REPORT`, `AUTOMERGE_ELIGIBLE_LABEL`, `PACKAGE_ECOSYSTEM`, `UPDATE_TYPE`, `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`, `PIP_DISABLE_PIP_VERSION_CHECK`, `PYTHONPATH`, the container-local `HOME`, and Render's pinned `PYTHON_VERSION` are internal execution contracts, not settings most users should export. Distinguish origins precisely: `PORT`, `GITHUB_OUTPUT`, `GITHUB_WORKSPACE`, `GITHUB_REPOSITORY`, and `RUNNER_TEMP` are runner/platform values; `GITHUB_TOKEN` and `GH_TOKEN` are explicitly mapped into workflow environments; and current `GITHUB_RUN_URL` is composed by the workflow from GitHub context rather than injected automatically. State that an unset endpoint disables or changes an adapter according to current code; document the hard-coded Edge default and do not promise the Stage 2 explicit-profile behavior. Do not retain `VERCEL`, `PR_URL`, or the unused `HEAD_SHA` name from pre-Stage-1B prose: the explicit build profile and hardened Dependabot workflow do not consume them.
+Separate user-facing configuration from internal build/workflow plumbing. `NEXT_BUILD_PROFILE`, `STATIC_FEED_SOURCE`, `SMOKE_PORT`, `NEXT_TELEMETRY_DISABLED`, `NODE_ENV`, `FEED_PUBLICATION_MANIFEST`, `PAYLOAD`, `REPO`, `PR_NUMBER`, `REPORT`, `HEAD_SHA`, `AUTOMERGE_ELIGIBLE_LABEL`, `AUTOMERGE_ATTESTATION_CONTEXT`, `PACKAGE_ECOSYSTEM`, `UPDATE_TYPE`, `FRONTEND_RESULT`, `PYTHON_RESULT`, `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`, `PIP_DISABLE_PIP_VERSION_CHECK`, `PYTHONPATH`, `EXPECTED_UID`, `EXPECTED_GID`, the container-local `HOME`, and Render's pinned `PYTHON_VERSION` are internal execution contracts, not settings most users should export. `EXPECTED_UID` and `EXPECTED_GID` are used by `scripts/run-python311` and the controlled Node/Python container acceptance gates to verify the mounted worktree runs under the host UID/GID. `HEAD_SHA` is consumed by the hardened Dependabot attestation/merge path, `AUTOMERGE_ATTESTATION_CONTEXT` identifies its attestation context, and `FRONTEND_RESULT` / `PYTHON_RESULT` carry matrix outcomes into the aggregate test gate. Distinguish origins precisely: `PORT`, `GITHUB_OUTPUT`, `GITHUB_WORKSPACE`, `GITHUB_REPOSITORY`, and `RUNNER_TEMP` are runner/platform values; `GITHUB_TOKEN` and `GH_TOKEN` are explicitly mapped into workflow environments; and current `GITHUB_RUN_URL` is composed by the workflow from GitHub context rather than injected automatically. State that the current FastAPI clients concatenate `API_BASE` / `NEXT_PUBLIC_API_BASE` literally with `/api/v1/...`, so either value must omit a trailing slash until client normalization is implemented; the Edge path normalizes its selected base before adding route paths. State that each unset endpoint disables or changes its adapter according to current code, except the Edge path: absent a custom or same-origin base, current code still attempts the hard-coded hosted deployment and has no supported disable setting. Do not retain the stale `VERCEL` or `PR_URL` names from pre-Stage-1B prose.
 
 - [ ] **Step 3: Write `docs/deployment-matrix.md` around two primary profiles and current variants**
 
@@ -2066,11 +3485,14 @@ Use these exact sections:
 ## Build and smoke-test commands
 ## Configuration matrix
 ## Health checks
+## External-state observation (dated; not a repository contract)
 ## Rollback
 ## Current gaps before semantic parity
 ```
 
-Static and server receive equal table columns. Explicitly state that the common UI exists today but semantic parity is a Stage 2 acceptance target. Include the exact, distinct quote and OHLCV fallback chains recorded in Task 2, including the hard-coded Edge default; a configured FastAPI base does not imply that every request actually uses FastAPI. Describe Render/Docker/Railway/Fly only through files that exist in the repository; do not claim a hosted FastAPI instance exists.
+Static and server receive equal table columns. Explicitly state that the common UI exists today but semantic parity is a Stage 2 acceptance target. Include the exact, distinct quote and OHLCV fallback chains recorded in Task 2; a configured FastAPI base does not imply that every request actually uses FastAPI. Classify the Vercel facts separately: Next quote/OHLCV route code is **Implemented**, the hard-coded hosted endpoint attempted by default is **External**, and a custom `NEXT_PUBLIC_EDGE_BASE` or self-owned deployment is **Optional**. State that no supported current configuration disables the hard-coded attempt entirely.
+
+Separate repository contracts from a dated external-state observation. Record that the 2026-07-24 audit found: the GitHub `API_BASE` Variable points at the Render service, currently includes a trailing slash, and no `EDGE_BASE` Variable is configured; the canonical single-slash Render health route responded successfully, but the repository's literal `API_BASE + "/api/v1/..."` concatenation produces a double-slash health URL that returned 404, so the configured FastAPI integration must not be called healthy until the Variable is normalized or the clients normalize it; GitHub Pages and the hard-coded Vercel alias responded successfully, but the latest successful Pages deployment and the latest READY production deployment currently bound to that hard-coded alias still represented 2026-06-11 commits rather than Stage 1B (a newer READY preview exists and is not what that alias serves); and the Vercel project setting reported Node 24.x while the repository contract is Node 20.20.2. Label every item observational and drift-prone, link the refresh commands or run/deployment references, do not expose secret values, and require both the `API_BASE` trailing-slash mismatch and the Vercel runtime mismatch to be resolved before relying on those hosted paths in a new production deployment. Railway/Fly remain repository-file-based options only; do not imply a live deployment where none was verified.
 
 - [ ] **Step 4: Write `docs/operations/workflows.md` as a complete basename inventory**
 
@@ -2123,6 +3545,10 @@ Use these sections:
 
 The artifact table must cover `index.json`, `health.json`, `watchlist.json`, `reports/`, `signals/`, `market/`, `factory/`, `screener/`, `stock-notes/`, `intraday/`, `crypto/`, and `funds/`. State plainly that only report artifacts currently use `feed/schema/report.schema.json`; do not claim every feed JSON is schema-validated. Describe Stage 1A HMAC/path fixes as current only after verifying their tests.
 
+Under **Current publication limitations**, document that `FEED_PUBLICATION_MANIFEST` is the Stage 1A workflow-local Git-staging allowlist: it constrains which locally validated paths a workflow may stage, but it is not published for readers and provides no snapshot-completeness or rollback contract.
+
+Under **Target manifest publisher**, label the reader-facing design **Planned** and require a versioned manifest that enumerates one complete snapshot, validates completeness before exposure, is written last as the atomic publication point, and lets readers fall back to the previous complete manifest when the newest snapshot is incomplete or invalid. Do not reuse the Stage 1A staging allowlist as if it already satisfied this reader contract.
+
 - [ ] **Step 6: Rewrite `docs/compliance.md` and create compatibility pages**
 
 `docs/compliance.md` becomes Current and contains only:
@@ -2140,7 +3566,7 @@ Do not make jurisdiction-specific legal conclusions. Add this header below the t
 ```markdown
 > **Status:** Archived; not current implementation guidance
 > **Scope:** Historical pre-refactor record preserved for provenance.
-> **Archived on:** 2026-07-16
+> **Archived on:** 2026-07-24
 ```
 
 Each moved old path then gets a short Current compatibility page with `Status`, `Scope`, and these exact link destinations:
@@ -2278,7 +3704,13 @@ Use these exact sections:
 
 The entry-point matrix identifies each actual script, whether it requires network/cache, and its result document. Do not reproduce Sharpe, hit-rate, or return values in this README.
 
-Create `backtest/FEATURES.md` as a short Current compatibility page pointing to `backtest/README.md`, `docs/research/index.md`, and the archived inventory at `../docs/archive/pre-refactor/backtest-features.md`. Add Archived metadata to the moved inventory without rewriting its body.
+Create `backtest/FEATURES.md` as a short Current compatibility page pointing to `backtest/README.md`, `docs/research/index.md`, and the archived inventory at `../docs/archive/pre-refactor/backtest-features.md`. Add this exact metadata immediately below the title of `docs/archive/pre-refactor/backtest-features.md` without rewriting its body:
+
+```markdown
+> **Status:** Archived; not current implementation guidance
+> **Scope:** Historical pre-refactor record preserved for provenance.
+> **Archived on:** 2026-07-24
+```
 
 - [ ] **Step 3: Create `docs/research/index.md`**
 
@@ -2387,6 +3819,8 @@ Use these exact sections:
 
 List `/api/v1/health`, `/api/v1/cache`, `/api/v1/search`, `/api/v1/quotes`, `/api/v1/ohlcv`, `/api/v1/analysis`, `/api/v1/moneyflow`, `/api/v1/chips`, and `/api/v1/chan`. Document the actual symbol format and request limits from code. Remove the claim that Python analysis is kept identical to frontend analysis; state that compatibility endpoints remain duplicated until Stage 3. Label money-flow and chip-distribution outputs as OHLCV/K-line-derived estimates rather than exchange-reported position or order-flow truth. State that the SEC-based fundamental path is US-only.
 
+The installation and deployment contract must name exact Python `3.11.15` as primary and `3.12.13` as the compatibility runtime, use the committed hashed requirements locks, and link to the repository-wide Python gates. Short prose may say Python 3.11, but no command, container, CI, or deployment contract may loosen the exact patch versions.
+
 - [ ] **Step 2: Rewrite `feed/README.md` as a concise subsystem entry point**
 
 Use these exact sections:
@@ -2410,21 +3844,23 @@ Use these exact sections:
 
 State explicitly that report schema coverage does not extend to every artifact family, writers are not yet consolidated, and `frontend/public/feed` is a bundled fallback snapshot.
 
+Distinguish the two manifest concepts explicitly: current `FEED_PUBLICATION_MANIFEST` is only the Stage 1A workflow-local Git-staging allowlist; the reader-facing complete-snapshot manifest, manifest-written-last publication point, completeness validation, and previous-complete-snapshot fallback are Planned.
+
 - [ ] **Step 3: Register commands in the verification manifest**
 
 Add these exact command contracts. For every `kind: ci` entry, the checker requires the exact command inside the named workflow and job rather than accepting it anywhere in Actions YAML:
 
 ```json
 [
-  {"document":"backend/README.md","cwd":"backend","command":"python -m pip install --require-hashes -r requirements.txt","kind":"entrypoint"},
-  {"document":"backend/README.md","cwd":"backend","command":"python tests/test_backend.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"backend/README.md","cwd":"backend","command":"python tests/test_api.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_validate_feed.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_validation_security.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_ingress.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_validate_feed_cli.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_publication.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_workflow_security.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"}
+  {"document":"backend/README.md","cwd":"backend","command":"python -m pip install --require-hashes -r requirements.txt","kind":"entrypoint","runtime":"python"},
+  {"document":"backend/README.md","cwd":"backend","command":"python tests/test_backend.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"backend/README.md","cwd":"backend","command":"python tests/test_api.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_validate_feed.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_validation_security.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_ingress.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_validate_feed_cli.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_feed_publication.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"feed/README.md","cwd":".","command":"python scripts/tests/test_workflow_security.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"}
 ]
 ```
 
@@ -2439,7 +3875,7 @@ scripts/run-python311 python scripts/check_docs.py --stamp-current \
 scripts/run-python311 python scripts/check_docs.py
 ```
 
-Then, from the repository root, execute the exact **Python 3.11 gate** in Shared Interfaces without modification. Expected: the documentation checker passes; the lock files reproduce exactly; all eight feed/security/engine scripts pass; both backend scripts print their all-passed summaries. This step must not use host Python.
+Then, from the repository root, execute the exact **Python 3.11 gate** in Shared Interfaces without modification. Expected: the documentation checker passes; all six Python 3.11 lock comparisons match; the ten common process entry points pass (two backend plus eight automation/feed/security commands); and both primary-only lock-consistency process entry points pass, for twelve Python 3.11 process entry points total. This step must not use host Python.
 
 - [ ] **Step 5: Commit subsystem documentation**
 
@@ -2500,12 +3936,12 @@ The opening scope states: personal research, self-hosting, no brokerage executio
 
 Use `Implemented`, `Optional`, `External`, and `Planned` as the only status values. Record:
 
-- Implemented: Next.js UI routes, eight market groups plus indexes, quote/OHLCV adapters, local watchlist/alerts/portfolio, rule-based technical panels, Git-backed feed consumption, research/backtest code.
-- Optional: FastAPI, Vercel Edge routes, hosted backend, Winter/PostgreSQL projection.
-- External: public market providers, OpenClaw generation, Hyperliquid, GitHub Actions scheduling, hosting platforms.
-- Planned: generated cross-language contracts, explicit DataGateway profiles, shared deterministic analysis-core, stock_core, staged atomic feed manifests, full semantic parity CI.
+- Implemented: Next.js UI routes, the repository's Next quote/OHLCV route implementation, eight market groups plus indexes, quote/OHLCV adapters, local watchlist/alerts/portfolio, rule-based technical panels, Git-backed feed consumption, research/backtest code, the deterministic Actions stock-note fallback, and the local deterministic/non-LLM formula-factor factory.
+- Optional: FastAPI, a custom `NEXT_PUBLIC_EDGE_BASE` or self-owned deployment of the Next Edge routes, hosted backend, Winter/PostgreSQL projection.
+- External: the hard-coded `https://stock-analysis-ten-phi.vercel.app` deployment attempted by default, public market providers, externally submitted OpenClaw narrative/agent artifacts, Hyperliquid, GitHub Actions scheduling, hosting platforms.
+- Planned: the factor-factory LLM proposer, generated cross-language contracts, explicit DataGateway profiles, shared deterministic analysis-core, stock_core, staged atomic feed manifests, full semantic parity CI.
 
-Every row includes a limitation or authority link. Market catalog coverage must not be described as equal provider depth.
+Every row includes a limitation or authority link. Market catalog coverage must not be described as equal provider depth. State next to the Vercel rows that no supported current configuration disables the hard-coded hosted attempt entirely.
 
 The page map lists exactly these eleven implemented routes and no planned screens: `/`, `/symbol`, `/desk`, `/screener`, `/tracker`, `/intel`, `/reports`, `/portfolio`, `/alerts`, `/sources`, and `/help`.
 
@@ -2513,11 +3949,11 @@ The page map lists exactly these eleven implemented routes and no planned screen
 
 Use a side-by-side table for Static and Server with rows for prerequisites, primary data path, optional adapters, persistence, deployment variants, build command, smoke command, and current limitations. State:
 
-- Static: Node 20, GitHub Pages/local static build, feed and browser-safe sources, optional configured Edge adapter.
-- Server: Node 20 plus Python 3.11, same frontend with FastAPI, SQLite cache/bar store, optional hosted deployment.
+- Static: exact Node `20.20.2` / npm `10.8.2`, GitHub Pages/local static build, feed and browser-safe sources, and the current Edge behavior described below.
+- Server: exact Node `20.20.2` / npm `10.8.2` plus primary Python `3.11.15` (compatibility Python `3.12.13`), the same frontend with FastAPI, SQLite cache/bar store, optional hosted deployment.
 - Shared semantic parity is the accepted target; current source order and analysis duplication remain documented gaps.
 
-The matrix and data-source section must also expose the current hidden coupling: when neither `NEXT_PUBLIC_EDGE_BASE` nor same-origin Vercel applies, the frontend uses the hard-coded Edge deployment. Show the distinct quote and OHLCV source chains from `docs/current-architecture.md`; do not compress them into a fictitious single data layer.
+The matrix and data-source section must also expose the current hidden coupling: when neither `NEXT_PUBLIC_EDGE_BASE` nor same-origin Vercel applies, the frontend attempts the hard-coded external Edge deployment, and no supported current setting disables that attempt entirely. Show the distinct quote and OHLCV source chains from `docs/current-architecture.md`; do not compress them into a fictitious single data layer.
 
 State these user-visible limits prominently:
 
@@ -2536,6 +3972,7 @@ cd frontend
 npm ci
 npm run lint
 npm run typecheck
+npm run test:scripts
 npm run build:static
 npm run smoke:static
 npm run build:server
@@ -2554,7 +3991,7 @@ python scripts/tests/test_chan_engine.py
 python scripts/tests/test_validate_feed.py
 ```
 
-Quick-start development commands may additionally use the existing `npm run dev` and `python -m uvicorn app.main:app --reload --port 8000`; mark them as long-running entry points rather than CI verification.
+The Python block is intentionally a compact local smoke subset, not the complete Python CI matrix; the authoritative release gate remains the exact Python 3.11 and 3.12 container gates in this plan. Quick-start development commands may additionally use the existing `npm run dev` and `python -m uvicorn app.main:app --reload --port 8000`; mark them as long-running entry points rather than CI verification.
 
 - [ ] **Step 5: Remove stale and unsafe claims**
 
@@ -2567,6 +4004,8 @@ P1 MVP 编码中
 全站单一报价数据层
 17 个 GitHub Actions
 13 个定时任务
+AI 情绪分析
+AI 助手.*自然语言查询
 ```
 
 Do not copy Cycle 1–11 narratives, OpenClaw round counts, dated “new feature” lists, or backtest metrics into another README section.
@@ -2577,19 +4016,20 @@ Add `README.md` to maintained documents. Register every documented release comma
 
 ```json
 [
-  {"document":"README.md","cwd":"frontend","command":"npm ci","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run typecheck","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run build:static","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run smoke:static","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run build:server","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"frontend","command":"npm run smoke:server","kind":"ci","workflow":".github/workflows/tests.yml","job":"frontend"},
-  {"document":"README.md","cwd":"backend","command":"python tests/test_backend.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"README.md","cwd":"backend","command":"python tests/test_api.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"README.md","cwd":".","command":"python scripts/tests/test_chan_engine.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"README.md","cwd":".","command":"python scripts/tests/test_validate_feed.py","kind":"ci","workflow":".github/workflows/tests.yml","job":"python"},
-  {"document":"README.md","cwd":"frontend","command":"npm run dev","kind":"entrypoint"},
-  {"document":"README.md","cwd":"backend","command":"python -m uvicorn app.main:app --reload --port 8000","kind":"entrypoint"}
+  {"document":"README.md","cwd":"frontend","command":"npm ci","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run lint","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run typecheck","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run test:scripts","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run build:static","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run smoke:static","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run build:server","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"frontend","command":"npm run smoke:server","kind":"ci","runtime":"node","workflow":".github/workflows/tests.yml","job":"frontend"},
+  {"document":"README.md","cwd":"backend","command":"python tests/test_backend.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"README.md","cwd":"backend","command":"python tests/test_api.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"README.md","cwd":".","command":"python scripts/tests/test_chan_engine.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"README.md","cwd":".","command":"python scripts/tests/test_validate_feed.py","kind":"ci","runtime":"python","workflow":".github/workflows/tests.yml","job":"python"},
+  {"document":"README.md","cwd":"frontend","command":"npm run dev","kind":"entrypoint","runtime":"node"},
+  {"document":"README.md","cwd":"backend","command":"python -m uvicorn app.main:app --reload --port 8000","kind":"entrypoint","runtime":"python"}
 ]
 ```
 
@@ -2598,15 +4038,24 @@ Run:
 ```bash
 scripts/run-python311 python scripts/check_docs.py --stamp-current --document README.md
 scripts/run-python311 python scripts/check_docs.py
-! rg -n "P1 MVP 编码中|全程非 LLM|三者同源一致|全站单一报价数据层|17 个 GitHub Actions|13 个定时任务" README.md
+scan_status=0
+rg -n "P1 MVP 编码中|全程非 LLM|三者同源一致|全站单一报价数据层|17 个 GitHub Actions|13 个定时任务|AI 情绪分析|AI 助手.*自然语言查询" README.md || scan_status=$?
+case "$scan_status" in
+  0)
+    echo "README contains a forbidden stale claim" >&2
+    exit 1
+    ;;
+  1) ;;
+  *) exit "$scan_status" ;;
+esac
 git diff --check
 ```
 
-Expected: checker passes; the negated `rg` succeeds only because the underlying search returns 1 with no matches; whitespace check prints nothing.
+Expected: checker passes; the explicit three-state `rg` guard accepts only status 1 (no matches), rejects status 0 (a stale claim matched), propagates tool errors greater than 1, and the whitespace check prints nothing.
 
 - [ ] **Step 7: Execute every documented release command**
 
-From the repository root, execute the exact **Node gate** and then the exact **Python 3.11 gate** in Shared Interfaces, without modification. The Node gate invokes every documented frontend release command; the Python gate invokes every documented Python release command and the additional Stage 1A security suite. Expected: deterministic installs succeed; lint and typecheck exit 0; both builds exit 0; both smoke suites report success; lock regeneration matches; and all ten Python test invocations pass. This step must not use host Node or Python.
+From the repository root, execute the exact **Node gate**, exact **Python 3.11 gate**, and exact **Python 3.12 gate** in Shared Interfaces, without modification. The Node gate runs `npm ci` plus all seven documented frontend scripts. The Python gates run the complete runtime matrix, not just the compact README smoke subset. Expected: deterministic installs succeed; lint, typecheck, and `test:scripts` exit 0; both builds and both smoke suites pass; six Python 3.11 plus one Python 3.12 lock comparisons match; and the process matrix passes twelve Python 3.11 plus ten Python 3.12 entry points, twenty-two total. This step must not use host Node or Python.
 
 - [ ] **Step 8: Commit the root README independently**
 
@@ -2625,8 +4074,10 @@ Expected: one reviewable commit focused on product narrative, runtime choice, co
 **Files:**
 - Modify: `docs/verification.json`
 - Modify: `scripts/tests/test_check_docs.py`
+- Modify: `scripts/tests/test_workflow_security.py`
 - Create: `.github/workflows/docs.yml`
 - Modify: `docs/operations/workflows.md`
+- Modify: every maintained document listed by `docs/verification.json` (metadata restamp)
 
 **Interfaces:**
 - Consumes: complete Stage 1C documentation tree and checker.
@@ -2773,9 +4224,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
+      - name: Verify exact Python, Git, and non-root identity
+        run: |
+          test "$(python --version 2>&1)" = "Python 3.11.15"
+          git --version >/dev/null
+          test "$(id -u)" -ne 0
       - name: Unit tests
         run: python scripts/tests/test_check_docs.py
       - name: Repository documentation contract
@@ -2783,6 +4240,39 @@ jobs:
 ```
 
 There are deliberately no `paths` filters on either `push` or `pull_request`: changes to source-level environment lookups, workflow files with either `.yml` or `.yaml`, package commands, or runtime pins can invalidate documentation even when no Markdown file changed. `fetch-depth: 0` is mandatory because metadata validation must resolve and prove ancestry for older stamped commits, not merely the pull request tip.
+
+The Stage 1B workflow-policy test intentionally fails closed when a new Python job appears. In the same change, update `scripts/tests/test_workflow_security.py` rather than weakening that policy:
+
+```python
+DOCUMENTATION_PYTHON_JOB = ("docs.yml", "docs")
+EXPECTED_PYTHON_POLICY_JOBS = set(PRODUCTION_PYTHON_JOBS) | {
+    ("tests.yml", "python"),
+    DOCUMENTATION_PYTHON_JOB,
+}
+```
+
+Replace the literal `raw_setup_count == parsed_setup_count == 17` assertion with:
+
+```python
+    require_workflow_policy(
+        raw_setup_count
+        == parsed_setup_count
+        == len(EXPECTED_PYTHON_POLICY_JOBS),
+        "setup-python raw/parsed occurrence count changed",
+    )
+```
+
+Extend the canonical-interpreter loop to `set(PRODUCTION_PYTHON_JOBS) | {DOCUMENTATION_PYTHON_JOB}` so every direct interpreter token in the documentation job must be the bare `python` token. After the generic setup inventory/action-pin assertions, require the single documentation setup step to equal `FINAL_SETUP_STANDARD` exactly:
+
+```python
+    docs_setup = setup_inventory[DOCUMENTATION_PYTHON_JOB][0][0]["raw"]
+    require_workflow_policy(
+        docs_setup == FINAL_SETUP_STANDARD,
+        "docs.yml/docs setup exception changed",
+    )
+```
+
+Do not add the documentation job to `PRODUCTION_PYTHON_JOBS`, `DEPENDENCY_JOBS`, the protected production-workflow hash, or the install inventory: it is a separate standard-library policy job with no dependency installation.
 
 After creating the workflow, append this regression to `DocumentationChecks` so the test is never run before its fixture exists:
 
@@ -2796,22 +4286,38 @@ After creating the workflow, append this regression to `DocumentationChecks` so 
             workflow,
             r"(?m)^      - uses: actions/checkout@v7\n"
             r"        with:\n"
-            r"          fetch-depth: 0$",
+            r"          fetch-depth: 0\n"
+            r"          persist-credentials: false$",
         )
+        self.assertIn(
+            'test "$(python --version 2>&1)" = "Python 3.11.15"',
+            workflow,
+        )
+        self.assertRegex(
+            workflow,
+            r"(?m)^      - uses: actions/setup-python@v6\n"
+            r"        with:\n"
+            r"          python-version-file: .python-version$",
+        )
+        self.assertIn("git --version >/dev/null", workflow)
+        self.assertIn('test "$(id -u)" -ne 0', workflow)
 ```
 
-- [ ] **Step 5: Add `docs.yml` to the workflow inventory and restamp maintained docs**
+- [ ] **Step 5: Track `docs.yml`, add its basename to the workflow inventory, and restamp maintained docs**
 
-Add a row for `.github/workflows/docs.yml` describing its triggers, read-only permission, no generated artifacts, concurrency group, and commands. Then run:
+Stage the newly created workflow first because the checker intentionally inventories only tracked paths. Add exactly one row keyed by the basename `docs.yml`—not `.github/workflows/docs.yml`—describing its triggers, read-only permission, no generated artifacts, concurrency group, and commands. This makes the final inventory cover 19 tracked workflow basenames while keeping that count out of the root README. Then run:
 
 ```bash
+git add .github/workflows/docs.yml
 scripts/run-python311 python scripts/check_docs.py --stamp-current
 scripts/run-python311 python scripts/tests/test_check_docs.py
+scripts/run-python311 python scripts/tests/test_workflow_security.py
 scripts/run-python311 python scripts/check_docs.py
+test "$(git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' | wc -l | tr -d ' ')" = "19"
 git diff --check
 ```
 
-Expected: stamping prints the current 40-character baseline; unittest reports `OK`; checker reports all documentation checks passed; whitespace check prints nothing.
+Expected: stamping prints the current 40-character baseline; both unittest suites report `OK`; the workflow-policy inventory now recognizes exactly the documentation job in addition to its Stage 1B baseline; checker reports all documentation checks passed; Git reports exactly 19 tracked workflow paths and the inventory has the same 19 basename keys; whitespace check prints nothing.
 
 - [ ] **Step 6: Inspect scope and commit the guard**
 
@@ -2822,14 +4328,14 @@ git status --short
 git diff --stat
 ```
 
-Expected: only the documentation contract, its tests, documentation workflow, workflow inventory, metadata stamps, and link repairs from this task are modified; `AGENTS.md` remains untracked.
+Expected: only the documentation contract, its tests, documentation workflow, workflow inventory, metadata stamps, and link repairs from this task are modified; the known `AGENTS.md` and `.superpowers/` scratch paths remain untracked and unstaged.
 
 Before the commit, run `git diff --name-only` and stage each additional historical or archived Markdown path repaired in Step 3 by its exact printed path. Do not use `git add docs` or `git add .`; the cached whitespace gate below must run only after those exact additions.
 
 Commit:
 
 ```bash
-git add docs/verification.json scripts/check_docs.py scripts/tests/test_check_docs.py .github/workflows/docs.yml README.md backend/README.md backtest/README.md backtest/FEATURES.md feed/README.md docs/README.md docs/current-architecture.md docs/architecture.md docs/roadmap.md docs/iteration-log.md docs/rfcs/target-architecture.md docs/configuration.md docs/deployment-matrix.md docs/operations/workflows.md docs/data-contracts/feed.md docs/research/index.md docs/compliance.md docs/deploy-backend.md docs/data-model-api.md docs/endpoints.md docs/working-apis.md docs/need-to-fix.md docs/optimization-2026-06.md docs/positioning.md docs/cost-estimate.md docs/self-improving-alpha-loop.md docs/openclaw-integration.md docs/openclaw-stock-notes.md docs/superpowers/specs/2026-07-16-stock-analysis-refactor-design.md docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md routines/daily-alpha-routine.md routines/methodology.md routines/openclaw-agent-prompts.md routines/openclaw-daily-tasks.md routines/winter-inbox.md
+git add docs/verification.json scripts/check_docs.py scripts/tests/test_check_docs.py scripts/tests/test_workflow_security.py .github/workflows/docs.yml README.md backend/README.md backtest/README.md backtest/FEATURES.md feed/README.md docs/README.md docs/current-architecture.md docs/architecture.md docs/roadmap.md docs/iteration-log.md docs/rfcs/target-architecture.md docs/configuration.md docs/deployment-matrix.md docs/operations/workflows.md docs/data-contracts/feed.md docs/research/index.md docs/compliance.md docs/deploy-backend.md docs/data-model-api.md docs/endpoints.md docs/working-apis.md docs/need-to-fix.md docs/optimization-2026-06.md docs/positioning.md docs/cost-estimate.md docs/self-improving-alpha-loop.md docs/openclaw-integration.md docs/openclaw-stock-notes.md docs/superpowers/specs/2026-07-16-stock-analysis-refactor-design.md docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md routines/daily-alpha-routine.md routines/methodology.md routines/openclaw-agent-prompts.md routines/openclaw-daily-tasks.md routines/winter-inbox.md
 git diff --cached --check
 git commit -m "test(docs): enforce truth-first documentation"
 ```
@@ -2859,11 +4365,11 @@ Expected: unittest reports `OK`; checker starts with `docs check passed:` and re
 
 - [ ] **Step 2: Re-run the exact frontend release matrix documented in README**
 
-From the repository root, execute the exact **Node gate** in Shared Interfaces without modification. Expected: all seven npm commands exit 0, both smoke commands report successful route checks, the App Router handlers remain present, and verification leaves them unchanged.
+From the repository root, execute the exact **Node gate** in Shared Interfaces without modification. Expected: all eight npm process invocations—`npm ci` plus seven npm scripts—exit 0, both smoke commands report successful route checks, the App Router handlers remain present, and verification leaves protected source, lock, declarations, and feed state unchanged.
 
 - [ ] **Step 3: Re-run the exact Python commands documented in README**
 
-From the repository root, execute the exact **Python 3.11 gate** in Shared Interfaces without modification. Expected: all six Python 3.11 locks reproduce exactly, every documented Python command exits 0, and the complete ten-invocation primary-runtime suite passes without creating root-owned worktree files.
+From the repository root, execute the exact **Python 3.11 gate** and then the exact **Python 3.12 gate** in Shared Interfaces without modification. Expected: all seven lock comparisons reproduce exactly (six under Python 3.11 plus one under Python 3.12); the ten common process entry points pass on both runtimes; the two primary-only lock-consistency entry points also pass; and the expanded matrix therefore records twelve Python 3.11 plus ten Python 3.12 process entry points, twenty-two total, without creating root-owned worktree files.
 
 - [ ] **Step 4: Confirm repository and documentation status**
 
@@ -2872,7 +4378,7 @@ git status --short --branch
 git log --oneline -8
 ```
 
-Expected: branch has no tracked changes; only the pre-existing untracked `AGENTS.md` may remain; recent history shows the focused Stage 1C commits from this plan.
+Expected: branch has no tracked or staged changes; only the known untracked `AGENTS.md` and `.superpowers/` scratch paths may remain; recent history shows the focused Stage 1C commits from this plan.
 
 - [ ] **Step 5: Hand off the completed documentation baseline**
 
@@ -2882,7 +4388,10 @@ Report:
 - the root README path;
 - the current architecture and target RFC paths;
 - documentation checker and CI paths;
-- all commands executed and their pass status;
+- all commands executed and their pass status, including the exact Node/npm and both exact Python runtime gates;
+- the current Stage 1A staging-allowlist boundary versus the Planned reader-facing manifest boundary;
+- the Implemented / External / Optional Vercel split and the lack of a current hard-coded-attempt disable;
+- the dated live-deployment observation, including the unresolved `API_BASE` trailing-slash breakage and Vercel Node 24.x versus repository Node 20.20.2 drift;
 - any historical page intentionally retained rather than promoted to Current.
 
 Do not claim Stage 2 contracts, DataGateway, analysis-core, or dual-runtime semantic parity are implemented.

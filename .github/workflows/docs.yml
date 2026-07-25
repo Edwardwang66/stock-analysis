@@ -1,0 +1,35 @@
+name: Documentation checks
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - name: Verify exact Python, Git, and non-root identity
+        run: |
+          test "$(python --version 2>&1)" = "Python 3.11.15"
+          git --version >/dev/null
+          test "$(id -u)" -ne 0
+      - name: Unit tests
+        run: python scripts/tests/test_check_docs.py
+      - name: Repository documentation contract
+        run: python scripts/check_docs.py

@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version-file: .python-version
       - name: 取 live 分支的盘中快照(main 上的 latest.json 是陈旧副本,真数据在 live)
         run: |
           git fetch origin live --depth 1 2>/dev/null \

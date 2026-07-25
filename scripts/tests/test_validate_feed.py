@@ -91,4 +91,17 @@ missing.pop("asof_data")
 passed, errs, _ = check_one(write_tmp(fl.sign_report(missing, SECRET)), require_sig=False, secret=SECRET)
 ok("缺必填字段拒收", not passed, str(errs))
 
+unexpected_property = write_tmp(
+    fl.sign_report(
+        mk_report(unexpected_top_level=True),
+        SECRET,
+    )
+)
+passed, errs, _ = check_one(unexpected_property, require_sig=False, secret=SECRET)
+ok(
+    "完整 JSON Schema 拒绝额外顶层字段",
+    not passed and any("unexpected_top_level" in e for e in errs),
+    str(errs),
+)
+
 print(f"\nvalidate_feed 全部通过:{PASS} 项")

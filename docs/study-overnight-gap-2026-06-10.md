@@ -1,5 +1,8 @@
 # 隔夜缺口研究:HIP-3 永续盘后走势的信息含量(2026-06-10)
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 | 资产对 | 天数 | 代理 corr | 方向命中 | MAE | 盘后走势→开盘后盘中 corr |
 |---|---|---|---|---|---|
 | xyz:SP500 → SPY | 56 | +0.981 | 96% | 9bps | +0.014 |

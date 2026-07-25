@@ -1,15 +1,24 @@
-/** @type {import('next').NextConfig} */
-// GitHub Pages 项目站点需要 basePath = /<repo>。由 CI 注入 NEXT_PUBLIC_BASE_PATH。
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+/** @type {import("next").NextConfig} */
+const profile = process.env.NEXT_BUILD_PROFILE ?? "server";
+const allowedProfiles = new Set(["static", "server"]);
 
-const onVercel = Boolean(process.env.VERCEL);
+if (!allowedProfiles.has(profile)) {
+  throw new Error(
+    `NEXT_BUILD_PROFILE must be "static" or "server", got "${profile}"`,
+  );
+}
+
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+if (basePath && (!basePath.startsWith("/") || basePath.endsWith("/"))) {
+  throw new Error(
+    "NEXT_PUBLIC_BASE_PATH must start with '/' and must not end with '/'",
+  );
+}
 
 const nextConfig = {
-  // 双目标:Vercel 跑完整 Next(app/api 边缘函数生效);GitHub Pages CI 静态导出
-  //(deploy-pages.yml 构建前会移除 app/api,静态导出不含动态路由)。
-  ...(onVercel ? {} : { output: "export" }),
+  ...(profile === "static" ? { output: "export" } : {}),
   images: { unoptimized: true },
-  basePath: basePath,
+  basePath,
   assetPrefix: basePath || undefined,
   trailingSlash: true,
 };

@@ -1,5 +1,8 @@
 # 市场调研:股票 / 经济 / 市场 相关 AI Agent 与 AI Skills 全景
 
+> **Status:** Historical research snapshot; not maintained
+> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.
+
 > 调研时间:2026-06 · 方法:多路并行网络检索 + 对抗式核验(deep-research 流程)。
 > 目的:为搭建**多市场股票数据看板平台**(美股/港股/A股/加密,Next.js + Python)提供选型依据。
 > ⚠️ 星标数、价格为检索时近似值,会变动;商用前请到官网二次确认。标注"未核实"的条目谨慎采信。

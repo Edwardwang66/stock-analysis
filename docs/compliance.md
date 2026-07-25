@@ -1,83 +1,52 @@
-# 合规 / 法律专项
+# Compliance
 
-> 配套:[`../research/ai-agents-skills-market-scan.md`](../research/ai-agents-skills-market-scan.md)(§5 数据源合规)· [`architecture.md`](architecture.md)
-> ⚠️ 本文为工程/产品视角的合规清单,**非法律意见**。正式商用前请咨询专业律师与各数据源/监管的最新条款。
+> **Status:** Current
+> **Scope:** Personal research, self-hosting, disclosure, licensing, secret-handling, and use boundaries.
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
-平台是**对外的多市场数据看板**,合规上有三大风险面:**① 数据重分发 · ② 投资建议红线 · ③ 用户数据与跨境**。
+## Personal research and self-hosting
 
----
+This repository is scoped to personal market research, experimentation, and self-hosting. Repository availability and implemented routes do not establish permission to operate a public data redistribution service or regulated financial product.
 
-## 1. 数据重分发(最大、最现实的坑)
+## Upstream licensing and redistribution
 
-几乎所有**免费数据源都禁止商业化对外展示/重分发**。把数据展示给"自己以外的用户"通常就算重分发。
+Market data, filings, news, fund holdings, model outputs, libraries, and other upstream material remain subject to their providers' terms and licenses. Provider metadata in code or documentation is descriptive; the current router does not enforce licensing or redistribution policy.
 
-| 数据源 | 限制 | 商用做法 |
-|--------|------|---------|
-| **yfinance / Yahoo** | ToS **仅个人非商用**,重分发风险最高 | 仅开发/自用;**对外商用必须换源** |
-| **AkShare / 东方财富(爬取)** | 爬取公开站点,**无正式授权**,法律灰色,易封 IP | 仅原型;商用换正规授权 |
-| **Finnhub** | 重分发权**仅 Startup/Enterprise** 档 | 对外展示需升级到含重分发的付费档 |
-| **FMP** | 展示/重分发需**单独 Display & Licensing 协议** | 签授权协议 |
-| **Twelve Data** | Basic = **内部非展示** | 升级到 Grow+ 才可展示 |
-| **NewsAPI** | 免费 **非商用**,仅本地/开发 | 商用 ~$449/月起 |
-| **Tushare** | 积分制 + 再分发限制 | 付费 + 确认条款 |
-| **financialdatasets** | **Pro 档含重分发授权** | 商用用 Pro($2000/月) |
-| **CoinGecko** | Demo 需**署名(attribution)** | 保留署名或升 Pro |
+The repository has no tracked top-level `LICENSE`, `COPYING`, or `NOTICE`, and the frontend package declares no license field. Do not infer an open-source or commercial redistribution grant from source availability. Review the project code, every dependency, and every upstream data source independently before redistributing any part of the system or its outputs.
 
-**工程化对策**:
-- 数据源适配器层标注每个源的 `commercial_redistribution: bool`;**对外接口默认只暴露允许重分发的源**,免费源仅用于内部/缓存计算。
-- 行情页标注数据来源与署名(满足 CoinGecko 等要求)。
-- 建一份"**数据源授权台账**"(源、档位、是否可重分发、续费日),纳入运维。
+## Estimation and latency disclosure
 
----
+Displayed values can be delayed, estimated, cached, incomplete, or provider-dependent:
 
-## 2. 投资建议红线(全球通用)
+- quote fallback can use a persisted value no older than ten minutes, only after a fetch throws;
+- OHLCV fallback can use a persisted series no older than 24 hours, only after a fetch throws;
+- raw and bundled feed artifacts can come from different generations;
+- public CORS proxies and free provider endpoints can fail, throttle, change, or return incomplete data;
+- money-flow, chip, factor, signal, and similar derived fields are calculations or proxies, not exchange-certified observations.
 
-平台只做**信息与分析**,**绝不做投资建议/荐股**,否则在多数法域需持牌(投顾牌照)。
+Interfaces and exported artifacts should retain source, timestamp, data-as-of, producer, and estimation labels when available. A green health check or workflow does not remove these limitations.
 
-- **全站显著声明**:"本平台所有内容(含 AI 输出)仅供信息参考,**不构成投资建议**(Not financial advice)。投资有风险。"
-- **AI 输出强约束**(见 [`architecture.md`](architecture.md) §6):
-  - 不得输出"买入/卖出/目标价"等指令式建议;改为客观陈述数据与多空因素。
-  - 数值必须来自工具真实数据 + 引用来源,**禁止臆测**。
-  - 涉及"该不该买"类提问 → 标准免责话术 + 转为提供事实。
-- **中国特别注意**:面向境内提供金融信息服务/AI 大模型对话,可能涉及**网信办备案、证券投资咨询资质、生成式 AI 管理办法**等。同花顺问财即"首个过网信办备案的金融对话模型"——若做 A股中文 AI,需评估备案/资质义务。
+## AI artifact labeling
 
----
+Artifacts produced or materially transformed by a model should identify the producer, model/provenance label when known, run link when available, generation time, data-as-of date, and any review status.
 
-## 3. 用户数据与跨境
+Do not label every file under `stock-notes/` or every workflow output as AI-generated. The scheduled OpenClaw-notes workflow currently uses deterministic market-data and filing logic while preserving a producer/model provenance label. Deterministic indicators and schema-valid reports are also not evidence of human review, analytical approval, or investment suitability.
 
-- **隐私合规**:按目标用户地区适配——中国《个人信息保护法 PIPL》、欧盟 GDPR、美国 CCPA。最小化收集,明示用途,提供删除。
-- **跨境数据**:A股数据/中国用户数据出境受限;若服务多地区用户,考虑**分区域部署/数据本地化**。
-- **密钥与安全**:各数据源/Claude API Key 走环境变量与密钥管理,**不入库不入仓**;用户鉴权 JWT;限流防滥用(见 architecture §8/§9)。
+## Secret handling
 
----
+Operators are responsible for protecting tokens, HMAC material, and database credentials.
 
-## 4. AI / 大模型相关合规
+- Use a secret manager or GitHub Secrets for `FEED_HMAC_SECRET`, repository tokens, and `WINTER_PG_DSN`.
+- Never place credentials in `NEXT_PUBLIC_*` variables, committed examples, issue bodies, or logs.
+- The root `.gitignore` does not provide a general `.env` exclusion. `frontend/.gitignore` covers only its local environment-file pattern. Check the exact path before creating any credential file.
+- Scope remote-write tokens to the selected repository and operation.
 
-- **生成式 AI 内容标识**:部分法域要求 AI 生成内容标注(如中国《生成式人工智能服务管理暂行办法》)。AI 回答标注"由 AI 生成"。
-- **第三方模型条款**:遵守 Claude(Anthropic)使用政策;金融场景输出加免责。
-- **可追溯**:AI 回答带数据引用,既是产品信任点,也是合规留痕。
+The current Edge and FastAPI HTTP routes have no user authentication or application rate limiting. Feed-ingress HMAC does not protect those routes.
 
----
+## Non-investment-advice statement
 
-## 5. 上线前合规检查清单(Checklist)
+Repository code, reports, notes, screeners, alerts, backtests, and visualizations are research artifacts and not investment, legal, tax, accounting, or brokerage advice. Users remain responsible for independent verification, risk controls, execution decisions, and professional advice where appropriate.
 
-- [ ] 对外展示的数据源**全部具备重分发授权**(或已替换免费源)
-- [ ] 数据源授权台账建立并指定 owner
-- [ ] 全站"非投资建议"声明 + AI 输出免责话术
-- [ ] AI 禁止指令式荐股的 system 约束已生效并测试
-- [ ] AI 生成内容标识
-- [ ] 隐私政策 + 用户协议(按目标地区)
-- [ ] 中国市场:评估网信办备案 / 金融信息服务资质
-- [ ] 数据出境 / 本地化方案(如涉多地区)
-- [ ] 密钥管理、限流、鉴权到位
-- [ ] CoinGecko 等要求的**署名**已展示
+## Commercial use
 
----
-
-## 6. 分阶段合规策略(配合 [`roadmap.md`](roadmap.md))
-
-| 阶段 | 合规重点 |
-|------|---------|
-| P0–P1(研发/MVP,自用) | 免费源可用于开发;先把免责声明与数据源标注框架搭好 |
-| P2–P3(多市场+AI) | AI 免责约束落地;开始规划数据授权采购 |
-| P4 / 正式对外商用 | **必须**完成数据重分发授权、隐私合规、(中国)资质评估 |
+Commercial use requires independent legal review and independent review of project, dependency, market-data, filing, news, model, and redistribution licenses. This document does not make jurisdiction-specific legal conclusions or grant rights held by third parties.

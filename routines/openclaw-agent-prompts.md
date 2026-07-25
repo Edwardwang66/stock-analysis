@@ -1,8 +1,12 @@
 # OpenClaw Agent Prompt 骨架(5 角色,可直接投产)
+> **Status:** Current
+> **Scope:** External-agent prompt playbook; schema validity and candidate fields do not constitute analytical approval.
+> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
 
-> 每个 agent = 一个 Claude 实例 + 下面对应的 **system prompt**。Orchestrator 按 `docs/openclaw-integration.md` §1.2
+> 每个 agent = 一个 Claude 实例 + 下面对应的 **system prompt**。Orchestrator 按 [OpenClaw 集成 §1.2](../docs/openclaw-integration.md#12-调度orchestrator)
 > 调度它们,产出**必须是合法的 `feed/schema/report.schema.json`**,签名后用 `scripts/openclaw_client.py` 投递。
 > 模型版本写进 `producer.model` 并锁定(R6);版本变更视为新策略重验。
+> 当前 CI 不执行六门控语义或 `decision` 一致性;验证边界见 [Feed Data Contracts](../docs/data-contracts/feed.md)。
 
 ---
 
@@ -143,7 +147,7 @@ EOD 流程(设计文档 §2):
   2. red-team 复核(去偏),可否决。
   3. Orchestrator 综合:只把 red-team 维持的 shadow 候选汇成一份报告投递。
 盘中流程:residual-analyst + crowding-monitor + event-risk 各自每小时投一份(风险标注为主)。
-投递:每份报告 -> openclaw_client 签名 -> dispatch/github-api。失败按 id 幂等重试(安全)。
+投递:每份报告 -> openclaw_client 签名 -> dispatch/github-api。相同 id 会被拒绝为冲突;失败后先核对传输/工作流状态,新的独立投递使用新 id。
 kill-switch:连续若干周期无候选过门控 -> 自动停用 factor-factory(R6:证不出增量 IC 就删)。
 ```
 

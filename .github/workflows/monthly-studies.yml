@@ -21,12 +21,18 @@ jobs:
   studies:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
-      - run: pip install -r scripts/requirements.txt
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements/automation.txt
+      - run: python -m pip install --require-hashes -r requirements/automation.txt
+      - name: Smoke combined automation imports
+        run: PYTHONPATH=backtest:scripts python -c "import feed_lib, statarb, study_downshift, study_pbo"
       - name: 下载行情(大盘 + 行业ETF + SPY)
         working-directory: backtest
         run: |
@@ -47,11 +53,16 @@ jobs:
         run: |
           git config user.name  "monthly-studies[bot]"
           git config user.email "actions@github.com"
-          git add docs/study-*.md feed/ backtest/sp600_universe.json
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
+          git add -- docs/study-*.md backtest/sp600_universe.json
           if git diff --cached --quiet; then
             echo "无变化"
           else
             git commit -m "studies: 月度 PBO + 下沉对照 ($(date -u +%Y-%m))"
-            git pull --rebase origin main || true
-            for i in 1 2 3 4; do git push && break || sleep $((2**i)); done
+            pushed=0
+            for i in 1 2 3 4; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
+            done
+            if [ "$pushed" -ne 1 ]; then echo "push 重试耗尽。" >&2; exit 1; fi
           fi

@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "check_all_tracked_markdown": true,
+  "archive_date": "2026-07-24",
+  "runtime_contract": {
+    "node": "20.20.2",
+    "npm": "10.8.2",
+    "python_primary": "3.11.15",
+    "python_compatibility": ["3.12.13"]
+  },
+  "maintained_documents": [
+    "README.md",
+    "backend/README.md",
+    "backtest/README.md",
+    "backtest/FEATURES.md",
+    "feed/README.md",
+    "docs/README.md",
+    "docs/current-architecture.md",
+    "docs/architecture.md",
+    "docs/roadmap.md",
+    "docs/iteration-log.md",
+    "docs/rfcs/target-architecture.md",
+    "docs/configuration.md",
+    "docs/deployment-matrix.md",
+    "docs/operations/workflows.md",
+    "docs/data-contracts/feed.md",
+    "docs/research/index.md",
+    "docs/compliance.md",
+    "docs/deploy-backend.md",
+    "docs/data-model-api.md",
+    "docs/endpoints.md",
+    "docs/working-apis.md",
+    "docs/need-to-fix.md",
+    "docs/optimization-2026-06.md",
+    "docs/positioning.md",
+    "docs/cost-estimate.md",
+    "docs/self-improving-alpha-loop.md",
+    "docs/openclaw-integration.md",
+    "docs/openclaw-stock-notes.md",
+    "docs/superpowers/specs/2026-07-16-stock-analysis-refactor-design.md",
+    "docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md",
+    "docs/superpowers/plans/2026-07-16-stage-1b-reproducible-ci.md",
+    "docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md",
+    "routines/daily-alpha-routine.md",
+    "routines/methodology.md",
+    "routines/openclaw-agent-prompts.md",
+    "routines/openclaw-daily-tasks.md",
+    "routines/winter-inbox.md"
+  ],
+  "historical_documents": [
+    "backtest/README_tqm.md",
+    "backtest/README_binance.md",
+    "backtest/README_crypto.md",
+    "backtest/README_crypto_pipeline.md",
+    "backtest/README_pipeline.md",
+    "backtest/README_statarb.md",
+    "backtest/README_xs.md",
+    "docs/hyperliquid-integration.md",
+    "docs/survivorship-bias-data-sources.md",
+    "docs/study-downshift-2026-06-10.md",
+    "docs/study-downshift-2026-07-02.md",
+    "docs/study-overnight-gap-2026-06-10.md",
+    "docs/study-pbo-2026-06-10.md",
+    "docs/study-pbo-2026-07-02.md",
+    "docs/study-pit-bite-2026-06-10.md",
+    "docs/study-pit-membership-2026-06-10.md",
+    "research/ai-agents-skills-market-scan.md",
+    "research/quant-factor-deep-research.md"
+  ],
+  "archived_documents": [
+    "docs/archive/iteration-log.md",
+    "docs/archive/pre-refactor/roadmap.md",
+    "docs/archive/pre-refactor/deploy-backend.md",
+    "docs/archive/pre-refactor/data-model-api.md",
+    "docs/archive/pre-refactor/endpoints.md",
+    "docs/archive/pre-refactor/working-apis.md",
+    "docs/archive/pre-refactor/need-to-fix-2026-06-10.md",
+    "docs/archive/pre-refactor/optimization-2026-06.md",
+    "docs/archive/pre-refactor/positioning.md",
+    "docs/archive/pre-refactor/cost-estimate-2026-06.md",
+    "docs/archive/pre-refactor/self-improving-alpha-loop.md",
+    "docs/archive/pre-refactor/backtest-features.md"
+  ],
+  "classification_exemptions": [
+    "feed/screener/*.md",
+    "frontend/public/feed/screener/*.md"
+  ],
+  "environment_document": "docs/configuration.md",
+  "platform_environment_names": [
+    "PORT",
+    "GITHUB_TOKEN",
+    "GH_TOKEN",
+    "GITHUB_REPOSITORY",
+    "GITHUB_RUN_URL",
+    "GITHUB_OUTPUT",
+    "GITHUB_WORKSPACE",
+    "RUNNER_TEMP"
+  ],
+  "workflow_inventory_document": "docs/operations/workflows.md",
+  "verified_commands": [
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python -m pip install --require-hashes -r requirements.txt",
+      "kind": "entrypoint",
+      "runtime": "python"
+    },
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python tests/test_backend.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "backend/README.md",
+      "cwd": "backend",
+      "command": "python tests/test_api.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_validation_security.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_ingress.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed_cli.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_feed_publication.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "feed/README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_workflow_security.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm ci",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run lint",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run typecheck",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run test:scripts",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run build:static",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run smoke:static",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run build:server",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run smoke:server",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python tests/test_backend.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python tests/test_api.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_chan_engine.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run dev",
+      "kind": "entrypoint",
+      "runtime": "node"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python -m uvicorn app.main:app --reload --port 8000",
+      "kind": "entrypoint",
+      "runtime": "python"
+    }
+  ]
+}

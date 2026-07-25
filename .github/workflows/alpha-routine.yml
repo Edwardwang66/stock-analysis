@@ -28,11 +28,15 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements/automation.txt
       - name: Cache 行情缓存(按天)
         uses: actions/cache@v6
         with:
@@ -41,7 +45,9 @@ jobs:
           restore-keys: |
             data-cache-
       - name: 安装依赖
-        run: pip install -r scripts/requirements.txt
+        run: python -m pip install --require-hashes -r requirements/automation.txt
+      - name: Smoke combined automation imports
+        run: PYTHONPATH=backtest:scripts python -c "import factor_factory, feed_lib, run_routine, statarb"
       - name: 下载演示 universe 行情(SPY + 行业 ETF + 流动大盘)
         working-directory: backtest
         run: |
@@ -69,12 +75,15 @@ jobs:
         run: |
           git config user.name  "alpha-routine[bot]"
           git config user.email "actions@github.com"
-          git add feed/
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
           if git diff --cached --quiet; then
             echo "feed 无变化,跳过提交。"
           else
             git commit -m "routine: 更新情报馈送 feed/ ($(date -u +%Y-%m-%dT%H:%MZ))"
+            pushed=0
             for i in 1 2 3 4; do
-              git pull --rebase origin main && git push && break || { echo "push 失败,重试 $i ..."; sleep $((2**i)); }
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
             done
+            if [ "$pushed" -ne 1 ]; then echo "push 重试耗尽。" >&2; exit 1; fi
           fi
