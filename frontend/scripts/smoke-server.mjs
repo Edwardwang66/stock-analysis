@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
+import { resolvePublicSiteUrl } from "../lib/public-site-url.mjs";
+import {
+  assertShareCardPng,
+  assertSocialMetadata,
+} from "./social-card-smoke.mjs";
 
 const routes = [
   "/", "/alerts/", "/desk/", "/help/", "/intel/", "/portfolio/",
@@ -60,6 +65,7 @@ export async function runSmoke({
   ready = false,
   routes: smokeRoutes = routes,
   apiChecks: checks = apiChecks,
+  shareCard,
   fetchImpl = fetch,
   timeoutMs = 30_000,
   shutdownTimeoutMs = 5_000,
@@ -128,6 +134,12 @@ export async function runSmoke({
     );
   }
 
+  function readArrayBuffer(response, controller, url) {
+    return withTimeout(
+      response.arrayBuffer(), timeoutMs, `response body timed out: ${url}`, controller, childFailure,
+    );
+  }
+
   async function cleanup() {
     // Let an exit scheduled by the last completed probe become observable first.
     await drainQueuedEvents();
@@ -155,13 +167,30 @@ export async function runSmoke({
   try {
     await waitForReady();
     const origin = discoveredOrigin;
+    let rootHtml;
     for (const route of smokeRoutes) {
       const url = `${origin}${route}`;
       const { response, controller } = await request(url);
       assert.equal(response.status, 200, `${route} status`);
       assert.match(response.headers.get("content-type") || "", /^text\/html/i, `${route} content type`);
-      assert.match(await readBody(response, controller, url), /<html/i, `${route} document`);
+      const body = await readBody(response, controller, url);
+      assert.match(body, /<html/i, `${route} document`);
+      if (route === "/") rootHtml = body;
       console.log(`PASS server ${route}`);
+    }
+    if (shareCard) {
+      assert.equal(typeof rootHtml, "string", "share-card smoke requires the / route");
+      const publicImage = assertSocialMetadata(rootHtml, shareCard.publicRoot);
+      const localImageUrl = new URL(publicImage.pathname, origin).href;
+      const { response, controller } = await request(localImageUrl);
+      assert.equal(response.status, 200, `${publicImage.pathname} status`);
+      assert.match(
+        response.headers.get("content-type") || "",
+        /^image\/png/i,
+        `${publicImage.pathname} content type`,
+      );
+      assertShareCardPng(await readArrayBuffer(response, controller, localImageUrl));
+      console.log(`PASS server ${publicImage.pathname}`);
     }
     for (const [route, expectedError] of checks) {
       const url = `${origin}${route}`;
@@ -185,5 +214,7 @@ export async function runSmoke({
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await runSmoke();
+  await runSmoke({
+    shareCard: { publicRoot: resolvePublicSiteUrl() },
+  });
 }

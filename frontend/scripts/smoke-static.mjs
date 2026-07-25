@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
+import { resolvePublicSiteUrl } from "../lib/public-site-url.mjs";
+import {
+  assertShareCardPng,
+  assertSocialMetadata,
+} from "./social-card-smoke.mjs";
 
 const pages = [
   "index.html",
@@ -29,5 +34,10 @@ assert.ok(
   index.includes(`${basePath}/_next/`),
   `exported assets must use basePath "${basePath}"`,
 );
+
+const publicRoot = resolvePublicSiteUrl();
+assertSocialMetadata(index, publicRoot);
+const card = await readFile(new URL("../out/og-card-v1.png", import.meta.url));
+assertShareCardPng(card);
 
 console.log(`static smoke: ${pages.length} routes OK`);

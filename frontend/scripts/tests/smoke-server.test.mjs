@@ -37,6 +37,64 @@ function errorHas(error, pattern) {
   return pattern.test(error.message) || (error.errors || []).some((entry) => errorHas(entry, pattern));
 }
 
+const shareRoot = new URL("https://example.test/stock-analysis/");
+const shareTitle = "Edward Wang · Multi-Market Workbench";
+const shareDescription = "Markets, signals and evidence across global assets.";
+const shareAlt = "Edward Wang Multi-Market Workbench: markets, signals, and evidence across US, Hong Kong, mainland China, digital assets, and benchmarks.";
+
+function shareHtml({ includeTitle = true } = {}) {
+  return [
+    includeTitle && `<meta property="og:title" content="${shareTitle}">`,
+    `<meta property="og:description" content="${shareDescription}">`,
+    '<meta property="og:type" content="website">',
+    `<meta property="og:url" content="${shareRoot.href}">`,
+    `<meta property="og:site_name" content="${shareTitle}">`,
+    '<meta property="og:locale" content="zh_CN">',
+    `<meta property="og:image" content="${new URL("og-card-v1.png", shareRoot).href}">`,
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    '<meta property="og:image:type" content="image/png">',
+    `<meta property="og:image:alt" content="${shareAlt}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+    `<meta name="twitter:title" content="${shareTitle}">`,
+    `<meta name="twitter:description" content="${shareDescription}">`,
+    `<meta name="twitter:image" content="${new URL("og-card-v1.png", shareRoot).href}">`,
+    `<meta name="twitter:image:alt" content="${shareAlt}">`,
+  ].filter(Boolean).join("");
+}
+
+function shareServer({ html = shareHtml(), width = 1200, height = 630 } = {}) {
+  return `
+    import { createServer } from 'node:http';
+    const html = ${JSON.stringify(`<html><head>${html}</head><body>ok</body></html>`)};
+    const png = Buffer.alloc(45);
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0);
+    png.writeUInt32BE(13, 8);
+    png.write('IHDR', 12, 'ascii');
+    png.writeUInt32BE(${width}, 16);
+    png.writeUInt32BE(${height}, 20);
+    png.writeUInt8(8, 24);
+    png.writeUInt8(2, 25);
+    png.writeUInt32BE(0, 33);
+    png.write('IEND', 37, 'ascii');
+    const server = createServer((request, response) => {
+      if (request.url === '/stock-analysis/og-card-v1.png') {
+        response.writeHead(200, { 'content-type': 'image/png' });
+        response.end(png);
+        return;
+      }
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end(html);
+    });
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port;
+      console.log('Local: http://127.0.0.1:' + port);
+      console.log('Ready');
+    });
+    process.on('SIGTERM', () => server.close(() => process.exit(0)));
+  `;
+}
+
 const htmlServer = `
   import { createServer } from 'node:http';
   const server = createServer((_, response) => { response.setHeader('content-type', 'text/html'); response.end('<html>ok</html>'); });
@@ -146,4 +204,43 @@ test("code-0 exit queued by the final probe is unexpected before cleanup", async
   const fetchImpl = async () => { queueMicrotask(() => events.get("exit")(0, null)); return new Response("<html>ok</html>", { headers: { "content-type": "text/html" } }); };
   await assert.rejects(() => runSmoke({ launch: () => child, origin: "http://fixture", ready: true, routes: ["/"], apiChecks: [], fetchImpl, timeoutMs: 100, shutdownTimeoutMs: 100 }), (error) => errorHas(error, /exited unexpectedly/));
   assert.equal(killed, false);
+});
+
+test("share-card smoke accepts complete metadata and a 1200 by 630 local PNG", async () => {
+  const { runSmoke } = await loadSmoke();
+  const child = await fixture(shareServer());
+  try {
+    await runSmoke({
+      launch: launch(child.path),
+      routes: ["/"],
+      apiChecks: [],
+      shareCard: { publicRoot: shareRoot },
+      timeoutMs: 1_000,
+      shutdownTimeoutMs: 1_000,
+    });
+  } finally { await child.dispose(); }
+});
+
+test("share-card smoke rejects invalid metadata or PNG dimensions and reaps the child", async () => {
+  const { runSmoke } = await loadSmoke();
+  const cases = [
+    shareServer({ html: shareHtml({ includeTitle: false }) }),
+    shareServer({ width: 600, height: 315 }),
+  ];
+  for (const source of cases) {
+    const child = await fixture(source);
+    let spawned;
+    try {
+      await assert.rejects(() => runSmoke({
+        launch: () => (spawned = launch(child.path)()),
+        routes: ["/"],
+        apiChecks: [],
+        shareCard: { publicRoot: shareRoot },
+        timeoutMs: 1_000,
+        shutdownTimeoutMs: 1_000,
+      }));
+      if (spawned.exitCode === null && spawned.signalCode === null) await once(spawned, "exit");
+      assert.notEqual(spawned.exitCode, null);
+    } finally { await child.dispose(); }
+  }
 });
