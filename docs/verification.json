@@ -90,13 +90,18 @@
   "environment_document": "docs/configuration.md",
   "platform_environment_names": [
     "PORT",
+    "CI",
+    "GITHUB_ACTIONS",
     "GITHUB_TOKEN",
     "GH_TOKEN",
     "GITHUB_REPOSITORY",
     "GITHUB_RUN_URL",
     "GITHUB_OUTPUT",
     "GITHUB_WORKSPACE",
-    "RUNNER_TEMP"
+    "RUNNER_TEMP",
+    "VERCEL",
+    "VERCEL_PROJECT_PRODUCTION_URL",
+    "VERCEL_URL"
   ],
   "workflow_inventory_document": "docs/operations/workflows.md",
   "verified_commands": [

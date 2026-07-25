@@ -1072,6 +1072,7 @@ jobs:
         env:
           STATIC_FEED_SOURCE: ${{ runner.temp }}/feed-snapshot
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
           NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}
           NEXT_PUBLIC_EDGE_BASE: ${{ vars.EDGE_BASE }}
           NEXT_PUBLIC_FEED_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/feed
@@ -1251,6 +1252,7 @@ FRONTEND_ENV_LINES = [
     "      # Approved spec still requires Node 20.20.2 even though Node 20 is EOL.",
     '      NEXT_TELEMETRY_DISABLED: "1"',
     "      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}",
+    "      NEXT_PUBLIC_SITE_URL: ${{ matrix.site_url }}",
 ]
 PYTHON_ENV_LINES = [
     '      PYTHONDONTWRITEBYTECODE: "1"',
@@ -1280,10 +1282,18 @@ FRONTEND_STRATEGY_LINES = [
     "      fail-fast: false",
     "      matrix:",
     "        include:",
-    "          - profile: static",
-    "            base_path: /stock-analysis",
-    "          - profile: server",
+    "          - case: static-root",
+    "            profile: static",
     '            base_path: ""',
+    "            site_url: https://stock-analysis.example.test/",
+    "          - case: static-pages",
+    "            profile: static",
+    "            base_path: /stock-analysis",
+    "            site_url: https://stock-analysis.example.test/stock-analysis/",
+    "          - case: server-root",
+    "            profile: server",
+    '            base_path: ""',
+    "            site_url: https://stock-analysis.example.test/",
 ]
 PYTHON_STRATEGY_LINES = [
     "      fail-fast: false",
@@ -2997,6 +3007,7 @@ def enforce_pages_workflow_policy(text: str) -> None:
             == [
                 "STATIC_FEED_SOURCE",
                 "NEXT_PUBLIC_BASE_PATH",
+                "NEXT_PUBLIC_SITE_URL",
                 "NEXT_PUBLIC_API_BASE",
                 "NEXT_PUBLIC_EDGE_BASE",
                 "NEXT_PUBLIC_FEED_BASE",
@@ -3006,6 +3017,10 @@ def enforce_pages_workflow_policy(text: str) -> None:
         expected_env = {
             "STATIC_FEED_SOURCE": "${{ runner.temp }}/feed-snapshot",
             "NEXT_PUBLIC_BASE_PATH": "/${{ github.event.repository.name }}",
+            "NEXT_PUBLIC_SITE_URL": (
+                "https://${{ github.repository_owner }}.github.io/"
+                "${{ github.event.repository.name }}/"
+            ),
             "NEXT_PUBLIC_API_BASE": "${{ vars.API_BASE }}",
             "NEXT_PUBLIC_EDGE_BASE": "${{ vars.EDGE_BASE }}",
             "NEXT_PUBLIC_FEED_BASE": (
@@ -3723,6 +3738,18 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}\n",
                 "          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}\n"
                 "          UNDECLARED_CONTEXT: ${{ github.token }}\n",
+            ),
+            "missing Pages site URL": mutate(
+                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
+                "",
+            ),
+            "localhost Pages site URL": mutate(
+                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
+                "          NEXT_PUBLIC_SITE_URL: http://localhost:3000/\n",
+            ),
+            "base-path-mismatched Pages site URL": mutate(
+                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\n",
+                "          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/\n",
             ),
             "substituted context": mutate(
                 "          NEXT_PUBLIC_API_BASE: ${{ vars.API_BASE }}\n",
@@ -4690,70 +4717,133 @@ class WorkflowSecurityTests(unittest.TestCase):
             self.assertNotIn(covered_path, paths_ignore)
 
     def test_tests_workflow_frontend_matrix_and_steps_are_scoped(self) -> None:
+        def assert_frontend_policy(text: str) -> None:
+            jobs = top_level_mapping_block(text, "jobs")
+            frontend = mapping_block(jobs, "frontend", indent=2)
+            strategy = mapping_block(frontend, "strategy", indent=4)
+            defaults = mapping_block(frontend, "defaults", indent=4)
+            env = mapping_block(frontend, "env", indent=4)
+            steps = normalized_step_blocks(frontend)
+
+            self.assert_required_job_is_fail_closed(frontend)
+            self.assertEqual(direct_mapping_keys(frontend, 4), FRONTEND_JOB_KEYS)
+            self.assertEqual(
+                direct_mapping_value(frontend, "name", indent=4),
+                "Frontend (${{ matrix.case }})",
+            )
+            self.assertEqual(strategy.splitlines(), FRONTEND_STRATEGY_LINES)
+            self.assertEqual(defaults.splitlines(), FRONTEND_DEFAULTS_LINES)
+            self.assertEqual(env.splitlines(), FRONTEND_ENV_LINES)
+            self.assertEqual(steps, FRONTEND_STEP_BLOCKS)
+            self.assertEqual(
+                re.findall(
+                    r"(?m)^          - case: ([^\n]+)\n"
+                    r"            profile: ([^\n]+)\n"
+                    r"            base_path: ([^\n]+)\n"
+                    r"            site_url: ([^\n]+)$",
+                    frontend,
+                ),
+                [
+                    (
+                        "static-root",
+                        "static",
+                        '""',
+                        "https://stock-analysis.example.test/",
+                    ),
+                    (
+                        "static-pages",
+                        "static",
+                        "/stock-analysis",
+                        "https://stock-analysis.example.test/stock-analysis/",
+                    ),
+                    (
+                        "server-root",
+                        "server",
+                        '""',
+                        "https://stock-analysis.example.test/",
+                    ),
+                ],
+            )
+            self.assertIn(
+                "      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}",
+                frontend,
+            )
+            self.assertIn(
+                "      NEXT_PUBLIC_SITE_URL: ${{ matrix.site_url }}",
+                frontend,
+            )
+
+            checkout = only_block_containing(steps, "uses: actions/checkout@v7")
+            self.assertIn("persist-credentials: false", checkout)
+            setup_node = only_block_containing(steps, "uses: actions/setup-node@v7")
+            self.assertIn("node-version-file: .node-version", setup_node)
+            self.assertIn(
+                "cache-dependency-path: frontend/package-lock.json",
+                setup_node,
+            )
+
+            versions = only_block_containing(
+                steps,
+                "name: Verify exact Node and npm",
+            )
+            self.assertIn('test "$(node --version)" = "v20.20.2"', versions)
+            self.assertIn('test "$(npm --version)" = "10.8.2"', versions)
+            common_steps = [checkout, setup_node, versions]
+            for command in (
+                "npm ci",
+                "npm run lint",
+                "npm run typecheck",
+                "npm run test:scripts",
+            ):
+                command_step = only_block_containing(steps, f"- run: {command}")
+                self.assertRegex(
+                    command_step,
+                    rf"(?m)^      - run: {re.escape(command)}$",
+                )
+                common_steps.append(command_step)
+            for step in common_steps:
+                self.assertEqual(step_if_expressions(step), [], step)
+
+            for profile, command in (
+                ("static", "npm run build:static"),
+                ("static", "npm run smoke:static"),
+                ("server", "npm run build:server"),
+                ("server", "npm run smoke:server"),
+            ):
+                profile_step = only_block_containing(steps, f"run: {command}")
+                self.assertEqual(
+                    step_if_expressions(profile_step),
+                    [f"matrix.profile == '{profile}'"],
+                    (profile, command),
+                )
+                self.assertEqual(step_run_scripts(profile_step), [command])
+
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
             encoding="utf-8"
         )
-        jobs = top_level_mapping_block(text, "jobs")
-        frontend = mapping_block(jobs, "frontend", indent=2)
-        strategy = mapping_block(frontend, "strategy", indent=4)
-        defaults = mapping_block(frontend, "defaults", indent=4)
-        env = mapping_block(frontend, "env", indent=4)
-        steps = normalized_step_blocks(frontend)
+        with self.subTest(workflow="actual"):
+            assert_frontend_policy(text)
 
-        self.assert_required_job_is_fail_closed(frontend)
-        self.assertEqual(direct_mapping_keys(frontend, 4), FRONTEND_JOB_KEYS)
-        self.assertEqual(strategy.splitlines(), FRONTEND_STRATEGY_LINES)
-        self.assertEqual(defaults.splitlines(), FRONTEND_DEFAULTS_LINES)
-        self.assertEqual(env.splitlines(), FRONTEND_ENV_LINES)
-        self.assertEqual(steps, FRONTEND_STEP_BLOCKS)
-        self.assertEqual(
-            re.findall(
-                r"(?m)^          - profile: ([^\n]+)\n"
-                r"            base_path: ([^\n]+)$",
-                frontend,
+        site_url_mutations = {
+            "missing CI site URL": (
+                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
+                "",
             ),
-            [("static", "/stock-analysis"), ("server", '""')],
-        )
-        self.assertIn("      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}", frontend)
-
-        checkout = only_block_containing(steps, "uses: actions/checkout@v7")
-        self.assertIn("persist-credentials: false", checkout)
-        setup_node = only_block_containing(steps, "uses: actions/setup-node@v7")
-        self.assertIn("node-version-file: .node-version", setup_node)
-        self.assertIn("cache-dependency-path: frontend/package-lock.json", setup_node)
-
-        versions = only_block_containing(steps, "name: Verify exact Node and npm")
-        self.assertIn('test "$(node --version)" = "v20.20.2"', versions)
-        self.assertIn('test "$(npm --version)" = "10.8.2"', versions)
-        common_steps = [checkout, setup_node, versions]
-        for command in (
-            "npm ci",
-            "npm run lint",
-            "npm run typecheck",
-            "npm run test:scripts",
-        ):
-            command_step = only_block_containing(steps, f"- run: {command}")
-            self.assertRegex(
-                command_step,
-                rf"(?m)^      - run: {re.escape(command)}$",
-            )
-            common_steps.append(command_step)
-        for step in common_steps:
-            self.assertEqual(step_if_expressions(step), [], step)
-
-        for profile, command in (
-            ("static", "npm run build:static"),
-            ("static", "npm run smoke:static"),
-            ("server", "npm run build:server"),
-            ("server", "npm run smoke:server"),
-        ):
-            profile_step = only_block_containing(steps, f"run: {command}")
-            self.assertEqual(
-                step_if_expressions(profile_step),
-                [f"matrix.profile == '{profile}'"],
-                (profile, command),
-            )
-            self.assertEqual(step_run_scripts(profile_step), [command])
+            "localhost CI site URL": (
+                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
+                "            site_url: http://localhost:3000/stock-analysis/\n",
+            ),
+            "base-path-mismatched CI site URL": (
+                "            site_url: https://stock-analysis.example.test/stock-analysis/\n",
+                "            site_url: https://stock-analysis.example.test/\n",
+            ),
+        }
+        for label, (old, new) in site_url_mutations.items():
+            self.assertEqual(text.count(old), 1, label)
+            mutation = text.replace(old, new, 1)
+            with self.subTest(mutation=label):
+                with self.assertRaises(AssertionError):
+                    assert_frontend_policy(mutation)
 
     def test_tests_workflow_python_matrix_locks_and_entrypoints_are_scoped(
         self,

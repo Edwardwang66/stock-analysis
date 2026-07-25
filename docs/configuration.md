@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** User-settable, secret, and platform-provided configuration used by current code and workflows.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `e74ad00c026b410db9a1438e46c26c09dad32bd8`
 
 ## Configuration rules
 
@@ -21,11 +21,12 @@ The FastAPI clients concatenate `API_BASE` or `NEXT_PUBLIC_API_BASE` literally w
 | Name | Owner | Requirement | Default | Secret | Consumers |
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_BASE_PATH` | Frontend deployer | Optional | Empty string | No | Next configuration, layout assets, feed fallback, static smoke test |
+| `NEXT_PUBLIC_SITE_URL` | Frontend deployer | Required in CI, GitHub Actions, and Vercel builds; optional locally | `VERCEL_PROJECT_PRODUCTION_URL`, then `VERCEL_URL`, then local `http://localhost:3000` fallback | No | Absolute metadata, canonical URLs, and Open Graph share images |
 | `NEXT_PUBLIC_API_BASE` | Frontend deployer | Optional | Unset; FastAPI adapter disabled | No | `frontend/lib/datasource.ts`, `frontend/lib/search.ts` |
 | `NEXT_PUBLIC_EDGE_BASE` | Frontend deployer | Optional | Same origin on a browser `*.vercel.app` host; otherwise the hard-coded hosted deployment | No | `frontend/lib/datasource.ts` Edge quote and OHLCV stage |
 | `NEXT_PUBLIC_FEED_BASE` | Frontend deployer | Optional | Raw GitHub `main/feed` URL for this repository | No | `frontend/lib/feed.ts` |
 
-When nonempty, `NEXT_PUBLIC_BASE_PATH` must begin with `/` and must not end with `/`. `NEXT_PUBLIC_API_BASE` must omit a trailing slash. An unset value skips browser calls to FastAPI. `NEXT_PUBLIC_FEED_BASE` changes the raw-feed origin. Most artifact readers retry a failed raw request for the same relative path from the same-origin bundled feed; live intraday is remote-only and has no bundled fallback.
+When nonempty, `NEXT_PUBLIC_BASE_PATH` must begin with `/` and must not end with `/`. `NEXT_PUBLIC_SITE_URL` is the complete public application root: it must be an absolute HTTP(S) URL whose pathname matches `NEXT_PUBLIC_BASE_PATH`, including the repository path and trailing slash when applicable. Explicit `NEXT_PUBLIC_SITE_URL` configuration wins, followed by `VERCEL_PROJECT_PRODUCTION_URL`, then `VERCEL_URL`, then the local fallback. CI, GitHub Actions, and Vercel builds fail without a non-local public root. `NEXT_PUBLIC_API_BASE` must omit a trailing slash. An unset value skips browser calls to FastAPI. `NEXT_PUBLIC_FEED_BASE` changes the raw-feed origin. Most artifact readers retry a failed raw request for the same relative path from the same-origin bundled feed; live intraday is remote-only and has no bundled fallback.
 
 An unset `NEXT_PUBLIC_EDGE_BASE` does not disable Edge requests. When the browser is not already on a same-origin Vercel host, any request that reaches the Edge stage still attempts `https://stock-analysis-ten-phi.vercel.app`. No supported current setting disables that attempt entirely.
 
@@ -88,6 +89,11 @@ These names are internal execution contracts, not settings most users should exp
 
 | Name | Owner | Requirement | Default | Secret | Consumers |
 |---|---|---|---|---|---|
+| `CI` | CI platform | Platform-provided deployment flag | Deployment mode only when exactly `true` | No | Public-site URL resolver |
+| `GITHUB_ACTIONS` | GitHub Actions | Platform-provided deployment flag | Deployment mode only when exactly `true` | No | Public-site URL resolver |
+| `VERCEL` | Vercel | Platform-provided deployment flag | Deployment mode only when exactly `1` | No | Public-site URL resolver |
+| `VERCEL_PROJECT_PRODUCTION_URL` | Vercel | Platform-provided | Stable production hostname, without a scheme | No | Public-site URL resolver fallback after `NEXT_PUBLIC_SITE_URL` |
+| `VERCEL_URL` | Vercel | Platform-provided | Current deployment hostname, without a scheme | No | Public-site URL resolver fallback after `VERCEL_PROJECT_PRODUCTION_URL` |
 | `NEXT_BUILD_PROFILE` | Frontend build scripts | Internal, optional | `server` | No | Next configuration and profile builder |
 | `STATIC_FEED_SOURCE` | Pages build workflow | Internal, optional | Unset | No | Temporary static-profile feed snapshot replacement |
 | `SMOKE_PORT` | Server smoke test | Internal, optional | Unset selects an ephemeral port; explicit `0` is rejected | No | `frontend/scripts/smoke-server.mjs` |
@@ -152,6 +158,7 @@ Static profile with a prepared feed snapshot:
 ```bash
 cd frontend
 NEXT_PUBLIC_BASE_PATH=/stock-analysis \
+NEXT_PUBLIC_SITE_URL=https://edwardwang66.github.io/stock-analysis/ \
 STATIC_FEED_SOURCE=/absolute/path/to/feed-snapshot \
   npm run build:static
 ```

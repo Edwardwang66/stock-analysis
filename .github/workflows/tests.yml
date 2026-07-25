@@ -28,16 +28,24 @@ concurrency:
 
 jobs:
   frontend:
-    name: Frontend (${{ matrix.profile }})
+    name: Frontend (${{ matrix.case }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - profile: static
-            base_path: /stock-analysis
-          - profile: server
+          - case: static-root
+            profile: static
             base_path: ""
+            site_url: https://stock-analysis.example.test/
+          - case: static-pages
+            profile: static
+            base_path: /stock-analysis
+            site_url: https://stock-analysis.example.test/stock-analysis/
+          - case: server-root
+            profile: server
+            base_path: ""
+            site_url: https://stock-analysis.example.test/
     defaults:
       run:
         working-directory: frontend
@@ -45,6 +53,7 @@ jobs:
       # Approved spec still requires Node 20.20.2 even though Node 20 is EOL.
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}
+      NEXT_PUBLIC_SITE_URL: ${{ matrix.site_url }}
     steps:
       - uses: actions/checkout@v7
         with:
