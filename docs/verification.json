@@ -9,6 +9,7 @@
     "python_compatibility": ["3.12.13"]
   },
   "maintained_documents": [
+    "README.md",
     "backend/README.md",
     "backtest/README.md",
     "backtest/FEATURES.md",
@@ -175,6 +176,128 @@
       "runtime": "python",
       "workflow": ".github/workflows/tests.yml",
       "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm ci",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run lint",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run typecheck",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run test:scripts",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run build:static",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run smoke:static",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run build:server",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run smoke:server",
+      "kind": "ci",
+      "runtime": "node",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "frontend"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python tests/test_backend.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python tests/test_api.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_chan_engine.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_validate_feed.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "README.md",
+      "cwd": "frontend",
+      "command": "npm run dev",
+      "kind": "entrypoint",
+      "runtime": "node"
+    },
+    {
+      "document": "README.md",
+      "cwd": "backend",
+      "command": "python -m uvicorn app.main:app --reload --port 8000",
+      "kind": "entrypoint",
+      "runtime": "python"
     }
   ]
 }
