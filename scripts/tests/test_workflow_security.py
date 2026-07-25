@@ -1151,15 +1151,77 @@ services:
       - key: PYTHON_VERSION
         value: "3.11.15"
 """
-EXPECTED_BACKEND_QUICK_START = """## 运行
+EXPECTED_BACKEND_H2_HEADINGS = [
+    "Role and optionality",
+    "Requirements and installation",
+    "Run locally",
+    "Test locally",
+    "Configuration",
+    "API routes",
+    "Providers and market coverage",
+    "SQLite cache and bar store",
+    "Deployment",
+    "Current limitations",
+]
+EXPECTED_BACKEND_INSTALL_COMMANDS = [
+    'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"',
+    "python3.11 -m venv .venv",
+    "source .venv/bin/activate",
+    'test "$(python --version 2>&1)" = "Python 3.11.15"',
+    "python -m pip install --require-hashes -r requirements.txt",
+]
+EXPECTED_BACKEND_RUN_COMMANDS = [
+    "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+]
+EXPECTED_BACKEND_RUNTIME_GUIDE = """# FastAPI Market Data Service
+
+## Role and optionality
+
+Role.
+
+## Requirements and installation
 
 ```bash
-cd backend
+test "$(python3.11 --version 2>&1)" = "Python 3.11.15"
 python3.11 -m venv .venv
 source .venv/bin/activate
+test "$(python --version 2>&1)" = "Python 3.11.15"
 python -m pip install --require-hashes -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
 ```
+
+## Run locally
+
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+## Test locally
+
+Tests.
+
+## Configuration
+
+Configuration.
+
+## API routes
+
+Routes.
+
+## Providers and market coverage
+
+Providers.
+
+## SQLite cache and bar store
+
+Storage.
+
+## Deployment
+
+Deployment.
+
+## Current limitations
+
+Limitations.
 """
 TOP_LEVEL_WORKFLOW_KEYS = ["name", "on", "permissions", "concurrency", "jobs"]
 JOB_KEYS = ["frontend", "python", "gate"]
@@ -3084,11 +3146,11 @@ def enforce_pages_workflow_policy(text: str) -> None:
         raise ValueError(f"invalid Pages workflow structure: {exc}") from exc
 
 
-def enforce_render_and_backend_quick_start(
+def enforce_render_and_backend_runtime_contract(
     render_text: str,
     readme_text: str,
 ) -> None:
-    """Validate the exact Render Blueprint and backend quick-start commands."""
+    """Validate the exact Render Blueprint and backend runtime guide commands."""
     try:
         require_workflow_policy(
             direct_mapping_keys(render_text, indent=0) == ["services"],
@@ -3211,46 +3273,47 @@ def enforce_render_and_backend_quick_start(
             "Render Blueprint bytes changed",
         )
 
-        quick_start_headings = [
-            match.start()
-            for match in re.finditer(r"(?m)^## 运行$", readme_text)
-        ]
+        headings = re.findall(r"(?m)^## (?P<title>.+)$", readme_text)
         require_workflow_policy(
-            len(quick_start_headings) == 1,
-            "backend README quick-start heading inventory changed",
+            headings == EXPECTED_BACKEND_H2_HEADINGS,
+            "backend README section inventory changed",
         )
-        section_start = quick_start_headings[0]
-        next_heading = readme_text.find("\n## ", section_start + 1)
-        section_end = len(readme_text) if next_heading < 0 else next_heading
-        quick_start = readme_text[section_start:section_end]
+
+        def section_commands(title: str) -> list[str]:
+            section_match = re.search(
+                rf"(?m)^## {re.escape(title)}$",
+                readme_text,
+            )
+            require_workflow_policy(
+                section_match is not None,
+                f"backend README section missing: {title}",
+            )
+            section_start = section_match.start()
+            next_heading = readme_text.find("\n## ", section_match.end())
+            section_end = len(readme_text) if next_heading < 0 else next_heading
+            section = readme_text[section_start:section_end]
+            fences = re.findall(
+                r"(?ms)^```bash\n(?P<body>.*?)\n```$",
+                section,
+            )
+            require_workflow_policy(
+                len(fences) == 1,
+                f"backend README {title} bash fence inventory changed",
+            )
+            return fences[0].splitlines()
+
         require_workflow_policy(
-            quick_start == EXPECTED_BACKEND_QUICK_START,
-            "backend README quick-start block changed",
-        )
-        fenced = re.fullmatch(
-            r"## 运行\n\n```bash\n(?P<body>.*?)\n```\n",
-            quick_start,
-            flags=re.DOTALL,
+            section_commands("Requirements and installation")
+            == EXPECTED_BACKEND_INSTALL_COMMANDS,
+            "backend README installation command order changed",
         )
         require_workflow_policy(
-            fenced is not None,
-            "backend README quick-start fence changed",
-        )
-        commands = fenced.group("body").splitlines()
-        require_workflow_policy(
-            commands
-            == [
-                "cd backend",
-                "python3.11 -m venv .venv",
-                "source .venv/bin/activate",
-                "python -m pip install --require-hashes -r requirements.txt",
-                "python -m uvicorn app.main:app --reload --port 8000",
-            ],
-            "backend README quick-start command order changed",
+            section_commands("Run locally") == EXPECTED_BACKEND_RUN_COMMANDS,
+            "backend README run command order changed",
         )
     except AssertionError as exc:
         raise ValueError(
-            f"invalid Render/backend quick-start structure: {exc}"
+            f"invalid Render/backend runtime contract: {exc}"
         ) from exc
 
 
@@ -3670,10 +3733,10 @@ class WorkflowSecurityTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         enforce_pages_workflow_policy(actual)
 
-    def test_render_and_backend_quick_start_are_exact(self) -> None:
-        enforce_render_and_backend_quick_start(
+    def test_render_and_backend_runtime_contracts_are_exact(self) -> None:
+        enforce_render_and_backend_runtime_contract(
             EXPECTED_RENDER_BLUEPRINT,
-            EXPECTED_BACKEND_QUICK_START,
+            EXPECTED_BACKEND_RUNTIME_GUIDE,
         )
 
         def mutate_render(old: str, new: str) -> str:
@@ -3720,20 +3783,24 @@ class WorkflowSecurityTests(unittest.TestCase):
         for label, render_text in render_mutations.items():
             with self.subTest(render_mutation=label):
                 with self.assertRaises(ValueError):
-                    enforce_render_and_backend_quick_start(
+                    enforce_render_and_backend_runtime_contract(
                         render_text,
-                        EXPECTED_BACKEND_QUICK_START,
+                        EXPECTED_BACKEND_RUNTIME_GUIDE,
                     )
 
         def mutate_readme(old: str, new: str) -> str:
             self.assertEqual(
-                EXPECTED_BACKEND_QUICK_START.count(old),
+                EXPECTED_BACKEND_RUNTIME_GUIDE.count(old),
                 1,
                 f"README mutation anchor is not unique: {old!r}",
             )
-            return EXPECTED_BACKEND_QUICK_START.replace(old, new, 1)
+            return EXPECTED_BACKEND_RUNTIME_GUIDE.replace(old, new, 1)
 
         readme_mutations = {
+            "loose preflight patch": mutate_readme(
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"',
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11"',
+            ),
             "wrong venv interpreter": mutate_readme(
                 "python3.11 -m venv .venv",
                 "python3 -m venv .venv",
@@ -3747,8 +3814,8 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "python -m pip install -r requirements.txt",
             ),
             "direct uvicorn": mutate_readme(
-                "python -m uvicorn",
-                "uvicorn",
+                "python -m uvicorn app.main:app",
+                "uvicorn app.main:app",
             ),
             "reordered activation": mutate_readme(
                 "python3.11 -m venv .venv\n"
@@ -3756,11 +3823,15 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "source .venv/bin/activate\n"
                 "python3.11 -m venv .venv\n",
             ),
+            "legacy heading": mutate_readme(
+                "## Test locally\n",
+                "## 运行\n\nLegacy.\n\n## Test locally\n",
+            ),
         }
         for label, readme_text in readme_mutations.items():
             with self.subTest(readme_mutation=label):
                 with self.assertRaises(ValueError):
-                    enforce_render_and_backend_quick_start(
+                    enforce_render_and_backend_runtime_contract(
                         EXPECTED_RENDER_BLUEPRINT,
                         readme_text,
                     )
@@ -3769,7 +3840,7 @@ class WorkflowSecurityTests(unittest.TestCase):
         readme_text = (ROOT / "backend" / "README.md").read_text(
             encoding="utf-8"
         )
-        enforce_render_and_backend_quick_start(render_text, readme_text)
+        enforce_render_and_backend_runtime_contract(render_text, readme_text)
 
     def protected_state_fixtures(
         self,

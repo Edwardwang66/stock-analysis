@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Optional server-profile market-data, cache, OHLCV, and compatibility-analysis service.
-> **Last verified commit:** `1f810ef043610ace8025a7ca95ffca0af88816bf`
+> **Last verified commit:** `1cf36e956471e321f027e18e661be5fe89057439`
 
 ## Role and optionality
 
@@ -19,13 +19,14 @@ Python `3.11.15` is the primary local, container, CI, and Render runtime. Python
 From `backend/`:
 
 ```bash
+test "$(python3.11 --version 2>&1)" = "Python 3.11.15"
 python3.11 -m venv .venv
 source .venv/bin/activate
-python --version
+test "$(python --version 2>&1)" = "Python 3.11.15"
 python -m pip install --require-hashes -r requirements.txt
 ```
 
-Stop if `python --version` is not exactly `Python 3.11.15`. CI compatibility uses the repository lock for Python `3.12.13`; do not regenerate or loosen either lock during installation. The repository-wide lock reproduction and runtime commands are the [controlled Python gates](../docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md#controlled-stage-1b-acceptance-gates).
+Both runtime assertions fail closed unless the command and activated environment are exactly Python `3.11.15`. CI compatibility uses the repository lock for Python `3.12.13`; do not regenerate or loosen either lock during installation. The repository-wide lock reproduction and runtime commands are the [controlled Python gates](../docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md#controlled-stage-1b-acceptance-gates).
 
 ## Run locally
 
@@ -36,16 +37,6 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 The interactive OpenAPI UI is at `/docs`. For a frontend process, set `NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000`; this enables the adapter but does not force every quote or OHLCV request through FastAPI.
-
-## 运行
-
-```bash
-cd backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install --require-hashes -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
-```
 
 ## Test locally
 
@@ -65,7 +56,7 @@ The first covers cache, bar-store, provider fallback, circuit breaker, batch, an
 | `CACHE_DB` | `/tmp/stock_cache.db` | JSON response-cache SQLite path; open failure falls back to process memory. |
 | `STORE_DB` | `/tmp/stock_store.db` | OHLCV SQLite path; open failure disables the bar store. |
 | `CACHE_STALE_GRACE` | `86400` seconds | Retains expired JSON entries for bounded stale reads. |
-| `CACHE_MAX_ENTRIES` | `20000` | JSON-cache cleanup ceiling. |
+| `CACHE_MAX_ENTRIES` | `20000` | Cleanup threshold and post-purge ceiling for SQLite. The memory fallback only removes entries beyond stale grace when over the threshold and can remain above it. |
 | `PORT` | Docker default `8000` | Uvicorn bind port in container/Procfile/Render contracts. |
 | `NEXT_PUBLIC_API_BASE` | Unset | Frontend-owned public base URL; it must omit a trailing slash. |
 
@@ -89,7 +80,7 @@ All current application routes are unauthenticated `GET` endpoints under `/api/v
 
 Symbols must contain `MARKET:CODE`. The parser uppercases both parts, accepts only `US`, `HK`, `CN`, `CRYPTO`, `IDX`, `JP`, `KR`, `DE`, or `GB`, and does not validate an exchange-specific code grammar before provider dispatch. Examples include `US:AAPL`, `HK:0700`, `CN:600519`, `CRYPTO:BTCUSDT`, and `IDX:^GSPC`.
 
-Canonical interval names used by the provider and store code are `1m`, `5m`, `15m`, `30m`, `1h`, `1d`, `1wk`, and `1mo`; canonical ranges are `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, and `max`. The HTTP layer does not enforce those enums. Unsupported or unknown values can be rejected, silently defaulted, or capped differently by a selected provider, so callers must use the canonical values and inspect `source` and returned bar count.
+Canonical interval names used by the provider and store code are `1m`, `5m`, `15m`, `30m`, `1h`, `1d`, `1wk`, and `1mo`; canonical ranges are `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, and `max`. In the bar store, `max` means 3,660 requested days, not unlimited history. The HTTP layer does not enforce those enums. Unsupported or unknown values can be rejected, silently defaulted, or capped differently by a selected provider, so callers must use the canonical values and inspect `source` and returned bar count.
 
 ## Providers and market coverage
 
@@ -103,11 +94,13 @@ Canonical interval names used by the provider and store code are `1m`, `5m`, `15
 
 Provider failures are tracked per provider and operation. Three consecutive failures open a 120-second circuit breaker; if every source is cooling, the chain still attempts a half-open pass. Licensing flags are descriptive only and do not prevent routing or redistribution.
 
+The Binance adapter does not map `30m`. A `CRYPTO` request for `interval=30m` therefore silently requests Binance `1d` klines, labels the returned object as `30m`, and can store those daily bars under the requested `30m` key. This is a severe semantic mismatch; do not treat Binance-backed `CRYPTO` `30m` results as 30-minute data until the adapter is fixed.
+
 Search coverage is narrower than direct `MARKET:CODE` coverage: the local lists cover CRYPTO plus selected US/HK/CN names, Yahoo search maps only unqualified US symbols and `.HK`/`.SS`/`.SZ`, and Tencent search maps CN/HK/US.
 
 ## SQLite cache and bar store
 
-The JSON cache stores search, quote, and derived-computation payloads. Search entries are fresh for 24 hours. Quote freshness is market-session aware: 15 seconds while open and 300 seconds while closed; stale quote responses can be returned during a 45-second open-session or one-hour closed-session cap while a single background refresh runs. Derived calculations have two- or five-minute server cache lifetimes.
+The JSON cache stores search, quote, and derived-computation payloads. Search entries are fresh for 24 hours. Quote freshness is market-session aware: 15 seconds while open and 300 seconds while closed; stale quote responses can be returned during a 45-second open-session or one-hour closed-session cap while at most one background refresh runs per identical request key. Different overlapping batch keys can still refresh the same symbol more than once. Derived calculations have two- or five-minute server cache lifetimes.
 
 The separate bar store upserts `(symbol, interval, timestamp)` rows, normalizes daily/weekly/monthly timestamps, retains intraday rows for 35 days, and refreshes a short tail after the requested range is marked covered. If providers fail and stored rows exist, OHLCV can be returned with a `stale` source marker; the backend does not apply an age ceiling to that stored fallback.
 

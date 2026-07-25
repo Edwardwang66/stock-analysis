@@ -2,13 +2,13 @@
 
 > **Status:** Current
 > **Scope:** Entry point for repository-backed generated artifacts and their consumers.
-> **Last verified commit:** `1f810ef043610ace8025a7ca95ffca0af88816bf`
+> **Last verified commit:** `1cf36e956471e321f027e18e661be5fe89057439`
 
 ## Role
 
 `feed/` is a Git-backed publication surface for scheduled automation, research outputs, OpenClaw submissions, operational state, and frontend readers. It is not one transactional database or a single-writer source of truth. Different producers own different paths, schema coverage is uneven, and readers currently fetch artifacts independently.
 
-Most frontend reads try raw GitHub `main/feed` first and then the same relative path from the bundled `frontend/public/feed` snapshot. The bundle is a fallback, not an authoritative live mirror.
+Most frontend reads try a configurable remote feed first and then the same relative path from the bundled `frontend/public/feed` snapshot. The remote defaults to raw GitHub `main/feed` but `NEXT_PUBLIC_FEED_BASE` can replace it; the bundle is a fallback, not an authoritative live mirror.
 
 ## Artifact families
 
@@ -48,7 +48,8 @@ External report ingress is the protected path:
 - report IDs must match `^[A-Za-z0-9._:-]{6,80}$`, and an existing ID is rejected as a conflict rather than accepted as an idempotent retry;
 - strict JSON rejects NaN and Infinity;
 - external ingress limits one report to 512 KiB, 400 positions, and 50 factor candidates;
-- approved inbox/report roots, regular-file checks, exclusive creation, path containment, and staging checks reject traversal, symlink, and ambiguous-index cases.
+- repository-dispatch ingress resolves an approved inbox root and exclusively creates (`xb`) its inbox file after strict validation; path containment and regular-file checks also constrain later validation and report destinations;
+- the merge path checks for an existing report ID before using ordinary `save_json()` writes. That check and write are not one atomic create across workflows; publication-manifest staging separately rejects unrecorded, broad, traversal, symlink, and ambiguous-index paths.
 
 Those protections do not apply to every internal writer. In particular, standalone stock-note mode constructs `feed/stock-notes/<symbol>.json` and writes locally or through GitHub Contents API without equivalent schema, HMAC, or symbol-path containment, and it does not rebuild `stock-notes/index.json`. Treat stock-note direct writes as privileged operations for trusted operators and trusted symbol input.
 
@@ -69,7 +70,7 @@ These tests cover report schema behavior, strict parsing, HMAC and ingress bound
 
 ## Publication entry points
 
-Internal report producers call `feed_lib.publish_report()`: validate, optionally sign, write the report and derived paths, then rebuild `index.json`. These are ordinary direct writes, not atomic replacements or a cross-file transaction. Writing the index last in this one path does not make it a reader manifest and does not coordinate other writers.
+Internal report producers call `feed_lib.publish_report()`: optionally sign, then validate, direct-write the report, conditionally write `signals/latest.json`, `market/state.json`, and `factory/candidates.json` when their source fields are present, and always rebuild `index.json` after a successful validation. These are ordinary direct writes, not atomic replacements or a cross-file transaction. Writing the index last in this one path does not make it a reader manifest and does not coordinate other writers.
 
 Signed external inbox files are validated and merged with:
 
@@ -89,9 +90,9 @@ The `feed-validate.yml` manual `workflow_dispatch` trigger currently selects nei
 
 ## Freshness and fallback
 
-For most JSON, `frontend/lib/feed.ts` keeps a 30-second in-memory cache by relative path, requests raw GitHub `main/feed/<path>`, and on non-success or exception requests the same relative path from the same-origin bundle. JSON is parsed and cast but not checked against a reader schema. Each path is independent, so a page can mix raw and bundled artifacts from different generations.
+For most JSON, `frontend/lib/feed.ts` keeps a 30-second in-memory cache by relative path, requests `<REMOTE>/<path>`, and on non-success or exception requests the same relative path from the same-origin bundle. `REMOTE` defaults to raw GitHub `main/feed` and is replaced wholesale by `NEXT_PUBLIC_FEED_BASE` when configured. JSON is parsed and cast but not checked against a reader schema. Each path is independent, so a page can mix remote and bundled artifacts from different generations.
 
-`getIntradayLive()` instead reads `live/feed/intraday/latest.json` remotely and has no bundled fallback. The tracked `frontend/public/feed` tree is partial and can be stale. The Pages workflow builds a selected temporary bundle, but feed-only commits do not trigger it; its export checks prove declared paths and a few critical files exist, not schema validity, cross-file completeness, or common generation identity.
+`getIntradayLive()` has no bundled fallback. Its base is produced by replacing the exact `/main/feed` substring in `REMOTE` with `/live/feed`; if a custom base does not contain that substring, the custom base is left unchanged and receives `/intraday/latest.json`. The tracked `frontend/public/feed` tree is partial and can be stale. The Pages workflow builds a selected temporary bundle, but its push trigger covers `frontend/**`, `feed/schema/**`, `.node-version`, and the workflow file—not generated feed artifacts outside `feed/schema`. Its export checks prove declared paths and a few critical files exist, not schema validity, cross-file completeness, or common generation identity.
 
 `index.json` freshness is based on report timestamps, and `health.json` audits selected sources. Neither proves that all required families exist, are mutually consistent, or belong to one publication. The watchdog audit step currently pipes through `tee` without `pipefail`, so its recorded exit status can mask a failing Python audit.
 
@@ -101,8 +102,8 @@ For most JSON, `frontend/lib/feed.ts` keeps a 30-second in-memory cache by relat
 - Writers are not consolidated; direct writes, explicit staging, workflow-ledger staging, GitHub API writes, and a live branch coexist.
 - Report publication is not atomic, cross-writer serialization is absent, and readers can mix generations through per-path fallback.
 - External-report HMAC, size, ID, and path controls must not be inferred for stock notes or unrelated internal producers.
-- The bundled snapshot is partial/stale between Pages deployments, and feed-only changes do not refresh it automatically.
-- CI ignores most feed-only changes in the general test workflow; focused producer workflows and local tests remain separate.
+- The bundled snapshot is partial/stale between Pages deployments, and generated artifact-only changes outside `feed/schema` do not refresh it automatically.
+- General CI ignores most generated feed artifact paths, but not `feed/schema`; focused producer workflows and local tests remain separate.
 - Freshness, health, directory existence, and an index written last are not completeness or rollback guarantees.
 
 The reader-facing complete-snapshot manifest is **Planned**: it must identify one immutable/versioned generation, enumerate artifacts and digests, validate required-family and cross-artifact completeness, retain the previous complete snapshot, and be written last as the reader publication point. Readers must verify it and fall back to the previous complete manifest when the newest generation is missing or invalid. None of that is current behavior, and the Stage 1A staging ledger must not be renamed or reused as if it already provided it.
