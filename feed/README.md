@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Entry point for repository-backed generated artifacts and their consumers.
-> **Last verified commit:** `1cf36e956471e321f027e18e661be5fe89057439`
+> **Last verified commit:** `9e8ea546f3a43456f3579a14b752d27142cdf58e`
 
 ## Role
 
@@ -31,7 +31,7 @@ Most frontend reads try a configurable remote feed first and then the same relat
 
 ## Producers and consumers
 
-Report publishers write `reports/` and may also update `signals/latest.json`, `market/state.json`, `factory/candidates.json`, and `index.json`. Separate workflows and scripts write screener, market history, intraday, crypto, funds, notes, health, RS, Chan, and Winter artifacts. Writers are not consolidated, and workflow concurrency groups do not form one cross-writer transaction.
+On a successful report publication, the publisher writes `reports/`, conditionally updates `signals/latest.json`, `market/state.json`, and `factory/candidates.json` only when the corresponding payloads are non-empty/truthy, and rebuilds `index.json` after those writes complete. An empty derived payload does not clear its prior artifact; the prior file remains intact. Separate workflows and scripts write screener, market history, intraday, crypto, funds, notes, health, RS, Chan, and Winter artifacts. Writers are not consolidated, and workflow concurrency groups do not form one cross-writer transaction.
 
 Frontend consumers use handwritten TypeScript interfaces and parse/cast fetched JSON without running the Python report validator. Local routines, GitHub Actions, OpenClaw tools, and optional Winter tooling also read the tree. Winter PostgreSQL is an optional projection and analysis store; it is not the feed authority.
 
@@ -70,7 +70,7 @@ These tests cover report schema behavior, strict parsing, HMAC and ingress bound
 
 ## Publication entry points
 
-Internal report producers call `feed_lib.publish_report()`: optionally sign, then validate, direct-write the report, conditionally write `signals/latest.json`, `market/state.json`, and `factory/candidates.json` when their source fields are present, and always rebuild `index.json` after a successful validation. These are ordinary direct writes, not atomic replacements or a cross-file transaction. Writing the index last in this one path does not make it a reader manifest and does not coordinate other writers.
+Internal report producers call `feed_lib.publish_report()`: optionally sign, then validate and direct-write the report; when the corresponding payloads are non-empty/truthy, it conditionally writes `signals/latest.json`, `market/state.json`, and `factory/candidates.json`. On a successful publish, after the report and any derived writes complete, it rebuilds `index.json`. Empty derived payloads leave prior derived artifacts intact. These are ordinary direct writes, not atomic replacements or a cross-file transaction. Writing the index last in this one path does not make it a reader manifest and does not coordinate other writers.
 
 Signed external inbox files are validated and merged with:
 

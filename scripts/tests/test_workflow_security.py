@@ -6,6 +6,7 @@ import json
 import pathlib
 import re
 import shlex
+import subprocess
 import unittest
 
 
@@ -1164,10 +1165,10 @@ EXPECTED_BACKEND_H2_HEADINGS = [
     "Current limitations",
 ]
 EXPECTED_BACKEND_INSTALL_COMMANDS = [
-    'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"',
-    "python3.11 -m venv .venv",
-    "source .venv/bin/activate",
-    'test "$(python --version 2>&1)" = "Python 3.11.15"',
+    'test "$(python3.11 --version 2>&1)" = "Python 3.11.15" &&',
+    "python3.11 -m venv .venv &&",
+    "source .venv/bin/activate &&",
+    'test "$(python --version 2>&1)" = "Python 3.11.15" &&',
     "python -m pip install --require-hashes -r requirements.txt",
 ]
 EXPECTED_BACKEND_RUN_COMMANDS = [
@@ -1182,10 +1183,10 @@ Role.
 ## Requirements and installation
 
 ```bash
-test "$(python3.11 --version 2>&1)" = "Python 3.11.15"
-python3.11 -m venv .venv
-source .venv/bin/activate
-test "$(python --version 2>&1)" = "Python 3.11.15"
+test "$(python3.11 --version 2>&1)" = "Python 3.11.15" &&
+python3.11 -m venv .venv &&
+source .venv/bin/activate &&
+test "$(python --version 2>&1)" = "Python 3.11.15" &&
 python -m pip install --require-hashes -r requirements.txt
 ```
 
@@ -3798,16 +3799,22 @@ class WorkflowSecurityTests(unittest.TestCase):
 
         readme_mutations = {
             "loose preflight patch": mutate_readme(
-                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"',
-                'test "$(python3.11 --version 2>&1)" = "Python 3.11"',
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15" &&',
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11" &&',
             ),
             "wrong venv interpreter": mutate_readme(
                 "python3.11 -m venv .venv",
                 "python3 -m venv .venv",
             ),
             "missing activation": mutate_readme(
-                "source .venv/bin/activate\n",
+                "source .venv/bin/activate &&\n",
                 "",
+            ),
+            "missing fail-stop operator": mutate_readme(
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15" &&\n'
+                "python3.11 -m venv .venv &&\n",
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"\n'
+                "python3.11 -m venv .venv &&\n",
             ),
             "unhashed install": mutate_readme(
                 "python -m pip install --require-hashes -r requirements.txt",
@@ -3818,10 +3825,10 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "uvicorn app.main:app",
             ),
             "reordered activation": mutate_readme(
-                "python3.11 -m venv .venv\n"
-                "source .venv/bin/activate\n",
-                "source .venv/bin/activate\n"
-                "python3.11 -m venv .venv\n",
+                "python3.11 -m venv .venv &&\n"
+                "source .venv/bin/activate &&\n",
+                "source .venv/bin/activate &&\n"
+                "python3.11 -m venv .venv &&\n",
             ),
             "legacy heading": mutate_readme(
                 "## Test locally\n",
@@ -3835,6 +3842,54 @@ class WorkflowSecurityTests(unittest.TestCase):
                         EXPECTED_RENDER_BLUEPRINT,
                         readme_text,
                     )
+
+        install_chain = "\n".join(EXPECTED_BACKEND_INSTALL_COMMANDS)
+
+        def run_install_probe(replacements: dict[str, str]) -> subprocess.CompletedProcess[str]:
+            probe = install_chain
+            for command, replacement in replacements.items():
+                self.assertEqual(
+                    probe.count(command),
+                    1,
+                    f"behavior probe anchor is not unique: {command!r}",
+                )
+                probe = probe.replace(command, replacement, 1)
+            return subprocess.run(
+                ["sh", "-c", probe],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+        first_version_failure = run_install_probe(
+            {
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"': "false",
+                "python3.11 -m venv .venv": "printf 'venv\\n'",
+                "source .venv/bin/activate": "printf 'activate\\n'",
+                'test "$(python --version 2>&1)" = "Python 3.11.15"': (
+                    "printf 'activated-version\\n'"
+                ),
+                "python -m pip install --require-hashes -r requirements.txt": (
+                    "printf 'install\\n'"
+                ),
+            }
+        )
+        self.assertNotEqual(first_version_failure.returncode, 0)
+        self.assertEqual(first_version_failure.stdout, "")
+
+        activated_version_failure = run_install_probe(
+            {
+                'test "$(python3.11 --version 2>&1)" = "Python 3.11.15"': "true",
+                "python3.11 -m venv .venv": "printf 'venv\\n'",
+                "source .venv/bin/activate": "printf 'activate\\n'",
+                'test "$(python --version 2>&1)" = "Python 3.11.15"': "false",
+                "python -m pip install --require-hashes -r requirements.txt": (
+                    "printf 'install\\n'"
+                ),
+            }
+        )
+        self.assertNotEqual(activated_version_failure.returncode, 0)
+        self.assertEqual(activated_version_failure.stdout, "venv\nactivate\n")
 
         render_text = (ROOT / "render.yaml").read_text(encoding="utf-8")
         readme_text = (ROOT / "backend" / "README.md").read_text(

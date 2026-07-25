@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Optional server-profile market-data, cache, OHLCV, and compatibility-analysis service.
-> **Last verified commit:** `1cf36e956471e321f027e18e661be5fe89057439`
+> **Last verified commit:** `9e8ea546f3a43456f3579a14b752d27142cdf58e`
 
 ## Role and optionality
 
@@ -19,10 +19,10 @@ Python `3.11.15` is the primary local, container, CI, and Render runtime. Python
 From `backend/`:
 
 ```bash
-test "$(python3.11 --version 2>&1)" = "Python 3.11.15"
-python3.11 -m venv .venv
-source .venv/bin/activate
-test "$(python --version 2>&1)" = "Python 3.11.15"
+test "$(python3.11 --version 2>&1)" = "Python 3.11.15" &&
+python3.11 -m venv .venv &&
+source .venv/bin/activate &&
+test "$(python --version 2>&1)" = "Python 3.11.15" &&
 python -m pip install --require-hashes -r requirements.txt
 ```
 
