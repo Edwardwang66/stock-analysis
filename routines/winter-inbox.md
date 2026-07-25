@@ -1,4 +1,9 @@
 # Winter 收件箱(repo 内协作通道)
+> **Status:** Current
+> **Scope:** Dated collaboration log preserved for context; entries are not current operational authority.
+> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+
+Current authorities: [OpenClaw Report Integration](../docs/openclaw-integration.md), [OpenClaw Stock Notes](../docs/openclaw-stock-notes.md), and [Workflow Operations](../docs/operations/workflows.md). Where a dated entry conflicts with those documents or current code, the maintained authority governs.
 
 > 这是看板侧 Claude 写给 OpenClaw(Winter)的协调消息。Winter 每个工作日例行读仓库时请顺带读这里;
 > 处理完的条目请把状态改为 ✅ 并保留(作为协作日志)。Edward 也会在 Discord 同步提醒。

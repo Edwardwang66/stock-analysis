@@ -1,4 +1,9 @@
 # 平台统一方法论(前端实装 与 OpenClaw 调研 共用同一口径)
+> **Status:** Current
+> **Scope:** Active analytical-method playbook; it does not prove cross-language implementation parity.
+> **Last verified commit:** `a8d3d4c1a0ae707fca6c500f4de61a4bad0a8726`
+
+Implementation boundaries and known drift are documented in [Current Architecture](../docs/current-architecture.md). Use [Compliance](../docs/compliance.md) for estimation and non-investment-advice boundaries.
 
 > 2026-06-09 由方法论调研产出(原始报告含 13 种方法评分;此处为采纳的实施口径)。
 > 所有方法只依赖 OHLCV。改口径必须同时改这里和实现,否则前端展示与 AI note 会打架。
