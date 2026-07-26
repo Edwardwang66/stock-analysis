@@ -1394,7 +1394,7 @@ class DocumentationChecks(TestCase):
             json.dumps(
                 {
                     "packageManager": "npm@11.9.0",
-                    "engines": {"node": "24.x", "npm": "11.9.0"},
+                    "engines": {"node": "24.x", "npm": "11.x"},
                 }
             ),
             encoding="utf-8",
@@ -1438,7 +1438,7 @@ class DocumentationChecks(TestCase):
                 json.dumps(
                     {
                         "packageManager": "npm@11.9.0",
-                        "engines": {"node": "24.x", "npm": "11.9.0"},
+                        "engines": {"node": "24.x", "npm": "11.x"},
                     }
                 ),
                 encoding="utf-8",
@@ -1869,7 +1869,7 @@ class DocumentationChecks(TestCase):
                 json.dumps(
                     {
                         "packageManager": "npm@11.9.0",
-                        "engines": {"node": "24.x", "npm": "11.9.0"},
+                        "engines": {"node": "24.x", "npm": "11.x"},
                     }
                 ),
                 encoding="utf-8",
@@ -1960,7 +1960,7 @@ class DocumentationChecks(TestCase):
                 json.dumps(
                     {
                         "packageManager": "npm@11.9.0",
-                        "engines": {"node": "24.x", "npm": "11.9.0"},
+                        "engines": {"node": "24.x", "npm": "11.x"},
                     }
                 ),
                 encoding="utf-8",

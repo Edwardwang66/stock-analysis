@@ -1222,11 +1222,12 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
             )
             expected_package_manager = f"npm@{contract['npm']}"
             expected_node_engine = f"{contract['node'].split('.', 1)[0]}.x"
+            expected_npm_engine = f"{contract['npm'].split('.', 1)[0]}.x"
             if (
                 package_manager != expected_package_manager
                 or type(engines) is not dict
                 or engines.get("node") != expected_node_engine
-                or engines.get("npm") != contract["npm"]
+                or engines.get("npm") != expected_npm_engine
             ):
                 errors.append(
                     Diagnostic(
