@@ -50,7 +50,7 @@ jobs:
       run:
         working-directory: frontend
     env:
-      # Approved spec still requires Node 20.20.2 even though Node 20 is EOL.
+      # Vercel production and CI use the repository Node 24 pin.
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}
       NEXT_PUBLIC_SITE_URL: ${{ matrix.site_url }}
@@ -65,8 +65,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Verify exact Node and npm
         run: |
-          test "$(node --version)" = "v20.20.2"
-          test "$(npm --version)" = "10.8.2"
+          test "$(node --version)" = "v24.14.0"
+          test "$(npm --version)" = "11.12.1"
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck

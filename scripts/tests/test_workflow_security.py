@@ -1040,8 +1040,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Verify exact Node and npm
         run: |
-          test "$(node --version)" = "v20.20.2"
-          test "$(npm --version)" = "10.8.2"
+          test "$(node --version)" = "v24.14.0"
+          test "$(npm --version)" = "11.12.1"
       - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |
@@ -1250,7 +1250,7 @@ FRONTEND_DEFAULTS_LINES = [
     "        working-directory: frontend",
 ]
 FRONTEND_ENV_LINES = [
-    "      # Approved spec still requires Node 20.20.2 even though Node 20 is EOL.",
+    "      # Vercel production and CI use the repository Node 24 pin.",
     '      NEXT_TELEMETRY_DISABLED: "1"',
     "      NEXT_PUBLIC_BASE_PATH: ${{ matrix.base_path }}",
     "      NEXT_PUBLIC_SITE_URL: ${{ matrix.site_url }}",
@@ -1345,8 +1345,8 @@ FRONTEND_STEP_BLOCKS = [
         [
             "      - name: Verify exact Node and npm",
             "        run: |",
-            '          test "$(node --version)" = "v20.20.2"',
-            '          test "$(npm --version)" = "10.8.2"',
+            '          test "$(node --version)" = "v24.14.0"',
+            '          test "$(npm --version)" = "11.12.1"',
         ]
     ),
     "      - run: npm ci",
@@ -5023,8 +5023,8 @@ class WorkflowSecurityTests(unittest.TestCase):
                 steps,
                 "name: Verify exact Node and npm",
             )
-            self.assertIn('test "$(node --version)" = "v20.20.2"', versions)
-            self.assertIn('test "$(npm --version)" = "10.8.2"', versions)
+            self.assertIn('test "$(node --version)" = "v24.14.0"', versions)
+            self.assertIn('test "$(npm --version)" = "11.12.1"', versions)
             common_steps = [checkout, setup_node, versions]
             for command in (
                 "npm ci",

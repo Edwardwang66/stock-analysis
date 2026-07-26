@@ -1115,8 +1115,8 @@ class DocumentationChecks(TestCase):
             "check_all_tracked_markdown": False,
             "archive_date": "2026-07-24",
             "runtime_contract": {
-                "node": "20.20.2",
-                "npm": "10.8.2",
+                "node": "24.14.0",
+                "npm": "11.12.1",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             },
@@ -1339,8 +1339,8 @@ class DocumentationChecks(TestCase):
             "        with:\n"
             "          node-version-file: .node-version\n"
             "      - run: |\n"
-            '          test "$(node --version)" = "v20.20.2"\n'
-            '          test "$(npm --version)" = "10.8.2"\n'
+            '          test "$(node --version)" = "v24.14.0"\n'
+            '          test "$(npm --version)" = "11.12.1"\n'
             "  python:\n"
             "    strategy:\n"
             "      matrix:\n"
@@ -1363,8 +1363,8 @@ class DocumentationChecks(TestCase):
             "        with:\n"
             "          node-version-file: .node-version\n"
             "      - run: |\n"
-            '          test "$(node --version)" = "v20.20.2"\n'
-            '          test "$(npm --version)" = "10.8.2"\n'
+            '          test "$(node --version)" = "v24.14.0"\n'
+            '          test "$(npm --version)" = "11.12.1"\n'
         )
 
     def _write_runtime_fixture(
@@ -1378,7 +1378,7 @@ class DocumentationChecks(TestCase):
         (root / "backend").mkdir()
         workflows = root / ".github" / "workflows"
         workflows.mkdir(parents=True)
-        (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+        (root / ".node-version").write_text("24.14.0\n", encoding="utf-8")
         (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
         (root / "backend" / "runtime.txt").write_text(
             "python-3.11.15\n", encoding="utf-8"
@@ -1393,8 +1393,8 @@ class DocumentationChecks(TestCase):
         (root / "frontend" / "package.json").write_text(
             json.dumps(
                 {
-                    "packageManager": "npm@10.8.2",
-                    "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                    "packageManager": "npm@11.12.1",
+                    "engines": {"node": "24.x", "npm": "11.12.1"},
                 }
             ),
             encoding="utf-8",
@@ -1410,8 +1410,8 @@ class DocumentationChecks(TestCase):
             tracked.append(f".github/workflows/{name}")
         self.track(root, *tracked)
         return {
-            "node": "20.20.2",
-            "npm": "10.8.2",
+            "node": "24.14.0",
+            "npm": "11.12.1",
             "python_primary": "3.11.15",
             "python_compatibility": ["3.12.13"],
         }
@@ -1423,7 +1423,7 @@ class DocumentationChecks(TestCase):
             (root / "backend").mkdir()
             workflows = root / ".github" / "workflows"
             workflows.mkdir(parents=True)
-            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".node-version").write_text("24.14.0\n", encoding="utf-8")
             (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
             backend_runtime = root / "backend" / "runtime.txt"
             backend_runtime.write_text("python-3.11.15\n", encoding="utf-8")
@@ -1437,8 +1437,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@10.8.2",
-                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                        "packageManager": "npm@11.12.1",
+                        "engines": {"node": "24.x", "npm": "11.12.1"},
                     }
                 ),
                 encoding="utf-8",
@@ -1452,8 +1452,8 @@ class DocumentationChecks(TestCase):
                 "        with:\n"
                 "          node-version-file: .node-version\n"
                 "      - run: |\n"
-                '          test "$(node --version)" = "v20.20.2"\n'
-                '          test "$(npm --version)" = "10.8.2"\n'
+                '          test "$(node --version)" = "v24.14.0"\n'
+                '          test "$(npm --version)" = "11.12.1"\n'
                 "  python:\n"
                 "    strategy:\n"
                 "      matrix:\n"
@@ -1475,8 +1475,8 @@ class DocumentationChecks(TestCase):
                 "        with:\n"
                 "          node-version-file: .node-version\n"
                 "      - run: |\n"
-                '          test "$(node --version)" = "v20.20.2"\n'
-                '          test "$(npm --version)" = "10.8.2"\n'
+                '          test "$(node --version)" = "v24.14.0"\n'
+                '          test "$(npm --version)" = "11.12.1"\n'
             )
             deploy.write_text(exact_deploy, encoding="utf-8")
             production = workflows / "alpha-routine.yml"
@@ -1496,8 +1496,8 @@ class DocumentationChecks(TestCase):
                 ".github/workflows/alpha-routine.yml",
             )
             contract = {
-                "node": "20.20.2",
-                "npm": "10.8.2",
+                "node": "24.14.0",
+                "npm": "11.12.1",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }
@@ -1529,7 +1529,7 @@ class DocumentationChecks(TestCase):
                 ),
                 (
                     root / "frontend" / "package.json",
-                    '{"packageManager":"npm@10.8.1","engines":{"node":"20.20.2","npm":"10.8.1"}}',
+                    '{"packageManager":"npm@10.8.1","engines":{"node":"24.14.0","npm":"10.8.1"}}',
                 ),
                 (
                     workflow,
@@ -1539,7 +1539,7 @@ class DocumentationChecks(TestCase):
                 ),
                 (
                     deploy,
-                    exact_deploy.replace("v20.20.2", "v20.20.1"),
+                    exact_deploy.replace("v24.14.0", "v20.20.1"),
                 ),
                 (
                     production,
@@ -1564,8 +1564,8 @@ class DocumentationChecks(TestCase):
                 "  assertions_decoy:\n"
                 "    steps:\n"
                 "      - run: |\n"
-                '          test "$(node --version)" = "v20.20.2"\n'
-                '          test "$(npm --version)" = "10.8.2"\n'
+                '          test "$(node --version)" = "v24.14.0"\n'
+                '          test "$(npm --version)" = "11.12.1"\n'
                 "  matrix_decoy:\n"
                 "    strategy:\n"
                 "      matrix:\n"
@@ -1585,8 +1585,8 @@ class DocumentationChecks(TestCase):
                 "  assertions_only:\n"
                 "    steps:\n"
                 "      - run: |\n"
-                '          test "$(node --version)" = "v20.20.2"\n'
-                '          test "$(npm --version)" = "10.8.2"\n'
+                '          test "$(node --version)" = "v24.14.0"\n'
+                '          test "$(npm --version)" = "11.12.1"\n'
             )
             contract = self._write_runtime_fixture(
                 root, tests_workflow, deploy_workflow
@@ -1685,8 +1685,8 @@ class DocumentationChecks(TestCase):
                 "        with:\n"
                 '          python-version: "3.10.0"\n'
                 "      - run: |\n"
-                '          test "$(node --version)" = "v20.20.2"\n'
-                '          test "$(npm --version)" = "10.8.2"\n'
+                '          test "$(node --version)" = "v24.14.0"\n'
+                '          test "$(npm --version)" = "11.12.1"\n'
             )
             contract = self._write_runtime_fixture(
                 root,
@@ -1726,8 +1726,8 @@ class DocumentationChecks(TestCase):
                     "        with:\n"
                     "          node-version-file: .node-version\n"
                     "      - run: |\n"
-                    '          test "$(node --version)" = "v20.20.2"\n'
-                    '          test "$(npm --version)" = "10.8.2"\n'
+                    '          test "$(node --version)" = "v24.14.0"\n'
+                    '          test "$(npm --version)" = "11.12.1"\n'
                     "  python:\n"
                     "    strategy:\n"
                     "      matrix:\n"
@@ -1748,8 +1748,8 @@ class DocumentationChecks(TestCase):
                     "        with:\n"
                     "          node-version-file: .node-version\n"
                     "      - run: |\n"
-                    '          test "$(node --version)" = "v20.20.2"\n'
-                    '          test "$(npm --version)" = "10.8.2"\n'
+                    '          test "$(node --version)" = "v24.14.0"\n'
+                    '          test "$(npm --version)" = "11.12.1"\n'
                 )
                 never_drift = (
                     "jobs:\n"
@@ -1790,8 +1790,8 @@ class DocumentationChecks(TestCase):
             "        with:\n"
             "          node-version-file: .node-version\n"
             "      - run: |\n"
-            '          test "$(node --version)" = "v20.20.2"\n'
-            '          test "$(npm --version)" = "10.8.2"\n'
+            '          test "$(node --version)" = "v24.14.0"\n'
+            '          test "$(npm --version)" = "11.12.1"\n'
             "  python:\n"
             "    strategy:\n"
             "      matrix:\n"
@@ -1812,8 +1812,8 @@ class DocumentationChecks(TestCase):
             "        with:\n"
             "          node-version-file: .node-version\n"
             "      - run: |\n"
-            '          test "$(node --version)" = "v20.20.2"\n'
-            '          test "$(npm --version)" = "10.8.2"\n'
+            '          test "$(node --version)" = "v24.14.0"\n'
+            '          test "$(npm --version)" = "11.12.1"\n'
         )
         conditional_drift = (
             "jobs:\n"
@@ -1853,7 +1853,7 @@ class DocumentationChecks(TestCase):
             (root / "backend").mkdir()
             workflows = root / ".github" / "workflows"
             workflows.mkdir(parents=True)
-            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".node-version").write_text("24.14.0\n", encoding="utf-8")
             (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
             (root / "backend" / "runtime.txt").write_text(
                 "python-3.11.15\n", encoding="utf-8"
@@ -1868,8 +1868,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@10.8.2",
-                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                        "packageManager": "npm@11.12.1",
+                        "engines": {"node": "24.x", "npm": "11.12.1"},
                     }
                 ),
                 encoding="utf-8",
@@ -1882,8 +1882,8 @@ class DocumentationChecks(TestCase):
                 "              with:\n"
                 "                  node-version-file: .node-version\n"
                 "            - run: |\n"
-                '                  test "$(node --version)" = "v20.20.2"\n'
-                '                  test "$(npm --version)" = "10.8.2"\n'
+                '                  test "$(node --version)" = "v24.14.0"\n'
+                '                  test "$(npm --version)" = "11.12.1"\n'
                 "    python:\n"
                 "        strategy:\n"
                 "            matrix:\n"
@@ -1904,8 +1904,8 @@ class DocumentationChecks(TestCase):
                 "              with:\n"
                 "                  node-version-file: .node-version\n"
                 "            - run: |\n"
-                '                  test "$(node --version)" = "v20.20.2"\n'
-                '                  test "$(npm --version)" = "10.8.2"\n',
+                '                  test "$(node --version)" = "v24.14.0"\n'
+                '                  test "$(npm --version)" = "11.12.1"\n',
                 encoding="utf-8",
             )
             (workflows / "alpha-routine.yml").write_text(
@@ -1924,8 +1924,8 @@ class DocumentationChecks(TestCase):
                 ".github/workflows/alpha-routine.yml",
             )
             contract = {
-                "node": "20.20.2",
-                "npm": "10.8.2",
+                "node": "24.14.0",
+                "npm": "11.12.1",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }
@@ -1944,7 +1944,7 @@ class DocumentationChecks(TestCase):
             (root / "backend").mkdir()
             workflows = root / ".github" / "workflows"
             workflows.mkdir(parents=True)
-            (root / ".node-version").write_text("20.20.2\n", encoding="utf-8")
+            (root / ".node-version").write_text("24.14.0\n", encoding="utf-8")
             (root / ".python-version").write_text("3.11.15\n", encoding="utf-8")
             (root / "backend" / "runtime.txt").write_text(
                 "python-3.11.15\n", encoding="utf-8"
@@ -1959,8 +1959,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@10.8.2",
-                        "engines": {"node": "20.20.2", "npm": "10.8.2"},
+                        "packageManager": "npm@11.12.1",
+                        "engines": {"node": "24.x", "npm": "11.12.1"},
                     }
                 ),
                 encoding="utf-8",
@@ -1970,8 +1970,8 @@ class DocumentationChecks(TestCase):
                 "  frontend:\n"
                 "    env:\n"
                 "      ASSERTION_DECOYS: |\n"
-                '        test "$(node --version)" = "v20.20.2"\n'
-                '        test "$(npm --version)" = "10.8.2"\n'
+                '        test "$(node --version)" = "v24.14.0"\n'
+                '        test "$(npm --version)" = "11.12.1"\n'
                 "    steps:\n"
                 "      - uses: actions/setup-node@v7\n"
                 "        with:\n"
@@ -1997,8 +1997,8 @@ class DocumentationChecks(TestCase):
                 "    env:\n"
                 "      RUNTIME_DECOYS: |\n"
                 "        node-version-file: .node-version\n"
-                '        test "$(node --version)" = "v20.20.2"\n'
-                '        test "$(npm --version)" = "10.8.2"\n'
+                '        test "$(node --version)" = "v24.14.0"\n'
+                '        test "$(npm --version)" = "11.12.1"\n'
                 "    steps:\n"
                 "      - uses: actions/setup-node@v7\n"
                 "        with:\n"
@@ -2022,8 +2022,8 @@ class DocumentationChecks(TestCase):
                 ".github/workflows/alpha-routine.yml",
             )
             contract = {
-                "node": "20.20.2",
-                "npm": "10.8.2",
+                "node": "24.14.0",
+                "npm": "11.12.1",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }

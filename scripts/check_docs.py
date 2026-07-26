@@ -82,8 +82,8 @@ RUNTIME_KEYS = frozenset(
 )
 EXPECTED_ARCHIVE_DATE = "2026-07-24"
 EXPECTED_RUNTIME_CONTRACT = {
-    "node": "20.20.2",
-    "npm": "10.8.2",
+    "node": "24.14.0",
+    "npm": "11.12.1",
     "python_primary": "3.11.15",
     "python_compatibility": ["3.12.13"],
 }
@@ -1221,10 +1221,11 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                 package.get("packageManager") if type(package) is dict else None
             )
             expected_package_manager = f"npm@{contract['npm']}"
+            expected_node_engine = f"{contract['node'].split('.', 1)[0]}.x"
             if (
                 package_manager != expected_package_manager
                 or type(engines) is not dict
-                or engines.get("node") != contract["node"]
+                or engines.get("node") != expected_node_engine
                 or engines.get("npm") != contract["npm"]
             ):
                 errors.append(
@@ -1232,7 +1233,7 @@ def check_runtime_contract(root: Path, contract: dict) -> list[Diagnostic]:
                         "frontend/package.json",
                         1,
                         "package-runtime-drift",
-                        "packageManager and engines must match runtime_contract exactly",
+                        "packageManager and engines must match runtime_contract",
                     )
                 )
 

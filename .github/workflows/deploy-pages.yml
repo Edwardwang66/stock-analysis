@@ -31,8 +31,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Verify exact Node and npm
         run: |
-          test "$(node --version)" = "v20.20.2"
-          test "$(npm --version)" = "10.8.2"
+          test "$(node --version)" = "v24.14.0"
+          test "$(npm --version)" = "11.12.1"
       - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |

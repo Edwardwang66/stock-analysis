@@ -148,7 +148,7 @@ npm run build:server
 npm run smoke:server
 ```
 
-`npm run build` aliases the server build. The repository pins Node 20.20.2 and npm 10.8.2. `smoke:server` checks the Next UI and expected error behavior of its route handlers; it does not start or validate FastAPI.
+`npm run build` aliases the server build. The repository pins Node 24.14.0 and npm 11.12.1; `frontend/package.json` declares `engines.node` as `24.x` so Vercel uses its supported Node 24 runtime without patch-version warnings. `smoke:server` checks the Next UI and expected error behavior of its route handlers; it does not start or validate FastAPI.
 
 ## Configuration matrix
 
@@ -199,7 +199,7 @@ The following observations were collected on **2026-07-24**. They are observatio
 - The canonical single-slash Render `/api/v1/health` route returned HTTP 200. The double-slash URL produced by current literal `API_BASE + "/api/v1/..."` construction returned HTTP 404. The configured FastAPI integration therefore must not be called healthy until the Variable loses its trailing slash or clients normalize it.
 - GitHub Pages and the hard-coded Vercel alias returned successfully.
 - The latest successful Pages deployment and the latest READY production deployment bound to the hard-coded alias represented commits from 2026-06-11 rather than Stage 1B. A newer READY Vercel preview existed, but the hard-coded alias did not serve it.
-- The Vercel project setting reported Node 24.x, while the repository contract is Node 20.20.2.
+- The Vercel project setting reports Node 24.x, matching the repository's Node 24 contract.
 
 Before relying on these hosted paths for a new production deployment, resolve both the `API_BASE` trailing-slash mismatch and the Vercel runtime mismatch, then verify the deployed commit.
 
