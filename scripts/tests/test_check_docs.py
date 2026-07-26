@@ -1116,7 +1116,7 @@ class DocumentationChecks(TestCase):
             "archive_date": "2026-07-24",
             "runtime_contract": {
                 "node": "24.14.0",
-                "npm": "11.12.1",
+                "npm": "11.9.0",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             },
@@ -1340,7 +1340,7 @@ class DocumentationChecks(TestCase):
             "          node-version-file: .node-version\n"
             "      - run: |\n"
             '          test "$(node --version)" = "v24.14.0"\n'
-            '          test "$(npm --version)" = "11.12.1"\n'
+            '          test "$(npm --version)" = "11.9.0"\n'
             "  python:\n"
             "    strategy:\n"
             "      matrix:\n"
@@ -1364,7 +1364,7 @@ class DocumentationChecks(TestCase):
             "          node-version-file: .node-version\n"
             "      - run: |\n"
             '          test "$(node --version)" = "v24.14.0"\n'
-            '          test "$(npm --version)" = "11.12.1"\n'
+            '          test "$(npm --version)" = "11.9.0"\n'
         )
 
     def _write_runtime_fixture(
@@ -1393,8 +1393,8 @@ class DocumentationChecks(TestCase):
         (root / "frontend" / "package.json").write_text(
             json.dumps(
                 {
-                    "packageManager": "npm@11.12.1",
-                    "engines": {"node": "24.x", "npm": "11.12.1"},
+                    "packageManager": "npm@11.9.0",
+                    "engines": {"node": "24.x", "npm": "11.9.0"},
                 }
             ),
             encoding="utf-8",
@@ -1411,7 +1411,7 @@ class DocumentationChecks(TestCase):
         self.track(root, *tracked)
         return {
             "node": "24.14.0",
-            "npm": "11.12.1",
+            "npm": "11.9.0",
             "python_primary": "3.11.15",
             "python_compatibility": ["3.12.13"],
         }
@@ -1437,8 +1437,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@11.12.1",
-                        "engines": {"node": "24.x", "npm": "11.12.1"},
+                        "packageManager": "npm@11.9.0",
+                        "engines": {"node": "24.x", "npm": "11.9.0"},
                     }
                 ),
                 encoding="utf-8",
@@ -1453,7 +1453,7 @@ class DocumentationChecks(TestCase):
                 "          node-version-file: .node-version\n"
                 "      - run: |\n"
                 '          test "$(node --version)" = "v24.14.0"\n'
-                '          test "$(npm --version)" = "11.12.1"\n'
+                '          test "$(npm --version)" = "11.9.0"\n'
                 "  python:\n"
                 "    strategy:\n"
                 "      matrix:\n"
@@ -1476,7 +1476,7 @@ class DocumentationChecks(TestCase):
                 "          node-version-file: .node-version\n"
                 "      - run: |\n"
                 '          test "$(node --version)" = "v24.14.0"\n'
-                '          test "$(npm --version)" = "11.12.1"\n'
+                '          test "$(npm --version)" = "11.9.0"\n'
             )
             deploy.write_text(exact_deploy, encoding="utf-8")
             production = workflows / "alpha-routine.yml"
@@ -1497,7 +1497,7 @@ class DocumentationChecks(TestCase):
             )
             contract = {
                 "node": "24.14.0",
-                "npm": "11.12.1",
+                "npm": "11.9.0",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }
@@ -1565,7 +1565,7 @@ class DocumentationChecks(TestCase):
                 "    steps:\n"
                 "      - run: |\n"
                 '          test "$(node --version)" = "v24.14.0"\n'
-                '          test "$(npm --version)" = "11.12.1"\n'
+                '          test "$(npm --version)" = "11.9.0"\n'
                 "  matrix_decoy:\n"
                 "    strategy:\n"
                 "      matrix:\n"
@@ -1586,7 +1586,7 @@ class DocumentationChecks(TestCase):
                 "    steps:\n"
                 "      - run: |\n"
                 '          test "$(node --version)" = "v24.14.0"\n'
-                '          test "$(npm --version)" = "11.12.1"\n'
+                '          test "$(npm --version)" = "11.9.0"\n'
             )
             contract = self._write_runtime_fixture(
                 root, tests_workflow, deploy_workflow
@@ -1686,7 +1686,7 @@ class DocumentationChecks(TestCase):
                 '          python-version: "3.10.0"\n'
                 "      - run: |\n"
                 '          test "$(node --version)" = "v24.14.0"\n'
-                '          test "$(npm --version)" = "11.12.1"\n'
+                '          test "$(npm --version)" = "11.9.0"\n'
             )
             contract = self._write_runtime_fixture(
                 root,
@@ -1727,7 +1727,7 @@ class DocumentationChecks(TestCase):
                     "          node-version-file: .node-version\n"
                     "      - run: |\n"
                     '          test "$(node --version)" = "v24.14.0"\n'
-                    '          test "$(npm --version)" = "11.12.1"\n'
+                    '          test "$(npm --version)" = "11.9.0"\n'
                     "  python:\n"
                     "    strategy:\n"
                     "      matrix:\n"
@@ -1749,7 +1749,7 @@ class DocumentationChecks(TestCase):
                     "          node-version-file: .node-version\n"
                     "      - run: |\n"
                     '          test "$(node --version)" = "v24.14.0"\n'
-                    '          test "$(npm --version)" = "11.12.1"\n'
+                    '          test "$(npm --version)" = "11.9.0"\n'
                 )
                 never_drift = (
                     "jobs:\n"
@@ -1791,7 +1791,7 @@ class DocumentationChecks(TestCase):
             "          node-version-file: .node-version\n"
             "      - run: |\n"
             '          test "$(node --version)" = "v24.14.0"\n'
-            '          test "$(npm --version)" = "11.12.1"\n'
+            '          test "$(npm --version)" = "11.9.0"\n'
             "  python:\n"
             "    strategy:\n"
             "      matrix:\n"
@@ -1813,7 +1813,7 @@ class DocumentationChecks(TestCase):
             "          node-version-file: .node-version\n"
             "      - run: |\n"
             '          test "$(node --version)" = "v24.14.0"\n'
-            '          test "$(npm --version)" = "11.12.1"\n'
+            '          test "$(npm --version)" = "11.9.0"\n'
         )
         conditional_drift = (
             "jobs:\n"
@@ -1868,8 +1868,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@11.12.1",
-                        "engines": {"node": "24.x", "npm": "11.12.1"},
+                        "packageManager": "npm@11.9.0",
+                        "engines": {"node": "24.x", "npm": "11.9.0"},
                     }
                 ),
                 encoding="utf-8",
@@ -1883,7 +1883,7 @@ class DocumentationChecks(TestCase):
                 "                  node-version-file: .node-version\n"
                 "            - run: |\n"
                 '                  test "$(node --version)" = "v24.14.0"\n'
-                '                  test "$(npm --version)" = "11.12.1"\n'
+                '                  test "$(npm --version)" = "11.9.0"\n'
                 "    python:\n"
                 "        strategy:\n"
                 "            matrix:\n"
@@ -1905,7 +1905,7 @@ class DocumentationChecks(TestCase):
                 "                  node-version-file: .node-version\n"
                 "            - run: |\n"
                 '                  test "$(node --version)" = "v24.14.0"\n'
-                '                  test "$(npm --version)" = "11.12.1"\n',
+                '                  test "$(npm --version)" = "11.9.0"\n',
                 encoding="utf-8",
             )
             (workflows / "alpha-routine.yml").write_text(
@@ -1925,7 +1925,7 @@ class DocumentationChecks(TestCase):
             )
             contract = {
                 "node": "24.14.0",
-                "npm": "11.12.1",
+                "npm": "11.9.0",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }
@@ -1959,8 +1959,8 @@ class DocumentationChecks(TestCase):
             (root / "frontend" / "package.json").write_text(
                 json.dumps(
                     {
-                        "packageManager": "npm@11.12.1",
-                        "engines": {"node": "24.x", "npm": "11.12.1"},
+                        "packageManager": "npm@11.9.0",
+                        "engines": {"node": "24.x", "npm": "11.9.0"},
                     }
                 ),
                 encoding="utf-8",
@@ -1971,7 +1971,7 @@ class DocumentationChecks(TestCase):
                 "    env:\n"
                 "      ASSERTION_DECOYS: |\n"
                 '        test "$(node --version)" = "v24.14.0"\n'
-                '        test "$(npm --version)" = "11.12.1"\n'
+                '        test "$(npm --version)" = "11.9.0"\n'
                 "    steps:\n"
                 "      - uses: actions/setup-node@v7\n"
                 "        with:\n"
@@ -1998,7 +1998,7 @@ class DocumentationChecks(TestCase):
                 "      RUNTIME_DECOYS: |\n"
                 "        node-version-file: .node-version\n"
                 '        test "$(node --version)" = "v24.14.0"\n'
-                '        test "$(npm --version)" = "11.12.1"\n'
+                '        test "$(npm --version)" = "11.9.0"\n'
                 "    steps:\n"
                 "      - uses: actions/setup-node@v7\n"
                 "        with:\n"
@@ -2023,7 +2023,7 @@ class DocumentationChecks(TestCase):
             )
             contract = {
                 "node": "24.14.0",
-                "npm": "11.12.1",
+                "npm": "11.9.0",
                 "python_primary": "3.11.15",
                 "python_compatibility": ["3.12.13"],
             }

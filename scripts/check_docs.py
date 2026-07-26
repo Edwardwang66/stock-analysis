@@ -83,7 +83,7 @@ RUNTIME_KEYS = frozenset(
 EXPECTED_ARCHIVE_DATE = "2026-07-24"
 EXPECTED_RUNTIME_CONTRACT = {
     "node": "24.14.0",
-    "npm": "11.12.1",
+    "npm": "11.9.0",
     "python_primary": "3.11.15",
     "python_compatibility": ["3.12.13"],
 }

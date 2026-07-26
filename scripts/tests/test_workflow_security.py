@@ -1041,7 +1041,7 @@ jobs:
       - name: Verify exact Node and npm
         run: |
           test "$(node --version)" = "v24.14.0"
-          test "$(npm --version)" = "11.12.1"
+          test "$(npm --version)" = "11.9.0"
       - name: Bundle latest feed snapshot
         working-directory: ${{ github.workspace }}
         run: |
@@ -1346,7 +1346,7 @@ FRONTEND_STEP_BLOCKS = [
             "      - name: Verify exact Node and npm",
             "        run: |",
             '          test "$(node --version)" = "v24.14.0"',
-            '          test "$(npm --version)" = "11.12.1"',
+            '          test "$(npm --version)" = "11.9.0"',
         ]
     ),
     "      - run: npm ci",
@@ -5024,7 +5024,7 @@ class WorkflowSecurityTests(unittest.TestCase):
                 "name: Verify exact Node and npm",
             )
             self.assertIn('test "$(node --version)" = "v24.14.0"', versions)
-            self.assertIn('test "$(npm --version)" = "11.12.1"', versions)
+            self.assertIn('test "$(npm --version)" = "11.9.0"', versions)
             common_steps = [checkout, setup_node, versions]
             for command in (
                 "npm ci",

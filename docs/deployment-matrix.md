@@ -148,7 +148,7 @@ npm run build:server
 npm run smoke:server
 ```
 
-`npm run build` aliases the server build. The repository pins Node 24.14.0 and npm 11.12.1; `frontend/package.json` declares `engines.node` as `24.x` so Vercel uses its supported Node 24 runtime without patch-version warnings. `smoke:server` checks the Next UI and expected error behavior of its route handlers; it does not start or validate FastAPI.
+`npm run build` aliases the server build. The repository pins Node 24.14.0 and npm 11.9.0; `frontend/package.json` declares `engines.node` as `24.x` so Vercel uses its supported Node 24 runtime without patch-version warnings. `smoke:server` checks the Next UI and expected error behavior of its route handlers; it does not start or validate FastAPI.
 
 ## Configuration matrix
 
