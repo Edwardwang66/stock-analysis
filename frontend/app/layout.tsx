@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { resolvePublicSiteUrl } from "@/lib/public-site-url.mjs";
 import "./globals.css";
 import HotKeys from "@/components/HotKeys";
@@ -50,7 +51,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh">
-      <body><HotKeys /><ErrorCollector />{children}</body>
+      <body>
+        <HotKeys />
+        <ErrorCollector />
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

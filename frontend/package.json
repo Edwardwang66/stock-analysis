@@ -22,6 +22,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:scripts && npm run build:static && npm run smoke:static && npm run build:server && npm run smoke:server"
   },
   "dependencies": {
+    "@vercel/analytics": "2.0.1",
     "lightweight-charts": "4.2.3",
     "next": "14.2.35",
     "react": "18.3.1",
