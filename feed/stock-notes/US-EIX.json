@@ -1,14 +1,14 @@
 {
   "symbol": "US:EIX",
-  "date": "2026-07-25",
+  "date": "2026-07-28",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: Edison International 属于 Utilities/Utilities—Regulated Electric，当前进入看多清单，技术评分 80、RSI14 68.1；最新价约 79.75，20/50/200日均线约 76.50/73.40/66.45；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.4%、96分位；SuperTrend(10,3) 多头·约 34 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 6.7%/17.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "看多",
+  "thesis": "多头: Edison International 属于 Utilities/Utilities—Regulated Electric，当前进入看多清单，技术评分 80、RSI14 61.5；最新价约 78.64，20/50/200日均线约 76.45/73.38/66.45；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -2.8%、92分位；SuperTrend(10,3) 多头·约 34 个交易日前翻转；缠论近似: 当前上行笔，位于中枢内部，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 5.2%/15.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: FirstEnergy to Report Q2 Earnings: What's in Store for the Stock?(Zacks)；More Than 12,000 Seek Compensation Directly Through SCE for Eaton Fire Recovery(Business Wire)；Edison International (EIX) Draws Earnings Optimism, Is The Stock Fully Valued?(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: American Water to Report Q2 Earnings: What's in Store for the Stock?(Zacks)；DTE Energy Gears Up to Report Q2 Earnings: What's in the Cards?(Zacks)；CenterPoint Energy to Report Q2 Earnings: What's in the Cards?(Zacks)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.4%、96分位；SuperTrend(10,3) 多头·约 34 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -2.8%、92分位；SuperTrend(10,3) 多头·约 34 个交易日前翻转；缠论近似: 当前上行笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: EIX",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/EIX/news/"
     },
     {
-      "title": "FirstEnergy to Report Q2 Earnings: What's in Store for the Stock?",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/firstenergy-report-q2-earnings-whats-174500930.html"
+      "title": "American Water to Report Q2 Earnings: What's in Store for the Stock?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/american-water-report-q2-earnings-165400978.html"
     },
     {
-      "title": "More Than 12,000 Seek Compensation Directly Through SCE for Eaton Fire Recovery",
-      "url": "https://finance.yahoo.com/economy/policy/articles/more-12-000-seek-compensation-153000443.html"
+      "title": "DTE Energy Gears Up to Report Q2 Earnings: What's in the Cards?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/dte-energy-gears-report-q2-151200336.html"
     }
   ],
   "methodology": {
     "td9": "上行9(防衰竭)",
-    "week52": "距高 -1.4% · 96分位",
+    "week52": "距高 -2.8% · 92分位",
     "supertrend": "多头·约 34 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
-    "rs": 86
+    "chan": "上行笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 85
   }
 }
