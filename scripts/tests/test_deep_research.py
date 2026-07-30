@@ -610,6 +610,31 @@ class TestPublish(DeepResearchTestCase):
         self.assertEqual((self.feed / "market" / "state.json").read_bytes(), market_before)
         self.assertEqual((self.feed / "signals" / "latest.json").read_bytes(), book_before)
 
+    def test_companion_report_never_becomes_the_dashboards_engine_report(self):
+        """配套报告不带 engine 段,所以不能挪动 index 里任何「引擎口径」的字段。
+
+        `rebuild_index()` 用 `next((r for r in reports if r.get("engine")), latest)` 挑
+        latest.report / market_data_asof(2026-06-10 审计定的规矩:混用其它写手的 asof
+        会虚报数据新鲜度)。一旦有人给配套报告加上 engine 段,看板的 net_sharpe、verdict、
+        数据龄期就会被一份不做回测的报告顶掉 —— 那是静默的错数,不是报错,所以这里锁住。
+        """
+        index_before = fl.rebuild_index()
+        brief = self.brief()
+        self.assertEqual(dr.publish(brief, brief_only=False, quiet=True), 0)
+        index_after = fl.load_json(str(self.feed / "index.json"))
+
+        # 配套报告确实进了 feed(否则这条测试是空转)
+        self.assertTrue((self.feed / "reports" / f"{brief['id']}.json").exists())
+        self.assertIn(brief["id"], [r["id"] for r in index_after["reports"]])
+
+        for field in ("market_data_asof", "data_age_days"):
+            self.assertEqual(index_after["freshness"][field], index_before["freshness"][field],
+                             msg=f"配套报告挪动了引擎口径字段 {field}")
+        for field in ("report", "net_sharpe", "verdict"):
+            self.assertEqual(index_after["latest"][field], index_before["latest"][field],
+                             msg=f"配套报告顶掉了看板的 latest.{field}")
+        self.assertNotIn(brief["id"], str(index_after["latest"]["report"]))
+
     def test_invalid_companion_report_publishes_nothing_at_all(self):
         """两份工件要么一起发,要么一份都不发。
 
