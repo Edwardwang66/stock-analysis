@@ -155,11 +155,22 @@ def check_research_coherence():
     if not idx:
         return
     latest = idx.get("latest") or {}
-    refs = [latest.get("path")] + [b.get("path") for b in (idx.get("briefs") or [])[:10]]
+    briefs = idx.get("briefs") or []
+    head = briefs[0] if briefs and isinstance(briefs[0], dict) else {}
+    refs = [latest.get("path")] + [b.get("path") for b in briefs[:10] if isinstance(b, dict)]
     for ref in [r for r in refs if r]:
         if not os.path.exists(os.path.join(fl.FEED, ref)):
             flag("critical", "research-dangling", f"research/index.json 指向不存在的简报: {ref}")
-    brief = _j(latest["path"]) if latest.get("path") else None
+    # latest 与 briefs[0] 必须是同一份:alert_scan()、/intel 面板都按 latest 挑最新简报,
+    # 一旦它与排序后的列表头分歧,自动化与看板就会指向不同的运行,而这里正是该发现它的地方。
+    if latest.get("path") and head.get("path") and latest["path"] != head["path"]:
+        flag("critical", "research-latest-drift",
+             f"research/index.json 的 latest({latest.get('id')})与 briefs[0]"
+             f"({head.get('id')})不是同一份简报,消费方会各挑各的")
+    # 选取规则与 alert_scan() / 前端保持一致:latest 优先,briefs[0] 兜底 ——
+    # 否则 latest 缺失时语义检查会静默跳过,而消费方仍在读 briefs[0]。
+    ref = latest.get("path") or head.get("path")
+    brief = _j(ref) if ref else None
     if not brief:
         return
     if brief.get("produced_at") and brief.get("asof_data") \
