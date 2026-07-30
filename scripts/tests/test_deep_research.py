@@ -501,6 +501,66 @@ class TestNumericGuards(DeepResearchTestCase):
         self.assertIn(f"feed/reports/{older_id}.json", artifacts)
         self.assertNotIn(f"feed/reports/{newest_id}.json", artifacts)
 
+    def _set_breaker_alert(self, *, message: str, tickers: list[str]) -> None:
+        """改写簿来源报告的熔断告警(夹具里簿指向最新那一份)。"""
+        for path in sorted((self.feed / "reports").glob("routine-*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if report.get("id") == self.latest_id:
+                report["alerts"] = [{"level": "info", "code": "cointegration_breaker",
+                                     "message": message, "tickers": tickers}]
+                write(path, report)
+                return
+        self.fail("夹具里找不到簿的来源报告")
+
+    def test_breaker_lens_quantifies_the_truncated_tail_instead_of_claiming_a_clean_book(self):
+        """告警的 tickers 被生产方硬截断(run_routine.py: br[:10]),全名单在 feed 里没有留存。
+
+        0 交集因此只在公布子集上成立 —— 结论必须把覆盖率说成数字,并且度量名要点明这一点,
+        否则只看 value 的消费方会把 0 读成「簿里没有熔断标的」。
+        """
+        # 簿持有 ABT/AVGO/T/MU/NVDA;公布的 2 只与簿无交集,而自报总数是 60。
+        self._set_breaker_alert(message="60 只标的触发协整断裂熔断(Hurst/半衰期/极端 s),已自动排除。",
+                                tickers=["ZZA", "ZZB"])
+        claim = self._claim(self.brief(), "q-book-vs-breaker")
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim["value"], 0)
+        self.assertEqual(claim["metric"], "book.breaker_overlap.published_subset.count")
+        self.assertIn("2/60", claim["statement"])
+        self.assertIn("3%", claim["statement"])          # 2/60 -> 3%
+        self.assertIn("余下 58 只", claim["statement"])
+        self.assertNotIn("全名单已清空", claim["statement"])
+        # 自报总数必须进证据链,否则覆盖率是无源之水
+        declared = [e for e in claim["evidence"]
+                    if e["field"].endswith("message.declared_total")]
+        self.assertEqual([e["value"] for e in declared], [60])
+
+    def test_breaker_lens_reports_full_coverage_when_the_alert_is_not_truncated(self):
+        self._set_breaker_alert(message="2 只标的触发协整断裂熔断,已自动排除。",
+                                tickers=["ABT", "AVGO"])
+        claim = self._claim(self.brief(), "q-book-vs-breaker")
+        self.assertEqual(claim["value"], 2)
+        self.assertIn("核对覆盖了告警自报的全部 2 只", claim["statement"])
+        self.assertNotIn("字母序", claim["statement"])
+
+    def test_breaker_lens_says_so_when_the_declared_total_is_unparseable(self):
+        """文案格式变了就退回「不知道总数」,绝不假装覆盖了全名单。"""
+        for message in ("协整断裂熔断已自动排除。", "", "many 只标的触发协整断裂熔断"):
+            with self.subTest(message=message):
+                self._set_breaker_alert(message=message, tickers=["ZZA", "ZZB"])
+                claim = self._claim(self.brief(), "q-book-vs-breaker")
+                self.assertIn("没有给出可解析的总数", claim["statement"])
+                declared = [e for e in claim["evidence"]
+                            if e["field"].endswith("message.declared_total")]
+                self.assertEqual([e["value"] for e in declared], ["absent"])
+
+    def test_breaker_lens_ignores_a_declared_total_smaller_than_the_published_list(self):
+        """文案自报数小于数组长度 = 两者对不上,该总数不可信,不能拿来算覆盖率。"""
+        self._set_breaker_alert(message="1 只标的触发协整断裂熔断,已自动排除。",
+                                tickers=["ZZA", "ZZB", "ZZC"])
+        claim = self._claim(self.brief(), "q-book-vs-breaker")
+        self.assertIn("没有给出可解析的总数", claim["statement"])
+        self.assertNotIn("1 只(", claim["statement"])
+
     def test_breaker_lens_degrades_when_the_book_source_report_is_unusable(self):
         for bad in (None, "../../etc/passwd", f"routine-{day_str(400)}T2330Z"):
             with self.subTest(source=bad):

@@ -796,8 +796,9 @@ def lens_book_identity(corpus: Corpus) -> list[dict]:
     needs=("feed/signals/latest.json:source_report",
            "feed/signals/latest.json:positions[].ticker",
            "feed/reports/routine-*.json:alerts[cointegration_breaker].tickers"),
-    test="按簿自报的 source_report 定位它那一次运行的报告(不是最新报告),"
-         "取该报告 cointegration_breaker 告警的 tickers,与簿内 ticker 求交集(应为空)。",
+    test="按簿自报的 source_report 定位它那一次运行的报告(不是最新报告),取该报告 "
+         "cointegration_breaker 告警的 tickers 与簿内 ticker 求交集;并从告警文案解析自报总数,"
+         "算出这次实际核对了名单的百分之几 —— tickers 是被截断的,交集只在公布子集上成立。",
     triggered_by="feed/signals/latest.json 带 source_report,且该报告带 cointegration_breaker 告警。",
 )
 def lens_book_vs_breaker(corpus: Corpus) -> list[dict]:
@@ -832,6 +833,25 @@ def lens_book_vs_breaker(corpus: Corpus) -> list[dict]:
     overlap = sorted(t for t in listed if t in weights)
     residual = _num(sum(abs(weights[t] or 0.0) for t in overlap))
     la = _date_of(origin.get("asof_data"))
+    # tickers 被生产方硬截断(run_routine.py: br[:10]),全名单在 feed 里任何地方都没有留存 ——
+    # 唯一还活着的总数在告警文案里。解析它,好把「这次核对了名单的百分之几」说成数字而不是含糊其辞;
+    # 解析不到就退回 None,只讲已公布子集,绝不假装覆盖了全名单。
+    declared = None
+    match = re.match(r"\s*(\d+)\s*只标的触发", str(breaker.get("message") or ""))
+    if match:
+        parsed = int(match.group(1))
+        if parsed >= len(listed):        # 自报总数小于已公布条数说明文案与数组对不上,不可信,不用
+            declared = parsed
+    truncated = declared is not None and declared > len(listed)
+    coverage = _num(len(listed) / declared) if declared else None
+    # 截断是按字母序取前 10(br[:10],br 本身按 ticker 排序),所以可见子集连随机样本都不是:
+    # 0 交集既不能推广成全名单已清空,也不能拿来估交集率。
+    scope = (f"这次只核对了名单的 {len(listed)}/{declared} 只"
+             f"({coverage:.0%};告警数组被生产方截断,余下 {declared - len(listed)} 只在 feed 里没有留存),"
+             f"且截断取的是字母序靠前的一段、不是随机样本"
+             if truncated else
+             f"核对覆盖了告警自报的全部 {len(listed)} 只" if declared is not None else
+             f"告警文案没有给出可解析的总数,无从判断这 {len(listed)} 只是不是全名单")
     newest = corpus.latest_engine()
     newest_id = newest.get("id") if isinstance(newest, dict) else None
     # 比对本身仍然成立(两侧同源),但簿不是最新一班时读者该知道:结论描述的是那一班的状态。
@@ -840,21 +860,27 @@ def lens_book_vs_breaker(corpus: Corpus) -> list[dict]:
                 f"本结论只描述 {source} 那一班的状态。)")
     return [claim(
         "residual-analyst", "q-book-vs-breaker",
-        (f"簿自报来源报告 {source},该报告公布的 {len(listed)} 只熔断标的里没有一只带权重留在这份簿。"
-         f"注意告警只公布名单的前 {len(listed)} 只(文案自报的总数可能更大),"
-         f"所以这只证明「已公布的那部分」不在簿内,不能推广成全名单已清空。"
+        (f"簿自报来源报告 {source},该报告公布的 {len(listed)} 只熔断标的里没有一只带权重留在这份簿 —— "
+         f"但{scope}。"
+         + (f"所以这个 0 只覆盖名单的 {coverage:.0%},不能读成「簿里没有熔断标的」:"
+            f"余下那 {declared - len(listed)} 只无从核对。"
+            if truncated else "")
          if not overlap else
          f"簿自报来源报告 {source},该报告的熔断名单与这份簿有 {len(overlap)} 只交集 {overlap},"
          f"仍带 {residual} 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),"
          f"而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。"
-         f"这不是数据损坏,但把 signals/latest.json 读成「已排除熔断标的」的消费方会读错;"
-         f"告警只列前 {len(listed)} 只更放大了这个误读。") + lag_note,
-        metric="book.breaker_overlap.count",
+         f"这不是数据损坏,但把 signals/latest.json 读成「已排除熔断标的」的消费方会读错。"
+         + (f"另外,{scope},所以真实交集只会比这 {len(overlap)} 只更多、不会更少。"
+            if truncated else f"另外,{scope}。")) + lag_note,
+        # 度量名点明「只在公布子集上」:光看数字的消费方不会把 0 误当成全名单清零。
+        metric="book.breaker_overlap.published_subset.count",
         value=len(overlap), unit="count", direction="none",
         n=len(listed), min_n=1, severity="warning" if overlap else "info", cites=("R2",),
         evidence=(ev("feed/signals/latest.json", "source_report", source, book.get("asof")),
                   ev(f"feed/reports/{source}.json", "alerts[cointegration_breaker].tickers.length",
                      len(listed), la),
+                  ev(f"feed/reports/{source}.json", "alerts[cointegration_breaker].message.declared_total",
+                     declared if declared is not None else "absent", la),
                   ev("feed/signals/latest.json", "positions[].ticker.count", len(weights), book.get("asof")),
                   ev("feed/signals/latest.json",
                      f"positions[{overlap[0]}].weight" if overlap else "positions[].weight",
