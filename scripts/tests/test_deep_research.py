@@ -261,6 +261,19 @@ class TestPipeline(DeepResearchTestCase):
         self.assertEqual([c.get("metric") for c in first["findings"]],
                          [c.get("metric") for c in second["findings"]])
 
+    def test_output_is_independent_of_thread_count(self):
+        """并发只是取证的实现细节:线程完成顺序不得泄漏进简报,否则简报不可复现。"""
+        def normalize(brief: dict) -> str:
+            copy = json.loads(json.dumps(brief))
+            for key in ("produced_at", "id", "asof_data"):
+                copy.pop(key, None)
+            for key in ("duration_ms", "workers"):
+                copy["run"].pop(key, None)
+            return json.dumps(copy, ensure_ascii=False, sort_keys=True)
+
+        shapes = {normalize(self.brief(workers=w)) for w in (1, 3, 8)}
+        self.assertEqual(len(shapes), 1, msg="不同并发度产出了不同简报")
+
     def test_role_filter_reports_disabled_questions(self):
         brief = self.brief(roles=("engine",))
         self.assertEqual(brief["run"]["roles"], ["engine"])
