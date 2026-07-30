@@ -505,6 +505,21 @@ class TestPublish(DeepResearchTestCase):
         self.assertGreater(index["stats"]["total_briefs"], fl.MAX_INDEX_BRIEFS)
         self.assertEqual(len(index["briefs"]), fl.MAX_INDEX_BRIEFS)
 
+    def test_index_latest_equals_first_brief_summary(self):
+        """latest 与 briefs[0] 必须逐字段一致 —— 前端与 alert_scan 都按 latest 挑,
+        两者一旦分歧就会出现看板与自动化指向不同简报。"""
+        first = self.brief()
+        dr.publish(first, brief_only=True, quiet=True)
+        template = json.loads((self.feed / "research" / f"{first['id']}.json").read_text(encoding="utf-8"))
+        for i in range(3):                       # 再塞几份,确保排序参与进来
+            clone = dict(template)
+            clone["id"] = f"deep-research-2026-06-{i + 1:02d}T{i:04d}Z"
+            clone["produced_at"] = f"2026-06-{i + 1:02d}T0{i}:00:00Z"
+            write(self.feed / "research" / f"{clone['id']}.json", clone)
+        index = dr.rebuild_research_index()
+        self.assertEqual(index["latest"], index["briefs"][0])
+        self.assertEqual(index["latest"]["id"], first["id"])   # produced_at 最大的那份
+
     def test_index_ignores_foreign_json(self):
         brief = self.brief()
         dr.publish(brief, brief_only=True, quiet=True)

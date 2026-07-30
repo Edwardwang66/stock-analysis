@@ -38,7 +38,9 @@ export default function ResearchBriefs() {
     return () => clearInterval(timer);
   }, []);
 
-  const latest = idx?.briefs?.[0];
+  // 与 scripts/deep_research.py 的 alert_scan() 同一规则:latest 是「哪份最新」的唯一真相源,
+  // briefs[0] 只作兜底。两个消费方各按自己的规则挑,就会出现看板与自动化指向不同简报。
+  const latest = idx?.latest ?? idx?.briefs?.[0];
   const latestId = latest?.id;
   const path = latest?.path;
 
