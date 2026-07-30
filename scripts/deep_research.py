@@ -793,45 +793,68 @@ def lens_book_identity(corpus: Corpus) -> list[dict]:
     qid="q-book-vs-breaker",
     role="residual-analyst",
     title="被熔断排除的标的有没有仍留在簿里?",
-    needs=("feed/signals/latest.json:positions[].ticker",
+    needs=("feed/signals/latest.json:source_report",
+           "feed/signals/latest.json:positions[].ticker",
            "feed/reports/routine-*.json:alerts[cointegration_breaker].tickers"),
-    test="取最新 routine 报告 cointegration_breaker 告警的 tickers,与簿内 ticker 求交集(应为空)。",
-    triggered_by="最新 routine 报告带 cointegration_breaker 告警。",
+    test="按簿自报的 source_report 定位它那一次运行的报告(不是最新报告),"
+         "取该报告 cointegration_breaker 告警的 tickers,与簿内 ticker 求交集(应为空)。",
+    triggered_by="feed/signals/latest.json 带 source_report,且该报告带 cointegration_breaker 告警。",
 )
 def lens_book_vs_breaker(corpus: Corpus) -> list[dict]:
     (book,) = corpus.require("signals_book")
-    latest = corpus.latest_engine()
-    if latest is None:
-        raise LensSkipped("missing-input", ("feed/reports/routine-*.json",), "没有引擎报告。")
+    # 必须按簿自报的 source_report 取报告,不能用 latest_engine():簿与报告是两个独立写手,
+    # 簿可能仍停在上一班,此时拿最新报告的熔断名单去比对,等于把 A 轮的名单算到 B 轮的簿头上
+    # ——「同一份报告」的措辞会变成假归因。两者恰好相同只是常态,不是不变量。
+    source = book.get("source_report") if isinstance(book, dict) else None
+    if not isinstance(source, str) or not source:
+        raise LensSkipped("missing-input", ("feed/signals/latest.json:source_report",),
+                          "簿没有 source_report,无法确定它是哪一次运行的产物。")
+    try:
+        path = fl.report_path(source)
+    except ValueError as exc:
+        raise LensSkipped("missing-input", ("feed/signals/latest.json:source_report",),
+                          f"source_report 不是合法报告 id: {exc}") from exc
+    origin = fl.load_json(path)
+    if not isinstance(origin, dict):
+        raise LensSkipped("missing-input", (f"feed/reports/{source}.json",),
+                          f"簿指向的报告 {source} 不可读,无法在同一次运行内比对。")
     breaker = None
-    for alert in latest.get("alerts") or []:
+    for alert in origin.get("alerts") or []:
         if isinstance(alert, dict) and alert.get("code") == "cointegration_breaker":
             breaker = alert
             break
     if breaker is None:
-        raise LensSkipped("missing-input", ("feed/reports/routine-*.json:alerts[cointegration_breaker]",),
-                          "最新报告没有协整断裂告警。")
+        raise LensSkipped("missing-input", (f"feed/reports/{source}.json:alerts[cointegration_breaker]",),
+                          f"簿的来源报告 {source} 没有协整断裂告警。")
     listed = [t for t in (breaker.get("tickers") or []) if isinstance(t, str)]
     weights = {p.get("ticker"): _num(p.get("weight")) for p in (book.get("positions") or [])
                if isinstance(p, dict)}
     overlap = sorted(t for t in listed if t in weights)
     residual = _num(sum(abs(weights[t] or 0.0) for t in overlap))
-    la = _date_of(latest.get("asof_data"))
+    la = _date_of(origin.get("asof_data"))
+    newest = corpus.latest_engine()
+    newest_id = newest.get("id") if isinstance(newest, dict) else None
+    # 比对本身仍然成立(两侧同源),但簿不是最新一班时读者该知道:结论描述的是那一班的状态。
+    lag_note = ("" if not newest_id or newest_id == source else
+                f"(注:更晚还有一份引擎报告 {newest_id},簿尚未跟到它,"
+                f"本结论只描述 {source} 那一班的状态。)")
     return [claim(
         "residual-analyst", "q-book-vs-breaker",
-        (f"同一份报告({latest.get('id')})公布的 {len(listed)} 只熔断标的里没有一只带权重留在同期簿。"
+        (f"簿自报来源报告 {source},该报告公布的 {len(listed)} 只熔断标的里没有一只带权重留在这份簿。"
          f"注意告警只公布名单的前 {len(listed)} 只(文案自报的总数可能更大),"
          f"所以这只证明「已公布的那部分」不在簿内,不能推广成全名单已清空。"
          if not overlap else
-         f"同一份报告({latest.get('id')})的熔断名单与同期簿有 {len(overlap)} 只交集 {overlap},"
+         f"簿自报来源报告 {source},该报告的熔断名单与这份簿有 {len(overlap)} 只交集 {overlap},"
          f"仍带 {residual} 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),"
          f"而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。"
          f"这不是数据损坏,但把 signals/latest.json 读成「已排除熔断标的」的消费方会读错;"
-         f"告警只列前 {len(listed)} 只更放大了这个误读。"),
+         f"告警只列前 {len(listed)} 只更放大了这个误读。") + lag_note,
         metric="book.breaker_overlap.count",
         value=len(overlap), unit="count", direction="none",
         n=len(listed), min_n=1, severity="warning" if overlap else "info", cites=("R2",),
-        evidence=(ev(latest["_file"], "alerts[cointegration_breaker].tickers.length", len(listed), la),
+        evidence=(ev("feed/signals/latest.json", "source_report", source, book.get("asof")),
+                  ev(f"feed/reports/{source}.json", "alerts[cointegration_breaker].tickers.length",
+                     len(listed), la),
                   ev("feed/signals/latest.json", "positions[].ticker.count", len(weights), book.get("asof")),
                   ev("feed/signals/latest.json",
                      f"positions[{overlap[0]}].weight" if overlap else "positions[].weight",

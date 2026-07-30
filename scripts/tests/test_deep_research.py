@@ -449,6 +449,72 @@ class TestNumericGuards(DeepResearchTestCase):
         self.assertEqual(newest["asof_data"], day_str(1))
         self.assertGreater(newest["produced_at"], f"{day_str(1)}T21:00:00Z")
 
+    def _claim(self, brief: dict, qid: str) -> dict | None:
+        for bucket in ("findings", "refuted"):
+            for c in brief.get(bucket) or []:
+                if c.get("question") == qid:
+                    return c
+        return None
+
+    def _repoint_book_at_an_older_report(self) -> tuple[str, str]:
+        """把簿指向一份更旧的报告,并让新旧两份的熔断名单给出不同答案。
+
+        返回 (簿的来源报告 id, 更新的报告 id)。
+        """
+        older_id = ""
+        for path in sorted((self.feed / "reports").glob("routine-*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if report.get("asof_data") == day_str(3) and not report["id"].endswith("aZ"):
+                report["alerts"] = [{"level": "info", "code": "cointegration_breaker",
+                                     "message": "熔断", "tickers": ["ABT", "AVGO"]}]
+                write(path, report)
+                older_id = report["id"]
+        self.assertTrue(older_id, "夹具里没有 asof=T-3 的 routine 报告")
+        for path in sorted((self.feed / "reports").glob("routine-*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if report.get("asof_data") == day_str(1):
+                report["alerts"] = [{"level": "info", "code": "cointegration_breaker",
+                                     "message": "熔断", "tickers": ["ZZZ"]}]
+                write(path, report)
+        book = json.loads((self.feed / "signals" / "latest.json").read_text(encoding="utf-8"))
+        book["source_report"] = older_id
+        write(self.feed / "signals" / "latest.json", book)
+        return older_id, self.latest_id
+
+    def test_breaker_lens_follows_the_book_source_report_not_the_newest_run(self):
+        """簿与报告是两个独立写手。簿停在上一班时,必须拿它自报的那一班比对,
+
+        否则就把 A 轮的熔断名单算到 B 轮的簿头上 —— 结论里的报告 id 会是假归因。
+        """
+        older_id, newest_id = self._repoint_book_at_an_older_report()
+        self.assertNotEqual(older_id, newest_id)
+        claim = self._claim(self.brief(), "q-book-vs-breaker")
+        self.assertIsNotNone(claim, "熔断 lens 没有出结论")
+        # 旧报告名单 ABT/AVGO 与簿有 2 只交集;最新报告名单 ZZZ 与簿交集为 0。
+        # 读错来源就会得到 0,并在文案里写上最新报告的 id。
+        self.assertEqual(claim["value"], 2)
+        self.assertTrue(claim["statement"].startswith(f"簿自报来源报告 {older_id},"),
+                        msg=claim["statement"])
+        # 更新的那一班只能作为「簿尚未跟到」的注记出现,不能成为被归因的来源
+        self.assertIn(f"更晚还有一份引擎报告 {newest_id}", claim["statement"])
+        artifacts = [e["artifact"] for e in claim["evidence"]]
+        self.assertIn(f"feed/reports/{older_id}.json", artifacts)
+        self.assertNotIn(f"feed/reports/{newest_id}.json", artifacts)
+
+    def test_breaker_lens_degrades_when_the_book_source_report_is_unusable(self):
+        for bad in (None, "../../etc/passwd", f"routine-{day_str(400)}T2330Z"):
+            with self.subTest(source=bad):
+                book = json.loads((self.feed / "signals" / "latest.json").read_text(encoding="utf-8"))
+                if bad is None:
+                    book.pop("source_report", None)
+                else:
+                    book["source_report"] = bad
+                write(self.feed / "signals" / "latest.json", book)
+                brief = self.brief()
+                self.assertEqual(brief["run"]["lenses_failed"], 0)
+                reasons = {q["id"]: q["reason"] for q in brief["open_questions"]}
+                self.assertEqual(reasons.get("q-book-vs-breaker"), "missing-input")
+
     def test_fixture_dates_are_relative_so_the_suite_cannot_expire(self):
         """夹具最新证据必须落在默认时效上限内,否则本套件会在某个日历日自己变红。"""
         self.assertLess(dr._age_days(f"{day_str(1)}T23:30:00Z"), 10.0)
