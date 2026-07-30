@@ -1568,7 +1568,11 @@ def _run_lens(spec: dict, corpus: Corpus) -> tuple[dict, list[dict], dict | None
 
 def run(roles: tuple[str, ...], workers: int, report_limit: int, quiet: bool) -> dict:
     started = time.monotonic()
+    # 整份简报只读一次时钟:id 的分钟、produced_at、today(future-asof 判据与 asof_data 上界)
+    # 必须同源。分两次读的话,跨过一个 UTC 分钟就会出现 id 的分钟与 produced_at 不一致,
+    # 跨过午夜还会让 today 落在前一天。运行耗时另有 run.duration_ms 记录。
     now = datetime.now(timezone.utc)
+    produced_at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     today = now.strftime("%Y-%m-%d")
     if not quiet:
         print(f"{TAG} 载入 feed 语料(report-limit={report_limit}) ...")
@@ -1636,7 +1640,7 @@ def run(roles: tuple[str, ...], workers: int, report_limit: int, quiet: bool) ->
         "schema_version": "1.0",
         "id": brief_id,
         "kind": "deep-research",
-        "produced_at": fl.now_iso(),
+        "produced_at": produced_at,
         "asof_data": asof_data,
         "producer": {
             "name": "deep-research-engine",

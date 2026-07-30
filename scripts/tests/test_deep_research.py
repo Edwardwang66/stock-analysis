@@ -261,6 +261,18 @@ class TestPipeline(DeepResearchTestCase):
         self.assertEqual([c.get("metric") for c in first["findings"]],
                          [c.get("metric") for c in second["findings"]])
 
+    def test_id_minute_and_produced_at_share_one_clock_read(self):
+        """id 的分钟必须与 produced_at 同源:分两次读时钟,跨一个 UTC 分钟就会不一致。
+
+        用 patch 掉 fl.now_iso 来证明 produced_at 不是第二次读取的产物 —— 修复前它正是。
+        """
+        with mock.patch.object(fl, "now_iso", return_value="1999-01-01T00:00:00Z"):
+            brief = self.brief()
+        self.assertNotEqual(brief["produced_at"], "1999-01-01T00:00:00Z")
+        produced = brief["produced_at"]
+        self.assertEqual(brief["id"], f"deep-research-{produced[:13]}{produced[14:16]}Z")
+        self.assertLessEqual(brief["asof_data"], produced[:10])   # today 也来自同一次读取
+
     def test_output_is_independent_of_thread_count(self):
         """并发只是取证的实现细节:线程完成顺序不得泄漏进简报,否则简报不可复现。"""
         def normalize(brief: dict) -> str:
