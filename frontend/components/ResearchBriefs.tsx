@@ -30,7 +30,7 @@ export default function ResearchBriefs() {
   const [openClaim, setOpenClaim] = useState<string | null>(null);
 
   // 只拉索引(小文件);整份简报等用户展开时再懒加载,避免 /intel 的 5 分钟轮询把简报全文拖下来。
-  // 与 /intel 其它面板同频刷新索引(5 分钟),但不重拉已展开的简报全文。
+  // 与 /intel 其它面板同频刷新索引(5 分钟)。
   useEffect(() => {
     const load = () => { getResearchIndex().then(setIdx).catch(() => {}); };
     load();
@@ -39,21 +39,28 @@ export default function ResearchBriefs() {
   }, []);
 
   const latest = idx?.briefs?.[0];
-  if (!idx || !latest) return null;
+  const latestId = latest?.id;
+  const path = latest?.path;
 
-  const path = latest.path;
-  async function toggle() {
-    if (open) { setOpen(false); return; }
-    setOpen(true);
-    if (!brief) {
-      setBusy(true);
-      setFailed(false);
-      const doc = await getResearchBrief(path);   // 取数失败解析为 null,不抛异常
+  // 简报全文跟着「当前最新简报」取:轮询换了简报就重取。
+  // 不能只在 brief 为空时取 —— 那样头部会显示新 id 与新计数,展开区却还是上一份简报的内容。
+  // alive 守卫避免卸载后 setState;取数失败解析为 null,不抛异常。
+  useEffect(() => {
+    if (!open || !path) return;
+    let alive = true;
+    setBusy(true);
+    setFailed(false);
+    setOpenClaim(null);            // 结论 id 是位序(c01…),换简报后旧展开项指向的已是另一条
+    getResearchBrief(path).then((doc) => {
+      if (!alive) return;
       setBrief(doc);
-      setFailed(doc == null);                     // 否则面板会永远停在「加载简报中…」
+      setFailed(doc == null);      // 否则面板会永远停在「加载简报中…」
       setBusy(false);
-    }
-  }
+    });
+    return () => { alive = false; };
+  }, [open, latestId, path]);
+
+  if (!idx || !latest) return null;
 
   const rejected = brief?.refuted ?? [];
 
@@ -78,7 +85,7 @@ export default function ResearchBriefs() {
 
       {latest.headline && <p className="src" style={{ marginTop: 10, lineHeight: 1.6 }}>{latest.headline}</p>}
 
-      <button className="btn" style={{ marginTop: 10 }} onClick={toggle}>
+      <button className="btn" style={{ marginTop: 10 }} onClick={() => setOpen((v) => !v)}>
         {open ? "收起取证明细" : "展开取证明细(含被反驳论断)"}
       </button>
 
