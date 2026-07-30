@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Implemented deterministic deep-research engine, its `feed/research` family and contract, its scheduled workflow, and what a brief does not prove.
-> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
+> **Last verified commit:** `dc2edf7aba66bb60b34bf0ec1b124819278c2265`
 
 ## 1. Engine boundary
 
@@ -37,6 +37,11 @@ The refuter set is exactly six codes:
 - `within-noise-band` — the measured magnitude is inside the claim's `noise_band`;
 - `future-asof` — evidence is stamped later than the run's data date;
 - `contradicted` — another claim in the same brief measures the same `metric` in the opposite `direction`; both sides are refuted rather than one being preferred.
+
+Five of those six judge a claim on its own evidence. `contradicted` is the only cross-claim rule, and no
+pair of the current lenses emits the same `metric`, so it does not fire today: it is a guard that keeps a
+future lens from publishing both sides of a disagreement as confirmed. Its mechanism is covered by the
+unit module rather than by live output.
 
 Refuted and unverified claims are retained in the brief's `refuted` array with their refutations attached. No evidence is deleted: knowing which claims did not survive is the audit value. `verdicts` records the `confirmed`/`refuted`/`unverified` counts for one run.
 

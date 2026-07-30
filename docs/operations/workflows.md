@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** GitHub Actions triggers, permissions, generated artifacts, writers, and recovery procedures.
-> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
+> **Last verified commit:** `dc2edf7aba66bb60b34bf0ec1b124819278c2265`
 
 ## Operating model
 
@@ -96,7 +96,7 @@ The intraday workflow's producer, push, health, and self-chain failures are best
 - `openclaw-notes.yml` catches per-symbol failures, retries once, prints final failures, and can publish partial or stale coverage with exit zero.
 - `openclaw-watchdog.yml` swallows issue-creation failure. Inspect the issue list instead of treating the run result as proof.
 - `deep-research.yml` exits nonzero when its push retries are exhausted, but its critical-alert issue creation failure is swallowed. A green run therefore proves the brief was written and pushed, not that the alert reached an issue.
-- Hyperliquid and several study publishers print a failed `publish_report()` result without exiting nonzero. Alpha `run_routine.py` is the participating writer that propagates failed report validation.
+- Hyperliquid and several study publishers print a failed `publish_report()` result without exiting nonzero. Alpha `run_routine.py` and deep research `deep_research.py` are the participating writers that propagate failed report validation; deep research additionally exits nonzero when its own brief fails validation, before anything is written.
 - Daily screener treats watchlist update and some issue creation failures as nonblocking. Daily digest degrades individual data fetch failures but does not swallow every issue API failure.
 - Intraday and feed-watchdog live pushes are best-effort. Confirm the `live` branch artifact timestamp and producer field.
 
