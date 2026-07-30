@@ -610,6 +610,43 @@ class TestPublish(DeepResearchTestCase):
         self.assertEqual((self.feed / "market" / "state.json").read_bytes(), market_before)
         self.assertEqual((self.feed / "signals" / "latest.json").read_bytes(), book_before)
 
+    def test_invalid_companion_report_publishes_nothing_at_all(self):
+        """两份工件要么一起发,要么一份都不发。
+
+        配套报告校验失败时,简报与 research/index.json 都不能落盘 —— 否则退出码 1
+        收不回已写的文件,消费方会看到一份没有配套报告的简报。
+        """
+        brief = self.brief()
+        index_before = (self.feed / "research" / "index.json").read_bytes() \
+            if (self.feed / "research" / "index.json").exists() else None
+        with mock.patch.object(fl, "validate_report",
+                               return_value=(False, ["fixture: 配套报告不合格"])):
+            self.assertEqual(dr.publish(brief, brief_only=False, quiet=True), 1)
+        self.assertFalse((self.feed / "research" / f"{brief['id']}.json").exists(),
+                         "配套报告不合格时简报仍然落盘了")
+        self.assertFalse((self.feed / "reports" / f"{brief['id']}.json").exists())
+        index_after = (self.feed / "research" / "index.json").read_bytes() \
+            if (self.feed / "research" / "index.json").exists() else None
+        self.assertEqual(index_after, index_before, "索引被改动了,但这一轮什么都不该发")
+
+    def test_brief_only_publish_does_not_require_a_valid_companion_report(self):
+        """--brief-only 根本不发配套报告,不该被它的校验挡住。"""
+        brief = self.brief()
+        with mock.patch.object(fl, "validate_report",
+                               return_value=(False, ["fixture: 不该被调用"])):
+            self.assertEqual(dr.publish(brief, brief_only=True, quiet=True), 0)
+        self.assertTrue((self.feed / "research" / f"{brief['id']}.json").exists())
+        self.assertFalse((self.feed / "reports" / f"{brief['id']}.json").exists())
+
+    def test_companion_report_signature_survives_the_pre_validation_signing(self):
+        """预校验时签一次、publish_report 里再签一次,签名必须仍然可验。"""
+        with mock.patch.dict(os.environ, {"FEED_HMAC_SECRET": "s3cret"}):
+            brief = self.brief()
+            self.assertEqual(dr.publish(brief, brief_only=False, quiet=True), 0)
+            report = json.loads(
+                (self.feed / "reports" / f"{brief['id']}.json").read_text(encoding="utf-8"))
+            self.assertTrue(fl.verify_signature(report, "s3cret"))
+
     def test_report_alerts_mirror_brief_alerts(self):
         brief = self.brief()
         dr.publish(brief, brief_only=False, quiet=True)

@@ -1993,26 +1993,14 @@ def alert_scan() -> int:
                 critical[0].get("message", "") if critical else "")
 
 
-def publish(brief: dict, *, brief_only: bool, quiet: bool) -> int:
-    secret = os.environ.get("FEED_HMAC_SECRET")
-    if secret:
-        fl.sign_report(brief, secret)
-    ok, errors = validate_brief(brief)
-    if not ok:
-        print(f"{TAG} 简报未通过 schema 校验:", errors[:8], file=sys.stderr)
-        return 1
-    path = fl.research_path(brief["id"])
-    fl.save_json(path, brief)
-    index = rebuild_research_index()
-    if not quiet:
-        print(f"{TAG} 已写 {os.path.relpath(path, fl.REPO_ROOT)}"
-              f"(索引 {index['stats']['total_briefs']} 份)")
-    if brief_only:
-        return 0
+def companion_report(brief: dict) -> dict:
+    """简报的配套 feed 报告(kind=routine)。
 
+    刻意不带 market_state / book:feed_lib.write_report_files 会用它们覆盖
+    feed/market/state.json 与 feed/signals/latest.json,那是引擎的面板。
+    """
     counts = brief["verdicts"]
-    critical = [a for a in brief["alerts"] if a["level"] == "critical"]
-    report = {
+    return {
         "schema_version": "1.0",
         "id": brief["id"],
         "kind": "routine",
@@ -2029,13 +2017,45 @@ def publish(brief: dict, *, brief_only: bool, quiet: bool) -> int:
         },
         "notes": f"确定性深度研究简报 research/{brief['id']}.json 的告警摘要。{NOTES}",
     }
-    # 刻意不带 market_state / book:feed_lib.write_report_files 会用它们覆盖
-    # feed/market/state.json 与 feed/signals/latest.json,那是引擎的面板。
+
+
+def publish(brief: dict, *, brief_only: bool, quiet: bool) -> int:
+    secret = os.environ.get("FEED_HMAC_SECRET")
+    if secret:
+        fl.sign_report(brief, secret)
+    ok, errors = validate_brief(brief)
+    if not ok:
+        print(f"{TAG} 简报未通过 schema 校验:", errors[:8], file=sys.stderr)
+        return 1
+    # 两份工件要么一起发,要么一份都不发:配套报告必须在写任何文件之前就校验完。
+    # 否则报告校验失败时,简报与索引已经落盘,退出码 1 收不回已写的文件 ——
+    # 消费方会看到一份没有配套报告的简报。sign_report 先剥掉 signature 再算 HMAC,
+    # 所以这里签一次、publish_report 里再签一次结果相同,不会因重复签名而失效。
+    report = None
+    if not brief_only:
+        report = companion_report(brief)
+        if secret:
+            fl.sign_report(report, secret)
+        report_ok, report_errors = fl.validate_report(report)
+        if not report_ok:
+            print(f"{TAG} 配套报告校验失败,简报与索引均未落盘:{report_errors}", file=sys.stderr)
+            return 1
+
+    path = fl.research_path(brief["id"])
+    fl.save_json(path, brief)
+    index = rebuild_research_index()
+    if not quiet:
+        print(f"{TAG} 已写 {os.path.relpath(path, fl.REPO_ROOT)}"
+              f"(索引 {index['stats']['total_briefs']} 份)")
+    if brief_only:
+        return 0
+
     result = fl.publish_report(report, secret=secret)
-    if not result["ok"]:
-        print(f"{TAG} 配套报告校验失败:{result['errors']}", file=sys.stderr)
+    if not result["ok"]:   # 已预校验过,走到这里说明是落盘阶段出的问题
+        print(f"{TAG} 配套报告发布失败:{result['errors']}", file=sys.stderr)
         return 1
     if not quiet:
+        critical = [a for a in brief["alerts"] if a["level"] == "critical"]
         print(f"{TAG} 已发布配套报告 {report['id']}(critical {len(critical)} 条)"
               f" · feed 统计 {result['index_stats']}")
     return 0
