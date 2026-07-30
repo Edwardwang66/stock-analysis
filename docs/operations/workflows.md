@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** GitHub Actions triggers, permissions, generated artifacts, writers, and recovery procedures.
-> **Last verified commit:** `e74ad00c026b410db9a1438e46c26c09dad32bd8`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## Operating model
 
@@ -10,7 +10,7 @@ GitHub Actions runs tests, builds Pages, produces repository-backed feed artifac
 
 Most feed workflows are independent writers. Their distinct concurrency groups prevent duplicate runs of the same workflow, but they do not serialize writes across workflows. A writer normally rebases or pulls before pushing; this is conflict handling, not a cross-writer transaction.
 
-Five workflows use `FEED_PUBLICATION_MANIFEST`: alpha routine, Hyperliquid monitor, monthly studies, OpenClaw notes, and feed validation. In those jobs it is a runner-temporary ledger of successfully recorded feed writes and deletions and an allowlist for `git add`. It is not a reader-facing snapshot manifest. Other writers stage explicit paths.
+Six workflows use `FEED_PUBLICATION_MANIFEST`: alpha routine, deep research, Hyperliquid monitor, monthly studies, OpenClaw notes, and feed validation. In those jobs it is a runner-temporary ledger of successfully recorded feed writes and deletions and an allowlist for `git add`. It is not a reader-facing snapshot manifest. Other writers stage explicit paths.
 
 ## Workflow inventory
 
@@ -20,6 +20,7 @@ Five workflows use `FEED_PUBLICATION_MANIFEST`: alpha routine, Hyperliquid monit
 | `chan-stats.yml` | Refresh scheduled Chan statistics | Cron `30 0 * * 6`; push to `main` for `scripts/chan_engine.py`; dispatch | `python scripts/chan_engine.py` | `main` `feed/signals/chan-stats.json` | `contents: write` | `chan-stats`; cancel false | `.python-version`, `backend/requirements.txt` |
 | `daily-digest.yml` | Build daily digest history and issue | Cron `30 23 * * 1-5`; dispatch | `python scripts/daily_digest.py` | `main` `feed/screener/history.json`, `feed/stock-notes/stance-history.json`, and Issue | `contents: write`, `issues: write` | `daily-digest`; cancel false | `.python-version`, mapped `GITHUB_TOKEN` |
 | `daily-screener.yml` | Run scored market screener and update watch/strength data | Cron `30 22 * * 1-5`; push to `main` for `backend/app/analysis/signals.py` or `scripts/daily_screener.py`; dispatch input `threshold=80` | `daily_screener.py --threshold ... --concurrency 10` | `main` screener, watchlist, RS rank/history files, and deduplicated Issue | `contents: write`, `issues: write` | `daily-screener`; cancel false | `.python-version`, backend requirements, `GH_TOKEN` |
+| `deep-research.yml` | Produce deterministic deep-research briefs and open an issue on a critical finding | Cron `40 23 * * 1-5`; dispatch inputs `workers=8`, `roles=` | `deep_research.py --publish`; manifest stager; deduplicated issue command | Manifest-recorded `feed/research` files and the report family on `main`, plus an Issue | `contents: write`, `issues: write` | `deep-research`; cancel false | `.python-version`, `FEED_HMAC_SECRET`, composed `GITHUB_RUN_URL`, `FEED_PUBLICATION_MANIFEST`, `DEEP_RESEARCH_WORKERS`, `DEEP_RESEARCH_ROLES`, `GH_TOKEN`; timeout 15 minutes |
 | `dependabot-automerge.yml` | Attest eligible Dependabot updates and enable auto-merge | Pull-request-target opened, synchronize, reopened; cron `45 */6 * * *`; dispatch | Dependabot metadata plus `scripts/dependabot_merge_gate.py` for current PR or sweep | Pull-request label, status, and auto-merge state only | `contents: write`, `pull-requests: write`, `issues: write`, `checks: read`, `statuses: write` | `dependabot-automerge-${{ github.repository }}`; `queue: max`; no cancel key | `.python-version`, built-in `GITHUB_TOKEN`, internal label, context, repo, PR, head, update, ecosystem values |
 | `deploy-pages.yml` | Build, smoke-test, and deploy the static profile | Push to `main` for `frontend/**`, `feed/schema/**`, `.node-version`, `.github/workflows/deploy-pages.yml`; dispatch | `npm run build:static`, `npm run smoke:static`, upload Pages artifact, deploy Pages | `github-pages` environment from `frontend/out` | Top-level empty; build `contents: read`; deploy `pages: write`, `id-token: write` | `pages`; cancel true | `.node-version`, Node 20.20.2, npm 10.8.2, `API_BASE`, `EDGE_BASE`, computed base/feed paths, computed public site URL `https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/`, `STATIC_FEED_SOURCE`, `RUNNER_TEMP` |
 | `docs.yml` | Validate the complete documentation contract | Push to `main`; every pull request; dispatch | `python scripts/tests/test_check_docs.py`; `python scripts/check_docs.py` | CI checks only; no generated artifacts | `contents: read` | `docs-${{ github.ref }}`; cancel true | `.python-version`, Python 3.11.15, Git, non-root identity |
@@ -34,11 +35,12 @@ Five workflows use `FEED_PUBLICATION_MANIFEST`: alpha routine, Hyperliquid monit
 | `openclaw-notes.yml` | Produce deterministic stock notes and analysis Markdown | Cron `0 1 * * 2-6`; dispatch input `throttle=1.0` | `openclaw_daily.py --mode local --stocks-only`; manifest stage | Manifest-recorded stock notes, index, and screener analysis Markdown on `main` | `contents: write` | `openclaw-notes`; cancel false | `.python-version`, fixed `OPENCLAW_MODEL` provenance label, `OPENCLAW_THROTTLE`, manifest; timeout 40 minutes |
 | `openclaw-watchdog.yml` | Check expected premarket and close analysis files and open an issue | Cron `40 13 * * 1-5` and `45 19 * * 1-5`; dispatch | Shell file checks and deduplicated issue command | Issues only | `contents: read`, `issues: write` | None declared | `GH_TOKEN` |
 | `premarket-pack.yml` | Build overnight market pack | Cron `40 12 * * 1-5`; push to `main` for `scripts/premarket_pack.py`; dispatch | Fetch live snapshot; `python scripts/premarket_pack.py` | `main` `feed/intraday/overnight.json` | `contents: write` | `premarket-pack`; cancel false | `.python-version` |
-| `tests.yml` | Gate frontend and Python contracts | Push to `main` ignoring `feed/crypto/**`, `feed/factory/**`, `feed/funds/**`, `feed/health.json`, `feed/index.json`, `feed/intraday/**`, `feed/market/**`, `feed/reports/**`, `feed/screener/**`, `feed/signals/**`, `feed/stock-notes/**`, `feed/watchlist.json`; every pull request; dispatch | Frontend lint, typecheck, tests, static/server builds and smokes; Python 3.11.15 and 3.12.13 lock/tests; aggregate gate | CI checks only | `contents: read` | `ci-${{ github.ref }}`; cancel true | `.node-version`, exact Node/npm, Python matrix and locks, internal Next, pip, Python, and result values; frontend matrix covers static root, static repository path, and server root with non-local test origins; no secrets |
+| `tests.yml` | Gate frontend and Python contracts | Push to `main` ignoring `feed/crypto/**`, `feed/factory/**`, `feed/funds/**`, `feed/health.json`, `feed/index.json`, `feed/intraday/**`, `feed/market/**`, `feed/reports/**`, `feed/research/**`, `feed/screener/**`, `feed/signals/**`, `feed/stock-notes/**`, `feed/watchlist.json`; every pull request; dispatch | Frontend lint, typecheck, tests, static/server builds and smokes; Python 3.11.15 and 3.12.13 lock/tests; aggregate gate | CI checks only | `contents: read` | `ci-${{ github.ref }}`; cancel true | `.node-version`, exact Node/npm, Python matrix and locks, internal Next, pip, Python, and result values; frontend matrix covers static root, static repository path, and server root with non-local test origins; no secrets |
 
 ## Feed writers and ownership
 
-- Report-family writers: alpha routine, Hyperliquid monitor, monthly studies, internal backtests, and validated external ingress.
+- Report-family writers: alpha routine, deep research, Hyperliquid monitor, monthly studies, internal backtests, and validated external ingress.
+- Research-family writer: deep research runs `deep_research.py --publish` for `feed/research/<brief-id>.json` and `feed/research/index.json`, and publishes one `routine` report carrying only alerts, contribution, and notes. The engine is deterministic repository-artifact logic; it calls no external LLM and fetches nothing from the network.
 - Screening and market writers: daily screener, daily digest, Chan stats, market snapshot, premarket pack, funds 13F, and OpenClaw notes.
 - Intraday writers: Winter outside Actions plus intraday report and feed watchdog. `live/feed/intraday/latest.json` is separate from main-branch fallback/overnight files.
 - Health writer: feed watchdog runs `audit_feed.py --write` for `feed/health.json`.
@@ -50,6 +52,7 @@ No workflow owns the whole `feed/` tree. See [Feed Data Contracts](../data-contr
 Manual writer dispatches should normally run on `main`.
 
 - Alpha routine, Hyperliquid monitor, and monthly studies use the selected checkout and an implicit push after rebase; dispatching another ref can push that ref.
+- Deep research also uses the selected checkout and the staging ledger, but it rebases onto `origin main` before pushing; dispatching another ref rebases that ref onto `main` and pushes it.
 - Several legacy writers explicitly push a local `main` branch and can fail when dispatched from another selected ref.
 - Intraday report explicitly checks out `main` before producing the `live` branch artifact.
 - Pages can intentionally deploy a selected dispatch ref; its raw feed base also uses the selected ref name.
@@ -92,6 +95,7 @@ The intraday workflow's producer, push, health, and self-chain failures are best
 - `funds-13f.yml` retries pushes three times but has no final success flag. It can exhaust retries, continue, open an issue, and finish successfully without updating `main`.
 - `openclaw-notes.yml` catches per-symbol failures, retries once, prints final failures, and can publish partial or stale coverage with exit zero.
 - `openclaw-watchdog.yml` swallows issue-creation failure. Inspect the issue list instead of treating the run result as proof.
+- `deep-research.yml` exits nonzero when its push retries are exhausted, but its critical-alert issue creation failure is swallowed. A green run therefore proves the brief was written and pushed, not that the alert reached an issue.
 - Hyperliquid and several study publishers print a failed `publish_report()` result without exiting nonzero. Alpha `run_routine.py` is the participating writer that propagates failed report validation.
 - Daily screener treats watchlist update and some issue creation failures as nonblocking. Daily digest degrades individual data fetch failures but does not swallow every issue API failure.
 - Intraday and feed-watchdog live pushes are best-effort. Confirm the `live` branch artifact timestamp and producer field.

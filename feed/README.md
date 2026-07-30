@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Entry point for repository-backed generated artifacts and their consumers.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## Role
 
@@ -17,7 +17,7 @@ Most frontend reads try a configurable remote feed first and then the same relat
 | `index.json` | Report summaries, latest pointers, statistics, contributions, and freshness | Rebuilt from reports; not a snapshot manifest. |
 | `health.json` | Watchdog audit result and selected source freshness | Warnings can coexist with `ok`; not completeness proof. |
 | `watchlist.json` | Repository watchlist tiers and symbols | Producer convention. |
-| `reports/` | Routine, OpenClaw, and manual report payloads | Only family covered by `schema/report.schema.json`. |
+| `reports/` | Routine, OpenClaw, and manual report payloads | Covered by `schema/report.schema.json`. |
 | `signals/` | Report-derived book plus RS, Chan, and Winter outputs | Multiple family-specific shapes. |
 | `market/` | Current report-derived state and market history | Producer-specific structures. |
 | `factory/` | Submitted factor candidates and provenance | Copied report data; no six-gate semantic enforcement. |
@@ -26,20 +26,21 @@ Most frontend reads try a configurable remote feed first and then the same relat
 | `intraday/` | Main snapshot, live-branch latest state, and overnight pack | Live latest has no bundled fallback. |
 | `crypto/` | Hyperliquid state and pre-IPO history | Producer-specific JSON. |
 | `funds/` | Tracked 13F holdings | Producer-specific JSON. |
+| `research/` | Deterministic deep-research briefs plus the brief index and open questions | Covered by `schema/research.schema.json`; schema validity is not analytical approval. |
 
-`schema/` and `inbox/` support report validation and transport; they are not additional reader artifact families.
+`schema/` and `inbox/` support report and brief validation and report transport; they are not additional reader artifact families.
 
 ## Producers and consumers
 
-On a successful report publication, the publisher writes `reports/`, conditionally updates `signals/latest.json`, `market/state.json`, and `factory/candidates.json` only when the corresponding payloads are non-empty/truthy, and rebuilds `index.json` after those writes complete. An empty derived payload does not clear its prior artifact; the prior file remains intact. Separate workflows and scripts write screener, market history, intraday, crypto, funds, notes, health, RS, Chan, and Winter artifacts. Writers are not consolidated, and workflow concurrency groups do not form one cross-writer transaction.
+On a successful report publication, the publisher writes `reports/`, conditionally updates `signals/latest.json`, `market/state.json`, and `factory/candidates.json` only when the corresponding payloads are non-empty/truthy, and rebuilds `index.json` after those writes complete. An empty derived payload does not clear its prior artifact; the prior file remains intact. Separate workflows and scripts write screener, market history, intraday, crypto, funds, notes, health, research, RS, Chan, and Winter artifacts. Writers are not consolidated, and workflow concurrency groups do not form one cross-writer transaction.
 
 Frontend consumers use handwritten TypeScript interfaces and parse/cast fetched JSON without running the Python report validator. Local routines, GitHub Actions, OpenClaw tools, and optional Winter tooling also read the tree. Winter PostgreSQL is an optional projection and analysis store; it is not the feed authority.
 
-Five workflows currently participate in the Stage 1A publication ledger: `alpha-routine.yml`, `feed-validate.yml`, `hyperliquid-monitor.yml`, `monthly-studies.yml`, and `openclaw-notes.yml`. Other writers still stage explicit files or use separate branches and APIs.
+Six workflows currently participate in the Stage 1A publication ledger: `alpha-routine.yml`, `deep-research.yml`, `feed-validate.yml`, `hyperliquid-monitor.yml`, `monthly-studies.yml`, and `openclaw-notes.yml`. Other writers still stage explicit files or use separate branches and APIs.
 
 ## Report validation
 
-Only `reports/` uses Draft 7 `schema/report.schema.json` version `1.0`. With `jsonschema` installed, validation uses `Draft7Validator` without a `FormatChecker`, so declared `date` and `date-time` formats are descriptive. Without `jsonschema`, validation falls back to selected required-field, kind, producer, and ID checks. Schema validity does not validate analytical claims, candidate gate semantics, or every feed family.
+Two families have a JSON Schema: `reports/` uses Draft 7 `schema/report.schema.json` version `1.0` and `research/` uses Draft 7 `schema/research.schema.json` version `1.0`. With `jsonschema` installed, report validation uses `Draft7Validator` without a `FormatChecker`, so declared `date` and `date-time` formats are descriptive. Without `jsonschema`, report validation falls back to selected required-field, kind, producer, and ID checks. A deep-research brief is validated before publication and the engine exits nonzero when validation fails, but which validator runs depends on the environment: with `jsonschema` installed it is the full `research.schema.json` check, and in the scheduled workflow — which installs nothing — it is a standard-library fallback that enforces the required fields, the `deterministic-no-llm` provenance, the `findings`/`refuted` verdict split, verdict-count consistency, claim identity and role, evidence sourcing, and finite JSON numbers. The fallback is narrower than the schema. Schema validity does not validate analytical claims, candidate gate semantics, or every feed family.
 
 External report ingress is the protected path:
 
@@ -64,9 +65,10 @@ python scripts/tests/test_feed_ingress.py
 python scripts/tests/test_validate_feed_cli.py
 python scripts/tests/test_feed_publication.py
 python scripts/tests/test_workflow_security.py
+python scripts/tests/test_deep_research.py
 ```
 
-These tests cover report schema behavior, strict parsing, HMAC and ingress boundaries, path containment, the publication ledger, and workflow policy. They do not validate the current contents or semantics of all 12 artifact families. Use the repository-wide [controlled Python gate](../docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md#controlled-stage-1b-acceptance-gates) for lock reproduction and the full process matrix.
+These tests cover report schema behavior, strict parsing, HMAC and ingress boundaries, path containment, the publication ledger, workflow policy, and deep-research brief validation and publication. They do not validate the current contents or semantics of all 13 artifact families. Use the repository-wide [controlled Python gate](../docs/superpowers/plans/2026-07-16-stage-1c-truth-first-docs.md#controlled-stage-1b-acceptance-gates) for lock reproduction and the full process matrix.
 
 ## Publication entry points
 
@@ -98,7 +100,7 @@ For most JSON, `frontend/lib/feed.ts` keeps a 30-second in-memory cache by relat
 
 ## Current limitations
 
-- Report schema coverage does not extend to the other artifact families, and the validator does not enforce declared date formats.
+- Schema coverage reaches only `reports/` and `research/`, and the report validator does not enforce declared date formats.
 - Writers are not consolidated; direct writes, explicit staging, workflow-ledger staging, GitHub API writes, and a live branch coexist.
 - Report publication is not atomic, cross-writer serialization is absent, and readers can mix generations through per-path fallback.
 - External-report HMAC, size, ID, and path controls must not be inferred for stock notes or unrelated internal producers.

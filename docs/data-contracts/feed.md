@@ -1,8 +1,8 @@
 # Feed Data Contracts
 
 > **Status:** Current
-> **Scope:** Current repository-backed feed artifacts, report schema, validation, consumers, and known limitations.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Scope:** Current repository-backed feed artifacts, the report and research schemas, validation, consumers, and known limitations.
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## Transport and consumers
 
@@ -30,8 +30,9 @@ Neither raw nor bundled transport verifies a reader-facing signature, manifest, 
 | `intraday/` | Live latest snapshot, main fallback, overnight pack | Winter loop, intraday workflow, watchdog, premarket workflow | Home/desk and routines; live latest uses a separate branch |
 | `crypto/` | Hyperliquid state and pre-IPO history | Hyperliquid workflow | Intel and report views; producer-specific JSON |
 | `funds/` | Tracked fund 13F holdings | Funds workflow | Intel; producer-specific JSON |
+| `research/` | Deep-research briefs `<brief-id>.json` and the family `index.json` with brief summaries, statistics, and open questions | `scripts/deep_research.py` through `deep-research.yml` | Intel research panel through `frontend/lib/feed.ts`, plus `feed_lib._artifact_freshness()` and `audit_feed.py`; research schema v1.0 |
 
-`schema/` contains the report schema and `inbox/` is an external-submission transport. They support the report family rather than forming additional reader families.
+`schema/` contains the report and deep-research schemas and `inbox/` is an external-submission transport. They support those two validated families rather than forming additional reader families.
 
 ## Report schema v1.0
 
@@ -159,15 +160,15 @@ Do not put a real HMAC secret in documentation, committed shell files, or logs.
 
 ## Current schema coverage
 
-Only report artifacts currently use `feed/schema/report.schema.json`. CI does not schema-scan every stored report in every workflow, and report date formats are not enforced without a format checker.
+Two families are schema-covered: report artifacts use `feed/schema/report.schema.json` and deep-research briefs use `feed/schema/research.schema.json`, both Draft 7 version `1.0`. CI does not schema-scan every stored report in every workflow, and report date formats are not enforced without a format checker. A brief that passes its schema is a well-formed brief, not an approved analytical conclusion, a strategy approval, or investment advice.
 
-The other artifact families rely on TypeScript interfaces, producer-specific structures, handwritten checks, or workflow conventions. A `.json` suffix, successful fetch, or inclusion in `index.json` is not evidence of schema validation.
+The remaining artifact families rely on TypeScript interfaces, producer-specific structures, handwritten checks, or workflow conventions. A `.json` suffix, successful fetch, or inclusion in `index.json` is not evidence of schema validation.
 
 ## Current publication limitations
 
 `FEED_PUBLICATION_MANIFEST` is the Stage 1A workflow-local Git-staging path ledger and allowlist. It constrains which successfully recorded local feed writes/deletions a participating workflow may stage. It does not mean each recorded artifact was schema-validated.
 
-The ledger lives at a runner-temporary path in five workflows. It is not published for readers, is not fetched by the frontend, does not enumerate one complete snapshot, and provides no reader rollback or previous-complete fallback contract.
+The ledger lives at a runner-temporary path in six workflows. It is not published for readers, is not fetched by the frontend, does not enumerate one complete snapshot, and provides no reader rollback or previous-complete fallback contract.
 
 Other workflows still stage explicit files. Distinct workflow concurrency groups do not serialize those writers. Report publication writes the report and derived artifacts before rebuilding the index, but those file writes are not atomic replacements and there is no multi-writer transaction.
 

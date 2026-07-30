@@ -26,6 +26,7 @@ SCHEMA_PATH = os.path.join(FEED, "schema", "report.schema.json")
 REPORT_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{6,80}$")
 
 MAX_INDEX_REPORTS = 60        # index.json 中保留的最近报告条数
+MAX_INDEX_BRIEFS = 60         # research/index.json 中保留的最近简报摘要条数
 MAX_CONTRIB = 80              # 贡献日志保留条数
 STALE_HOURS = 36             # 超过此时长无更新 -> 看板标「陈旧」
 
@@ -189,6 +190,11 @@ def report_path(report_id: str) -> str:
     return artifact_json_path(_feed_child_root("reports"), report_id)
 
 
+def research_path(brief_id: str) -> str:
+    """深度研究简报路径(feed/research/<id>.json),与 report_path 同一 id 与路径包含约束。"""
+    return artifact_json_path(_feed_child_root("research"), brief_id)
+
+
 def write_report_files(report: dict) -> str:
     """落盘 report 文件,并刷新 signals/latest、market/state、factory/candidates。"""
     path = report_path(report["id"])
@@ -269,6 +275,7 @@ def _artifact_freshness() -> dict:
     _put("market_history", "market/history.json", "at", "date")
     _put("funds_13f", "funds/situational-awareness.json", "filed")
     _put("crypto_state", "crypto/state.json", "updated_at")
+    _put("research", "research/index.json", "updated_at")
     return out
 
 

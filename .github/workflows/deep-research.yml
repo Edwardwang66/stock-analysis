@@ -1,0 +1,115 @@
+name: Deep research (深度研究简报)
+
+# 「立题 → 并发取证 → 对抗验证 → 合成」四阶段深度研究引擎的执行端:
+#   扫描本仓已有的 feed/ 面板(市场快照/报告族/因子工厂/拥挤度…),自动立题,
+#   按委员会角色透镜并发取证,再由 red-team 阶段跑确定性反驳器,只让 confirmed 声明进 findings;
+#   被反驳与未验证的声明原样留档(不删证据),产出:
+#     - feed/research/<brief-id>.json(单次简报,按 feed/schema/research.schema.json 校验)
+#     - feed/research/index.json(简报族索引 + 未决问题)
+#     - 一份 kind: routine 报告(只带 alerts + contribution + notes,不覆盖 market_state/book)
+#   然后 push 到 main。引擎是确定性逻辑,不调用任何外部 LLM;网络也不取数,只描述仓内已有数据。
+#   简报通过 schema 校验不等于分析结论获批,也不构成投资建议(R6:LLM 是研究放大器,不决策)。
+#
+# 节流:工作日 23:40 UTC 跑一次 —— 排在 EOD alpha-routine(22:30)、daily-screener(22:30)
+# 与 daily-digest(23:30)三个写入方的启动时刻之后。注意它不等待这些写入方:上游跑慢或跑挂时,
+# 本次读到的就是上一份快照,逐工件龄期记在简报的 coverage 台账里,不会被当成当天数据。周末不跑。
+# 注:GitHub 定时任务只在默认分支(main)上触发 —— 合并到 main 后自动生效。
+
+on:
+  schedule:
+    - cron: "40 23 * * 1-5"      # EOD 全部写入方跑完之后
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: "并发取证的 worker 数(默认 8)"
+        default: "8"
+      roles:
+        description: "委员会角色白名单(逗号分隔,空=全部角色)"
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: deep-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FEED_PUBLICATION_MANIFEST: /tmp/feed-publication-${{ github.run_id }}.json
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+
+      - name: 生成深度研究简报(确定性四阶段,无外部 LLM)
+        env:
+          DEEP_RESEARCH_WORKERS: ${{ github.event.inputs.workers || '8' }}
+          DEEP_RESEARCH_ROLES: ${{ github.event.inputs.roles || '' }}
+          FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python scripts/deep_research.py --publish
+
+      - name: Commit + push 简报到 feed/
+        run: |
+          git config user.name  "deep-research[bot]"
+          git config user.email "actions@github.com"
+          python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
+          if git diff --cached --quiet; then
+            echo "feed 无变化,跳过提交。"
+          else
+            git commit -m "research: 深度研究简报 ($(date -u +%Y-%m-%dT%H:%MZ))"
+            pushed=0
+            for i in 1 2 3 4; do
+              # 上一轮 rebase 冲突会把仓库留在 rebase 中间态,不清掉后续重试只会同样失败。
+              git rebase --abort >/dev/null 2>&1 || true
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
+            done
+            if [ "$pushed" -ne 1 ]; then echo "push 重试耗尽。" >&2; exit 1; fi
+          fi
+
+      - name: critical 告警开 Issue(当日去重)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(date -u +%F)
+          SUMMARY=$(python scripts/deep_research.py --alert-scan)
+          STATUS=$(echo "$SUMMARY" | sed -n 1p)
+          COUNT=$(echo "$SUMMARY" | sed -n 2p)
+          BRIEF=$(echo "$SUMMARY" | sed -n 3p)
+          FIRST=$(echo "$SUMMARY" | sed -n 4p)
+          if [ "$STATUS" != "ok" ]; then
+            echo "::warning::无法读取最新简报做 critical 扫描($STATUS);简报本身已发布,但本次没有做告警判定。"
+            exit 0
+          fi
+          if [ "${COUNT:-0}" -eq 0 ]; then echo "✅ 最新简报无 critical 告警"; exit 0; fi
+          echo "❌ 最新简报有 $COUNT 条 critical 告警"
+          gh label create deep-research --color 1D76DB --description "深度研究简报的 critical 告警" 2>/dev/null || true
+          EXIST=$(gh issue list --label deep-research --state open --search "in:title $DATE" --json number --jq length)
+          if [ "${EXIST:-0}" -gt 0 ]; then echo "当日已提醒过,跳过"; exit 0; fi
+          {
+            echo "**深度研究简报 \`$BRIEF\` 带 $COUNT 条 critical 告警。**"
+            echo
+            echo "首条:$FIRST"
+            echo
+            echo "简报路径:\`feed/research/\`(索引 \`feed/research/index.json\` 的 \`latest\`)。"
+            echo
+            echo "排查顺序:"
+            echo "1. 打开简报的 findings,看 confirmed 声明的 evidence 指向哪个 artifact 与字段。"
+            echo "2. 对照 coverage 台账,确认告警不是上游 artifact 过期/缺失造成的。"
+            echo "3. 按 next_actions 的 priority 逐条处理;refuted 与 unverified 只留档,不当结论。"
+            echo
+            echo "简报通过 schema 校验不等于分析结论获批,也不构成投资建议或策略批准。"
+            echo "_由 deep-research.yml 自动生成;引擎是确定性逻辑,不调用外部 LLM。_"
+          } > /tmp/body.md
+          gh issue create \
+            --title "🔬 深度研究 critical 告警 $DATE" \
+            --label deep-research \
+            --assignee "${{ github.repository_owner }}" \
+            --body-file /tmp/body.md || echo "issue create failed"

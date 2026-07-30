@@ -7,6 +7,7 @@ import {
 } from "@/lib/feed";
 import { fmtDateTime, useTz } from "@/lib/timefmt";
 import LangSelect from "@/components/LangSelect";
+import ResearchBriefs from "@/components/ResearchBriefs";
 
 const UP = "#26a69a", DOWN = "#ef5350", WARN = "#f7b500", MUT = "#787b86";
 const pct = (x?: number | null, d = 1) => (x == null ? "—" : `${(x * 100).toFixed(d)}%`);
@@ -80,7 +81,7 @@ export default function IntelDashboard() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {([["signals_book", "持仓簿"], ["market_state", "市场状态"], ["screener", "选股"], ["rs_ranks", "RS排名"],
                ["stock_notes", "AI解读"], ["intraday", "盘中"], ["market_history", "快照史"], ["funds_13f", "13F"],
-               ["crypto_state", "HL衍生品"]] as const).map(([k, label]) => {
+               ["crypto_state", "HL衍生品"], ["research", "深度研究"]] as const).map(([k, label]) => {
               const s = health.sources[k];
               const bad = !s?.exists || (s.age_days != null && s.age_days > 3 && k !== "funds_13f");
               return (
@@ -375,6 +376,8 @@ export default function IntelDashboard() {
           </div>
         </div>
       )}
+
+      <ResearchBriefs />
 
       {/* 报告浏览:点击任意报告看全文要点 */}
       <div className="section">
