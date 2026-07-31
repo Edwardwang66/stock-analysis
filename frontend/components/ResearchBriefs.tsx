@@ -48,7 +48,11 @@ export default function ResearchBriefs() {
   // 不能只在 brief 为空时取 —— 那样头部会显示新 id 与新计数,展开区却还是上一份简报的内容。
   // alive 守卫避免卸载后 setState;取数失败解析为 null,不抛异常。
   useEffect(() => {
-    if (!open || !path) return;
+    if (!open) return;
+    // 索引条目没有 path 时必须显式判失败:直接 return 会让 busy/failed 都停在 false,
+    // 而展开区把「brief 为空」当加载中,于是永远显示「加载简报中…」且没有任何请求在飞。
+    // path 在类型上是必填,但索引来自远端 JSON,损坏或半截的条目在运行时确实可能没有它。
+    if (!path) { setBrief(null); setBusy(false); setFailed(true); return; }
     let alive = true;
     setBusy(true);
     setFailed(false);
@@ -93,7 +97,9 @@ export default function ResearchBriefs() {
 
       {open && (failed && !brief ? (
         <div className="err" style={{ marginTop: 10 }}>
-          无法加载简报 <code>{path}</code>(远端与捆绑快照均失败)。
+          {path
+            ? <>无法加载简报 <code>{path}</code>(远端与捆绑快照均失败)。</>
+            : <>索引里的简报 <code>{latestId}</code> 没有 path 字段,无从取全文(索引条目不完整)。</>}
           <button className="btn" style={{ marginLeft: 8 }} onClick={() => { setOpen(false); setFailed(false); }}>
             收起重试
           </button>
