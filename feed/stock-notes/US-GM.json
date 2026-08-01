@@ -1,14 +1,14 @@
 {
   "symbol": "US:GM",
-  "date": "2026-06-10",
-  "model": "gpt-5.5 (via OpenClaw)",
-  "producer": "claude-cowork:stock-analyst",
-  "stance": "看多",
-  "thesis": "多头: General Motors 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 80、RSI14 61.6；最新价约 83.76，20/50/200日均线约 79.66/78.04/73.53；TD9 上行2；52周位置 90% 分位、距高点 -4.4%；SuperTrend(10,3) 多头，约 11 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；近20/60交易日收益约 11.2%/15.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "date": "2026-08-01",
+  "model": "OpenClaw notes (Actions)",
+  "producer": "openclaw-agent:stock-analyst",
+  "stance": "中性",
+  "thesis": "多头: General Motors 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 85、RSI14 68.2；最新价约 88.86，20/50/200日均线约 80.72/80.50/77.39；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.3%、93分位；SuperTrend(10,3) 多头·约 8 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 16.9%/16.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: GM Follows Tesla’s Playbook — Expands Into Energy Storage With Peak Partnership(Stocktwits)；General Motors Eyes Sodium-Ion Batteries to Expand Energy Storage Business(MT Newswires)；Fluence Scores Independent Validation of Industry-Leading Battery Storage Reliability(IPO-Edge.com)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: GM Is a ‘Strong Buy,’ Analyst Says. Plus, Caesars and 3 More Stocks.(Barrons.com)；Yahoo Finance test drives the Corvette Grand Sport X hybrid(Yahoo Finance Video)；Rivian Stock Reverses After Earnings. The R2 Rollout Is Paying Off.(Barrons.com)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行2；52周位置 90% 分位、距高点 -4.4%；SuperTrend(10,3) 多头，约 11 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.3%、93分位；SuperTrend(10,3) 多头·约 8 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: GM",
@@ -19,12 +19,19 @@
       "url": "https://finance.yahoo.com/quote/GM/news/"
     },
     {
-      "title": "GM Follows Tesla’s Playbook — Expands Into Energy Storage With Peak Partnership",
-      "url": "https://finance.yahoo.com/m/2f00466f-4df9-3454-ba51-b54afc37e74f/gm-follows-tesla%E2%80%99s-playbook-%E2%80%94.html"
+      "title": "GM Is a ‘Strong Buy,’ Analyst Says. Plus, Caesars and 3 More Stocks.",
+      "url": "https://finance.yahoo.com/m/95487c3f-21df-37dd-aa66-7f5665d00d47/gm-is-a-%E2%80%98strong-buy%2C%E2%80%99-analyst.html"
     },
     {
-      "title": "General Motors Eyes Sodium-Ion Batteries to Expand Energy Storage Business",
-      "url": "https://finance.yahoo.com/sectors/energy/articles/general-motors-eyes-sodium-ion-233510342.html"
+      "title": "Yahoo Finance test drives the Corvette Grand Sport X hybrid",
+      "url": "https://finance.yahoo.com/video/yahoo-finance-test-drives-corvette-204741503.html"
     }
-  ]
+  ],
+  "methodology": {
+    "td9": "上行9(防衰竭)",
+    "week52": "距高 -3.3% · 93分位",
+    "supertrend": "多头·约 8 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 84
+  }
 }
