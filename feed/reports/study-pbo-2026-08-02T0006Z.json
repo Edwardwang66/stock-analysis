@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "id": "study-pbo-2026-08-02T0006Z",
+  "kind": "manual",
+  "produced_at": "2026-08-02T00:06:43Z",
+  "asof_data": "2026-07-31",
+  "producer": {
+    "name": "study-pbo",
+    "agent_role": "engine"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "pbo-study",
+      "message": "参数网格(10配置)CSCV PBO=0.47;全部配置净SR≤0=False;详见 docs/study-pbo-2026-08-02.md",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "PBO 研究:10 参数变体 CSCV PBO=0.47,train最优=vol_target=4%(波动缩放),holdout 上 +0.34。"
+  },
+  "notes": "预注册参数网格的过拟合概率测量;不据 holdout 调参。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "c9c95657d1276dd448d2c3c0fe49abeada20f1c712de892b7ed5100fc973aa4e"
+  }
+}
