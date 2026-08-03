@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-07-30T00:00:00Z",
+  "note": "占位:同源捆绑兜底快照,只对本地 dev 与 server build 生效。GitHub Pages 的快照由 deploy-pages.yml 从一份固定来源清单重建,该清单当前不含 feed/research,所以这个文件在 Pages 上既不会被刷新也不会被部署 —— 线上面板走 raw GitHub 远端源。深度研究简报由 scripts/deep_research.py 确定性产出(不调用 LLM);briefs 为空表示本地没有简报,前端面板会整块隐藏。",
+  "latest": null,
+  "stats": {
+    "total_briefs": 0,
+    "by_role": {},
+    "last_7d": 0
+  },
+  "briefs": [],
+  "open_questions": []
+}

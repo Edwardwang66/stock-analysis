@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-07-30T06:40:00Z",
+  "note": "scripts/deep_research.py 产出的深度研究简报索引。确定性引擎,未调用 LLM;confirmed 只表示对已记录数据的可复现计算成立,不构成投资建议。最多保留 60 条摘要,简报文件本身不裁剪。",
+  "latest": {
+    "id": "deep-research-2026-07-30T0640Z",
+    "produced_at": "2026-07-30T06:40:00Z",
+    "asof_data": "2026-07-30",
+    "headline": "同一份报告(routine-2026-07-29T2330Z)的熔断名单与同期簿有 1 只交集 ['ABT'],仍带 0.0043 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+    "n_questions": 18,
+    "n_findings": 30,
+    "confirmed": 30,
+    "refuted": 1,
+    "unverified": 0,
+    "n_alerts": 8,
+    "path": "research/deep-research-2026-07-30T0640Z.json"
+  },
+  "stats": {
+    "total_briefs": 1,
+    "by_role": {
+      "residual-analyst": 4,
+      "red-team": 4,
+      "engine": 7,
+      "crowding-monitor": 3,
+      "factor-factory": 4,
+      "risk": 5,
+      "event-risk": 3
+    },
+    "last_7d": 1
+  },
+  "briefs": [
+    {
+      "id": "deep-research-2026-07-30T0640Z",
+      "produced_at": "2026-07-30T06:40:00Z",
+      "asof_data": "2026-07-30",
+      "headline": "同一份报告(routine-2026-07-29T2330Z)的熔断名单与同期簿有 1 只交集 ['ABT'],仍带 0.0043 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+      "n_questions": 18,
+      "n_findings": 30,
+      "confirmed": 30,
+      "refuted": 1,
+      "unverified": 0,
+      "n_alerts": 8,
+      "path": "research/deep-research-2026-07-30T0640Z.json"
+    }
+  ],
+  "open_questions": []
+}

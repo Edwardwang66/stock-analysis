@@ -100,6 +100,7 @@ def check_freshness():
         "crypto_state": (0.5, 2),
         "rs_ranks": (2, 5), "stock_notes": (2, 5), "intraday": (2, 5),
         "market_history": (3, 7), "funds_13f": (135, 200),
+        "research": (4, 9),   # 深度研究:工作日每晚一班,跨周末最长 3 天 -> warn 4d / critical 9d
     }
     for key, lim in SLA.items():
         s = src.get(key, {})
@@ -148,6 +149,44 @@ def check_stock_notes():
                  f"stock-notes 最新日 {newest} 覆盖率 {cov*100:.0f}%(分布 {dict(sorted(by_date.items()))})")
 
 
+def check_research_coherence():
+    """深度研究简报:索引指向的简报必须存在,且简报不得声称未来数据、不得把被驳结论放进 findings。"""
+    idx = _j("research/index.json")
+    if not idx:
+        return
+    latest = idx.get("latest") or {}
+    briefs = idx.get("briefs") or []
+    head = briefs[0] if briefs and isinstance(briefs[0], dict) else {}
+    refs = [latest.get("path")] + [b.get("path") for b in briefs[:10] if isinstance(b, dict)]
+    for ref in [r for r in refs if r]:
+        if not os.path.exists(os.path.join(fl.FEED, ref)):
+            flag("critical", "research-dangling", f"research/index.json 指向不存在的简报: {ref}")
+    # latest 与 briefs[0] 必须是同一份:alert_scan()、/intel 面板都按 latest 挑最新简报,
+    # 一旦它与排序后的列表头分歧,自动化与看板就会指向不同的运行,而这里正是该发现它的地方。
+    if latest.get("path") and head.get("path") and latest["path"] != head["path"]:
+        flag("critical", "research-latest-drift",
+             f"research/index.json 的 latest({latest.get('id')})与 briefs[0]"
+             f"({head.get('id')})不是同一份简报,消费方会各挑各的")
+    # 选取规则与 alert_scan() / 前端保持一致:latest 优先,briefs[0] 兜底 ——
+    # 否则 latest 缺失时语义检查会静默跳过,而消费方仍在读 briefs[0]。
+    ref = latest.get("path") or head.get("path")
+    brief = _j(ref) if ref else None
+    if not brief:
+        return
+    if brief.get("produced_at") and brief.get("asof_data") \
+            and brief["asof_data"] > brief["produced_at"][:10]:
+        flag("critical", "future-asof",
+             f"简报 {brief.get('id')} 声称 asof_data={brief['asof_data']} 晚于生成时间(未来数据)")
+    bad = [c.get("id") for c in (brief.get("findings") or []) if c.get("verdict") != "confirmed"]
+    if bad:
+        flag("critical", "research-unverified-finding",
+             f"简报 {brief.get('id')} 的 findings 含未通过对抗验证的结论: {bad[:5]}")
+    if (brief.get("run") or {}).get("lenses_failed"):
+        flag("warn", "research-partial",
+             f"简报 {brief.get('id')} 有 {brief['run']['lenses_failed']} 个 lens 失败,"
+             f"本轮取证不完整,不能按完整覆盖解读")
+
+
 def check_bundled_snapshot():
     pub = fl.load_json(os.path.join(ROOT, "frontend", "public", "feed", "index.json"))
     cur = _j("index.json")
@@ -167,6 +206,7 @@ def main():
     check_freshness()
     check_screener_coherence()
     check_stock_notes()
+    check_research_coherence()
     check_bundled_snapshot()
 
     n_crit = sum(1 for i in issues if i["level"] == "critical")
