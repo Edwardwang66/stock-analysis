@@ -1,23 +1,13 @@
 {
-  "checked_at": "2026-08-03T19:08:01Z",
+  "checked_at": "2026-08-04T03:46:14Z",
   "ok": true,
   "critical": 0,
-  "warn": 3,
+  "warn": 1,
   "issues": [
     {
       "level": "warn",
       "code": "aging",
-      "message": "screener 已 3.8 天未更新(SLA 2d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "rs_ranks 已 3.8 天未更新(SLA 2d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "stock_notes 已 2.6 天未更新(SLA 2d)"
+      "message": "stock_notes 已 3.0 天未更新(SLA 2d)"
     },
     {
       "level": "info",
@@ -27,54 +17,54 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 54.5 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 54.8 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-08-03",
-      "age_days": 0.8
+      "age_days": 1.16
     },
     "market_state": {
       "exists": true,
       "asof": "2026-08-03",
-      "age_days": 0.8
+      "age_days": 1.16
     },
     "screener": {
       "exists": true,
-      "asof": "2026-07-31",
-      "age_days": 3.8
+      "asof": "2026-08-03",
+      "age_days": 1.16
     },
     "rs_ranks": {
       "exists": true,
-      "asof": "2026-07-31",
-      "age_days": 3.8
+      "asof": "2026-08-03",
+      "age_days": 1.16
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-08-01T04:17:39Z",
-      "age_days": 2.62
+      "age_days": 2.98
     },
     "intraday": {
       "exists": true,
       "asof": "2026-08-03T15:29:52+00:00",
-      "age_days": 0.15
+      "age_days": 0.51
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-08-03T10:54:21+00:00",
-      "age_days": 0.34
+      "asof": "2026-08-03T23:43:26+00:00",
+      "age_days": 0.17
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 77.8
+      "age_days": 78.16
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-08-03T18:00:42Z",
-      "age_days": 0.05
+      "asof": "2026-08-04T03:30:16Z",
+      "age_days": 0.01
     }
   }
 }
