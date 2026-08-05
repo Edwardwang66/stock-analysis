@@ -1,6 +1,102 @@
 {
-  "updated_at": "2026-08-04T23:33:53Z",
+  "updated_at": "2026-08-05T23:30:01Z",
   "candidates": [
+    {
+      "expr": "z(gap_oc) - z(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "-z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0333,
+      "post_cutoff": true,
+      "t_stat": 1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.033 t=+1.7 净年化=+13.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "z(gap_oc)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0333,
+      "post_cutoff": true,
+      "t_stat": -1.72,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "z(gap_oc) - rank(hi52)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × hi52(52周高点接近度:George-Hwang 锚定效应)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0345,
+      "post_cutoff": true,
+      "t_stat": -1.81,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.035 t=-1.8 净年化=-18.6% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "rank(r63) + z(amihud21)",
+      "hypothesis": "机器组装假设:r63(过去63日收益:季度动量) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0347,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.035 t=+1.8 净年化=+8.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "z(gap_oc) - rank(vol63)",
+      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.8 净年化=-8.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "rank(vol63) - z(gap_oc)",
+      "hypothesis": "机器组装假设:vol63(63日实现波动:低波异象(慢)) × gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": 0.0344,
+      "post_cutoff": true,
+      "t_stat": 1.82,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=+0.034 t=+1.8 净年化=+3.5% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
+    {
+      "expr": "-rank(hi52) - rank(amihud21)",
+      "hypothesis": "机器组装假设:hi52(52周高点接近度:George-Hwang 锚定效应) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
+      "incremental_ic": -0.0344,
+      "post_cutoff": true,
+      "t_stat": -1.87,
+      "passed_gates": false,
+      "decision": "reject",
+      "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
+      "_source": "factory-local-2026-08-05T2330Z",
+      "_at": "2026-08-05T23:30:01Z"
+    },
     {
       "expr": "z(gap_oc) - z(vol63)",
       "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
@@ -1344,102 +1440,6 @@
       "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
       "_source": "factory-local-2026-07-16T2325Z",
       "_at": "2026-07-16T23:25:51Z"
-    },
-    {
-      "expr": "z(gap_oc) - z(vol63)",
-      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": -0.0333,
-      "post_cutoff": true,
-      "t_stat": -1.72,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "-z(gap_oc)",
-      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": 0.0333,
-      "post_cutoff": true,
-      "t_stat": 1.72,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=+0.033 t=+1.7 净年化=+13.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "z(gap_oc)",
-      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": -0.0333,
-      "post_cutoff": true,
-      "t_stat": -1.72,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=-0.033 t=-1.7 净年化=-18.8% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "z(gap_oc) - rank(hi52)",
-      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × hi52(52周高点接近度:George-Hwang 锚定效应)。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": -0.0345,
-      "post_cutoff": true,
-      "t_stat": -1.81,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=-0.035 t=-1.8 净年化=-18.6% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "rank(r63) + z(amihud21)",
-      "hypothesis": "机器组装假设:r63(过去63日收益:季度动量) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": 0.0347,
-      "post_cutoff": true,
-      "t_stat": 1.82,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=+0.035 t=+1.8 净年化=+8.9% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "z(gap_oc) - rank(vol63)",
-      "hypothesis": "机器组装假设:gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras)) × vol63(63日实现波动:低波异象(慢))。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": -0.0344,
-      "post_cutoff": true,
-      "t_stat": -1.82,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=-0.034 t=-1.8 净年化=-8.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "rank(vol63) - z(gap_oc)",
-      "hypothesis": "机器组装假设:vol63(63日实现波动:低波异象(慢)) × gap_oc(21日隔夜跳空均值:隔夜/日内收益分解(Lou-Polk-Skouras))。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": 0.0344,
-      "post_cutoff": true,
-      "t_stat": 1.82,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=+0.034 t=+1.8 净年化=+3.5% (48期); 门控: FDR+t3=✗ 净成本=✓ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
-    },
-    {
-      "expr": "-rank(hi52) - rank(amihud21)",
-      "hypothesis": "机器组装假设:hi52(52周高点接近度:George-Hwang 锚定效应) × amihud21(Amihud非流动性:流动性溢价)。[弱先验,门控⑤如实标注为机器生成]",
-      "incremental_ic": -0.0344,
-      "post_cutoff": true,
-      "t_stat": -1.87,
-      "passed_gates": false,
-      "decision": "reject",
-      "note": "train: IC=-0.034 t=-1.9 净年化=-13.4% (48期); 门控: FDR+t3=✗ 净成本=✗ 广度门未实现",
-      "_source": "factory-local-2026-07-15T2328Z",
-      "_at": "2026-07-15T23:28:36Z"
     }
   ]
 }
