@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-05T17:57:30Z",
-  "source_report": "routine-2026-08-05T1757Z",
+  "updated_at": "2026-08-05T19:59:35Z",
+  "source_report": "routine-2026-08-05T1959Z",
   "asof": "2026-08-05",
   "n_long": 21,
   "n_short": 31,
@@ -38,16 +38,6 @@
       "sector": "Consumer Discretionary"
     },
     {
-      "ticker": "O",
-      "side": "SHORT",
-      "weight": -0.0155,
-      "s_score": -0.23,
-      "halflife_days": 7.5,
-      "kappa": 23.43,
-      "hurst": 0.536,
-      "sector": "Real Estate"
-    },
-    {
       "ticker": "MSFT",
       "side": "SHORT",
       "weight": -0.0155,
@@ -56,6 +46,16 @@
       "kappa": 16.75,
       "hurst": 0.434,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "O",
+      "side": "SHORT",
+      "weight": -0.0155,
+      "s_score": -0.23,
+      "halflife_days": 7.5,
+      "kappa": 23.43,
+      "hurst": 0.536,
+      "sector": "Real Estate"
     },
     {
       "ticker": "ABT",
@@ -178,16 +178,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "RTX",
-      "side": "SHORT",
-      "weight": -0.0032,
-      "s_score": 1.206,
-      "halflife_days": 5.6,
-      "kappa": 30.97,
-      "hurst": 0.352,
-      "sector": "Industrials"
-    },
-    {
       "ticker": "LMT",
       "side": "SHORT",
       "weight": -0.0032,
@@ -195,6 +185,16 @@
       "halflife_days": 13.0,
       "kappa": 13.44,
       "hurst": 0.466,
+      "sector": "Industrials"
+    },
+    {
+      "ticker": "RTX",
+      "side": "SHORT",
+      "weight": -0.0032,
+      "s_score": 1.206,
+      "halflife_days": 5.6,
+      "kappa": 30.97,
+      "hurst": 0.352,
       "sector": "Industrials"
     },
     {
@@ -268,14 +268,14 @@
       "sector": "Consumer Discretionary"
     },
     {
-      "ticker": "PG",
+      "ticker": "PSX",
       "side": "SHORT",
       "weight": -0.0012,
-      "s_score": -0.401,
-      "halflife_days": 7.1,
-      "kappa": 24.58,
-      "hurst": 0.393,
-      "sector": "Consumer Staples"
+      "s_score": 0.262,
+      "halflife_days": 7.8,
+      "kappa": 22.42,
+      "hurst": 0.486,
+      "sector": "Energy"
     },
     {
       "ticker": "MPC",
@@ -288,24 +288,14 @@
       "sector": "Energy"
     },
     {
-      "ticker": "PSX",
+      "ticker": "PG",
       "side": "SHORT",
       "weight": -0.0012,
-      "s_score": 0.262,
-      "halflife_days": 7.8,
-      "kappa": 22.42,
-      "hurst": 0.486,
-      "sector": "Energy"
-    },
-    {
-      "ticker": "HON",
-      "side": "SHORT",
-      "weight": -0.0011,
-      "s_score": 0.039,
-      "halflife_days": 10.0,
-      "kappa": 17.43,
-      "hurst": 0.395,
-      "sector": "Industrials"
+      "s_score": -0.401,
+      "halflife_days": 7.1,
+      "kappa": 24.58,
+      "hurst": 0.393,
+      "sector": "Consumer Staples"
     },
     {
       "ticker": "LRCX",
@@ -316,6 +306,16 @@
       "kappa": 13.93,
       "hurst": 0.523,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "HON",
+      "side": "SHORT",
+      "weight": -0.0011,
+      "s_score": 0.039,
+      "halflife_days": 10.0,
+      "kappa": 17.43,
+      "hurst": 0.395,
+      "sector": "Industrials"
     },
     {
       "ticker": "UNH",
@@ -408,14 +408,14 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "D",
+      "ticker": "GE",
       "side": "LONG",
       "weight": 0.009,
-      "s_score": -1.347,
-      "halflife_days": 4.5,
-      "kappa": 38.39,
-      "hurst": 0.183,
-      "sector": "Utilities"
+      "s_score": -0.542,
+      "halflife_days": 7.6,
+      "kappa": 22.86,
+      "hurst": 0.496,
+      "sector": "Industrials"
     },
     {
       "ticker": "SO",
@@ -428,14 +428,14 @@
       "sector": "Utilities"
     },
     {
-      "ticker": "GE",
+      "ticker": "D",
       "side": "LONG",
       "weight": 0.009,
-      "s_score": -0.542,
-      "halflife_days": 7.6,
-      "kappa": 22.86,
-      "hurst": 0.496,
-      "sector": "Industrials"
+      "s_score": -1.347,
+      "halflife_days": 4.5,
+      "kappa": 38.39,
+      "hurst": 0.183,
+      "sector": "Utilities"
     },
     {
       "ticker": "UPS",
