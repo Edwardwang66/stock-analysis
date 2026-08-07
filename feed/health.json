@@ -1,9 +1,19 @@
 {
-  "checked_at": "2026-08-06T14:55:01Z",
+  "checked_at": "2026-08-07T00:46:00Z",
   "ok": true,
   "critical": 0,
-  "warn": 0,
+  "warn": 2,
   "issues": [
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "screener 已 2.0 天未更新(SLA 2d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "rs_ranks 已 2.0 天未更新(SLA 2d)"
+    },
     {
       "level": "info",
       "code": "notes-partial",
@@ -12,53 +22,53 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 57.3 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 57.7 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
-      "asof": "2026-08-05",
-      "age_days": 1.62
+      "asof": "2026-08-06",
+      "age_days": 1.03
     },
     "market_state": {
       "exists": true,
-      "asof": "2026-08-05",
-      "age_days": 1.62
+      "asof": "2026-08-06",
+      "age_days": 1.03
     },
     "screener": {
       "exists": true,
       "asof": "2026-08-05",
-      "age_days": 1.62
+      "age_days": 2.03
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-08-05",
-      "age_days": 1.62
+      "age_days": 2.03
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-08-06T04:00:29Z",
-      "age_days": 0.45
+      "age_days": 0.86
     },
     "intraday": {
       "exists": true,
-      "asof": "2026-08-05T14:54:23+00:00",
-      "age_days": 1.0
+      "asof": "2026-08-06T14:53:04+00:00",
+      "age_days": 0.41
     },
     "market_history": {
       "exists": true,
       "asof": "2026-08-06T10:08:24+00:00",
-      "age_days": 0.2
+      "age_days": 0.61
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 80.62
+      "age_days": 81.03
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-08-06T14:30:35Z",
+      "asof": "2026-08-07T00:10:51Z",
       "age_days": 0.02
     }
   }
