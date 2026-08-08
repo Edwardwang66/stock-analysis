@@ -1,14 +1,14 @@
 {
   "symbol": "US:JCI",
-  "date": "2026-08-07",
+  "date": "2026-08-08",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: Johnson Controls 属于 Industrials/Building Products & Equipment，当前进入看多清单，技术评分 80、RSI14 68.3；最新价约 154.55，20/50/200日均线约 144.43/143.26/131.56；TD9 上行6；52周位置 距高 -1.6%、95分位；SuperTrend(10,3) 多头·约 45 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 10.0%/9.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "看多",
+  "thesis": "多头: Johnson Controls 属于 Industrials/Building Products & Equipment，当前进入看多清单，技术评分 85、RSI14 62.7；最新价约 152.21，20/50/200日均线约 144.90/143.54/131.76；TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.1%、91分位；SuperTrend(10,3) 多头·约 46 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 6.6%/7.9%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Is Johnson Controls Stock Still a Buy After an Insider Offloaded 23,400 Shares?(Motley Fool)；Analyst Report: Adient plc(Morningstar Research)；Johnson Controls International Insider Sold Shares Worth $3,584,358, According to a Recent SEC Filing(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Johnson Controls (JCI) Q3 2026 Earnings Call Transcript(Motley Fool)；Market Digest: EBAY, EMR, FE, PG, JCI, UPS, VSH, XYZ, SPCX(Argus Research)；Analyst Report: Johnson Controls Intl plc(Argus Research)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行6；52周位置 距高 -1.6%、95分位；SuperTrend(10,3) 多头·约 45 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.1%、91分位；SuperTrend(10,3) 多头·约 46 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: JCI",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/JCI/news/"
     },
     {
-      "title": "Is Johnson Controls Stock Still a Buy After an Insider Offloaded 23,400 Shares?",
-      "url": "https://finance.yahoo.com/m/204b5ff1-7298-3f57-a27e-62511effe03c/is-johnson-controls-stock.html"
+      "title": "Johnson Controls (JCI) Q3 2026 Earnings Call Transcript",
+      "url": "https://finance.yahoo.com/m/23c52ed5-2866-3b00-9086-ec602b0355e6/johnson-controls-%28jci%29-q3.html"
     },
     {
-      "title": "Analyst Report: Adient plc",
-      "url": "https://finance.yahoo.com/m/e77e40cf-2005-3b29-8445-e584f65b5483/analyst-report%3A-adient-plc.html"
+      "title": "Market Digest: EBAY, EMR, FE, PG, JCI, UPS, VSH, XYZ, SPCX",
+      "url": "https://finance.yahoo.com/m/e4a45899-09a2-3872-ac19-7da6967893a4/market-digest%3A-ebay%2C-emr%2C-fe%2C.html"
     }
   ],
   "methodology": {
-    "td9": "上行6",
-    "week52": "距高 -1.6% · 95分位",
-    "supertrend": "多头·约 45 个交易日前翻转",
+    "td9": "上行7(防衰竭)",
+    "week52": "距高 -3.1% · 91分位",
+    "supertrend": "多头·约 46 个交易日前翻转",
     "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
-    "rs": 78
+    "rs": 75
   }
 }
