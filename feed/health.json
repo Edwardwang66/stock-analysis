@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-08-10T08:55:42Z",
+  "checked_at": "2026-08-10T10:23:55Z",
   "ok": true,
   "critical": 0,
   "warn": 6,
@@ -27,12 +27,12 @@
     {
       "level": "warn",
       "code": "aging",
-      "message": "stock_notes 已 2.2 天未更新(SLA 2d)"
+      "message": "stock_notes 已 2.3 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "intraday 已 2.8 天未更新(SLA 2d)"
+      "message": "intraday 已 2.9 天未更新(SLA 2d)"
     },
     {
       "level": "info",
@@ -42,54 +42,54 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 61.0 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 61.1 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-08-07",
-      "age_days": 3.37
+      "age_days": 3.43
     },
     "market_state": {
       "exists": true,
       "asof": "2026-08-07",
-      "age_days": 3.37
+      "age_days": 3.43
     },
     "screener": {
       "exists": true,
       "asof": "2026-08-07",
-      "age_days": 3.37
+      "age_days": 3.43
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-08-07",
-      "age_days": 3.37
+      "age_days": 3.43
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-08-08T02:51:41Z",
-      "age_days": 2.25
+      "age_days": 2.31
     },
     "intraday": {
       "exists": true,
       "asof": "2026-08-07T13:53:22+00:00",
-      "age_days": 2.79
+      "age_days": 2.85
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-08-07T23:15:24+00:00",
-      "age_days": 2.4
+      "asof": "2026-08-10T08:57:05+00:00",
+      "age_days": 0.06
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-05-18",
-      "age_days": 84.37
+      "age_days": 84.43
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-08-10T07:58:44Z",
-      "age_days": 0.04
+      "asof": "2026-08-10T09:42:47Z",
+      "age_days": 0.03
     }
   }
 }
