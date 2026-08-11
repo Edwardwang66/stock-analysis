@@ -1,14 +1,14 @@
 {
   "symbol": "US:NVDA",
-  "date": "2026-08-08",
+  "date": "2026-08-11",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: Nvidia 属于 Technology/Semiconductors，当前进入看多清单，技术评分 80、RSI14 64.4；最新价约 223.96，20/50/200日均线约 206.82/206.07/193.98；TD9 上行6；52周位置 距高 -5.3%、83分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 6.2%/1.4%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: NVDA 属于 Technology/Semiconductors，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 217.55，20/50/200日均线约 207.52/206.14/194.16；TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -8.0%、74分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 6.9%/-3.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Airbnb Just Hit a Four-Year High. Is It a Buy?(Motley Fool)；Nvidia to invest up to $3 billion in Stargate data center developer Lancium, the Information reports(Reuters)；Osisko Metals (TSX:OM) Is Up 20.8% After Reporting Deepening 2026 Losses Has The Bull Case Changed?(Simply Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Apollo Global Management (APO) Joins $500 Billion AI Infrastructure Fund(Simply Wall St.)；Dow Jones Futures: Trump Claims 'Control' Of Strait Of Hormuz; SpaceX Rival Rocket Lab Dives On Earnings(Investor's Business Daily)；Nvidia's CEO just sent strong signal to stock market investors(TheStreet)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行6；52周位置 距高 -5.3%、83分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -8.0%、74分位；SuperTrend(10,3) 多头·约 4 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: NVDA",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/NVDA/news/"
     },
     {
-      "title": "Airbnb Just Hit a Four-Year High. Is It a Buy?",
-      "url": "https://finance.yahoo.com/m/62bb2afc-591c-3ec7-8caf-e50a245061c8/airbnb-just-hit-a-four-year.html"
+      "title": "Apollo Global Management (APO) Joins $500 Billion AI Infrastructure Fund",
+      "url": "https://finance.yahoo.com/technology/ai/articles/apollo-global-management-apo-joins-020925631.html"
     },
     {
-      "title": "Nvidia to invest up to $3 billion in Stargate data center developer Lancium, the Information reports",
-      "url": "https://finance.yahoo.com/technology/articles/nvidia-invest-3-billion-lancium-014211358.html"
+      "title": "Dow Jones Futures: Trump Claims 'Control' Of Strait Of Hormuz; SpaceX Rival Rocket Lab Dives On Earnings",
+      "url": "https://finance.yahoo.com/m/8edb4f71-ec17-31b7-b263-bc566a40aab3/dow-jones-futures%3A-trump.html"
     }
   ],
   "methodology": {
-    "td9": "上行6",
-    "week52": "距高 -5.3% · 83分位",
-    "supertrend": "多头·约 3 个交易日前翻转",
+    "td9": "上行7(防衰竭)",
+    "week52": "距高 -8.0% · 74分位",
+    "supertrend": "多头·约 4 个交易日前翻转",
     "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
-    "rs": 64
+    "rs": 53
   }
 }
