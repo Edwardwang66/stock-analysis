@@ -1,124 +1,124 @@
 {
-  "updated_at": "2026-08-11T17:07:35Z",
+  "updated_at": "2026-08-11T19:15:01Z",
   "source": "hyperliquid api.hyperliquid.xyz/info",
   "crypto": {
     "n_perps": 232,
     "n_liquid": 23,
     "btc": {
       "coin": "BTC",
-      "funding_apr": 0.1028,
-      "oi_usd": 2470394680,
-      "premium": -0.00037,
-      "chg24h": -0.0079,
-      "vol24h_usd": 1244164511
+      "funding_apr": -0.0032,
+      "oi_usd": 2486149593,
+      "premium": -0.00048,
+      "chg24h": -0.0108,
+      "vol24h_usd": 1265703297
     },
     "eth": {
       "coin": "ETH",
-      "funding_apr": 0.108,
-      "oi_usd": 1542299338,
-      "premium": -0.00034,
-      "chg24h": -0.0057,
-      "vol24h_usd": 562777786
+      "funding_apr": 0.1095,
+      "oi_usd": 1558217382,
+      "premium": -0.00038,
+      "chg24h": -0.0064,
+      "vol24h_usd": 563814089
     },
-    "pct_positive_funding": 0.957,
-    "total_oi_usd": 6511973406,
-    "oi_change_since_last": 0.0063,
+    "pct_positive_funding": 0.87,
+    "total_oi_usd": 6548197250,
+    "oi_change_since_last": 0.0056,
     "funding_extremes": [
       {
         "coin": "KAITO",
-        "funding_apr": -11.7788,
-        "oi_usd": 10918675,
-        "premium": -0.0115,
-        "chg24h": -0.0151,
-        "vol24h_usd": 13567796
+        "funding_apr": -13.2071,
+        "oi_usd": 11202292,
+        "premium": -0.01225,
+        "chg24h": -0.0346,
+        "vol24h_usd": 13551643
       },
       {
         "coin": "XMR",
-        "funding_apr": 1.4845,
-        "oi_usd": 59794609,
-        "premium": 0.00227,
-        "chg24h": -0.0005,
-        "vol24h_usd": 7876896
+        "funding_apr": 0.9232,
+        "oi_usd": 58924489,
+        "premium": 0.0017,
+        "chg24h": -0.0157,
+        "vol24h_usd": 7826533
       },
       {
         "coin": "CASHCAT",
-        "funding_apr": 0.5048,
-        "oi_usd": 20571473,
-        "premium": 0.00023,
-        "chg24h": -0.0423,
-        "vol24h_usd": 7205897
+        "funding_apr": 0.3627,
+        "oi_usd": 21355892,
+        "premium": 0.0,
+        "chg24h": -0.0041,
+        "vol24h_usd": 8023653
+      },
+      {
+        "coin": "ETH",
+        "funding_apr": 0.1095,
+        "oi_usd": 1558217382,
+        "premium": -0.00038,
+        "chg24h": -0.0064,
+        "vol24h_usd": 563814089
       },
       {
         "coin": "HYPE",
         "funding_apr": 0.1095,
-        "oi_usd": 1160298989,
-        "premium": 0.0002,
-        "chg24h": -0.0203,
-        "vol24h_usd": 147638252
-      },
-      {
-        "coin": "SOL",
-        "funding_apr": 0.1095,
-        "oi_usd": 378463982,
-        "premium": -0.00036,
-        "chg24h": -0.0138,
-        "vol24h_usd": 92796523
+        "oi_usd": 1160060306,
+        "premium": 0.00032,
+        "chg24h": -0.024,
+        "vol24h_usd": 138505115
       }
     ],
     "crowding_flag": true
   },
   "venues": {
     "n_compared": 232,
-    "n_dislocated": 52,
+    "n_dislocated": 68,
     "threshold_apr": 0.1,
     "top": [
       {
         "coin": "KAITO",
-        "hl_apr": -11.7941,
-        "binance_apr": -6.5341,
-        "spread_apr": -5.26
+        "hl_apr": -13.2097,
+        "binance_apr": -6.3623,
+        "spread_apr": -6.8474
       },
       {
         "coin": "BNT",
         "hl_apr": 0.0,
-        "binance_apr": -2.3399,
-        "spread_apr": 2.3399
+        "binance_apr": -2.6052,
+        "spread_apr": 2.6052
       },
       {
-        "coin": "XMR",
-        "hl_apr": 1.4248,
-        "binance_apr": 0.4518,
-        "spread_apr": 0.973
-      },
-      {
-        "coin": "ZK",
-        "hl_apr": -0.987,
-        "binance_apr": -0.0666,
-        "spread_apr": -0.9203
-      },
-      {
-        "coin": "IMX",
-        "hl_apr": -0.981,
-        "binance_apr": -0.0886,
-        "spread_apr": -0.8924
-      },
-      {
-        "coin": "MEME",
-        "hl_apr": -0.7402,
-        "binance_apr": 0.0548,
-        "spread_apr": -0.795
-      },
-      {
-        "coin": "XAI",
-        "hl_apr": -0.7079,
-        "binance_apr": 0.0548,
-        "spread_apr": -0.7627
+        "coin": "STABLE",
+        "hl_apr": -1.8412,
+        "binance_apr": -0.1602,
+        "spread_apr": -1.681
       },
       {
         "coin": "S",
-        "hl_apr": -0.7164,
-        "binance_apr": -0.0567,
-        "spread_apr": -0.6597
+        "hl_apr": -1.5035,
+        "binance_apr": 0.0041,
+        "spread_apr": -1.5076
+      },
+      {
+        "coin": "MET",
+        "hl_apr": -1.0965,
+        "binance_apr": 0.0034,
+        "spread_apr": -1.0999
+      },
+      {
+        "coin": "ZK",
+        "hl_apr": -1.043,
+        "binance_apr": -0.0109,
+        "spread_apr": -1.0321
+      },
+      {
+        "coin": "SAND",
+        "hl_apr": -1.058,
+        "binance_apr": -0.2325,
+        "spread_apr": -0.8256
+      },
+      {
+        "coin": "XAI",
+        "hl_apr": -0.562,
+        "binance_apr": 0.0548,
+        "spread_apr": -0.6167
       }
     ]
   },
@@ -136,19 +136,19 @@
         "symbol": "SP500",
         "dex": "xyz",
         "kind": "index",
-        "mark": 7730.9,
-        "chg24h": -0.0028,
-        "vol24h_usd": 223454106,
-        "funding_apr": 0.0298
+        "mark": 7724.0,
+        "chg24h": -0.004,
+        "vol24h_usd": 229473586,
+        "funding_apr": 0.0548
       },
       {
         "symbol": "XYZ100",
         "dex": "xyz",
         "kind": "index",
-        "mark": 29500.0,
-        "chg24h": -0.0064,
-        "vol24h_usd": 198865654,
-        "funding_apr": 0.0337
+        "mark": 29491.0,
+        "chg24h": -0.0063,
+        "vol24h_usd": 198643316,
+        "funding_apr": 0.0519
       }
     ],
     "stocks": [
@@ -156,91 +156,91 @@
         "symbol": "SKHX",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 1015.0,
-        "chg24h": 0.0137,
-        "vol24h_usd": 392966010,
-        "funding_apr": -1.0393
+        "mark": 1018.7,
+        "chg24h": 0.0226,
+        "vol24h_usd": 393380140,
+        "funding_apr": 0.6269
       },
       {
         "symbol": "SPCX",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 131.77,
-        "chg24h": -0.0086,
-        "vol24h_usd": 197657247,
-        "funding_apr": -0.0563
+        "mark": 132.37,
+        "chg24h": -0.0062,
+        "vol24h_usd": 212416968,
+        "funding_apr": -0.0027
       },
       {
         "symbol": "MU",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 849.26,
-        "chg24h": -0.0365,
-        "vol24h_usd": 174198909,
-        "funding_apr": 0.0548
+        "mark": 860.73,
+        "chg24h": -0.0194,
+        "vol24h_usd": 175885397,
+        "funding_apr": 0.0268
       },
       {
         "symbol": "SNDK",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 1264.4,
-        "chg24h": 0.0063,
-        "vol24h_usd": 149368109,
-        "funding_apr": 0.0548
+        "mark": 1277.1,
+        "chg24h": 0.0205,
+        "vol24h_usd": 144353580,
+        "funding_apr": -0.0151
       },
       {
         "symbol": "DRAM",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 50.562,
-        "chg24h": 0.0048,
-        "vol24h_usd": 137920508,
+        "mark": 50.824,
+        "chg24h": 0.013,
+        "vol24h_usd": 137354407,
+        "funding_apr": 0.135
+      },
+      {
+        "symbol": "PLTR",
+        "dex": "xyz",
+        "kind": "stock",
+        "mark": 175.46,
+        "chg24h": -0.0035,
+        "vol24h_usd": 86137928,
         "funding_apr": 0.0548
       },
       {
         "symbol": "SKHY",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 139.28,
-        "chg24h": 0.022,
-        "vol24h_usd": 71045269,
-        "funding_apr": -0.3412
+        "mark": 139.8,
+        "chg24h": 0.032,
+        "vol24h_usd": 72131382,
+        "funding_apr": -0.1041
       },
       {
         "symbol": "SMSN",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 171.13,
-        "chg24h": 0.052,
-        "vol24h_usd": 59349009,
-        "funding_apr": -1.2342
-      },
-      {
-        "symbol": "PLTR",
-        "dex": "xyz",
-        "kind": "stock",
-        "mark": 175.42,
-        "chg24h": -0.0152,
-        "vol24h_usd": 52705532,
-        "funding_apr": -0.7477
+        "mark": 171.65,
+        "chg24h": 0.0607,
+        "vol24h_usd": 61488758,
+        "funding_apr": 0.4652
       },
       {
         "symbol": "MSFT",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 501.92,
-        "chg24h": -0.0112,
-        "vol24h_usd": 37617393,
-        "funding_apr": -0.0276
+        "mark": 502.91,
+        "chg24h": -0.0055,
+        "vol24h_usd": 51331009,
+        "funding_apr": 0.0548
       },
       {
-        "symbol": "META",
+        "symbol": "NVDA",
         "dex": "xyz",
         "kind": "stock",
-        "mark": 603.95,
-        "chg24h": 0.0164,
-        "vol24h_usd": 34949625,
-        "funding_apr": 0.2373
+        "mark": 217.52,
+        "chg24h": -0.0085,
+        "vol24h_usd": 33725879,
+        "funding_apr": 0.0548
       }
     ],
     "commodities": [
@@ -248,55 +248,55 @@
         "symbol": "CL",
         "dex": "xyz",
         "kind": "commodity",
-        "mark": 82.422,
-        "chg24h": 0.0157,
-        "vol24h_usd": 261578572,
-        "funding_apr": -1.5846
+        "mark": 82.476,
+        "chg24h": 0.0144,
+        "vol24h_usd": 253599654,
+        "funding_apr": -1.712
       },
       {
         "symbol": "BRENTOIL",
         "dex": "xyz",
         "kind": "commodity",
-        "mark": 87.436,
-        "chg24h": 0.0112,
-        "vol24h_usd": 210354925,
-        "funding_apr": -2.3786
-      },
-      {
-        "symbol": "GOLD",
-        "dex": "xyz",
-        "kind": "commodity",
-        "mark": 4383.4,
-        "chg24h": 0.0065,
-        "vol24h_usd": 135123522,
-        "funding_apr": 0.0548
+        "mark": 87.547,
+        "chg24h": 0.0121,
+        "vol24h_usd": 196838128,
+        "funding_apr": -2.8663
       },
       {
         "symbol": "SILVER",
         "dex": "xyz",
         "kind": "commodity",
-        "mark": 64.938,
-        "chg24h": -0.0019,
-        "vol24h_usd": 134942995,
+        "mark": 64.546,
+        "chg24h": -0.019,
+        "vol24h_usd": 137770926,
         "funding_apr": 0.0548
+      },
+      {
+        "symbol": "GOLD",
+        "dex": "xyz",
+        "kind": "commodity",
+        "mark": 4363.2,
+        "chg24h": -0.0041,
+        "vol24h_usd": 132794200,
+        "funding_apr": 0.0463
       },
       {
         "symbol": "NATGAS",
         "dex": "xyz",
         "kind": "commodity",
-        "mark": 2.7948,
-        "chg24h": -0.0063,
-        "vol24h_usd": 5575759,
-        "funding_apr": 1.9774
+        "mark": 2.8042,
+        "chg24h": -0.0021,
+        "vol24h_usd": 5340566,
+        "funding_apr": 2.1272
       },
       {
         "symbol": "COPPER",
         "dex": "xyz",
         "kind": "commodity",
-        "mark": 6.686,
-        "chg24h": 0.0062,
-        "vol24h_usd": 3316949,
-        "funding_apr": 0.7588
+        "mark": 6.6765,
+        "chg24h": 0.0018,
+        "vol24h_usd": 3962016,
+        "funding_apr": 0.5615
       }
     ],
     "private": [],
