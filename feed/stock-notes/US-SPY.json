@@ -1,14 +1,14 @@
 {
   "symbol": "US:SPY",
-  "date": "2026-08-11",
+  "date": "2026-08-12",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 773.03，20/50/200日均线约 751.37/747.56/703.48；TD9 上行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -0.5%、97分位；SuperTrend(10,3) 多头·约 5 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 3.2%/4.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 770.56，20/50/200日均线约 752.30/747.84/703.99；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -0.8%、96分位；SuperTrend(10,3) 多头·约 6 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 2.5%/3.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: S&P500, Nasdaq, Dow Futures Unchanged After Ending Session Mildly Lower As  Investors Brace For Key Inflation Data  — SPCX, TSLA, INTC, NFLX, PLTR In Focus(Stocktwits)；VYM’s 2.2% Yield Hides $141,000 in Decade-Long Underperformance Versus the S&P 500(24/7 Wall St.)；You Spent 40 Years Saving. Nobody Taught You How to Turn It Into a Paycheck. These 4 ETFs Do It Without Selling a Single Share(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: S&P500, Nasdaq, Dow Futures Rangebound As Investors Await Key Inflation Data To Judge Rate Hike Possibilities  — ORCL, AAPL, NVDA, CURLF In Focus(Stocktwits)；JEPQ’s 10.9% Yield Hides $2,900 Annual Tax Bill Most Retirees Never See(24/7 Wall St.)；SPYI’s 11.7% Yield Hides $2,927.50 Annual Fee Gap Versus SPY(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -0.5%、97分位；SuperTrend(10,3) 多头·约 5 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -0.8%、96分位；SuperTrend(10,3) 多头·约 6 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SPY",
@@ -19,18 +19,18 @@
       "url": "https://finance.yahoo.com/quote/SPY/news/"
     },
     {
-      "title": "S&P500, Nasdaq, Dow Futures Unchanged After Ending Session Mildly Lower As  Investors Brace For Key Inflation Data  — SPCX, TSLA, INTC, NFLX, PLTR In Focus",
-      "url": "https://finance.yahoo.com/m/d9ee0b71-eca1-3e14-9fc7-1ae9433fcf86/s%26p500%2C-nasdaq%2C-dow-futures.html"
+      "title": "S&P500, Nasdaq, Dow Futures Rangebound As Investors Await Key Inflation Data To Judge Rate Hike Possibilities  — ORCL, AAPL, NVDA, CURLF In Focus",
+      "url": "https://finance.yahoo.com/m/521f7284-425c-3aa8-9565-a60cd1fb83c0/s%26p500%2C-nasdaq%2C-dow-futures.html"
     },
     {
-      "title": "VYM’s 2.2% Yield Hides $141,000 in Decade-Long Underperformance Versus the S&P 500",
-      "url": "https://finance.yahoo.com/m/f894540e-5a45-31fe-8014-a04a982d8549/vym%E2%80%99s-2.2%25-yield-hides.html"
+      "title": "JEPQ’s 10.9% Yield Hides $2,900 Annual Tax Bill Most Retirees Never See",
+      "url": "https://finance.yahoo.com/m/ca9089c4-3fd6-324b-9bd3-75100d2a0d62/jepq%E2%80%99s-10.9%25-yield-hides.html"
     }
   ],
   "methodology": {
-    "td9": "上行8(防衰竭)",
-    "week52": "距高 -0.5% · 97分位",
-    "supertrend": "多头·约 5 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰"
+    "td9": "上行9(防衰竭)",
+    "week52": "距高 -0.8% · 96分位",
+    "supertrend": "多头·约 6 个交易日前翻转",
+    "chan": "震荡笔，接近中枢上沿，暂未见明显 MACD 面积背驰"
   }
 }
