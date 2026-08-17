@@ -1,38 +1,33 @@
 {
-  "checked_at": "2026-08-17T13:14:12Z",
+  "checked_at": "2026-08-17T13:59:36Z",
   "ok": true,
   "critical": 0,
-  "warn": 6,
+  "warn": 5,
   "issues": [
     {
       "level": "warn",
       "code": "aging",
-      "message": "signals_book 已 3.5 天未更新(SLA 3d)"
+      "message": "signals_book 已 3.6 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "market_state 已 3.5 天未更新(SLA 3d)"
+      "message": "market_state 已 3.6 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "screener 已 3.5 天未更新(SLA 2d)"
+      "message": "screener 已 3.6 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "rs_ranks 已 3.5 天未更新(SLA 2d)"
+      "message": "rs_ranks 已 3.6 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
       "message": "stock_notes 已 2.5 天未更新(SLA 2d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "intraday 已 3.0 天未更新(SLA 2d)"
     },
     {
       "level": "info",
@@ -49,47 +44,47 @@
     "signals_book": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 3.55
+      "age_days": 3.58
     },
     "market_state": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 3.55
+      "age_days": 3.58
     },
     "screener": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 3.55
+      "age_days": 3.58
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 3.55
+      "age_days": 3.58
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-08-15T02:10:24Z",
-      "age_days": 2.46
+      "age_days": 2.49
     },
     "intraday": {
       "exists": true,
-      "asof": "2026-08-14T13:57:27+00:00",
-      "age_days": 2.97
+      "asof": "2026-08-17T13:22:50+00:00",
+      "age_days": 0.03
     },
     "market_history": {
       "exists": true,
       "asof": "2026-08-17T08:06:30+00:00",
-      "age_days": 0.21
+      "age_days": 0.25
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 3.55
+      "age_days": 3.58
     },
     "crypto_state": {
       "exists": true,
       "asof": "2026-08-17T13:00:49Z",
-      "age_days": 0.01
+      "age_days": 0.04
     }
   }
 }
