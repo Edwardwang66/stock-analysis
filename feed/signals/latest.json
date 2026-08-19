@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-19T16:52:11Z",
-  "source_report": "routine-2026-08-19T1652Z",
+  "updated_at": "2026-08-19T17:46:03Z",
+  "source_report": "routine-2026-08-19T1746Z",
   "asof": "2026-08-19",
   "n_long": 26,
   "n_short": 25,
@@ -8,14 +8,14 @@
   "net_exposure": -0.0115,
   "positions": [
     {
-      "ticker": "BLK",
+      "ticker": "SBUX",
       "side": "SHORT",
       "weight": -0.0223,
-      "s_score": 1.661,
-      "halflife_days": 9.2,
-      "kappa": 19.0,
-      "hurst": 0.536,
-      "sector": "Financials"
+      "s_score": 0.799,
+      "halflife_days": 5.5,
+      "kappa": 31.75,
+      "hurst": 0.114,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "COST",
@@ -28,14 +28,14 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "SBUX",
+      "ticker": "BLK",
       "side": "SHORT",
       "weight": -0.0223,
-      "s_score": 0.799,
-      "halflife_days": 5.5,
-      "kappa": 31.75,
-      "hurst": 0.114,
-      "sector": "Consumer Discretionary"
+      "s_score": 1.661,
+      "halflife_days": 9.2,
+      "kappa": 19.0,
+      "hurst": 0.536,
+      "sector": "Financials"
     },
     {
       "ticker": "ABT",
@@ -498,16 +498,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "AMD",
-      "side": "LONG",
-      "weight": 0.0223,
-      "s_score": -0.763,
-      "halflife_days": 9.9,
-      "kappa": 17.66,
-      "hurst": 0.541,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "HD",
       "side": "LONG",
       "weight": 0.0223,
@@ -516,6 +506,16 @@
       "kappa": 31.36,
       "hurst": 0.525,
       "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "AMD",
+      "side": "LONG",
+      "weight": 0.0223,
+      "s_score": -0.763,
+      "halflife_days": 9.9,
+      "kappa": 17.66,
+      "hurst": 0.541,
+      "sector": "Information Technology"
     }
   ]
 }
