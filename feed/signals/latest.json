@@ -1,22 +1,12 @@
 {
-  "updated_at": "2026-08-19T17:46:03Z",
-  "source_report": "routine-2026-08-19T1746Z",
+  "updated_at": "2026-08-19T18:57:40Z",
+  "source_report": "routine-2026-08-19T1857Z",
   "asof": "2026-08-19",
   "n_long": 26,
   "n_short": 25,
   "gross_leverage": 0.553,
   "net_exposure": -0.0115,
   "positions": [
-    {
-      "ticker": "SBUX",
-      "side": "SHORT",
-      "weight": -0.0223,
-      "s_score": 0.799,
-      "halflife_days": 5.5,
-      "kappa": 31.75,
-      "hurst": 0.114,
-      "sector": "Consumer Discretionary"
-    },
     {
       "ticker": "COST",
       "side": "SHORT",
@@ -26,6 +16,16 @@
       "kappa": 29.62,
       "hurst": 0.473,
       "sector": "Consumer Staples"
+    },
+    {
+      "ticker": "SBUX",
+      "side": "SHORT",
+      "weight": -0.0223,
+      "s_score": 0.799,
+      "halflife_days": 5.5,
+      "kappa": 31.75,
+      "hurst": 0.114,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "BLK",
@@ -238,16 +238,6 @@
       "sector": "Materials"
     },
     {
-      "ticker": "GILD",
-      "side": "SHORT",
-      "weight": -0.001,
-      "s_score": 1.882,
-      "halflife_days": 3.6,
-      "kappa": 48.02,
-      "hurst": 0.245,
-      "sector": "Health Care"
-    },
-    {
       "ticker": "DHR",
       "side": "SHORT",
       "weight": -0.001,
@@ -255,6 +245,16 @@
       "halflife_days": 1.5,
       "kappa": 119.7,
       "hurst": 0.037,
+      "sector": "Health Care"
+    },
+    {
+      "ticker": "GILD",
+      "side": "SHORT",
+      "weight": -0.001,
+      "s_score": 1.882,
+      "halflife_days": 3.6,
+      "kappa": 48.02,
+      "hurst": 0.245,
       "sector": "Health Care"
     },
     {
@@ -468,16 +468,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "EOG",
-      "side": "LONG",
-      "weight": 0.0214,
-      "s_score": -1.458,
-      "halflife_days": 6.2,
-      "kappa": 28.14,
-      "hurst": 0.385,
-      "sector": "Energy"
-    },
-    {
       "ticker": "MO",
       "side": "LONG",
       "weight": 0.0214,
@@ -486,6 +476,16 @@
       "kappa": 22.51,
       "hurst": 0.48,
       "sector": "Consumer Staples"
+    },
+    {
+      "ticker": "EOG",
+      "side": "LONG",
+      "weight": 0.0214,
+      "s_score": -1.458,
+      "halflife_days": 6.2,
+      "kappa": 28.14,
+      "hurst": 0.385,
+      "sector": "Energy"
     },
     {
       "ticker": "ABBV",
@@ -498,16 +498,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "HD",
-      "side": "LONG",
-      "weight": 0.0223,
-      "s_score": -1.32,
-      "halflife_days": 5.6,
-      "kappa": 31.36,
-      "hurst": 0.525,
-      "sector": "Consumer Discretionary"
-    },
-    {
       "ticker": "AMD",
       "side": "LONG",
       "weight": 0.0223,
@@ -516,6 +506,16 @@
       "kappa": 17.66,
       "hurst": 0.541,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "HD",
+      "side": "LONG",
+      "weight": 0.0223,
+      "s_score": -1.32,
+      "halflife_days": 5.6,
+      "kappa": 31.36,
+      "hurst": 0.525,
+      "sector": "Consumer Discretionary"
     }
   ]
 }
