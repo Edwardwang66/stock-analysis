@@ -1,14 +1,14 @@
 {
   "symbol": "US:TSLA",
-  "date": "2026-08-25",
+  "date": "2026-08-26",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 348.95，20/50/200日均线约 330.13/364.85/402.84；TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -30.0%、26分位；SuperTrend(10,3) 多头·约 2 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 12.8%/-21.1%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 350.25，20/50/200日均线约 332.27/363.73/402.28；TD9 下行1；52周位置 距高 -29.8%、26分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 13.9%/-19.6%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Tesla (TSLA)’s Solar Roof Shutdown Raises Questions About its Energy Ambitions(Insider Monkey)；Tesla and Other Electric Vehicle Companies Begin Massive China Recall(Motley Fool)；Tesla to launch Cybercabs in Austin starting Sept. 3(Yahoo Finance Video)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Bernie Sanders Says He Was Labeled 'Radical,' 'Crazy' and an Extremist for His Data Center Moratorium Push: 'Today 75% of Americans Agree'(Benzinga)；Tesla’s Cybertruck Base Version Hits $74,990 — Nearly 2X Its 2019 Promised Price(Stocktwits)；The Real Engine That Could Power Tesla Stock Higher(Trefis)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 上行9，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -30.0%、26分位；SuperTrend(10,3) 多头·约 2 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行1；52周位置 距高 -29.8%、26分位；SuperTrend(10,3) 多头·约 3 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: TSLA",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/TSLA/news/"
     },
     {
-      "title": "Tesla (TSLA)’s Solar Roof Shutdown Raises Questions About its Energy Ambitions",
-      "url": "https://finance.yahoo.com/energy/articles/tesla-tsla-solar-roof-shutdown-014101772.html"
+      "title": "Bernie Sanders Says He Was Labeled 'Radical,' 'Crazy' and an Extremist for His Data Center Moratorium Push: 'Today 75% of Americans Agree'",
+      "url": "https://finance.yahoo.com/m/e5388dc9-7030-3400-9069-dc9602373c3a/bernie-sanders-says-he-was.html"
     },
     {
-      "title": "Tesla and Other Electric Vehicle Companies Begin Massive China Recall",
-      "url": "https://finance.yahoo.com/m/58c27c62-2802-30a3-bd56-605d485ad229/tesla-and-other-electric.html"
+      "title": "Tesla’s Cybertruck Base Version Hits $74,990 — Nearly 2X Its 2019 Promised Price",
+      "url": "https://finance.yahoo.com/m/f7dba555-6afe-37cd-a690-ba18f52ff6dd/tesla%E2%80%99s-cybertruck-base.html"
     }
   ],
   "methodology": {
-    "td9": "上行9(防衰竭)",
-    "week52": "距高 -30.0% · 26分位",
-    "supertrend": "多头·约 2 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，有背驰迹象",
-    "rs": 9
+    "td9": "下行1",
+    "week52": "距高 -29.8% · 26分位",
+    "supertrend": "多头·约 3 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 7
   }
 }
