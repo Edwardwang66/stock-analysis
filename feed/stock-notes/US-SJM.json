@@ -1,14 +1,14 @@
 {
   "symbol": "US:SJM",
-  "date": "2026-08-25",
+  "date": "2026-09-01",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "看多",
-  "thesis": "多头: J.M. Smucker Company (The) 属于 Consumer Defensive/Packaged Foods，当前进入看多清单，技术评分 80、RSI14 64.2；最新价约 125.87，20/50/200日均线约 120.72/116.38/105.82；TD9 上行4；52周位置 距高 -1.4%、95分位；SuperTrend(10,3) 多头·约 82 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 4.0%/20.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "中性",
+  "thesis": "多头: J.M. Smucker Company (The) 属于 Consumer Defensive/Packaged Foods，当前进入看多清单，技术评分 85、RSI14 68.6；最新价约 131.16，20/50/200日均线约 122.14/117.54/106.29；TD9 上行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.5%、90分位；SuperTrend(10,3) 多头·约 86 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 10.0%/29.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Post Holdings Stock Plunges 11.8% in 1 Month: Is It a Buy Now?(Zacks)；Hormel Foods Q3 Earnings Coming Up: Key Insights for Investors(Zacks)；Nvidia Earnings, Jackson Hole: What to Watch This Week(The Wall Street Journal)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Judge says Smucker's lawsuit against Trader Joe's over frozen PB&J can proceed(Associated Press)；J M Smucker Insider Sold Shares Worth $2,440,547, According to a Recent SEC Filing(MT Newswires)；Beat the Market the Zacks Way: Accelerant, Insight, General Mills in Focus(Zacks)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行4；52周位置 距高 -1.4%、95分位；SuperTrend(10,3) 多头·约 82 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 上行8，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -3.5%、90分位；SuperTrend(10,3) 多头·约 86 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SJM",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/SJM/news/"
     },
     {
-      "title": "Post Holdings Stock Plunges 11.8% in 1 Month: Is It a Buy Now?",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/post-holdings-stock-plunges-11-170500137.html"
+      "title": "Judge says Smucker's lawsuit against Trader Joe's over frozen PB&J can proceed",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/judge-says-smuckers-lawsuit-against-211212169.html"
     },
     {
-      "title": "Hormel Foods Q3 Earnings Coming Up: Key Insights for Investors",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/hormel-foods-q3-earnings-coming-150600172.html"
+      "title": "J M Smucker Insider Sold Shares Worth $2,440,547, According to a Recent SEC Filing",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/j-m-smucker-insider-sold-205410913.html"
     }
   ],
   "methodology": {
-    "td9": "上行4",
-    "week52": "距高 -1.4% · 95分位",
-    "supertrend": "多头·约 82 个交易日前翻转",
-    "chan": "上行笔，接近中枢上沿，有背驰迹象",
-    "rs": 67
+    "td9": "上行8(防衰竭)",
+    "week52": "距高 -3.5% · 90分位",
+    "supertrend": "多头·约 86 个交易日前翻转",
+    "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
+    "rs": 85
   }
 }
