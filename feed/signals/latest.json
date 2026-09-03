@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-03T21:08:49Z",
-  "source_report": "routine-2026-09-03T2108Z",
+  "updated_at": "2026-09-03T23:20:47Z",
+  "source_report": "routine-2026-09-03T2320Z",
   "asof": "2026-09-03",
   "n_long": 30,
   "n_short": 27,
@@ -28,14 +28,14 @@
       "sector": "Communication Services"
     },
     {
-      "ticker": "COP",
+      "ticker": "FCX",
       "side": "SHORT",
       "weight": -0.0211,
-      "s_score": 0.989,
-      "halflife_days": 6.3,
-      "kappa": 27.68,
-      "hurst": 0.379,
-      "sector": "Energy"
+      "s_score": 0.615,
+      "halflife_days": 8.0,
+      "kappa": 21.71,
+      "hurst": 0.371,
+      "sector": "Materials"
     },
     {
       "ticker": "ADBE",
@@ -48,14 +48,14 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "FCX",
+      "ticker": "COP",
       "side": "SHORT",
       "weight": -0.0211,
-      "s_score": 0.615,
-      "halflife_days": 8.0,
-      "kappa": 21.71,
-      "hurst": 0.371,
-      "sector": "Materials"
+      "s_score": 0.989,
+      "halflife_days": 6.3,
+      "kappa": 27.68,
+      "hurst": 0.379,
+      "sector": "Energy"
     },
     {
       "ticker": "MSFT",
@@ -208,16 +208,6 @@
       "sector": "Consumer Discretionary"
     },
     {
-      "ticker": "BLK",
-      "side": "SHORT",
-      "weight": -0.0038,
-      "s_score": 0.187,
-      "halflife_days": 12.1,
-      "kappa": 14.46,
-      "hurst": 0.472,
-      "sector": "Financials"
-    },
-    {
       "ticker": "NEM",
       "side": "SHORT",
       "weight": -0.0038,
@@ -226,6 +216,16 @@
       "kappa": 12.66,
       "hurst": 0.602,
       "sector": "Materials"
+    },
+    {
+      "ticker": "BLK",
+      "side": "SHORT",
+      "weight": -0.0038,
+      "s_score": 0.187,
+      "halflife_days": 12.1,
+      "kappa": 14.46,
+      "hurst": 0.472,
+      "sector": "Financials"
     },
     {
       "ticker": "ABT",
@@ -248,16 +248,6 @@
       "sector": "Industrials"
     },
     {
-      "ticker": "SCHW",
-      "side": "SHORT",
-      "weight": -0.0017,
-      "s_score": -0.507,
-      "halflife_days": 4.4,
-      "kappa": 39.86,
-      "hurst": 0.182,
-      "sector": "Financials"
-    },
-    {
       "ticker": "NEE",
       "side": "SHORT",
       "weight": -0.0017,
@@ -266,6 +256,16 @@
       "kappa": 62.32,
       "hurst": 0.324,
       "sector": "Utilities"
+    },
+    {
+      "ticker": "SCHW",
+      "side": "SHORT",
+      "weight": -0.0017,
+      "s_score": -0.507,
+      "halflife_days": 4.4,
+      "kappa": 39.86,
+      "hurst": 0.182,
+      "sector": "Financials"
     },
     {
       "ticker": "SBUX",
@@ -388,16 +388,6 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "META",
-      "side": "LONG",
-      "weight": 0.0042,
-      "s_score": -0.376,
-      "halflife_days": 12.1,
-      "kappa": 14.39,
-      "hurst": 0.602,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "GS",
       "side": "LONG",
       "weight": 0.0042,
@@ -406,6 +396,16 @@
       "kappa": 48.07,
       "hurst": 0.214,
       "sector": "Financials"
+    },
+    {
+      "ticker": "META",
+      "side": "LONG",
+      "weight": 0.0042,
+      "s_score": -0.376,
+      "halflife_days": 12.1,
+      "kappa": 14.39,
+      "hurst": 0.602,
+      "sector": "Communication Services"
     },
     {
       "ticker": "INTC",
@@ -548,16 +548,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "AMAT",
-      "side": "LONG",
-      "weight": 0.0229,
-      "s_score": -1.996,
-      "halflife_days": 8.6,
-      "kappa": 20.43,
-      "hurst": 0.352,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "KLAC",
       "side": "LONG",
       "weight": 0.0229,
@@ -576,6 +566,16 @@
       "kappa": 22.59,
       "hurst": 0.354,
       "sector": "Materials"
+    },
+    {
+      "ticker": "AMAT",
+      "side": "LONG",
+      "weight": 0.0229,
+      "s_score": -1.996,
+      "halflife_days": 8.6,
+      "kappa": 20.43,
+      "hurst": 0.352,
+      "sector": "Information Technology"
     }
   ]
 }
