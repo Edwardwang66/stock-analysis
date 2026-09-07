@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-07T18:47:17Z",
-  "source_report": "routine-2026-09-07T1847Z",
+  "updated_at": "2026-09-07T22:06:42Z",
+  "source_report": "routine-2026-09-07T2206Z",
   "asof": "2026-09-04",
   "n_long": 31,
   "n_short": 27,
@@ -28,16 +28,6 @@
       "sector": "Energy"
     },
     {
-      "ticker": "FCX",
-      "side": "SHORT",
-      "weight": -0.0211,
-      "s_score": 0.849,
-      "halflife_days": 8.0,
-      "kappa": 21.71,
-      "hurst": 0.36,
-      "sector": "Materials"
-    },
-    {
       "ticker": "ADBE",
       "side": "SHORT",
       "weight": -0.0211,
@@ -46,6 +36,16 @@
       "kappa": 15.56,
       "hurst": 0.392,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "FCX",
+      "side": "SHORT",
+      "weight": -0.0211,
+      "s_score": 0.849,
+      "halflife_days": 8.0,
+      "kappa": 21.71,
+      "hurst": 0.36,
+      "sector": "Materials"
     },
     {
       "ticker": "MSFT",
@@ -298,16 +298,6 @@
       "sector": "Materials"
     },
     {
-      "ticker": "LLY",
-      "side": "LONG",
-      "weight": 0.0019,
-      "s_score": -1.005,
-      "halflife_days": 2.3,
-      "kappa": 77.49,
-      "hurst": 0.112,
-      "sector": "Health Care"
-    },
-    {
       "ticker": "PG",
       "side": "LONG",
       "weight": 0.0019,
@@ -318,14 +308,14 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "GE",
+      "ticker": "LLY",
       "side": "LONG",
-      "weight": 0.0021,
-      "s_score": -0.979,
-      "halflife_days": 2.9,
-      "kappa": 60.99,
-      "hurst": 0.283,
-      "sector": "Industrials"
+      "weight": 0.0019,
+      "s_score": -1.005,
+      "halflife_days": 2.3,
+      "kappa": 77.49,
+      "hurst": 0.112,
+      "sector": "Health Care"
     },
     {
       "ticker": "DIS",
@@ -336,6 +326,16 @@
       "kappa": 26.24,
       "hurst": 0.479,
       "sector": "Communication Services"
+    },
+    {
+      "ticker": "GE",
+      "side": "LONG",
+      "weight": 0.0021,
+      "s_score": -0.979,
+      "halflife_days": 2.9,
+      "kappa": 60.99,
+      "hurst": 0.283,
+      "sector": "Industrials"
     },
     {
       "ticker": "MAR",
@@ -388,14 +388,14 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "INTC",
+      "ticker": "GS",
       "side": "LONG",
       "weight": 0.0036,
-      "s_score": -0.407,
-      "halflife_days": 12.9,
-      "kappa": 13.57,
-      "hurst": 0.361,
-      "sector": "Information Technology"
+      "s_score": 0.08,
+      "halflife_days": 4.2,
+      "kappa": 41.71,
+      "hurst": 0.236,
+      "sector": "Financials"
     },
     {
       "ticker": "META",
@@ -408,14 +408,14 @@
       "sector": "Communication Services"
     },
     {
-      "ticker": "GS",
+      "ticker": "INTC",
       "side": "LONG",
       "weight": 0.0036,
-      "s_score": 0.08,
-      "halflife_days": 4.2,
-      "kappa": 41.71,
-      "hurst": 0.236,
-      "sector": "Financials"
+      "s_score": -0.407,
+      "halflife_days": 12.9,
+      "kappa": 13.57,
+      "hurst": 0.361,
+      "sector": "Information Technology"
     },
     {
       "ticker": "AXP",
@@ -558,13 +558,13 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "AMAT",
+      "ticker": "KLAC",
       "side": "LONG",
       "weight": 0.0229,
-      "s_score": -1.579,
-      "halflife_days": 9.2,
-      "kappa": 19.03,
-      "hurst": 0.328,
+      "s_score": -0.704,
+      "halflife_days": 8.7,
+      "kappa": 20.15,
+      "hurst": 0.234,
       "sector": "Information Technology"
     },
     {
@@ -578,13 +578,13 @@
       "sector": "Materials"
     },
     {
-      "ticker": "KLAC",
+      "ticker": "AMAT",
       "side": "LONG",
       "weight": 0.0229,
-      "s_score": -0.704,
-      "halflife_days": 8.7,
-      "kappa": 20.15,
-      "hurst": 0.234,
+      "s_score": -1.579,
+      "halflife_days": 9.2,
+      "kappa": 19.03,
+      "hurst": 0.328,
       "sector": "Information Technology"
     }
   ]
