@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-07T22:06:42Z",
-  "source_report": "routine-2026-09-07T2206Z",
+  "updated_at": "2026-09-08T00:37:17Z",
+  "source_report": "routine-2026-09-08T0037Z",
   "asof": "2026-09-04",
   "n_long": 31,
   "n_short": 27,
@@ -18,14 +18,14 @@
       "sector": "Communication Services"
     },
     {
-      "ticker": "COP",
+      "ticker": "FCX",
       "side": "SHORT",
       "weight": -0.0211,
-      "s_score": 0.943,
-      "halflife_days": 7.1,
-      "kappa": 24.72,
-      "hurst": 0.365,
-      "sector": "Energy"
+      "s_score": 0.849,
+      "halflife_days": 8.0,
+      "kappa": 21.71,
+      "hurst": 0.36,
+      "sector": "Materials"
     },
     {
       "ticker": "ADBE",
@@ -38,14 +38,14 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "FCX",
+      "ticker": "COP",
       "side": "SHORT",
       "weight": -0.0211,
-      "s_score": 0.849,
-      "halflife_days": 8.0,
-      "kappa": 21.71,
-      "hurst": 0.36,
-      "sector": "Materials"
+      "s_score": 0.943,
+      "halflife_days": 7.1,
+      "kappa": 24.72,
+      "hurst": 0.365,
+      "sector": "Energy"
     },
     {
       "ticker": "MSFT",
@@ -398,16 +398,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "META",
-      "side": "LONG",
-      "weight": 0.0036,
-      "s_score": -0.32,
-      "halflife_days": 14.3,
-      "kappa": 12.18,
-      "hurst": 0.604,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "INTC",
       "side": "LONG",
       "weight": 0.0036,
@@ -416,6 +406,16 @@
       "kappa": 13.57,
       "hurst": 0.361,
       "sector": "Information Technology"
+    },
+    {
+      "ticker": "META",
+      "side": "LONG",
+      "weight": 0.0036,
+      "s_score": -0.32,
+      "halflife_days": 14.3,
+      "kappa": 12.18,
+      "hurst": 0.604,
+      "sector": "Communication Services"
     },
     {
       "ticker": "AXP",
@@ -558,6 +558,16 @@
       "sector": "Information Technology"
     },
     {
+      "ticker": "AMAT",
+      "side": "LONG",
+      "weight": 0.0229,
+      "s_score": -1.579,
+      "halflife_days": 9.2,
+      "kappa": 19.03,
+      "hurst": 0.328,
+      "sector": "Information Technology"
+    },
+    {
       "ticker": "KLAC",
       "side": "LONG",
       "weight": 0.0229,
@@ -576,16 +586,6 @@
       "kappa": 24.16,
       "hurst": 0.357,
       "sector": "Materials"
-    },
-    {
-      "ticker": "AMAT",
-      "side": "LONG",
-      "weight": 0.0229,
-      "s_score": -1.579,
-      "halflife_days": 9.2,
-      "kappa": 19.03,
-      "hurst": 0.328,
-      "sector": "Information Technology"
     }
   ]
 }
