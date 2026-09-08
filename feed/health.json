@@ -1,19 +1,9 @@
 {
-  "checked_at": "2026-09-08T14:40:50Z",
+  "checked_at": "2026-09-08T18:51:09Z",
   "ok": true,
   "critical": 0,
-  "warn": 2,
+  "warn": 0,
   "issues": [
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "signals_book 已 4.6 天未更新(SLA 3d)"
-    },
-    {
-      "level": "warn",
-      "code": "aging",
-      "message": "market_state 已 4.6 天未更新(SLA 3d)"
-    },
     {
       "level": "info",
       "code": "notes-partial",
@@ -22,54 +12,54 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 90.3 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 90.4 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
-      "asof": "2026-09-04",
-      "age_days": 4.61
+      "asof": "2026-09-08",
+      "age_days": 0.79
     },
     "market_state": {
       "exists": true,
-      "asof": "2026-09-04",
-      "age_days": 4.61
+      "asof": "2026-09-08",
+      "age_days": 0.79
     },
     "screener": {
       "exists": true,
       "asof": "2026-09-08",
-      "age_days": 0.61
+      "age_days": 0.79
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-09-08",
-      "age_days": 0.61
+      "age_days": 0.79
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-09-08T05:28:40Z",
-      "age_days": 0.38
+      "age_days": 0.56
     },
     "intraday": {
       "exists": true,
-      "asof": "2026-09-07T17:50:49+00:00",
-      "age_days": 0.87
+      "asof": "2026-09-08T16:45:04+00:00",
+      "age_days": 0.09
     },
     "market_history": {
       "exists": true,
       "asof": "2026-09-08T12:14:31+00:00",
-      "age_days": 0.1
+      "age_days": 0.28
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 25.61
+      "age_days": 25.79
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-09-08T11:08:45Z",
-      "age_days": 0.15
+      "asof": "2026-09-08T16:33:13Z",
+      "age_days": 0.1
     }
   }
 }
