@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-08T23:27:52Z",
-  "source_report": "routine-2026-09-08T2327Z",
+  "updated_at": "2026-09-09T00:26:45Z",
+  "source_report": "routine-2026-09-09T0026Z",
   "asof": "2026-09-08",
   "n_long": 33,
   "n_short": 28,
@@ -188,16 +188,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "COST",
-      "side": "SHORT",
-      "weight": -0.0047,
-      "s_score": 0.037,
-      "halflife_days": 5.0,
-      "kappa": 35.05,
-      "hurst": 0.422,
-      "sector": "Consumer Staples"
-    },
-    {
       "ticker": "IBM",
       "side": "SHORT",
       "weight": -0.0047,
@@ -208,14 +198,24 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "BLK",
+      "ticker": "COST",
+      "side": "SHORT",
+      "weight": -0.0047,
+      "s_score": 0.037,
+      "halflife_days": 5.0,
+      "kappa": 35.05,
+      "hurst": 0.422,
+      "sector": "Consumer Staples"
+    },
+    {
+      "ticker": "AMZN",
       "side": "SHORT",
       "weight": -0.0021,
-      "s_score": 0.234,
-      "halflife_days": 11.5,
-      "kappa": 15.16,
-      "hurst": 0.428,
-      "sector": "Financials"
+      "s_score": 0.178,
+      "halflife_days": 2.7,
+      "kappa": 65.13,
+      "hurst": 0.169,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "NEM",
@@ -228,14 +228,14 @@
       "sector": "Materials"
     },
     {
-      "ticker": "AMZN",
+      "ticker": "BLK",
       "side": "SHORT",
       "weight": -0.0021,
-      "s_score": 0.178,
-      "halflife_days": 2.7,
-      "kappa": 65.13,
-      "hurst": 0.169,
-      "sector": "Consumer Discretionary"
+      "s_score": 0.234,
+      "halflife_days": 11.5,
+      "kappa": 15.16,
+      "hurst": 0.428,
+      "sector": "Financials"
     },
     {
       "ticker": "ABT",
@@ -268,16 +268,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "NEE",
-      "side": "SHORT",
-      "weight": -0.0005,
-      "s_score": -0.667,
-      "halflife_days": 2.8,
-      "kappa": 62.91,
-      "hurst": 0.328,
-      "sector": "Utilities"
-    },
-    {
       "ticker": "SBUX",
       "side": "SHORT",
       "weight": -0.0005,
@@ -286,6 +276,16 @@
       "kappa": 64.68,
       "hurst": 0.197,
       "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "NEE",
+      "side": "SHORT",
+      "weight": -0.0005,
+      "s_score": -0.667,
+      "halflife_days": 2.8,
+      "kappa": 62.91,
+      "hurst": 0.328,
+      "sector": "Utilities"
     },
     {
       "ticker": "CSCO",
@@ -468,6 +468,16 @@
       "sector": "Energy"
     },
     {
+      "ticker": "BKNG",
+      "side": "LONG",
+      "weight": 0.0067,
+      "s_score": -1.903,
+      "halflife_days": 5.9,
+      "kappa": 29.65,
+      "hurst": 0.384,
+      "sector": "Consumer Discretionary"
+    },
+    {
       "ticker": "ADP",
       "side": "LONG",
       "weight": 0.0067,
@@ -486,16 +496,6 @@
       "kappa": 30.53,
       "hurst": 0.208,
       "sector": "Financials"
-    },
-    {
-      "ticker": "BKNG",
-      "side": "LONG",
-      "weight": 0.0067,
-      "s_score": -1.903,
-      "halflife_days": 5.9,
-      "kappa": 29.65,
-      "hurst": 0.384,
-      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "UNH",
@@ -598,16 +598,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "AMAT",
-      "side": "LONG",
-      "weight": 0.0236,
-      "s_score": -1.445,
-      "halflife_days": 7.2,
-      "kappa": 24.13,
-      "hurst": 0.301,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "SHW",
       "side": "LONG",
       "weight": 0.0236,
@@ -616,6 +606,16 @@
       "kappa": 27.44,
       "hurst": 0.363,
       "sector": "Materials"
+    },
+    {
+      "ticker": "AMAT",
+      "side": "LONG",
+      "weight": 0.0236,
+      "s_score": -1.445,
+      "halflife_days": 7.2,
+      "kappa": 24.13,
+      "hurst": 0.301,
+      "sector": "Information Technology"
     }
   ]
 }
