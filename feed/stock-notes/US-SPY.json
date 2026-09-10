@@ -1,14 +1,14 @@
 {
   "symbol": "US:SPY",
-  "date": "2026-09-09",
+  "date": "2026-09-10",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 765.96，20/50/200日均线约 768.70/757.60/712.68；TD9 上行3；52周位置 距高 -1.7%、91分位；SuperTrend(10,3) 多头·约 25 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -0.9%/3.8%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: SPY 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 762.40，20/50/200日均线约 768.29/758.02/713.18；TD9 下行1；52周位置 距高 -2.2%、89分位；SuperTrend(10,3) 多头·约 26 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢下沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -1.1%/2.8%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: S&P 500, Dow End Lower As Middle East Tensions Spur Oil Rally Ahead Of Key Inflation Data — META, QCOM, BE, AMZN, AVGO In Focus(Stocktwits)；QQQ vs QQQM: Same Index, Same Stocks, Different Fee – and the Math Says One Leaves You Thousands Richer(24/7 Wall St.)；Amgen Falls 10% as Novartis Trial Failure Clouds a Cholesterol Drug Class; NVS Stock Drops 14%(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Forget VUG. Vanguard’s Value Fund Is Beating Its Growth Twin by 11 Points This Year, With None of the Magnificent Seven(24/7 Wall St.)；S&P 500, Dow, Nasdaq End Lower As Oil Crosses $101, Yields Pop Following Bessent’s Expanded Buyback Plan — AAPL, META, AMZN, CRM In Focus(Stocktwits)；Pinterest Tumbles 8%, Reddit and Snap Pull Back: Is the Premium Multiple Unwinding?(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行3；52周位置 距高 -1.7%、91分位；SuperTrend(10,3) 多头·约 25 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 下行1；52周位置 距高 -2.2%、89分位；SuperTrend(10,3) 多头·约 26 个交易日前翻转；缠论近似: 当前震荡笔，接近中枢下沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: SPY",
@@ -19,18 +19,18 @@
       "url": "https://finance.yahoo.com/quote/SPY/news/"
     },
     {
-      "title": "S&P 500, Dow End Lower As Middle East Tensions Spur Oil Rally Ahead Of Key Inflation Data — META, QCOM, BE, AMZN, AVGO In Focus",
-      "url": "https://finance.yahoo.com/m/3bed56b4-2f7e-38b8-908a-a80cb7e000b0/s%26p-500%2C-dow-end-lower-as.html"
+      "title": "Forget VUG. Vanguard’s Value Fund Is Beating Its Growth Twin by 11 Points This Year, With None of the Magnificent Seven",
+      "url": "https://finance.yahoo.com/m/ea106c59-4974-3bde-b9a1-d31ad4db7af6/forget-vug.-vanguard%E2%80%99s-value.html"
     },
     {
-      "title": "QQQ vs QQQM: Same Index, Same Stocks, Different Fee – and the Math Says One Leaves You Thousands Richer",
-      "url": "https://finance.yahoo.com/m/2d8a3770-a624-36d6-b4cd-553393e5eef5/qqq-vs-qqqm%3A-same-index%2C-same.html"
+      "title": "S&P 500, Dow, Nasdaq End Lower As Oil Crosses $101, Yields Pop Following Bessent’s Expanded Buyback Plan — AAPL, META, AMZN, CRM In Focus",
+      "url": "https://finance.yahoo.com/m/59c7e40c-3fdd-3c12-a091-40ac1b4c32d6/s%26p-500%2C-dow%2C-nasdaq-end.html"
     }
   ],
   "methodology": {
-    "td9": "上行3",
-    "week52": "距高 -1.7% · 91分位",
-    "supertrend": "多头·约 25 个交易日前翻转",
-    "chan": "下行笔，位于中枢内部，有背驰迹象"
+    "td9": "下行1",
+    "week52": "距高 -2.2% · 89分位",
+    "supertrend": "多头·约 26 个交易日前翻转",
+    "chan": "震荡笔，接近中枢下沿，暂未见明显 MACD 面积背驰"
   }
 }
