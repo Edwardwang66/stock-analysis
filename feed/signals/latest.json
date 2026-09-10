@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-10T17:44:52Z",
-  "source_report": "routine-2026-09-10T1744Z",
+  "updated_at": "2026-09-10T20:58:51Z",
+  "source_report": "routine-2026-09-10T2058Z",
   "asof": "2026-09-10",
   "n_long": 34,
   "n_short": 26,
@@ -198,16 +198,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "COST",
-      "side": "SHORT",
-      "weight": -0.0034,
-      "s_score": 0.184,
-      "halflife_days": 6.6,
-      "kappa": 26.54,
-      "hurst": 0.45,
-      "sector": "Consumer Staples"
-    },
-    {
       "ticker": "IBM",
       "side": "SHORT",
       "weight": -0.0034,
@@ -218,14 +208,24 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "AMZN",
+      "ticker": "COST",
+      "side": "SHORT",
+      "weight": -0.0034,
+      "s_score": 0.184,
+      "halflife_days": 6.6,
+      "kappa": 26.54,
+      "hurst": 0.45,
+      "sector": "Consumer Staples"
+    },
+    {
+      "ticker": "BLK",
       "side": "SHORT",
       "weight": -0.0015,
-      "s_score": 0.049,
-      "halflife_days": 2.6,
-      "kappa": 66.77,
-      "hurst": 0.166,
-      "sector": "Consumer Discretionary"
+      "s_score": 0.088,
+      "halflife_days": 11.2,
+      "kappa": 15.55,
+      "hurst": 0.413,
+      "sector": "Financials"
     },
     {
       "ticker": "NEM",
@@ -238,14 +238,14 @@
       "sector": "Materials"
     },
     {
-      "ticker": "BLK",
+      "ticker": "AMZN",
       "side": "SHORT",
       "weight": -0.0015,
-      "s_score": 0.088,
-      "halflife_days": 11.2,
-      "kappa": 15.55,
-      "hurst": 0.413,
-      "sector": "Financials"
+      "s_score": 0.049,
+      "halflife_days": 2.6,
+      "kappa": 66.77,
+      "hurst": 0.166,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "ABT",
@@ -288,16 +288,6 @@
       "sector": "Materials"
     },
     {
-      "ticker": "PG",
-      "side": "LONG",
-      "weight": 0.0017,
-      "s_score": 0.382,
-      "halflife_days": 4.7,
-      "kappa": 37.33,
-      "hurst": 0.275,
-      "sector": "Consumer Staples"
-    },
-    {
       "ticker": "LLY",
       "side": "LONG",
       "weight": 0.0017,
@@ -308,14 +298,14 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "GE",
+      "ticker": "PG",
       "side": "LONG",
-      "weight": 0.0018,
-      "s_score": -0.938,
-      "halflife_days": 2.1,
-      "kappa": 83.04,
-      "hurst": 0.259,
-      "sector": "Industrials"
+      "weight": 0.0017,
+      "s_score": 0.382,
+      "halflife_days": 4.7,
+      "kappa": 37.33,
+      "hurst": 0.275,
+      "sector": "Consumer Staples"
     },
     {
       "ticker": "DIS",
@@ -326,6 +316,16 @@
       "kappa": 19.66,
       "hurst": 0.518,
       "sector": "Communication Services"
+    },
+    {
+      "ticker": "GE",
+      "side": "LONG",
+      "weight": 0.0018,
+      "s_score": -0.938,
+      "halflife_days": 2.1,
+      "kappa": 83.04,
+      "hurst": 0.259,
+      "sector": "Industrials"
     },
     {
       "ticker": "MAR",
@@ -548,16 +548,6 @@
       "sector": "Information Technology"
     },
     {
-      "ticker": "ADP",
-      "side": "LONG",
-      "weight": 0.016,
-      "s_score": -1.515,
-      "halflife_days": 10.9,
-      "kappa": 16.05,
-      "hurst": 0.407,
-      "sector": "Industrials"
-    },
-    {
       "ticker": "BKNG",
       "side": "LONG",
       "weight": 0.016,
@@ -566,6 +556,16 @@
       "kappa": 14.95,
       "hurst": 0.486,
       "sector": "Consumer Discretionary"
+    },
+    {
+      "ticker": "ADP",
+      "side": "LONG",
+      "weight": 0.016,
+      "s_score": -1.515,
+      "halflife_days": 10.9,
+      "kappa": 16.05,
+      "hurst": 0.407,
+      "sector": "Industrials"
     },
     {
       "ticker": "PNC",
@@ -588,16 +588,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "AMAT",
-      "side": "LONG",
-      "weight": 0.0237,
-      "s_score": -1.454,
-      "halflife_days": 8.8,
-      "kappa": 19.9,
-      "hurst": 0.288,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "SHW",
       "side": "LONG",
       "weight": 0.0237,
@@ -606,6 +596,16 @@
       "kappa": 21.66,
       "hurst": 0.376,
       "sector": "Materials"
+    },
+    {
+      "ticker": "AMAT",
+      "side": "LONG",
+      "weight": 0.0237,
+      "s_score": -1.454,
+      "halflife_days": 8.8,
+      "kappa": 19.9,
+      "hurst": 0.288,
+      "sector": "Information Technology"
     }
   ]
 }
