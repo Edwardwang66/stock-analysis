@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-09-12T2211Z",
+  "kind": "routine",
+  "produced_at": "2026-09-12T22:11:45Z",
+  "asof_data": "2026-09-12",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/34722049043"
+  },
+  "alerts": [
+    {
+      "level": "warning",
+      "code": "crypto-crowding",
+      "message": "加密持仓面拥挤:多头资金费占比 1.0,OI 变化 -0.0173(§7.2 尾部风险信号,先于人群减杠杆 R7)。",
+      "tickers": []
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h +0.15% (mark 7663.7,$20M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:19 流动永续持仓面,跨所错位 55,HIP-3 24/7 资产 99。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "83d30108959c7a5f2a8d5b7d454411f27db6134c7066c96dbd3a6b004bffa0d7"
+  }
+}
