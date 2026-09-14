@@ -300,7 +300,7 @@ ON_PR_CHECKOUT_STEP = """      - name: Checkout trusted base gate
           persist-credentials: false
 """
 PROTECTED_WORKFLOW_SHA256 = (
-    "9b634f7b39ea0f1b232bde96db36214b3871618be076f8029d15cce0330d3e35"
+    "99daa61b69bb2abc40f2aaa7bc530ddc7af199620f7e9a5e9f6b59b93a08faa4"
 )
 PROTECTED_WORKFLOW_MUTATIONS = [
     (
@@ -351,10 +351,12 @@ APPROVED_PYTHON_RUN_BODIES = {
           git add feed/funds
           if git diff --cached --quiet; then echo "无新披露"; exit 0; fi
           git commit -m "funds: 13F 持仓更新 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && break
-            sleep 5
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次),不开 Issue"; exit 1; fi
           ASOF=$(python3 -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
           gh issue create --title "🦅 Situational Awareness LP 新 13F 披露(截至 $ASOF)" \
             --assignee "${{ github.repository_owner }}" \
@@ -369,10 +371,12 @@ APPROVED_PYTHON_RUN_BODIES = {
           git add feed/funds
           if git diff --cached --quiet; then echo "无新披露"; exit 0; fi
           git commit -m "funds: 13F 持仓更新 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && break
-            sleep 5
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次),不开 Issue"; exit 1; fi
           ASOF=$(python -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
           gh issue create --title "🦅 Situational Awareness LP 新 13F 披露(截至 $ASOF)" \
             --assignee "${{ github.repository_owner }}" \
@@ -410,7 +414,7 @@ APPROVED_PYTHON_RUN_BODIES = {
             fi
             # 顺手保活 Render(替代 keep-warm 高频 schedule)
             curl -fsS --max-time 20 "${{ vars.API_BASE }}/api/v1/health" >/dev/null 2>&1 || true
-            [ "$i" -lt 2 ] && sleep 310 || true
+            [ "$i" -lt 3 ] && sleep 310 || true
           done
 """,
         r"""      - name: 三轮循环(5 分钟节拍 × 3,内嵌备胎守卫)
@@ -438,7 +442,7 @@ APPROVED_PYTHON_RUN_BODIES = {
             fi
             # 顺手保活 Render(替代 keep-warm 高频 schedule)
             curl -fsS --max-time 20 "${{ vars.API_BASE }}/api/v1/health" >/dev/null 2>&1 || true
-            [ "$i" -lt 2 ] && sleep 310 || true
+            [ "$i" -lt 3 ] && sleep 310 || true
           done
 """,
         1,
@@ -450,6 +454,10 @@ APPROVED_PYTHON_RUN_BODIES = {
     ): (
         r"""      - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
+          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
+          H=$(date -u +%H); DOW=$(date -u +%u)
+          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -465,11 +473,16 @@ APPROVED_PYTHON_RUN_BODIES = {
           cd /tmp/live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/intraday/latest.json
+          # -f:live 分支的 .gitignore 拦 feed/intraday/,裸 add 退出码 1 会让整个 job 失败(2026-09-11 起连续失败的根因)
+          git add -f feed/intraday/latest.json
           git diff --cached --quiet || { git commit -m "intraday: $(date -u +%H:%M) (watchdog兜底)"; git push origin live || true; }
 """,
         r"""      - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
+          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
+          H=$(date -u +%H); DOW=$(date -u +%u)
+          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -485,7 +498,8 @@ APPROVED_PYTHON_RUN_BODIES = {
           cd /tmp/live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/intraday/latest.json
+          # -f:live 分支的 .gitignore 拦 feed/intraday/,裸 add 退出码 1 会让整个 job 失败(2026-09-11 起连续失败的根因)
+          git add -f feed/intraday/latest.json
           git diff --cached --quiet || { git commit -m "intraday: $(date -u +%H:%M) (watchdog兜底)"; git push origin live || true; }
 """,
         2,
@@ -494,9 +508,12 @@ APPROVED_PYTHON_RUN_BODIES = {
         r"""      - name: 运行审计并写 health.json
         id: audit
         run: |
+          # 不经 tee 管道:exit_code 必须是 audit_feed.py 自己的退出码,而不是 tee 的
           set +e
-          python3 scripts/audit_feed.py --write | tee /tmp/audit.txt
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          python3 scripts/audit_feed.py --write > /tmp/audit.txt 2>&1
+          code=$?
+          cat /tmp/audit.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           {
             echo "report<<AUDIT_EOF"
             cat /tmp/audit.txt
@@ -506,9 +523,12 @@ APPROVED_PYTHON_RUN_BODIES = {
         r"""      - name: 运行审计并写 health.json
         id: audit
         run: |
+          # 不经 tee 管道:exit_code 必须是 audit_feed.py 自己的退出码,而不是 tee 的
           set +e
-          python scripts/audit_feed.py --write | tee /tmp/audit.txt
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          python scripts/audit_feed.py --write > /tmp/audit.txt 2>&1
+          code=$?
+          cat /tmp/audit.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           {
             echo "report<<AUDIT_EOF"
             cat /tmp/audit.txt
@@ -4213,14 +4233,14 @@ class WorkflowSecurityTests(unittest.TestCase):
             for filename in sorted(opposite_normalized)
         )
         self.assertEqual(checked_source, opposite_source)
-        self.assertEqual(len(checked_source), 41_968)
-        self.assertEqual(len(opposite_source), 41_968)
+        self.assertEqual(len(checked_source), 45_844)
+        self.assertEqual(len(opposite_source), 45_844)
 
         checked_encoded = encoded_workflow_payload(checked_normalized)
         opposite_encoded = encoded_workflow_payload(opposite_normalized)
         self.assertEqual(checked_encoded, opposite_encoded)
-        self.assertEqual(len(checked_encoded), 43_994)
-        self.assertEqual(len(opposite_encoded), 43_994)
+        self.assertEqual(len(checked_encoded), 48_005)
+        self.assertEqual(len(opposite_encoded), 48_005)
         self.assertEqual(
             hashlib.sha256(checked_encoded).hexdigest(),
             PROTECTED_WORKFLOW_SHA256,

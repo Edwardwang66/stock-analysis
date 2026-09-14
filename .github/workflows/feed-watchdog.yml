@@ -2,7 +2,9 @@ name: Feed watchdog (实效性+连贯性审计)
 
 # 每日两次跑完整审计(scripts/audit_feed.py):实效性 SLA + 跨文件连贯性
 # (持仓簿滞后/悬空引用/未来 asof/screener 系日期不一致/notes 覆盖率等)。
-# 把 feed/health.json 写回仓库(看板①区消费);有 critical 问题时开 Issue 告警(去重)。
+# 把 feed/health.json 写回仓库(看板①区消费);有 critical 问题时开 Issue 告警(去重),
+# 审计恢复正常后自动关闭该 Issue。
+# 交易时段每小时另跑三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮盘中报告。
 on:
   schedule:
     - cron: "0 9,21 * * *"        # 完整审计(原节奏)
@@ -27,6 +29,10 @@ jobs:
           python-version-file: .python-version
       - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
+          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
+          H=$(date -u +%H); DOW=$(date -u +%u)
+          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -42,42 +48,55 @@ jobs:
           cd /tmp/live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/intraday/latest.json
+          # -f:live 分支的 .gitignore 拦 feed/intraday/,裸 add 退出码 1 会让整个 job 失败(2026-09-11 起连续失败的根因)
+          git add -f feed/intraday/latest.json
           git diff --cached --quiet || { git commit -m "intraday: $(date -u +%H:%M) (watchdog兜底)"; git push origin live || true; }
       - name: 运行审计并写 health.json
         id: audit
         run: |
+          # 不经 tee 管道:exit_code 必须是 audit_feed.py 自己的退出码,而不是 tee 的
           set +e
-          python scripts/audit_feed.py --write | tee /tmp/audit.txt
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          python scripts/audit_feed.py --write > /tmp/audit.txt 2>&1
+          code=$?
+          cat /tmp/audit.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           {
             echo "report<<AUDIT_EOF"
             cat /tmp/audit.txt
             echo "AUDIT_EOF"
           } >> "$GITHUB_OUTPUT"
-      - name: 提交 health.json
-        run: |
-          git config user.name  "feed-watchdog[bot]"
-          git config user.email "actions@github.com"
-          git add feed/health.json
-          if git diff --cached --quiet; then
-            echo "health 无变化"
-          else
-            git commit -m "watchdog: 更新 feed/health.json"
-            git pull --rebase origin main || true
-            git push || echo "push 失败(可能与其它任务竞争),下轮重试"
-          fi
-      - name: critical 时开 Issue(去重)
-        if: steps.audit.outputs.exit_code != '0'
+      - name: critical 时开 Issue(去重),恢复后自动关闭
         env:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.audit.outputs.report }}
+          EXIT_CODE: ${{ steps.audit.outputs.exit_code }}
         run: |
-          EXISTING=$(gh issue list --label feed-stale --state open --json number --jq 'length')
-          if [ "$EXISTING" != "0" ]; then echo "已有未关闭告警,跳过"; exit 0; fi
+          OPEN=$(gh issue list --label feed-stale --state open --json number --jq '.[].number')
+          if [ "$EXIT_CODE" = "0" ]; then
+            for n in $OPEN; do
+              gh issue close "$n" --comment "$(printf '✅ %s 审计已无 critical 问题,自动关闭。\n```\n%s\n```' "$(date -u +%FT%H:%MZ)" "$REPORT")" \
+                || echo "issue close failed: #$n"
+            done
+            exit 0
+          fi
+          if [ -n "$OPEN" ]; then echo "已有未关闭告警,跳过"; exit 0; fi
           gh label create feed-stale --color D93F0B --description "feed 数据陈旧/不连贯" 2>/dev/null || true
           gh issue create \
             --title "⚠️ feed 审计发现 critical 问题" \
             --label feed-stale \
             --assignee "${{ github.repository_owner }}" \
-            --body "$(printf '审计输出:\n```\n%s\n```\n看板: https://edwardwang66.github.io/stock-analysis/intel/' "$REPORT")"
+            --body "$(printf '审计输出:\n```\n%s\n```\n看板: https://edwardwang66.github.io/stock-analysis/intel/' "$REPORT")" \
+            || echo "issue create failed"
+      - name: 提交 health.json
+        run: |
+          git config user.name  "feed-watchdog[bot]"
+          git config user.email "actions@github.com"
+          git add feed/health.json
+          if git diff --cached --quiet; then echo "health 无变化"; exit 0; fi
+          git commit -m "watchdog: 更新 feed/health.json"
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
+          done
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi

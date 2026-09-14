@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Repository entry point, runtime selection, verified quick start, and product limitations.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `5157635cf88c9d3cb42c98e5376faec790a4ef1e`
 
 面向个人研究与自托管的多市场行情、技术分析和自动化情报工作台。
 
@@ -54,7 +54,7 @@ Static 与 Server 是两个同等支持的 frontend build profile。它们共享
 
 | 维度 | Static profile | Server profile |
 |---|---|---|
-| Prerequisites | Node `20.20.2`、npm `10.8.2`。 | Node `20.20.2`、npm `10.8.2`；只有启用可选 FastAPI 时才要求 primary Python `3.11.15`。Python `3.12.13` 仅用于 compatibility CI。 |
+| Prerequisites | Node `24.14.0`、npm `11.9.0`。 | Node `24.14.0`、npm `11.9.0`；只有启用可选 FastAPI 时才要求 primary Python `3.11.15`。Python `3.12.13` 仅用于 compatibility CI。 |
 | Primary data path | `frontend/out` 中的 UI、bundled/raw Git feed、browser-safe providers，以及当前 Edge selector/fallback 链。 | 同一 frontend，加上保留的 Next quote/OHLCV handlers；仍使用相同 browser/feed fallbacks。 |
 | Optional adapters | FastAPI (`NEXT_PUBLIC_API_BASE`)；custom `NEXT_PUBLIC_EDGE_BASE` 或 self-owned Edge deployment。 | FastAPI (`NEXT_PUBLIC_API_BASE`)；custom/same-origin Next Edge deployment。 |
 | Persistence | 当前 browser profile 的 `localStorage`；repository/bundled feed snapshot。 | 同样的 browser/feed state；FastAPI 可选 SQLite JSON cache 和 OHLCV bar store，默认 `/tmp` 在 hosted restart 后可能丢失。 |
@@ -91,7 +91,7 @@ python -m uvicorn app.main:app --reload --port 8000
 
 ### 验证安装
 
-前端公开验证命令要求 exact Node `20.20.2` / npm `10.8.2`：
+前端公开验证命令要求 exact Node `24.14.0` / npm `11.9.0`（与 `.node-version`、`frontend/package.json` 的 `packageManager` 和 CI 的精确版本断言一致）：
 
 ```bash
 cd frontend
