@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-14T19:29:42Z",
-  "source_report": "routine-2026-09-14T1929Z",
+  "updated_at": "2026-09-14T23:13:39Z",
+  "source_report": "routine-2026-09-14T2313Z",
   "asof": "2026-09-14",
   "n_long": 37,
   "n_short": 26,
@@ -208,16 +208,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "IBM",
-      "side": "SHORT",
-      "weight": -0.0024,
-      "s_score": 0.629,
-      "halflife_days": 8.2,
-      "kappa": 21.32,
-      "hurst": 0.433,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "COST",
       "side": "SHORT",
       "weight": -0.0024,
@@ -228,24 +218,14 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "AMZN",
+      "ticker": "IBM",
       "side": "SHORT",
-      "weight": -0.0011,
-      "s_score": -0.108,
-      "halflife_days": 2.6,
-      "kappa": 66.75,
-      "hurst": 0.169,
-      "sector": "Consumer Discretionary"
-    },
-    {
-      "ticker": "NEM",
-      "side": "SHORT",
-      "weight": -0.0011,
-      "s_score": 0.835,
-      "halflife_days": 17.8,
-      "kappa": 9.79,
-      "hurst": 0.61,
-      "sector": "Materials"
+      "weight": -0.0024,
+      "s_score": 0.629,
+      "halflife_days": 8.2,
+      "kappa": 21.32,
+      "hurst": 0.433,
+      "sector": "Information Technology"
     },
     {
       "ticker": "BLK",
@@ -258,6 +238,26 @@
       "sector": "Financials"
     },
     {
+      "ticker": "NEM",
+      "side": "SHORT",
+      "weight": -0.0011,
+      "s_score": 0.835,
+      "halflife_days": 17.8,
+      "kappa": 9.79,
+      "hurst": 0.61,
+      "sector": "Materials"
+    },
+    {
+      "ticker": "AMZN",
+      "side": "SHORT",
+      "weight": -0.0011,
+      "s_score": -0.108,
+      "halflife_days": 2.6,
+      "kappa": 66.75,
+      "hurst": 0.169,
+      "sector": "Consumer Discretionary"
+    },
+    {
       "ticker": "ABT",
       "side": "SHORT",
       "weight": -0.001,
@@ -268,16 +268,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "CSCO",
-      "side": "LONG",
-      "weight": 0.001,
-      "s_score": -0.376,
-      "halflife_days": 3.0,
-      "kappa": 59.08,
-      "hurst": 0.285,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "LIN",
       "side": "LONG",
       "weight": 0.001,
@@ -286,6 +276,16 @@
       "kappa": 10.99,
       "hurst": 0.571,
       "sector": "Materials"
+    },
+    {
+      "ticker": "CSCO",
+      "side": "LONG",
+      "weight": 0.001,
+      "s_score": -0.376,
+      "halflife_days": 3.0,
+      "kappa": 59.08,
+      "hurst": 0.285,
+      "sector": "Information Technology"
     },
     {
       "ticker": "PG",
@@ -308,16 +308,6 @@
       "sector": "Health Care"
     },
     {
-      "ticker": "DIS",
-      "side": "LONG",
-      "weight": 0.0013,
-      "s_score": 0.588,
-      "halflife_days": 7.9,
-      "kappa": 22.01,
-      "hurst": 0.528,
-      "sector": "Communication Services"
-    },
-    {
       "ticker": "GE",
       "side": "LONG",
       "weight": 0.0013,
@@ -326,6 +316,16 @@
       "kappa": 83.18,
       "hurst": 0.252,
       "sector": "Industrials"
+    },
+    {
+      "ticker": "DIS",
+      "side": "LONG",
+      "weight": 0.0013,
+      "s_score": 0.588,
+      "halflife_days": 7.9,
+      "kappa": 22.01,
+      "hurst": 0.528,
+      "sector": "Communication Services"
     },
     {
       "ticker": "MAR",
@@ -378,6 +378,16 @@
       "sector": "Consumer Staples"
     },
     {
+      "ticker": "GS",
+      "side": "LONG",
+      "weight": 0.002,
+      "s_score": 0.57,
+      "halflife_days": 4.1,
+      "kappa": 42.13,
+      "hurst": 0.283,
+      "sector": "Financials"
+    },
+    {
       "ticker": "INTC",
       "side": "LONG",
       "weight": 0.002,
@@ -396,16 +406,6 @@
       "kappa": 13.24,
       "hurst": 0.555,
       "sector": "Communication Services"
-    },
-    {
-      "ticker": "GS",
-      "side": "LONG",
-      "weight": 0.002,
-      "s_score": 0.57,
-      "halflife_days": 4.1,
-      "kappa": 42.13,
-      "hurst": 0.283,
-      "sector": "Financials"
     },
     {
       "ticker": "MS",
@@ -608,16 +608,6 @@
       "sector": "Financials"
     },
     {
-      "ticker": "BKNG",
-      "side": "LONG",
-      "weight": 0.0226,
-      "s_score": -1.31,
-      "halflife_days": 11.5,
-      "kappa": 15.17,
-      "hurst": 0.516,
-      "sector": "Consumer Discretionary"
-    },
-    {
       "ticker": "ADP",
       "side": "LONG",
       "weight": 0.0226,
@@ -626,6 +616,16 @@
       "kappa": 20.27,
       "hurst": 0.386,
       "sector": "Industrials"
+    },
+    {
+      "ticker": "BKNG",
+      "side": "LONG",
+      "weight": 0.0226,
+      "s_score": -1.31,
+      "halflife_days": 11.5,
+      "kappa": 15.17,
+      "hurst": 0.516,
+      "sector": "Consumer Discretionary"
     },
     {
       "ticker": "SHW",
