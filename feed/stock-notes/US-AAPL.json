@@ -1,14 +1,14 @@
 {
   "symbol": "US:AAPL",
-  "date": "2026-09-19",
+  "date": "2026-09-22",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "看多",
-  "thesis": "多头: Apple Inc. 属于 Technology/Consumer Electronics，当前进入看多清单，技术评分 85、RSI14 65.4；最新价约 336.13，20/50/200日均线约 322.64/320.14/286.34；TD9 上行6；52周位置 距高 -2.4%、92分位；SuperTrend(10,3) 多头·约 11 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；feed/watchlist.json 必析池；同时属于当日 >=80 v2 看多清单。；近20/60交易日收益约 8.0%/14.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: AAPL 属于 Technology/Consumer Electronics，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 338.98，20/50/200日均线约 324.12/320.62/286.61；TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.6%、94分位；SuperTrend(10,3) 多头·约 12 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 9.6%/23.2%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Bill Ackman Says Nike ‘Needs Help’ as Alexandre Arnault Joins Board: ‘Great Development’(Benzinga)；Here’s A Stock That Jim Cramer Like Before But Now He Just Doesn’t Want To Buy It(Insider Monkey)；Coinbase Files to List Single-Stock Perps on Apple, Tesla and Nvidia(decrypt)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Meta Stock Is Still Too Cheap(Motley Fool)；Meta Jumps 11% As Muse Shines and Investors Show an Appetite for Advancing AI(BeInCrypto)；META Stock Rallies As Muse AI Tops App Charts — Exec Admits It’s ‘Heavily Inspired’ By OpenClaw(Stocktwits)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "看多: TD9 上行6；52周位置 距高 -2.4%、92分位；SuperTrend(10,3) 多头·约 11 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -1.6%、94分位；SuperTrend(10,3) 多头·约 12 个交易日前翻转；缠论近似: 当前上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: AAPL",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/AAPL/news/"
     },
     {
-      "title": "Bill Ackman Says Nike ‘Needs Help’ as Alexandre Arnault Joins Board: ‘Great Development’",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/bill-ackman-says-nike-needs-013111888.html"
+      "title": "Meta Stock Is Still Too Cheap",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/meta-stock-still-too-cheap-045002679.html"
     },
     {
-      "title": "Here’s A Stock That Jim Cramer Like Before But Now He Just Doesn’t Want To Buy It",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/stock-jim-cramer-now-just-231218503.html"
+      "title": "Meta Jumps 11% As Muse Shines and Investors Show an Appetite for Advancing AI",
+      "url": "https://finance.yahoo.com/technology/ai/articles/meta-jumps-11-muse-shines-043000018.html"
     }
   ],
   "methodology": {
-    "td9": "上行6",
-    "week52": "距高 -2.4% · 92分位",
-    "supertrend": "多头·约 11 个交易日前翻转",
+    "td9": "上行7(防衰竭)",
+    "week52": "距高 -1.6% · 94分位",
+    "supertrend": "多头·约 12 个交易日前翻转",
     "chan": "上行笔，接近中枢上沿，暂未见明显 MACD 面积背驰",
-    "rs": 85
+    "rs": 84
   }
 }
