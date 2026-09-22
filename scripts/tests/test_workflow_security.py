@@ -300,7 +300,7 @@ ON_PR_CHECKOUT_STEP = """      - name: Checkout trusted base gate
           persist-credentials: false
 """
 PROTECTED_WORKFLOW_SHA256 = (
-    "cccd74e1b13c45d5efa5ab681b168d1f681a5e75416806f75823e7f6e8c2291f"
+    "063cd9e9590ae3aa642ff2b52a5540122c8dc4f42c08b4b156ca261288758cb9"
 )
 PROTECTED_WORKFLOW_MUTATIONS = [
     (
