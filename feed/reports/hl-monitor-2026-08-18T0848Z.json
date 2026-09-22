@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-08-18T0848Z",
+  "kind": "routine",
+  "produced_at": "2026-08-18T08:48:41Z",
+  "asof_data": "2026-08-18",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/32118268708"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ACE 资金费年化 -1105%(OI $2M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ACE"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -1.11% (mark 7707.0,$249M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:23 流动永续持仓面,跨所错位 44,HIP-3 24/7 资产 94。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "92aaf4d124f5f5b38e2b6cd158cb284772d02feabd975ef4396bd182cfeeb3ee"
+  }
+}

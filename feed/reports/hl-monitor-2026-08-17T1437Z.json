@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-08-17T1437Z",
+  "kind": "routine",
+  "produced_at": "2026-08-17T14:37:46Z",
+  "asof_data": "2026-08-17",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/32039691968"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "XMR 资金费年化 61%(OI $61M)——挤压/单边持仓信号。",
+      "tickers": [
+        "XMR"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "kPEPE 资金费年化 -52%(OI $13M)——挤压/单边持仓信号。",
+      "tickers": [
+        "kPEPE"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.24% (mark 7769.1,$133M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:16 流动永续持仓面,跨所错位 47,HIP-3 24/7 资产 94。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "59f53b0e7f2578933c50a1a7b9f34797daec1c0304df93c03fa559dd501f8a2a"
+  }
+}

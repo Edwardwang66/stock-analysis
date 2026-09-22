@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-09-01T1631Z",
+  "kind": "routine",
+  "produced_at": "2026-09-01T16:31:50Z",
+  "asof_data": "2026-09-01",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/33532293974"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "SKR 资金费年化 -2041%(OI $4M)——挤压/单边持仓信号。",
+      "tickers": [
+        "SKR"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "TRX 资金费年化 -194%(OI $18M)——挤压/单边持仓信号。",
+      "tickers": [
+        "TRX"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.49% (mark 7637.6,$218M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:31 流动永续持仓面,跨所错位 36,HIP-3 24/7 资产 103。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "b830e13899c1436f1378f2e2d96eb09098138952465606331bc4e41e477e70ef"
+  }
+}

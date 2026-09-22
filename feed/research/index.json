@@ -1,34 +1,47 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-30T06:40:00Z",
+  "updated_at": "2026-09-22T22:33:44Z",
   "note": "scripts/deep_research.py 产出的深度研究简报索引。确定性引擎,未调用 LLM;confirmed 只表示对已记录数据的可复现计算成立,不构成投资建议。最多保留 60 条摘要,简报文件本身不裁剪。",
   "latest": {
-    "id": "deep-research-2026-07-30T0640Z",
-    "produced_at": "2026-07-30T06:40:00Z",
-    "asof_data": "2026-07-30",
-    "headline": "同一份报告(routine-2026-07-29T2330Z)的熔断名单与同期簿有 1 只交集 ['ABT'],仍带 0.0043 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+    "id": "deep-research-2026-09-22T2233Z",
+    "produced_at": "2026-09-22T22:33:44Z",
+    "asof_data": "2026-09-22",
+    "headline": "簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
     "n_questions": 18,
-    "n_findings": 30,
-    "confirmed": 30,
+    "n_findings": 29,
+    "confirmed": 29,
     "refuted": 1,
-    "unverified": 0,
-    "n_alerts": 8,
-    "path": "research/deep-research-2026-07-30T0640Z.json"
+    "unverified": 1,
+    "n_alerts": 7,
+    "path": "research/deep-research-2026-09-22T2233Z.json"
   },
   "stats": {
-    "total_briefs": 1,
+    "total_briefs": 2,
     "by_role": {
-      "residual-analyst": 4,
-      "red-team": 4,
-      "engine": 7,
-      "crowding-monitor": 3,
-      "factor-factory": 4,
-      "risk": 5,
-      "event-risk": 3
+      "residual-analyst": 8,
+      "red-team": 8,
+      "engine": 14,
+      "crowding-monitor": 6,
+      "factor-factory": 8,
+      "risk": 10,
+      "event-risk": 5
     },
     "last_7d": 1
   },
   "briefs": [
+    {
+      "id": "deep-research-2026-09-22T2233Z",
+      "produced_at": "2026-09-22T22:33:44Z",
+      "asof_data": "2026-09-22",
+      "headline": "簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+      "n_questions": 18,
+      "n_findings": 29,
+      "confirmed": 29,
+      "refuted": 1,
+      "unverified": 1,
+      "n_alerts": 7,
+      "path": "research/deep-research-2026-09-22T2233Z.json"
+    },
     {
       "id": "deep-research-2026-07-30T0640Z",
       "produced_at": "2026-07-30T06:40:00Z",
@@ -43,5 +56,13 @@
       "path": "research/deep-research-2026-07-30T0640Z.json"
     }
   ],
-  "open_questions": []
+  "open_questions": [
+    {
+      "id": "q-stance-churn",
+      "title": "个股解读的立场翻转有多频繁,多少是真翻转、多少只是覆盖变化?",
+      "reason": "all-claims-refuted",
+      "missing": [],
+      "detail": "本题产出的结论全部未通过对抗验证。"
+    }
+  ]
 }

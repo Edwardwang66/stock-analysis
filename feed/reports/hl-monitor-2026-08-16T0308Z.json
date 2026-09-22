@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-08-16T0308Z",
+  "kind": "routine",
+  "produced_at": "2026-08-16T03:08:34Z",
+  "asof_data": "2026-08-16",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/31923526854"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ACE 资金费年化 -1172%(OI $1M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ACE"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "FARTCOIN 资金费年化 73%(OI $31M)——挤压/单边持仓信号。",
+      "tickers": [
+        "FARTCOIN"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.04% (mark 7782.5,$39M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:15 流动永续持仓面,跨所错位 71,HIP-3 24/7 资产 91。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "9e35bb38fe7fcad72209b9b896064be4d7e90690e5b77f8bc374ffff4ee7c1b9"
+  }
+}
