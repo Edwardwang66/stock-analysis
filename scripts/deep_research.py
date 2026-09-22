@@ -109,6 +109,17 @@ NOTES = (
 
 # ----------------------------- 数值 / 统计工具(纯 stdlib)-----------------------------
 
+def _side(value: float | None, lo: float = 0.45, hi: float = 0.55) -> str | None:
+    """把 0–1 的占比定向成 强/弱;落在中性带内返回 None,表示这一路不参与方向比较。"""
+    if value is None:
+        return None
+    if value > hi:
+        return "强"
+    if value < lo:
+        return "弱"
+    return None
+
+
 def _num(x: object, nd: int = 6) -> float | None:
     """转成 JSON 可写的有限浮点;NaN/inf/非数一律 None(fl.save_json 用 allow_nan=False)。"""
     try:
@@ -1115,15 +1126,35 @@ def lens_intraday_vs_regime(corpus: Corpus) -> list[dict]:
     regime = market.get("regime")
     breadth = _num(market.get("breadth_pct_above_50dma"))
     up_share = _num(up / (up + down))
-    contradiction = regime == "risk_on" and (up_share or 0) < 0.45
+    # 日线侧的两路口径各自定向后再与盘中比。原先只测 regime == "risk_on" 一侧,
+    # 于是「risk_off + 强势盘面」——同样是两个口径打架——会被写成方向一致;
+    # 而 breadth 过去只被插进结论句、从不参与判定,等于凭空替它背书。
+    tape_side = _side(up_share)
+    sides = (("regime", {"risk_on": "强", "risk_off": "弱"}.get(str(regime))),
+             ("广度", _side(breadth)))
+    against = [name for name, side in sides if side and tape_side and side != tape_side]
+    aligned = [name for name, side in sides if side and tape_side and side == tape_side]
+    contradiction = bool(against)
+    head = f"盘中上涨占比 {up}/{up + down}={up_share:.0%}"
+    tail = ("它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),"
+            "同向或相反都只是并列观察,不构成互相验证。")
+    if contradiction:
+        statement = (f"{head}(偏{tape_side}),日线 regime={regime}、广度 {breadth}:"
+                     f"{'、'.join(against)}与盘中方向相反。看板并列展示时必须标注,"
+                     f"否则会被读成同一事实的两次确认。{tail}")
+    elif tape_side is None:
+        statement = (f"{head},落在 45%–55% 的中性带里,与日线 regime={regime}、广度 {breadth} "
+                     f"无从比较方向,本轮不下同向也不下相反的判断。{tail}")
+    elif not aligned:
+        statement = (f"{head}(偏{tape_side}),但日线 regime={regime}、广度 {breadth} "
+                     f"都没给出可定向的取值,无从比较方向。{tail}")
+    else:
+        missing = [name for name, side in sides if not side]
+        statement = (f"{head}(偏{tape_side}),{'、'.join(aligned)}与盘中同向"
+                     + (f";{'、'.join(missing)} 无可定向取值、未参与判定" if missing else "")
+                     + f"。{tail}")
     out = [claim(
-        "event-risk", "q-intraday-vs-regime",
-        (f"盘中上涨占比 {up}/{up + down}={up_share:.0%},而日线 regime 判为 {regime}、"
-         f"广度 {breadth}:两个口径当前互相矛盾。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),"
-         f"看板并列展示时必须标注,否则会被读成同一事实的两次确认。"
-         if contradiction else
-         f"盘中上涨占比 {up}/{up + down}={up_share:.0%},与日线 regime={regime}、广度 {breadth} 方向一致,"
-         f"但两者仍是不同测度,一致不构成互相验证。"),
+        "event-risk", "q-intraday-vs-regime", statement,
         metric="intraday.up_share",
         value=up_share, unit="fraction", direction="none", n=up + down, min_n=30,
         severity="warning" if contradiction else "info",
@@ -1356,15 +1387,28 @@ def lens_notes_coverage(corpus: Corpus) -> list[dict]:
     if not symbols:
         raise LensSkipped("missing-input", ("feed/stock-notes/index.json:symbols",), "解读索引为空。")
     by_date: dict[str, int] = {}
+    undated = 0
     for item in symbols:
-        by_date[str(item.get("date"))] = by_date.get(str(item.get("date")), 0) + 1
+        raw = item.get("date")
+        # 不能用 str(item.get("date")) 直接做桶键:缺失日期会变成 "None",而 "None"、
+        # "?"、"n/a" 按字符串都大于任何 YYYY-MM-DD,一条脏数据就能顶掉真正的最新日,
+        # 覆盖率于是算在垃圾键上。只有严格 YYYY-MM-DD 才进桶,其余单独计数并披露。
+        if isinstance(raw, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+            by_date[raw] = by_date.get(raw, 0) + 1
+        else:
+            undated += 1
+    if not by_date:
+        raise LensSkipped("missing-input", ("feed/stock-notes/index.json:symbols[].date",),
+                          f"{len(symbols)} 份解读没有一条带合法日期(YYYY-MM-DD),无从算最新日覆盖率。")
     newest = max(by_date)
     share = _num(by_date[newest] / len(symbols))
     spread = len(by_date)
+    undated_note = (f"另有 {undated} 份日期缺失或不合法,未计入任何日期桶、但仍计在分母里;"
+                    if undated else "")
     return [claim(
         "risk", "q-notes-coverage",
         f"{len(symbols)} 份个股解读分布在 {spread} 个日期上,最新日 {newest} 只覆盖 "
-        f"{by_date[newest]} 份({share:.0%})。任何「全体个股当前立场」的横截面结论实际上是"
+        f"{by_date[newest]} 份({share:.0%})。{undated_note}任何「全体个股当前立场」的横截面结论实际上是"
         f"跨日期拼接,必须按日期分层看,否则会把过期解读当今天的观点。",
         metric="stock_notes.newest_date.coverage",
         value=share, unit="fraction", direction="none", n=len(symbols), min_n=30,

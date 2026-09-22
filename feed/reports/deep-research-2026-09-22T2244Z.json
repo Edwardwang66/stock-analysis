@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
-  "id": "deep-research-2026-09-22T2233Z",
+  "id": "deep-research-2026-09-22T2244Z",
   "kind": "routine",
-  "produced_at": "2026-09-22T22:33:44Z",
+  "produced_at": "2026-09-22T22:44:53Z",
   "asof_data": "2026-09-22",
   "producer": {
     "name": "deep-research-engine",
@@ -19,7 +19,7 @@
     {
       "level": "warning",
       "code": "committee-last-submission-age-days",
-      "message": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.96 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
+      "message": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.97 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
       "tickers": []
     },
     {
@@ -42,6 +42,12 @@
     },
     {
       "level": "warning",
+      "code": "intraday-up-share",
+      "message": "盘中上涨占比 53/96=55%(偏强),日线 regime=risk_on、广度 0.4:广度与盘中方向相反。看板并列展示时必须标注,否则会被读成同一事实的两次确认。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),同向或相反都只是并列观察,不构成互相验证。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
       "code": "stock-notes-newest-date-coverage",
       "message": "379 份个股解读分布在 62 个日期上,最新日 2026-09-22 只覆盖 101 份(27%)。任何「全体个股当前立场」的横截面结论实际上是跨日期拼接,必须按日期分层看,否则会把过期解读当今天的观点。",
       "tickers": []
@@ -57,5 +63,5 @@
     "type": "risk_alert",
     "summary": "深度研究:立题 18,confirmed 29 / refuted 1 / unverified 1;簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。"
   },
-  "notes": "确定性深度研究简报 research/deep-research-2026-09-22T2233Z.json 的告警摘要。确定性引擎:未调用任何 LLM 或外部服务,不访问网络,只对仓库内已记录的 feed 工件做可复现计算(deterministic logic and does not require an external LLM provider)。confirmed 表示「计算在已记录数据上成立」,不表示分析正确、不表示门控通过、不构成投资建议;schema 校验不批准研究语义。refuted / unverified 全量留档,缺答案的问题写进 open_questions。注意 stale-evidence 反驳器按运行时刻算龄期:同一份 feed 在更晚的日期重跑,时效相关的裁决会变(其余反驳器与所有数值都只取决于 feed 内容)。所有结论只描述本仓自由公开数据(存在生存者偏差与不完整),铁律(R6):LLM 是研究放大器、不决策;数值必须有来源;不编造。"
+  "notes": "确定性深度研究简报 research/deep-research-2026-09-22T2244Z.json 的告警摘要。确定性引擎:未调用任何 LLM 或外部服务,不访问网络,只对仓库内已记录的 feed 工件做可复现计算(deterministic logic and does not require an external LLM provider)。confirmed 表示「计算在已记录数据上成立」,不表示分析正确、不表示门控通过、不构成投资建议;schema 校验不批准研究语义。refuted / unverified 全量留档,缺答案的问题写进 open_questions。注意 stale-evidence 反驳器按运行时刻算龄期:同一份 feed 在更晚的日期重跑,时效相关的裁决会变(其余反驳器与所有数值都只取决于 feed 内容)。所有结论只描述本仓自由公开数据(存在生存者偏差与不完整),铁律(R6):LLM 是研究放大器、不决策;数值必须有来源;不编造。"
 }

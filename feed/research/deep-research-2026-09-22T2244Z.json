@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
-  "id": "deep-research-2026-09-22T2233Z",
+  "id": "deep-research-2026-09-22T2244Z",
   "kind": "deep-research",
-  "produced_at": "2026-09-22T22:33:44Z",
+  "produced_at": "2026-09-22T22:44:53Z",
   "asof_data": "2026-09-22",
   "producer": {
     "name": "deep-research-engine",
@@ -25,7 +25,7 @@
     "lenses_run": 18,
     "lenses_failed": 0,
     "reports_scanned": 328,
-    "duration_ms": 107
+    "duration_ms": 104
   },
   "questions": [
     {
@@ -403,7 +403,7 @@
       "id": "c05",
       "role": "red-team",
       "question": "q-committee-dormancy",
-      "statement": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.96 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
+      "statement": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.97 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
       "unit": "days",
       "n": 11,
       "min_n": 1,
@@ -425,7 +425,7 @@
       "verdict": "confirmed",
       "refutations": [],
       "metric": "committee.last_submission.age_days",
-      "value": 104.96
+      "value": 104.97
     },
     {
       "id": "c06",
@@ -809,7 +809,7 @@
       "id": "c19",
       "role": "risk",
       "question": "q-freshness-gaps",
-      "statement": "16 个可判龄期的工件里有 2 个超过 3.0 天建议线,最旧的是 feed/stock-notes/stance-history.json(28.94 天);引用它们的结论时效上限必须相应放宽,否则会把旧事实当现状。",
+      "statement": "16 个可判龄期的工件里有 2 个超过 3.0 天建议线,最旧的是 feed/stock-notes/stance-history.json(28.95 天);引用它们的结论时效上限必须相应放宽,否则会把旧事实当现状。",
       "unit": "count",
       "n": 16,
       "min_n": 5,
@@ -837,7 +837,7 @@
       "id": "c20",
       "role": "risk",
       "question": "q-freshness-gaps",
-      "statement": "feed/health.json 自报 ok=True、critical=0、warn=0(checked_at 2026-09-22T22:32:38Z):ok 只表示没有 critical,不是完整性或正确性证明。",
+      "statement": "feed/health.json 自报 ok=True、critical=0、warn=0(checked_at 2026-09-22T22:33:52Z):ok 只表示没有 critical,不是完整性或正确性证明。",
       "unit": "count",
       "max_age_days": 5.0,
       "severity": "info",
@@ -846,19 +846,19 @@
           "artifact": "feed/health.json",
           "field": "critical",
           "value": 0,
-          "asof": "2026-09-22T22:32:38Z"
+          "asof": "2026-09-22T22:33:52Z"
         },
         {
           "artifact": "feed/health.json",
           "field": "warn",
           "value": 0,
-          "asof": "2026-09-22T22:32:38Z"
+          "asof": "2026-09-22T22:33:52Z"
         },
         {
           "artifact": "feed/health.json",
           "field": "ok",
           "value": true,
-          "asof": "2026-09-22T22:32:38Z"
+          "asof": "2026-09-22T22:33:52Z"
         }
       ],
       "verdict": "confirmed",
@@ -970,12 +970,12 @@
       "id": "c24",
       "role": "event-risk",
       "question": "q-intraday-vs-regime",
-      "statement": "盘中上涨占比 53/96=55%,与日线 regime=risk_on、广度 0.4 方向一致,但两者仍是不同测度,一致不构成互相验证。",
+      "statement": "盘中上涨占比 53/96=55%(偏强),日线 regime=risk_on、广度 0.4:广度与盘中方向相反。看板并列展示时必须标注,否则会被读成同一事实的两次确认。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),同向或相反都只是并列观察,不构成互相验证。",
       "unit": "fraction",
       "n": 96,
       "min_n": 30,
       "max_age_days": 5.0,
-      "severity": "info",
+      "severity": "warning",
       "evidence": [
         {
           "artifact": "feed/intraday/latest.json",
@@ -1170,13 +1170,13 @@
           "artifact": "feed/index.json",
           "field": "reports.length",
           "value": 60,
-          "asof": "2026-09-22T22:33:27Z"
+          "asof": "2026-09-22T22:33:44Z"
         },
         {
           "artifact": "feed/index.json",
           "field": "stats.total_reports",
           "value": 1286,
-          "asof": "2026-09-22T22:33:27Z"
+          "asof": "2026-09-22T22:33:44Z"
         }
       ],
       "verdict": "confirmed",
@@ -1252,7 +1252,7 @@
       "refutations": [
         {
           "code": "stale-evidence",
-          "message": "最旧证据已 28.94 天,超过本结论声明的 5.0 天时效上限"
+          "message": "最旧证据已 28.95 天,超过本结论声明的 5.0 天时效上限"
         }
       ],
       "metric": "stance.flip_rate",
@@ -1281,7 +1281,7 @@
     },
     {
       "priority": "medium",
-      "action": "刷新 feed/stock-notes/stance-history.json(已 28.94 天)",
+      "action": "刷新 feed/stock-notes/stance-history.json(已 28.95 天)",
       "because": "超过 3.0 天建议线,引用它的结论会被 stale-evidence 反驳。"
     }
   ],
@@ -1295,7 +1295,7 @@
     {
       "level": "warning",
       "code": "committee-last-submission-age-days",
-      "message": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.96 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
+      "message": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 104.97 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
       "tickers": []
     },
     {
@@ -1318,6 +1318,12 @@
     },
     {
       "level": "warning",
+      "code": "intraday-up-share",
+      "message": "盘中上涨占比 53/96=55%(偏强),日线 regime=risk_on、广度 0.4:广度与盘中方向相反。看板并列展示时必须标注,否则会被读成同一事实的两次确认。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),同向或相反都只是并列观察,不构成互相验证。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
       "code": "stock-notes-newest-date-coverage",
       "message": "379 份个股解读分布在 62 个日期上,最新日 2026-09-22 只覆盖 101 份(27%)。任何「全体个股当前立场」的横截面结论实际上是跨日期拼接,必须按日期分层看,否则会把过期解读当今天的观点。",
       "tickers": []
@@ -1335,43 +1341,43 @@
         "key": "index",
         "path": "feed/index.json",
         "exists": true,
-        "asof": "2026-09-22T22:33:27Z",
-        "age_days": 0.0
+        "asof": "2026-09-22T22:33:44Z",
+        "age_days": 0.01
       },
       {
         "key": "health",
         "path": "feed/health.json",
         "exists": true,
-        "asof": "2026-09-22T22:32:38Z",
-        "age_days": 0.0
+        "asof": "2026-09-22T22:33:52Z",
+        "age_days": 0.01
       },
       {
         "key": "market_state",
         "path": "feed/market/state.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "market_history",
         "path": "feed/market/history.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "signals_book",
         "path": "feed/signals/latest.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "rs_ranks",
         "path": "feed/signals/rs-ranks.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "chan_stats",
@@ -1385,21 +1391,21 @@
         "path": "feed/screener/latest.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "screener_scores",
         "path": "feed/screener/scores.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "screener_history",
         "path": "feed/screener/history.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       {
         "key": "notes_index",
@@ -1413,21 +1419,21 @@
         "path": "feed/stock-notes/stance-history.json",
         "exists": true,
         "asof": "2026-08-25",
-        "age_days": 28.94
+        "age_days": 28.95
       },
       {
         "key": "candidates",
         "path": "feed/factory/candidates.json",
         "exists": true,
         "asof": "2026-09-22T01:01:12Z",
-        "age_days": 0.9
+        "age_days": 0.91
       },
       {
         "key": "funds",
         "path": "feed/funds/situational-awareness.json",
         "exists": true,
         "asof": "2026-06-30",
-        "age_days": 84.94
+        "age_days": 84.95
       },
       {
         "key": "crypto",
@@ -1441,14 +1447,14 @@
         "path": "feed/intraday/latest.json",
         "exists": true,
         "asof": "2026-09-22T17:13:16+00:00",
-        "age_days": 0.22
+        "age_days": 0.23
       },
       {
         "key": "overnight",
         "path": "feed/intraday/overnight.json",
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       }
     ],
     "artifacts_read": 17,

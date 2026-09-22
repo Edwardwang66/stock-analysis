@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-22T22:33:44Z",
+  "updated_at": "2026-09-22T22:44:53Z",
   "freshness": {
-    "last_report_at": "2026-09-22T22:33:44Z",
+    "last_report_at": "2026-09-22T22:44:53Z",
     "market_data_asof": "2026-09-22",
     "report_age_hours": 0.0,
-    "data_age_days": 0.94,
+    "data_age_days": 0.95,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       "market_state": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       "screener": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 0.94
+        "age_days": 0.95
       },
       "stock_notes": {
         "exists": true,
@@ -36,17 +36,17 @@
       "intraday": {
         "exists": true,
         "asof": "2026-09-22T17:13:16+00:00",
-        "age_days": 0.22
+        "age_days": 0.23
       },
       "market_history": {
         "exists": true,
         "asof": "2026-09-22T12:45:39+00:00",
-        "age_days": 0.41
+        "age_days": 0.42
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-08-14",
-        "age_days": 39.94
+        "age_days": 39.95
       },
       "crypto_state": {
         "exists": true,
@@ -55,7 +55,7 @@
       },
       "research": {
         "exists": true,
-        "asof": "2026-09-22T22:33:44Z",
+        "asof": "2026-09-22T22:44:53Z",
         "age_days": 0.0
       }
     }
@@ -206,19 +206,19 @@
   },
   "reports": [
     {
-      "id": "deep-research-2026-09-22T2233Z",
+      "id": "deep-research-2026-09-22T2244Z",
       "kind": "routine",
-      "produced_at": "2026-09-22T22:33:44Z",
+      "produced_at": "2026-09-22T22:44:53Z",
       "asof_data": "2026-09-22",
       "producer": "deep-research-engine",
       "agent_role": "red-team",
       "net_sharpe": null,
       "verdict": null,
-      "n_alerts": 7,
+      "n_alerts": 8,
       "n_candidates": 0,
       "contribution_type": "risk_alert",
       "contribution_summary": "深度研究:立题 18,confirmed 29 / refuted 1 / unverified 1;簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
-      "path": "reports/deep-research-2026-09-22T2233Z.json"
+      "path": "reports/deep-research-2026-09-22T2244Z.json"
     },
     {
       "id": "routine-2026-09-22T2128Z",
@@ -1108,9 +1108,9 @@
   ],
   "contributions": [
     {
-      "at": "2026-09-22T22:33:44Z",
+      "at": "2026-09-22T22:44:53Z",
       "producer": "deep-research-engine",
-      "id": "deep-research-2026-09-22T2233Z",
+      "id": "deep-research-2026-09-22T2244Z",
       "type": "risk_alert",
       "summary": "深度研究:立题 18,confirmed 29 / refuted 1 / unverified 1;簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。"
     },

@@ -456,6 +456,15 @@ class TestNumericGuards(DeepResearchTestCase):
                     return c
         return None
 
+    def _claim_by_metric(self, brief: dict, metric: str) -> dict | None:
+        """按 metric 取:一个 qid 可以产出多条结论(如 regime 对照 + 报价覆盖),
+        只按 qid 取会拿到同族里的另一条。"""
+        for bucket in ("findings", "refuted"):
+            for c in brief.get(bucket) or []:
+                if c.get("metric") == metric:
+                    return c
+        return None
+
     def _repoint_book_at_an_older_report(self) -> tuple[str, str]:
         """把簿指向一份更旧的报告,并让新旧两份的熔断名单给出不同答案。
 
@@ -574,6 +583,89 @@ class TestNumericGuards(DeepResearchTestCase):
                 self.assertEqual(brief["run"]["lenses_failed"], 0)
                 reasons = {q["id"]: q["reason"] for q in brief["open_questions"]}
                 self.assertEqual(reasons.get("q-book-vs-breaker"), "missing-input")
+
+    # ---- Bugbot #13:regime 侧矛盾判定必须对称 ----
+
+    def _set_regime_and_tape(self, regime: str, up: int, down: int,
+                             breadth: float | None = None) -> None:
+        state = json.loads((self.feed / "market" / "state.json").read_text(encoding="utf-8"))
+        state["regime"] = regime
+        if breadth is not None:
+            state["breadth_pct_above_50dma"] = breadth
+        write(self.feed / "market" / "state.json", state)
+        intraday = json.loads((self.feed / "intraday" / "latest.json").read_text(encoding="utf-8"))
+        intraday["summary"] = dict(intraday.get("summary") or {}, up=up, down=down)
+        intraday["pool_size"] = intraday["quoted"] = up + down
+        write(self.feed / "intraday" / "latest.json", intraday)
+
+    def test_regime_lens_flags_risk_off_against_a_strong_tape(self):
+        """只测 risk_on 一侧会把「risk_off + 强势盘面」写成方向一致 —— 那恰恰也是矛盾。"""
+        self._set_regime_and_tape("risk_off", up=110, down=20, breadth=0.25)
+        claim = self._claim_by_metric(self.brief(), "intraday.up_share")
+        self.assertIsNotNone(claim)
+        self.assertIn("与盘中方向相反", claim["statement"])
+        self.assertNotIn("与盘中同向", claim["statement"])
+
+    def test_regime_lens_still_flags_risk_on_against_a_weak_tape(self):
+        self._set_regime_and_tape("risk_on", up=20, down=110, breadth=0.80)
+        claim = self._claim_by_metric(self.brief(), "intraday.up_share")
+        self.assertIn("与盘中方向相反", claim["statement"])
+
+    def test_regime_lens_only_calls_it_consistent_when_it_actually_tested_agreement(self):
+        """真正同向时才准说一致,且必须点名是哪些口径同向。"""
+        self._set_regime_and_tape("risk_on", up=110, down=20, breadth=0.80)
+        claim = self._claim_by_metric(self.brief(), "intraday.up_share")
+        self.assertIn("regime、广度与盘中同向", claim["statement"])
+        self.assertNotIn("与盘中方向相反", claim["statement"])
+
+    def test_regime_lens_does_not_claim_a_direction_inside_the_neutral_band(self):
+        """盘中占比落在中性带里时,既不能说一致也不能说矛盾。"""
+        self._set_regime_and_tape("risk_off", up=65, down=65, breadth=0.50)
+        claim = self._claim_by_metric(self.brief(), "intraday.up_share")
+        self.assertIn("落在 45%–55% 的中性带里", claim["statement"])
+        for verdict in ("与盘中方向相反", "与盘中同向"):
+            self.assertNotIn(verdict, claim["statement"])
+
+    def test_regime_lens_does_not_assert_breadth_agreement_without_testing_it(self):
+        """广度被写进结论句就必须真参与判定:广度与盘中相反时不得说成一致。"""
+        self._set_regime_and_tape("risk_on", up=110, down=20, breadth=0.20)
+        claim = self._claim_by_metric(self.brief(), "intraday.up_share")
+        self.assertIn("广度与盘中方向相反", claim["statement"])
+
+    # ---- Bugbot #14:最新日不能被非法日期字符串顶掉 ----
+
+    def _write_notes(self, entries: list[dict]) -> None:
+        write(self.feed / "stock-notes" / "index.json",
+              {"updated_at": f"{day_str(1)}T01:00:00Z", "note": "测试", "symbols": entries})
+
+    def test_notes_coverage_ignores_unparseable_dates_when_picking_the_newest_day(self):
+        """'None'/'?' 按字符串比大于任何 YYYY-MM-DD,一条无日期解读会顶替真正的最新日。"""
+        entries = [{"symbol": f"US:S{i}", "date": day_str(1), "stance": "看多"} for i in range(30)]
+        entries.append({"symbol": "US:JUNK", "stance": "看多"})          # date 缺失 -> str(None)
+        entries.append({"symbol": "US:QMARK", "date": "?", "stance": "看多"})
+        self._write_notes(entries)
+        claim = self._claim_by_metric(self.brief(), "stock_notes.newest_date.coverage")
+        self.assertIsNotNone(claim)
+        self.assertIn(day_str(1), claim["statement"])
+        for junk in ("None", "最新日 ?"):
+            self.assertNotIn(junk, claim["statement"])
+
+    def test_notes_coverage_discloses_the_undated_tail(self):
+        entries = [{"symbol": f"US:S{i}", "date": day_str(1), "stance": "看多"} for i in range(30)]
+        entries += [{"symbol": f"US:X{i}", "stance": "看多"} for i in range(5)]
+        self._write_notes(entries)
+        claim = self._claim_by_metric(self.brief(), "stock_notes.newest_date.coverage")
+        self.assertIn("另有 5 份日期缺失或不合法", claim["statement"])
+        self.assertIn("仍计在分母里", claim["statement"])
+        # 分母是全部 35 份,最新日 30 份 -> 86%,不能因为剔除脏数据就把覆盖率算高
+        self.assertIn("86%", claim["statement"])
+
+    def test_notes_coverage_degrades_when_no_entry_has_a_usable_date(self):
+        self._write_notes([{"symbol": f"US:S{i}", "stance": "看多"} for i in range(30)])
+        brief = self.brief()
+        self.assertEqual(brief["run"]["lenses_failed"], 0)
+        reasons = {q["id"]: q["reason"] for q in brief["open_questions"]}
+        self.assertEqual(reasons.get("q-notes-coverage"), "missing-input")
 
     def test_fixture_dates_are_relative_so_the_suite_cannot_expire(self):
         """夹具最新证据必须落在默认时效上限内,否则本套件会在某个日历日自己变红。"""
