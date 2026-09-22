@@ -4,7 +4,8 @@ name: Intraday report (盘中5分钟机器报告)
 # ⚠️ GitHub 对 */5 高频 cron 会静默丢弃(2026-06-10 实测 Winter 睡后备胎 4 小时没接上)。
 # 对策:*/15 调度(成功率高)+ 每次 run 内部三轮循环(轮间 sleep 310s>守卫290s,避免第二轮被自己第一轮触发退位),
 #      维持 5 分钟节拍;public 仓库 Actions 分钟免费,sleep 不构成成本问题。
-#      三轮 ≈ 3×50s + 2×310s ≈ 13 分钟,timeout 留 15 分钟(此前 11 分钟 + 只 sleep 一次 = 实际只跑两轮)。
+#      三轮 ≈ 3×(50s 报价 + ≤20s 保活 curl) + 2×310s + checkout/setup ≈ 14-15 分钟,timeout 留 18 分钟
+#      (此前 11 分钟 + 只 sleep 一次 = 实际只跑两轮)。
 # 备胎守卫仍生效:每轮先查 live 新鲜度,Winter 循环在岗(<290s)即跳过该轮。
 # 产物经 git worktree 直接提交 live 分支(不切换主工作区,避免 stash 竞态)。
 on:
@@ -26,7 +27,7 @@ concurrency:
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v7
         with:

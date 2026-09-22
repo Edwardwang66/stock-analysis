@@ -4233,14 +4233,14 @@ class WorkflowSecurityTests(unittest.TestCase):
             for filename in sorted(opposite_normalized)
         )
         self.assertEqual(checked_source, opposite_source)
-        self.assertEqual(len(checked_source), 46_400)
-        self.assertEqual(len(opposite_source), 46_400)
+        self.assertEqual(len(checked_source), 46_458)
+        self.assertEqual(len(opposite_source), 46_458)
 
         checked_encoded = encoded_workflow_payload(checked_normalized)
         opposite_encoded = encoded_workflow_payload(opposite_normalized)
         self.assertEqual(checked_encoded, opposite_encoded)
-        self.assertEqual(len(checked_encoded), 48_569)
-        self.assertEqual(len(opposite_encoded), 48_569)
+        self.assertEqual(len(checked_encoded), 48_628)
+        self.assertEqual(len(opposite_encoded), 48_628)
         self.assertEqual(
             hashlib.sha256(checked_encoded).hexdigest(),
             PROTECTED_WORKFLOW_SHA256,
