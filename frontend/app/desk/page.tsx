@@ -586,7 +586,8 @@ export default function DeskPage() {
                           <td className={(x.chg24h ?? 0) >= 0 ? "up" : "down"}>{x.chg24h != null ? `${(x.chg24h * 100).toFixed(2)}%` : "—"}</td>
                           {(() => {
                             const q = quotes[local];
-                            const gap = q?.price ? (x.mark / q.price - 1) * 100 : null;
+                            // SKHX 正股(KR:000660)是韩元报价,HL mark 是美元,跨币种相除会得出 ≈-99.9% 假跳空
+                            const gap = x.symbol === "SKHX" ? null : q?.price ? (x.mark / q.price - 1) * 100 : null;
                             return <td className={gap == null ? "muted" : gap >= 0 ? "up" : "down"}
                               title="永续价 vs 正股最新价;闭市时=隐含跳空,盘中≈0 为正常">
                               {gap == null ? "—" : `${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`}</td>;

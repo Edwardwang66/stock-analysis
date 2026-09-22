@@ -416,15 +416,16 @@ export default function Home() {
       {movers && (
         <div className="movers">
           <span className="src">今日强弱</span>
+          {/* 普跌日 top3 可能全为负、普涨日 bottom3 可能全为正:符号与配色按实际正负,不写死 */}
           {movers.top.map((q) => (
-            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover up">
-              {nameOf(q.symbol, lang)} +{(q.changePct ?? 0).toFixed(2)}%
+            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className={`mover ${(q.changePct ?? 0) >= 0 ? "up" : "down"}`}>
+              {nameOf(q.symbol, lang)} {(q.changePct ?? 0) >= 0 ? "+" : ""}{(q.changePct ?? 0).toFixed(2)}%
             </Link>
           ))}
           <span className="src">|</span>
           {movers.bottom.map((q) => (
-            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className="mover down">
-              {nameOf(q.symbol, lang)} {(q.changePct ?? 0).toFixed(2)}%
+            <Link key={q.symbol} href={`/symbol/?s=${encodeURIComponent(q.symbol)}`} className={`mover ${(q.changePct ?? 0) >= 0 ? "up" : "down"}`}>
+              {nameOf(q.symbol, lang)} {(q.changePct ?? 0) >= 0 ? "+" : ""}{(q.changePct ?? 0).toFixed(2)}%
             </Link>
           ))}
         </div>

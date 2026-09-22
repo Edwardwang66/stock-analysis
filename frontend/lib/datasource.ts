@@ -126,11 +126,12 @@ function writeBarsCache(key: string, bars: Bar[]): void {
 }
 
 // 多个公共 CORS 代理,依次回退以提升美股(Yahoo)稳定性。
-// 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底。
+// 2026-06 实测:allorigins 最稳;corsproxy.io 已改为落地页不可用,放最后兜底;
+// thingproxy 已停摆,不再列入(每次轮到都白等 8s 超时)。
+// codetabs 必须 encodeURIComponent:裸传时上游 URL 的 & 后参数会被 codetabs 吞掉。
 const CORS_PROXIES: ((u: string) => string)[] = [
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  (u) => `https://api.codetabs.com/v1/proxy/?quest=${u}`,
-  (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+  (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
 ];
 
@@ -242,8 +243,11 @@ const B_INTERVAL: Record<string, string> = {
 const B_LIMIT: Record<string, number> = { "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730, "5y": 1000 };
 
 async function binanceQuote(code: string): Promise<Quote> {
-  const r = await fetch(`${BINANCE}/api/v3/ticker/24hr?symbol=${code}`);
+  const r = await fetchT(`${BINANCE}/api/v3/ticker/24hr?symbol=${code}`);
+  if (!r.ok) throw new Error(`Binance HTTP ${r.status}`);
   const d = await r.json();
+  // 无效 symbol 时 Binance 返回 {"code":-1121},+undefined = NaN 会污染下游合计
+  if (d.lastPrice == null || !Number.isFinite(+d.lastPrice)) throw new Error(`Binance 无 ${code} 报价`);
   return {
     symbol: `CRYPTO:${code}`, price: +d.lastPrice, change: +d.priceChange, changePct: +d.priceChangePercent,
     high: +d.highPrice, low: +d.lowPrice, currency: "USDT", source: "Binance",
@@ -352,6 +356,10 @@ export async function getQuotes(
   const unique = Array.from(new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)));
   const now = Date.now();
   const out: Record<string, Quote> = {};
+  // 只有本轮真正从网络取回的报价才允许重盖 localStorage 时间戳。
+  // 否则缓存命中项被反复盖戳"自我续命":刷新周期(10s)< 开市 TTL(15s)时,
+  // 首次拉取后永远缓存命中、真实请求永不再发,开市中的股票价格永久冻结。
+  const freshFromNetwork = new Set<string>();
   const missing: string[] = [];
 
   const persisted = getStoredQuotes();
@@ -386,6 +394,7 @@ export async function getQuotes(
         };
         quoteCache.set(quote.symbol, { quote, expires: now + quoteTtl(quote.symbol) });
         out[quote.symbol] = quote;
+        freshFromNetwork.add(quote.symbol);
         onPartial?.(quote);
       }
     }
@@ -411,6 +420,7 @@ export async function getQuotes(
             };
             quoteCache.set(quote.symbol, { quote, expires: Date.now() + quoteTtl(quote.symbol) });
             out[quote.symbol] = quote;
+            freshFromNetwork.add(quote.symbol);
             onPartial?.(quote);
           }
         }
@@ -436,6 +446,7 @@ export async function getQuotes(
           };
           quoteCache.set(symbol, { quote, expires: Date.now() + 60_000 });
           out[symbol] = quote;
+          freshFromNetwork.add(symbol);
           onPartial?.(quote);
         }
       }
@@ -453,6 +464,7 @@ export async function getQuotes(
       const quote = await req;
       quoteCache.set(symbol, { quote, expires: Date.now() + quoteTtl(symbol) });
       out[symbol] = quote;
+      freshFromNetwork.add(symbol);
       onPartial?.(quote);
     } catch {
       // 网络全挂:有 10 分钟内的旧值就降级展示,好过空白
@@ -460,7 +472,7 @@ export async function getQuotes(
       if (p && Date.now() - p.at <= QUOTE_STALE_MAX_MS) { out[symbol] = p.q; onPartial?.(p.q); }
     }
   }));
-  persistQuotes(Object.values(out));
+  persistQuotes(Object.values(out).filter((q) => freshFromNetwork.has(q.symbol)));
   return out;
 }
 

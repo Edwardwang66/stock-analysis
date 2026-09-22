@@ -56,7 +56,8 @@ export default function SourcesPage() {
               <div className="card"><div className="src">状态</div><div style={{ color: UP, fontWeight: 700, marginTop: 4 }}>在线 ✓</div></div>
               <div className="card"><div className="src">运行时长</div><div style={{ fontWeight: 700, marginTop: 4 }}>{Math.floor((health.uptime_s || 0) / 3600)}h {Math.floor(((health.uptime_s || 0) % 3600) / 60)}m</div></div>
               <div className="card"><div className="src">缓存条目</div><div style={{ fontWeight: 700, marginTop: 4 }}>{health.cache?.entries ?? "—"}</div></div>
-              <div className="card"><div className="src">K线库</div><div style={{ fontWeight: 700, marginTop: 4 }}>{health.barstore?.symbols ?? health.barstore?.rows ?? "—"}</div></div>
+              {/* 后端 barstore.stats() 实际返回 {enabled, path, bars, series}(barstore.py),旧字段名 symbols/rows 恒为 undefined */}
+              <div className="card"><div className="src">K线库</div><div style={{ fontWeight: 700, marginTop: 4 }}>{health.barstore?.series != null ? `${health.barstore.series} 序列 · ${health.barstore.bars ?? 0} 根` : "—"}</div></div>
             </div>
             {health.breakers && Object.keys(health.breakers).length > 0 && (
               <p className="src" style={{ marginTop: 8, color: "#f7b500" }}>

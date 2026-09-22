@@ -23,10 +23,15 @@ export interface NightBoard {
 
 const EMPTY: NightBoard = { map: {}, indices: [], updatedAt: null, usClosed: false };
 
-// HL 符号 → 本站 symbol;null = 不映射(口径不同或合成无对应)
+// HL 符号 → 本站 symbol;null = 不映射(口径不同或合成无对应)。
+// ⚠️ 只允许映射到 USD 计价的正股:HL 永续 mark 是美元,而 KR:000660(SK海力士)等
+// 非美股报价是当地货币(韩元,数百万量级)。跨币种直接相除会算出 ≈-99.9% 的假跳空,
+// 并污染持仓页夜盘市值与闭市提醒(曾因 SKHX→KR:000660 三个页面同时错数)。
+// 已知 HL 符号做白名单前缀映射,未知符号不再默认映成 US:<sym>(防 BABA/TENCENT 等错映)。
 function localOf(hlSym: string): string | null {
-  if (hlSym === "SKHX") return "KR:000660";
+  if (hlSym === "SKHX") return null;                     // 正股为韩元计价,币种不可比
   if (hlSym === "SPCX" || hlSym === "DRAM") return null; // 合成/指数,无正股对应
+  if (!/^[A-Z]{1,5}$/.test(hlSym)) return null;
   return `US:${hlSym}`;
 }
 

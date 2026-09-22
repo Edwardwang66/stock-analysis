@@ -2,6 +2,7 @@
 // 输入「茅台」「moutai」「600519」「美团」「meituan」均可命中。
 import { LOCAL_SYMBOLS, type SymInfo } from "./markets";
 import { NAME_DB } from "./names";
+import { fetchViaProxy } from "./datasource";
 
 // NAME_DB(~330 条双语)展开为可搜索表,与 LOCAL_SYMBOLS 合并去重
 const DB_SYMBOLS: SymInfo[] = Object.entries(NAME_DB).map(([symbol, [zh, en]]) => ({
@@ -17,7 +18,6 @@ const SEARCHABLE: SymInfo[] = (() => {
 })();
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
-const cors = (u: string) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`;
 
 function mapYahoo(sym: string): string | null {
   if (sym.endsWith(".HK")) return `HK:${sym.slice(0, -3)}`;
@@ -46,12 +46,12 @@ export async function searchSymbols(q: string): Promise<SymInfo[]> {
       return ap - bp;
     })
     .slice(0, 8);
-  // Yahoo 搜索(尽力而为)
+  // Yahoo 搜索(尽力而为)。走 datasource 的多代理回退链(allorigins 优先);
+  // 曾经写死 corsproxy.io——它已改为落地页,导致联想静默全挂、只剩本地双语库。
   let yahoo: SymInfo[] = [];
   try {
     const u = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0`;
-    const r = await fetch(cors(u));
-    const d = await r.json();
+    const d = await fetchViaProxy(u);
     yahoo = (d.quotes || [])
       .map((it: any): SymInfo | null => {
         const m = mapYahoo(it.symbol || "");

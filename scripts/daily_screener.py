@@ -22,6 +22,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -115,6 +116,7 @@ async def score_one(client, sem, ticker, meta) -> dict | None:
             "change_pct": round(chg, 2), "rsi14": round(a.indicators.get("rsi14") or 0, 1),
             "bullish_signals": bull,
             "_rs_raw": rs_raw, "_r63": r63, "_r126": r126, "_r252": r252, "_w52dd": w52_dd, "_w52pos": w52_pos,
+            "_last_bar_ts": bars[-1].ts.timestamp(),  # 数据实际截止的 bar 时间(用于 date 打标)
         }
 
 
@@ -143,12 +145,20 @@ async def run(threshold: int, limit: int, concurrency: int, out_dir: Path):
             "r252": round(r["_r252"] * 100, 1) if r.get("_r252") is not None else None,
             "w52dd": r.get("_w52dd"), "w52pos": r.get("_w52pos"),
         }
+    # date 必须取「数据最后一根 bar 的美东交易日」,不能用 UTC 运行日期:
+    # push/dispatch 在美东晚间(00:00-04:00 UTC)触发时,bars 还是前一交易日收盘,
+    # 用 UTC 日期会把昨日数据永久错标成"今日"(2026-06-10 history.json 曾实际中招,
+    # 连带 /screener 页头与 /tracker 收益基准日错位)。
+    last_ts = max((r.get("_last_bar_ts") or 0 for r in scored), default=0)
+    if last_ts:
+        today = datetime.fromtimestamp(last_ts, timezone.utc).astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    else:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     for r in scored:  # 必须在写 latest.json 前清理,否则 picks 带 _rs_raw 脏字段
-        for k in ("_rs_raw", "_r63", "_r126", "_r252", "_w52dd", "_w52pos"):
+        for k in ("_rs_raw", "_r63", "_r126", "_r252", "_w52dd", "_w52pos", "_last_bar_ts"):
             r.pop(k, None)
     picks = sorted([r for r in scored if r["score"] >= threshold],
                    key=lambda x: (x["score"], x["bullish_signals"], x["change_pct"]), reverse=True)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     payload = {
         "date": today,
         "generated_at": datetime.now(timezone.utc).isoformat(),

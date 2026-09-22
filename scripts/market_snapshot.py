@@ -39,10 +39,14 @@ def fetch_json(url: str, timeout: int = 20):
 
 def index_quote(code: str):
     try:
-        j = fetch_json(f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(code)}?range=5d&interval=1d")
+        # ⚠️ range 必须 1d 且优先 regularMarketPreviousClose:chartPreviousClose 的语义是
+        # 「请求窗口前一根的收盘」,配 5d 窗口会把涨跌算成对 5 天前的累计涨跌
+        # (frontend/lib/datasource.ts 同一事故的防回归注释;history.json 2026-06-10
+        # 曾因此写入 ^IXIC -5.22% 等错口径数据)。
+        j = fetch_json(f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(code)}?range=1d&interval=1d")
         m = j["chart"]["result"][0]["meta"]
         price = m.get("regularMarketPrice")
-        prev = m.get("chartPreviousClose") or m.get("previousClose")
+        prev = m.get("regularMarketPreviousClose") or m.get("chartPreviousClose") or m.get("previousClose")
         pct = ((price - prev) / prev * 100.0) if (price is not None and prev) else None
         return {"close": price, "change_pct": round(pct, 4) if pct is not None else None}
     except Exception as e:  # noqa: BLE001

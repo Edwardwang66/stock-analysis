@@ -111,7 +111,7 @@ export default function TrackerPage() {
         <div className="section">
           <h2>🏆 周度胜率报告
             <span className="src" style={{ marginLeft: 10 }}>
-              Winter·Postgres 全历史 ≥80 picks · {String(wr.generated_at ?? "").slice(0, 10)} 投递 · 按持有窗口/分数段
+              Winter·Postgres 全历史 ≥80 picks · {String(wr.generated_at ?? "").slice(0, 10)} 投递 · 按入库账龄/分数段(收益=选中价→现价,非固定持有期)
             </span>
           </h2>
           <div style={{ overflowX: "auto" }}>
@@ -119,9 +119,11 @@ export default function TrackerPage() {
               <thead><tr><th>口径</th><th>样本</th><th>胜率</th><th>平均收益</th><th>最佳</th><th>最差</th></tr></thead>
               <tbody>
                 {([
-                  ...(["d1", "d5", "d20"] as const).map((k) => ["持有 " + k.slice(1) + " 日", wr.windows?.[k]] as const),
-                  ...Object.entries(wr.by_score_band ?? {}).map(([k, v]) => ["评分 " + k, v] as const),
-                ]).filter((x): x is readonly [string, WinrateCell] => !!x[1]).map(([label, c]) => (
+                  // d1/d5/d20 = 入库满 N 个自然日的 picks(cohort 相互包含),非「持有 N 日」收益
+                  ...(["d1", "d5", "d20"] as const).map((k) => ["入库≥" + k.slice(1) + "天", wr.windows?.[k]] as const),
+                  // 分数段实际嵌套在 windows.d1 内(winrate.py 投递 schema);顶层键留作兼容
+                  ...Object.entries(wr.by_score_band ?? wr.windows?.d1?.by_score_band ?? {}).map(([k, v]) => ["评分 " + k, v] as const),
+                ]).filter((x): x is readonly [string, WinrateCell] => !!x[1] && x[1].n > 0).map(([label, c]) => (
                   <tr key={label}>
                     <td>{label}</td>
                     <td>{c.n}</td>

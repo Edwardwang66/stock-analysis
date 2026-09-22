@@ -69,8 +69,10 @@ function strokes(fs: Fractal[], mk: MK[]): Stroke[] {
       if ((f.type === "top" && f.price > last.price) || (f.type === "bottom" && f.price < last.price)) valid[valid.length - 1] = f;
     } else {
       const gap = Math.abs((pos.get(f.idx) ?? 0) - (pos.get(last.idx) ?? 0));
+      // 间隔不足时直接丢弃新分型,绝不能跨类型替换:顶分型价格几乎必然高于底分型,
+      // 原先的价格比较分支会把底分型替换成顶分型(反之亦然),产生「顶→顶」笔,
+      // 破坏顶底交替不变量并污染下游中枢/背驰/一二三类买卖点。
       if (gap >= 2) valid.push(f);
-      else if ((f.type === "top" && f.price > last.price) || (f.type === "bottom" && f.price < last.price)) valid[valid.length - 1] = f;
     }
   }
   const st: Stroke[] = [];

@@ -226,10 +226,17 @@ export const getScreenerHistory = () => fetchJson<TrackedDay[]>("screener/histor
 
 // 周度胜率(Winter 本地 Postgres winrate.py,每周五收盘后投递)
 export interface WinratePick { symbol: string; date: string; score?: number; pick_price?: number; current_price?: number; ret?: number }
-export interface WinrateCell { n: number; win_rate: number | null; avg_ret: number | null; best?: WinratePick | null; worst?: WinratePick | null }
+export interface WinrateCell {
+  n: number; win_rate: number | null; avg_ret: number | null; best?: WinratePick | null; worst?: WinratePick | null;
+  /** 实际投递 schema(winter_pg/winrate.py):分数段嵌套在每个 window 内 */
+  by_score_band?: Record<string, WinrateCell>;
+}
 export interface WinrateDoc {
-  generated_at?: string; total_picks?: number;
+  generated_at?: string;
+  /** 实际键为 picks_total(winrate.py:172);total_picks 仅留作兼容 */
+  picks_total?: number; total_picks?: number;
   windows?: Record<string, WinrateCell>;
+  /** 顶层分数段:实际投递中不存在(嵌套于 windows.*),留作向前兼容 */
   by_score_band?: Record<string, WinrateCell>;
 }
 export const getWinrate = () => fetchJson<WinrateDoc>("screener/winrate.json");

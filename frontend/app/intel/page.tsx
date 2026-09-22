@@ -45,7 +45,10 @@ export default function IntelDashboard() {
   useEffect(() => { load(); const t = setInterval(load, 5 * 60 * 1000); return () => clearInterval(t); }, []);
 
   const fresh = idx?.freshness;
-  const stale = fresh?.stale;
+  // 陈旧判定必须在客户端重算:index.json 里的 stale/report_age_hours 是「重建 index 时」
+  // 冻结的值——投递链全挂(恰恰是要检测的故障)时 index 不再重建,冻结值会永远显示「最新 ✓」。
+  const idxAgeH = idx?.updated_at ? (Date.now() - new Date(idx.updated_at).getTime()) / 3_600_000 : null;
+  const stale = Boolean(fresh?.stale) || (idxAgeH != null && idxAgeH > 36); // 36h 与 feed_lib.STALE_HOURS 同阈
   const longs = (sig?.positions || []).filter((p) => p.side === "LONG").slice(-8).reverse();
   const shorts = (sig?.positions || []).filter((p) => p.side === "SHORT").slice(0, 8);
   const tl = Object.entries(idx?.timeline || {}).slice(-21);
@@ -71,7 +74,7 @@ export default function IntelDashboard() {
           <Stat label="状态" value={stale ? "陈旧 ⚠" : "最新 ✓"} color={stale ? DOWN : UP} />
           <Stat label="最新数据日期" value={fresh?.market_data_asof || "—"} />
           <Stat label="数据滞后" value={fresh?.data_age_days != null ? `${fresh.data_age_days.toFixed(1)} 天` : "—"} />
-          <Stat label="上次报告" value={fresh?.report_age_hours != null ? `${fresh.report_age_hours.toFixed(1)} 小时前` : "—"} />
+          <Stat label="上次报告" value={idxAgeH != null ? `${idxAgeH.toFixed(1)} 小时前` : (fresh?.report_age_hours != null ? `${fresh.report_age_hours.toFixed(1)} 小时前` : "—")} />
           <Stat label="index 更新于" value={idx ? fmtDateTime(idx.updated_at, tzKey) : "—"} />
           {health && <Stat label="审计" value={health.ok ? `通过 ✓ (${health.warn} 警告)` : `${health.critical} 严重 ✗`} color={health.ok ? UP : DOWN} />}
         </div>
