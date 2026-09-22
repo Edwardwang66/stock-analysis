@@ -19,11 +19,12 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/help/",      icon: "❓", label: "帮助",   key: "?" },
 ];
 
-/** 把 usePathname() 归一成带尾斜杠的站内路径(App Router 已去掉 basePath;此处再兜底一次)。 */
+/** 把 usePathname() 归一成带尾斜杠的站内路径。App Router 返回的值已不含 basePath;
+ *  这里只在它确实以 basePath 开头(按路径段边界判断)时再剥一次,避免误伤形如 /desk 的同名路由。 */
 function normalizePath(path: string | null): string {
   const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
   let p = path || "/";
-  if (base && p.startsWith(base)) p = p.slice(base.length);
+  if (base && (p === base || p.startsWith(`${base}/`))) p = p.slice(base.length) || "/";
   if (!p.startsWith("/")) p = `/${p}`;
   if (!p.endsWith("/")) p = `${p}/`;
   return p;

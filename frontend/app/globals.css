@@ -134,7 +134,7 @@ th { color: var(--muted); font-weight: 500; }
 }
 /* 触控设备:点击目标加大,去 hover 缩放抖动 */
 @media (pointer: coarse) {
-  .btn, .segmented button, .tabs button { min-height: 38px; }
+  .btn, .nav a, .segmented button, .tabs button { min-height: 38px; }
   .tile:hover { transform: none; }
   .star { font-size: 18px; padding: 6px; }
 }

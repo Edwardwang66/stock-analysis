@@ -33,13 +33,15 @@ jobs:
           if [ "$HOUR" -lt 16 ]; then KIND=premarket; LABEL="盘前"; DDL="13:30 UTC(美东 09:30 开盘前)"; else KIND=close; LABEL="收盘前"; DDL="19:30 UTC(美东 15:30)"; fi
           F="feed/screener/analysis-$KIND-$DATE.md"
           gh label create openclaw-miss --color D93F0B --description "OpenClaw 盘中节拍缺投" 2>/dev/null || true
-          # 同类(盘前/收盘前)现有的未关闭滚动 Issue,按编号升序
-          OPEN=$(gh issue list --label openclaw-miss --state open --limit 100 --json number,title \
-                   --jq '[.[] | select(.title | contains("'"$LABEL"'报告缺投"))] | sort_by(.number) | .[].number')
+          # 同类(盘前/收盘前)现有的未关闭滚动 Issue,按编号升序。
+          # 必须锚定到标题前缀:"收盘前报告缺投" 包含子串 "盘前报告缺投",用 contains 会把两类混在一起。
+          OPEN=$(gh issue list --label openclaw-miss --state open --limit 300 --json number,title \
+                   --jq '[.[] | select(.title | startswith("⏰ OpenClaw '"$LABEL"'报告缺投"))] | sort_by(.number) | .[].number')
           if [ -f "$F" ]; then
             echo "✅ $F 已按时投递"
             for n in $OPEN; do
               gh issue close "$n" --comment "✅ $DATE ${LABEL}报告已按时投递(\`$F\`),自动关闭。" || echo "issue close failed: #$n"
+              sleep 2   # 每张 2 次写请求,限速在 GitHub 二级限流(80 次/分钟)之下
             done
             exit 0
           fi
@@ -63,6 +65,7 @@ jobs:
             gh issue edit "$FIRST" --title "$TITLE" --body-file /tmp/body.md && echo "已更新滚动 Issue #$FIRST" || echo "issue edit failed"
             for n in $(printf '%s\n' $OPEN | tail -n +2); do
               gh issue close "$n" --comment "合并到 #$FIRST 滚动跟踪,自动关闭。" || echo "issue close failed: #$n"
+              sleep 2   # 同上限速;首轮消化积压时约百余张,几分钟内完成
             done
           else
             gh issue create \

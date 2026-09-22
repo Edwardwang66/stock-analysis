@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -281,20 +282,31 @@ def main() -> int:
 
 def gh_api(repo: str, token: str, method: str, path: str, payload: dict | None = None,
            query: str = "") -> dict | list:
-    """GitHub REST 最小封装(仅标准库)。"""
+    """GitHub REST 最小封装(仅标准库)。命中限流(403/429)时按 Retry-After 等待并重试一次。"""
     data = json.dumps(payload).encode() if payload is not None else None
-    req = urllib.request.Request(
-        f"https://api.github.com/repos/{repo}{path}{query}", data=data, method=method,
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-                 "Content-Type": "application/json", **UA},
-    )
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read().decode()
-    return json.loads(raw) if raw else {}
+    for attempt in (1, 2):
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}{path}{query}", data=data, method=method,
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                     "Content-Type": "application/json", **UA},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read().decode()
+            return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429) and attempt == 1:
+                wait = min(int(e.headers.get("Retry-After") or 60), 120)
+                print(f"  ! GitHub 限流({e.code}),等待 {wait}s 后重试一次", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            raise
+    raise RuntimeError("unreachable")
 
 
 def close_superseded_digest_issues(repo: str, token: str, keep: int | None, today: str) -> None:
     """日报只保留最新一张打开的 Issue:旧日报已被 /tracker 历史与今日日报取代,自动关闭防止长期堆积。
+    每张 2 次写请求,间隔 2s(≈60 次/分钟,低于 GitHub 二级限流 80 次/分钟);重试后仍限流则本轮停止,余下留待下次。
     任一步失败只打印不抛出(日报本体已投递,清理是次要动作)。"""
     try:
         stale: list[int] = []
@@ -306,14 +318,22 @@ def close_superseded_digest_issues(repo: str, token: str, keep: int | None, toda
             stale += [i["number"] for i in batch if "pull_request" not in i and i.get("number") != keep]
             if len(batch) < 100:
                 break
+        closed = 0
         for n in sorted(stale):
             try:
+                gh_api(repo, token, "PATCH", f"/issues/{n}", {"state": "closed", "state_reason": "completed"})
+                closed += 1
                 gh_api(repo, token, "POST", f"/issues/{n}/comments",
                        {"body": f"已被 {today} 日报" + (f" #{keep}" if keep else "") + " 取代,自动关闭。"})
-                gh_api(repo, token, "PATCH", f"/issues/{n}", {"state": "closed", "state_reason": "completed"})
+            except urllib.error.HTTPError as e:
+                if e.code in (403, 429):
+                    print("  ! 重试后仍被 GitHub 限流,本轮停止清理,余下留待下次", file=sys.stderr)
+                    break
+                print(f"  ! close #{n}: {e}", file=sys.stderr)
             except Exception as e:  # noqa: BLE001
                 print(f"  ! close #{n}: {e}", file=sys.stderr)
-        print(f"已关闭旧日报 Issue {len(stale)} 张")
+            time.sleep(2)
+        print(f"已关闭旧日报 Issue {closed}/{len(stale)} 张")
     except Exception as e:  # noqa: BLE001
         print(f"  ! 清理旧日报 Issue 失败: {e}", file=sys.stderr)
 

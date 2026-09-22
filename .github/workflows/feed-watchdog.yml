@@ -29,10 +29,10 @@ jobs:
           python-version-file: .python-version
       - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
-          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 只在盘中流应当在岗的时段补跑(工作日 00-20 点 UTC,与 intraday-report.yml 的 cron 同窗,含 20:25 这一班);
           # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
           H=$(date -u +%H); DOW=$(date -u +%u)
-          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
+          if [ "$DOW" -gt 5 ] || [ "$H" -gt 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -65,13 +65,31 @@ jobs:
             cat /tmp/audit.txt
             echo "AUDIT_EOF"
           } >> "$GITHUB_OUTPUT"
+      - name: 提交 health.json
+        run: |
+          git config user.name  "feed-watchdog[bot]"
+          git config user.email "actions@github.com"
+          git add feed/health.json
+          if git diff --cached --quiet; then echo "health 无变化"; exit 0; fi
+          git commit -m "watchdog: 更新 feed/health.json"
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
+          done
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi
       - name: critical 时开 Issue(去重),恢复后自动关闭
+        # health.json 已在上一步提交;只要审计跑出了退出码就维护 Issue,即使 push 失败也不跳过
+        if: ${{ always() && steps.audit.outputs.exit_code != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.audit.outputs.report }}
           EXIT_CODE: ${{ steps.audit.outputs.exit_code }}
         run: |
-          OPEN=$(gh issue list --label feed-stale --state open --json number --jq '.[].number')
+          # 查询失败(API 抖动/限流)时跳过本轮 Issue 维护:不误开重复 Issue,也不影响已提交的 health.json
+          if ! OPEN=$(gh issue list --label feed-stale --state open --json number --jq '.[].number'); then
+            echo "::warning::gh issue list 失败,本轮跳过 Issue 维护"; exit 0
+          fi
           if [ "$EXIT_CODE" = "0" ]; then
             for n in $OPEN; do
               gh issue close "$n" --comment "$(printf '✅ %s 审计已无 critical 问题,自动关闭。\n```\n%s\n```' "$(date -u +%FT%H:%MZ)" "$REPORT")" \
@@ -87,16 +105,3 @@ jobs:
             --assignee "${{ github.repository_owner }}" \
             --body "$(printf '审计输出:\n```\n%s\n```\n看板: https://edwardwang66.github.io/stock-analysis/intel/' "$REPORT")" \
             || echo "issue create failed"
-      - name: 提交 health.json
-        run: |
-          git config user.name  "feed-watchdog[bot]"
-          git config user.email "actions@github.com"
-          git add feed/health.json
-          if git diff --cached --quiet; then echo "health 无变化"; exit 0; fi
-          git commit -m "watchdog: 更新 feed/health.json"
-          pushed=0
-          for i in 1 2 3 4; do
-            if git pull --rebase origin main && git push; then pushed=1; break; fi
-            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
-          done
-          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi

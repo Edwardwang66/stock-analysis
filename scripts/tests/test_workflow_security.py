@@ -300,7 +300,7 @@ ON_PR_CHECKOUT_STEP = """      - name: Checkout trusted base gate
           persist-credentials: false
 """
 PROTECTED_WORKFLOW_SHA256 = (
-    "99daa61b69bb2abc40f2aaa7bc530ddc7af199620f7e9a5e9f6b59b93a08faa4"
+    "cccd74e1b13c45d5efa5ab681b168d1f681a5e75416806f75823e7f6e8c2291f"
 )
 PROTECTED_WORKFLOW_MUTATIONS = [
     (
@@ -454,10 +454,10 @@ APPROVED_PYTHON_RUN_BODIES = {
     ): (
         r"""      - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
-          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 只在盘中流应当在岗的时段补跑(工作日 00-20 点 UTC,与 intraday-report.yml 的 cron 同窗,含 20:25 这一班);
           # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
           H=$(date -u +%H); DOW=$(date -u +%u)
-          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
+          if [ "$DOW" -gt 5 ] || [ "$H" -gt 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -479,10 +479,10 @@ APPROVED_PYTHON_RUN_BODIES = {
 """,
         r"""      - name: 三级备胎:live 盘中流 >30 分钟陈旧则就地补跑一轮
         run: |
-          # 只在盘中流应当在岗的时段补跑(工作日 00:00-20:00 UTC,与 intraday-report.yml 同窗);
+          # 只在盘中流应当在岗的时段补跑(工作日 00-20 点 UTC,与 intraday-report.yml 的 cron 同窗,含 20:25 这一班);
           # 周末/夜间 live 本来就静止,补跑只会产出无意义的重复快照。
           H=$(date -u +%H); DOW=$(date -u +%u)
-          if [ "$DOW" -gt 5 ] || [ "$H" -ge 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
+          if [ "$DOW" -gt 5 ] || [ "$H" -gt 20 ]; then echo "非盘中流时段,跳过备胎检查"; exit 0; fi
           git fetch origin live:live 2>/dev/null || true
           AGE=99999
           if git show live:feed/intraday/latest.json > /tmp/live_latest.json 2>/dev/null; then
@@ -4233,14 +4233,14 @@ class WorkflowSecurityTests(unittest.TestCase):
             for filename in sorted(opposite_normalized)
         )
         self.assertEqual(checked_source, opposite_source)
-        self.assertEqual(len(checked_source), 45_844)
-        self.assertEqual(len(opposite_source), 45_844)
+        self.assertEqual(len(checked_source), 46_400)
+        self.assertEqual(len(opposite_source), 46_400)
 
         checked_encoded = encoded_workflow_payload(checked_normalized)
         opposite_encoded = encoded_workflow_payload(opposite_normalized)
         self.assertEqual(checked_encoded, opposite_encoded)
-        self.assertEqual(len(checked_encoded), 48_005)
-        self.assertEqual(len(opposite_encoded), 48_005)
+        self.assertEqual(len(checked_encoded), 48_569)
+        self.assertEqual(len(opposite_encoded), 48_569)
         self.assertEqual(
             hashlib.sha256(checked_encoded).hexdigest(),
             PROTECTED_WORKFLOW_SHA256,
