@@ -746,6 +746,83 @@ class TestNumericGuards(DeepResearchTestCase):
         claim = self._claim_by_metric(self.brief(), "committee.last_submission.age_days")
         self.assertIn("未标角色", claim["statement"])
 
+    # ---- Bugbot #17/#18 及同类:可选字段缺席不得判死整条结论 ----
+
+    def _strip_optional_fields(self) -> None:
+        """把「lens 并不要求、但被写进证据」的可选字段全部拿掉。
+
+        这些字段缺席是允许的(结论本身不依赖它们),所以缺席只该让证据写 "absent",
+        绝不该触发 missing-evidence —— 那是 fatal,会把一条算得出来的结论判进 refuted。
+        """
+        for path in sorted((self.feed / "reports").glob("*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            engine = report.get("engine")
+            if isinstance(engine, dict):
+                if isinstance(engine.get("holdout"), dict):
+                    engine["holdout"].pop("start", None)          # #17
+                if isinstance(engine.get("deflated_sharpe"), dict):
+                    engine["deflated_sharpe"].pop("n_trials", None)  # #18
+            state = report.get("market_state")
+            if isinstance(state, dict):
+                state.pop("crowding_alert", None)
+                state.pop("regime", None)
+            write(path, report)
+        crypto = json.loads((self.feed / "crypto" / "state.json").read_text(encoding="utf-8"))
+        if isinstance(crypto.get("crypto"), dict):
+            crypto["crypto"].pop("crowding_flag", None)
+        write(self.feed / "crypto" / "state.json", crypto)
+        health = json.loads((self.feed / "health.json").read_text(encoding="utf-8"))
+        health.pop("warn", None)
+        health.pop("ok", None)
+        write(self.feed / "health.json", health)
+        state = json.loads((self.feed / "market" / "state.json").read_text(encoding="utf-8"))
+        state.pop("regime", None)
+        write(self.feed / "market" / "state.json", state)
+
+    def _missing_evidence_offenders(self, brief: dict) -> list[str]:
+        out = []
+        for c in brief.get("refuted") or []:
+            for r in c.get("refutations") or []:
+                if r["code"] == "missing-evidence":
+                    out.append(f"{c.get('metric')}: {r.get('message')}")
+        return out
+
+    def test_holdout_claim_survives_a_missing_holdout_start(self):
+        """lens 只要求 train.sharpe 与 holdout.sharpe;holdout.start 缺席不该判死这条。"""
+        for path in sorted((self.feed / "reports").glob("*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(report.get("engine", {}).get("holdout"), dict):
+                report["engine"]["holdout"].pop("start", None)
+                write(path, report)
+        brief = self.brief()
+        self.assertEqual(self._bucket_of(brief, "engine.holdout_minus_train.latest"), "findings")
+        self.assertIn("absent", self._evidence_values(brief, "engine.holdout_minus_train.latest"))
+
+    def test_dsr_trials_claim_survives_a_latest_row_without_n_trials(self):
+        """n_trials 只要有任一期带就出结论,证据却引最新一期 —— 最新一期没有时不该判死。"""
+        paths = sorted((self.feed / "reports").glob("routine-*.json"))
+        newest = max(paths, key=lambda p: json.loads(p.read_text(encoding="utf-8")).get("produced_at", ""))
+        report = json.loads(newest.read_text(encoding="utf-8"))
+        if isinstance(report.get("engine", {}).get("deflated_sharpe"), dict):
+            report["engine"]["deflated_sharpe"].pop("n_trials", None)
+            write(newest, report)
+        brief = self.brief()
+        bucket = self._bucket_of(brief, "engine.dsr.n_trials.distinct")
+        if bucket is not None:                       # 夹具样本足够时才会出这条
+            self.assertEqual(bucket, "findings")
+            self.assertNotIn(None, self._evidence_values(brief, "engine.dsr.n_trials.distinct"))
+
+    def test_absent_optional_fields_never_trigger_missing_evidence(self):
+        """全类守卫:把所有「非必需却被写进证据」的字段一起拿掉,不许出现 missing-evidence。
+
+        上一轮只修了 Bugbot 点名的三处,漏了同类的另外几处;这条测试按「类」覆盖,
+        以后再往证据里塞可选字段而忘了走 _ev_optional,这里就会红。
+        """
+        self._strip_optional_fields()
+        brief = self.brief()
+        self.assertEqual(self._missing_evidence_offenders(brief), [])
+        self.assertEqual(brief["run"]["lenses_failed"], 0)
+
     def test_fixture_dates_are_relative_so_the_suite_cannot_expire(self):
         """夹具最新证据必须落在默认时效上限内,否则本套件会在某个日历日自己变红。"""
         self.assertLess(dr._age_days(f"{day_str(1)}T23:30:00Z"), 10.0)

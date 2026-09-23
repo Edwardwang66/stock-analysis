@@ -617,7 +617,8 @@ def lens_holdout_degradation(corpus: Corpus) -> list[dict]:
         n=len(gaps), min_n=3, severity="info", cites=("R5",),
         evidence=(ev(lf, "engine.train.sharpe", _dig(latest, "engine", "train", "sharpe"), la),
                   ev(lf, "engine.holdout.sharpe", _dig(latest, "engine", "holdout", "sharpe"), la),
-                  ev(lf, "engine.holdout.start", _dig(latest, "engine", "holdout", "start"), la)),
+                  ev(lf, "engine.holdout.start",
+                     _ev_optional(_dig(latest, "engine", "holdout", "start")), la)),
         max_age_days=None,
     )]
     if slope is not None:
@@ -698,7 +699,7 @@ def lens_dsr(corpus: Corpus) -> list[dict]:
             value=len(trials), unit="count", direction="flat", n=len(rows), min_n=10,
             severity="info", cites=("门控①",),
             evidence=(ev(lf, "engine.deflated_sharpe.n_trials",
-                         _dig(latest, "engine", "deflated_sharpe", "n_trials"), la),
+                         _ev_optional(_dig(latest, "engine", "deflated_sharpe", "n_trials")), la),
                       ev("feed/factory/candidates.json", "candidates.length", n_cands,
                          corpus.asof("candidates"))),
             max_age_days=None,
@@ -963,7 +964,8 @@ def lens_crowding(corpus: Corpus) -> list[dict]:
         value=fired, unit="count", direction="none", n=len(crowd), min_n=10,
         severity="info", cites=("R7",),
         evidence=(ev(lf, "market_state.crowding_proxy", _num(crowd[-1], 4), la),
-                  ev(lf, "market_state.crowding_alert", _dig(latest, "market_state", "crowding_alert"), la)),
+                  ev(lf, "market_state.crowding_alert",
+                     _ev_optional(_dig(latest, "market_state", "crowding_alert")), la)),
         max_age_days=None,
     )]
     pairs_x, pairs_y = [], []
@@ -1029,7 +1031,8 @@ def lens_crypto_crowding(corpus: Corpus) -> list[dict]:
         severity="info", cites=("R7",),
         evidence=(ev("feed/crypto/state.json", "venues.n_dislocated", dislocated, asof),
                   ev("feed/crypto/state.json", "venues.n_compared", compared, asof),
-                  ev("feed/crypto/state.json", "crypto.crowding_flag", crypto.get("crowding_flag"), asof)),
+                  ev("feed/crypto/state.json", "crypto.crowding_flag",
+                     _ev_optional(crypto.get("crowding_flag")), asof)),
         max_age_days=3.0,
     )]
     extremes = crypto.get("funding_extremes") or []
@@ -1384,8 +1387,10 @@ def lens_freshness(corpus: Corpus) -> list[dict]:
             value=crit, unit="count", direction="none",
             n=None, severity="critical" if crit > 0 else "info",
             evidence=(ev("feed/health.json", "critical", crit, health.get("checked_at")),
-                      ev("feed/health.json", "warn", warn, health.get("checked_at")),
-                      ev("feed/health.json", "ok", health.get("ok"), health.get("checked_at"))),
+                      ev("feed/health.json", "warn", _ev_optional(warn),
+                         health.get("checked_at")),
+                      ev("feed/health.json", "ok", _ev_optional(health.get("ok")),
+                         health.get("checked_at"))),
             max_age_days=5.0,
         ))
     return out
@@ -1561,7 +1566,8 @@ def lens_provenance(corpus: Corpus) -> list[dict]:
         value=len(mismatched), unit="count", direction="none",
         n=len(comparable), min_n=1, severity="info" if not mismatched else "critical",
         evidence=(ev("feed/market/state.json", "source_report", source, corpus.asof("market_state")),
-                  ev(f"feed/reports/{source}.json", "market_state.regime", origin.get("regime"),
+                  ev(f"feed/reports/{source}.json", "market_state.regime",
+                     _ev_optional(origin.get("regime")),
                      _date_of(report.get("asof_data")))),
         max_age_days=None,
     )]
