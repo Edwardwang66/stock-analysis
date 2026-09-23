@@ -667,6 +667,85 @@ class TestNumericGuards(DeepResearchTestCase):
         reasons = {q["id"]: q["reason"] for q in brief["open_questions"]}
         self.assertEqual(reasons.get("q-notes-coverage"), "missing-input")
 
+    # ---- Bugbot #15:可选字段缺失时必须写 "absent",不能留 None 自我反驳 ----
+
+    def _evidence_values(self, brief: dict, metric: str) -> list[object]:
+        c = self._claim_by_metric(brief, metric)
+        return [e.get("value") for e in (c or {}).get("evidence") or []]
+
+    def _bucket_of(self, brief: dict, metric: str) -> str | None:
+        for bucket in ("findings", "refuted"):
+            if any(c.get("metric") == metric for c in brief.get(bucket) or []):
+                return bucket
+        return None
+
+    def test_cost_lens_cites_a_graded_day_not_merely_the_newest(self):
+        """分母只数「毛/净都读到」的日子,证据就必须引一个真进了分母的日子。
+        最新一天恰好缺 net.sharpe 时,引它会让整条结论被 missing-evidence 判死。"""
+        newest = None
+        for path in sorted((self.feed / "reports").glob("routine-*.json")):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            if report.get("asof_data") == day_str(1) and report.get("engine"):
+                if newest is None or report["produced_at"] > newest[1]["produced_at"]:
+                    newest = (path, report)
+        self.assertIsNotNone(newest, "夹具应有最新一天的 engine 报告")
+        path, report = newest
+        report["engine"].pop("net", None)          # 最新一天不再进分母
+        write(path, report)
+        brief = self.brief()
+        metric = "engine.sharpe.gross_positive_net_nonpositive.share"
+        self.assertEqual(self._bucket_of(brief, metric), "findings")
+        self.assertNotIn(None, self._evidence_values(brief, metric))
+
+    def test_regime_lens_survives_an_absent_regime_instead_of_self_refuting(self):
+        """结论句已经会说「没给出可定向的取值」,证据却留 None 的话这条永远进不了 findings。"""
+        state = json.loads((self.feed / "market" / "state.json").read_text(encoding="utf-8"))
+        state.pop("regime", None)
+        state.pop("breadth_pct_above_50dma", None)
+        write(self.feed / "market" / "state.json", state)
+        brief = self.brief()
+        metric = "intraday.up_share"
+        self.assertEqual(self._bucket_of(brief, metric), "findings")
+        values = self._evidence_values(brief, metric)
+        self.assertNotIn(None, values)
+        self.assertIn("absent", values)
+
+    def test_no_lens_leaves_a_none_evidence_value(self):
+        """ev() 的约定:缺失写 "absent"。留 None 会被 missing-evidence 判为无证据,
+        等于让一个可选字段悄悄拖垮整条结论 —— 全局守卫,防止将来再犯。"""
+        brief = self.brief()
+        offenders = []
+        for bucket in ("findings", "refuted", "unverified"):
+            for c in brief.get(bucket) or []:
+                for e in c.get("evidence") or []:
+                    if e.get("value") is None:
+                        offenders.append(f"{bucket}:{c.get('metric')}:{e.get('field')}")
+        self.assertEqual(offenders, [])
+
+    # ---- Bugbot #16:缺失的 agent_role 不能算成一个角色 ----
+
+    def _add_openclaw_report(self, suffix: str, role: object) -> None:
+        producer: dict = {"name": f"openclaw-agent:{suffix}"}
+        if role is not None:
+            producer["agent_role"] = role
+        write(self.feed / "reports" / f"openclaw-{suffix}-{day_str(2)}T2334Z.json", {
+            "schema_version": "1.0", "id": f"openclaw-{suffix}-{day_str(2)}T2334Z",
+            "kind": "openclaw", "produced_at": f"{day_str(2)}T23:34:06Z",
+            "asof_data": day_str(2), "producer": producer, "notes": ["测试"],
+        })
+
+    def test_committee_dormancy_does_not_count_a_missing_role_as_a_role(self):
+        """str(None) == "None" 会被当成一个已覆盖的委员会角色写进 confirmed 结论。"""
+        self._add_openclaw_report("ghost", None)
+        claim = self._claim_by_metric(self.brief(), "committee.last_submission.age_days")
+        self.assertIsNotNone(claim)
+        self.assertNotIn("None", claim["statement"])
+
+    def test_committee_dormancy_discloses_submissions_without_a_role(self):
+        self._add_openclaw_report("ghost", None)
+        claim = self._claim_by_metric(self.brief(), "committee.last_submission.age_days")
+        self.assertIn("未标角色", claim["statement"])
+
     def test_fixture_dates_are_relative_so_the_suite_cannot_expire(self):
         """夹具最新证据必须落在默认时效上限内,否则本套件会在某个日历日自己变红。"""
         self.assertLess(dr._age_days(f"{day_str(1)}T23:30:00Z"), 10.0)

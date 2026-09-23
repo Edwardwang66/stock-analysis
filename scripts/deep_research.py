@@ -109,6 +109,13 @@ NOTES = (
 
 # ----------------------------- 数值 / 统计工具(纯 stdlib)-----------------------------
 
+def _ev_optional(value: object) -> object:
+    """可选字段的证据取值。ev() 的约定是「缺失显式写 "absent"」:留 None 会被
+    missing-evidence 反驳器判为无证据,于是一个本就允许缺席的字段会把整条结论
+    拖进 refuted —— 哪怕结论句已经把这次缺席交代清楚了。"""
+    return "absent" if value is None else value
+
+
 def _side(value: float | None, lo: float = 0.45, hi: float = 0.55) -> str | None:
     """把 0–1 的占比定向成 强/弱;落在中性带内返回 None,表示这一路不参与方向比较。"""
     if value is None:
@@ -493,11 +500,14 @@ def lens_cost_vs_signal(corpus: Corpus) -> list[dict]:
     graded = 0
     turns: list[float] = []
     drags: list[float] = []
+    last_graded: dict | None = None
+    last_paired: dict | None = None
     for report in days:
         gross = _num(_dig(report, "engine", "gross", "sharpe"))
         net = _num(_dig(report, "engine", "net", "sharpe"))
         if gross is not None and net is not None:
             graded += 1                       # 分母只数两个口径都读到的日子
+            last_graded = report              # 证据必须引一个真进了分母的日子
             if gross > 0 >= net:
                 flips += 1
         turn = _dig(report, "engine", "turnover", "ann_2way")
@@ -505,13 +515,17 @@ def lens_cost_vs_signal(corpus: Corpus) -> list[dict]:
         if isinstance(turn, (int, float)) and isinstance(drag, (int, float)):
             turns.append(float(turn))         # 相关性用原值,不先舍入(舍入会造人为并列)
             drags.append(float(drag))
-    if not graded:
+            last_paired = report              # turns[-1]/drags[-1] 的真实出处
+    if not graded or last_graded is None:
         raise LensSkipped("missing-input", ("feed/reports/routine-*.json:engine.net.sharpe",),
                           "没有任何一期同时带毛/净 Sharpe。")
     share = _num(flips / graded)
     latest = days[-1]
     lf = latest["_file"]
     la = _date_of(latest.get("asof_data"))
+    # 这条统计的是「进了分母的日子」,所以证据引 last_graded,而不是可能没读到净口径的 days[-1]。
+    gf = last_graded["_file"]
+    ga = _date_of(last_graded.get("asof_data"))
     out.append(claim(
         "engine", q,
         f"{graded} 个同时带毛/净口径的去重交易日中有 {flips} 日(占 {share:.0%})毛 Sharpe 为正"
@@ -522,8 +536,8 @@ def lens_cost_vs_signal(corpus: Corpus) -> list[dict]:
         metric="engine.sharpe.gross_positive_net_nonpositive.share",
         value=share, unit="fraction", direction="none", n=graded, min_n=10,
         severity="warning" if (share or 0) >= 0.5 else "info", cites=("R4",),
-        evidence=(ev(lf, "engine.gross.sharpe", _dig(latest, "engine", "gross", "sharpe"), la),
-                  ev(lf, "engine.net.sharpe", _dig(latest, "engine", "net", "sharpe"), la)),
+        evidence=(ev(gf, "engine.gross.sharpe", _dig(last_graded, "engine", "gross", "sharpe"), ga),
+                  ev(gf, "engine.net.sharpe", _dig(last_graded, "engine", "net", "sharpe"), ga)),
         max_age_days=None,
     ))
 
@@ -540,7 +554,8 @@ def lens_cost_vs_signal(corpus: Corpus) -> list[dict]:
             severity="info", cites=("R4",),
             evidence=(ev(lf, "engine.gross.ann_return", gross_ret, la),
                       ev(lf, "engine.net.ann_return", net_ret, la),
-                      ev(lf, "engine.cost_drag_ann", _dig(latest, "engine", "cost_drag_ann"), la)),
+                      ev(lf, "engine.cost_drag_ann",
+                         _ev_optional(_dig(latest, "engine", "cost_drag_ann")), la)),
         ))
 
     rho = spearman(turns, drags)
@@ -555,8 +570,10 @@ def lens_cost_vs_signal(corpus: Corpus) -> list[dict]:
             metric="engine.turnover_vs_cost.spearman",
             value=rho, unit="ratio", direction="up" if rho > 0 else "down",
             n=len(turns), min_n=10, noise_band=0.3, severity="info", cites=("R4",),
-            evidence=(ev(lf, "engine.turnover.ann_2way", turns[-1], la),
-                      ev(lf, "engine.cost_drag_ann", drags[-1], la)),
+            evidence=(ev((last_paired or latest)["_file"], "engine.turnover.ann_2way",
+                         turns[-1], _date_of((last_paired or latest).get("asof_data"))),
+                      ev((last_paired or latest)["_file"], "engine.cost_drag_ann",
+                         drags[-1], _date_of((last_paired or latest).get("asof_data")))),
             max_age_days=None,
         ))
     return out
@@ -968,7 +985,8 @@ def lens_crowding(corpus: Corpus) -> list[dict]:
             n=len(pairs_x), min_n=20, noise_band=0.3, severity="info", cites=("R7",),
             evidence=(ev(lf, "market_state.crowding_proxy", _num(crowd[-1], 4), la),
                       ev(lf, "market_state.breadth_pct_above_50dma",
-                         _num(breadth[-1], 4) if math.isfinite(breadth[-1]) else None, la)),
+                         _ev_optional(_num(breadth[-1], 4) if math.isfinite(breadth[-1]) else None),
+                         la)),
             max_age_days=None,
         ))
     return out
@@ -1160,8 +1178,9 @@ def lens_intraday_vs_regime(corpus: Corpus) -> list[dict]:
         severity="warning" if contradiction else "info",
         evidence=(ev("feed/intraday/latest.json", "summary.up", up, at),
                   ev("feed/intraday/latest.json", "summary.down", down, at),
-                  ev("feed/market/state.json", "regime", regime, corpus.asof("market_state")),
-                  ev("feed/market/state.json", "breadth_pct_above_50dma", breadth,
+                  ev("feed/market/state.json", "regime", _ev_optional(regime),
+                     corpus.asof("market_state")),
+                  ev("feed/market/state.json", "breadth_pct_above_50dma", _ev_optional(breadth),
                      corpus.asof("market_state"))),
         max_age_days=5.0,
     )]
@@ -1622,14 +1641,20 @@ def lens_committee_dormancy(corpus: Corpus) -> list[dict]:
                           "没有任何外部 agent 投递。")
     newest = max(reports, key=lambda r: str(r.get("produced_at") or ""))
     age = _age_days(newest.get("produced_at"))
-    roles = sorted({str(_dig(r, "producer", "agent_role")) for r in reports})
+    # str(_dig(...)) 会把缺失角色变成字面量 "None",于是它被当成一个已覆盖的委员会角色
+    # 写进 confirmed 结论。只收非空字符串,其余单独计数并披露。
+    raw_roles = [_dig(r, "producer", "agent_role") for r in reports]
+    roles = sorted({r for r in raw_roles if isinstance(r, str) and r})
+    unroled = sum(1 for r in raw_roles if not isinstance(r, str) or not r)
     if age is None:
         raise LensSkipped("missing-input", ("feed/reports/openclaw-*.json:produced_at",),
                           "最新投递没有可解析的 produced_at,无法算龄期。")
     return [claim(
         "red-team", "q-committee-dormancy",
         f"外部 agent 委员会最近一次投递是 {newest.get('produced_at')}(已 {age} 天),"
-        f"留档 {len(reports)} 份、覆盖 {len(roles)} 个角色 {roles}。"
+        f"留档 {len(reports)} 份、覆盖 {len(roles)} 个角色 {roles}"
+        + (f"(另有 {unroled} 份未标角色,未计入角色数)" if unroled else "")
+        + "。"
         + (f"按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;"
            f"本引擎是确定性替代,不是委员会本身。" if age > 30 else
            f"委员会在 30 天口径内仍有投递,角色词表对应的是活跃产能;"
