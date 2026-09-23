@@ -1,79 +1,79 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-23T00:21:28Z",
+  "updated_at": "2026-09-23T00:50:59Z",
   "freshness": {
-    "last_report_at": "2026-09-23T00:21:28Z",
+    "last_report_at": "2026-09-23T00:50:58Z",
     "market_data_asof": "2026-09-22",
     "report_age_hours": 0.0,
-    "data_age_days": 1.01,
+    "data_age_days": 1.04,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 1.01
+        "age_days": 1.04
       },
       "market_state": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 1.01
+        "age_days": 1.04
       },
       "screener": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 1.01
+        "age_days": 1.04
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-09-22",
-        "age_days": 1.01
+        "age_days": 1.04
       },
       "stock_notes": {
         "exists": true,
         "asof": "2026-09-22T05:36:18Z",
-        "age_days": 0.78
+        "age_days": 0.8
       },
       "intraday": {
         "exists": true,
         "asof": "2026-09-22T17:13:16+00:00",
-        "age_days": 0.3
+        "age_days": 0.32
       },
       "market_history": {
         "exists": true,
         "asof": "2026-09-22T12:45:39+00:00",
-        "age_days": 0.48
+        "age_days": 0.5
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-08-14",
-        "age_days": 40.01
+        "age_days": 40.04
       },
       "crypto_state": {
         "exists": true,
         "asof": "2026-09-23T00:21:26Z",
-        "age_days": 0.0
+        "age_days": 0.02
       }
     }
   },
   "latest": {
-    "report": "reports/routine-2026-09-22T2128Z.json",
+    "report": "reports/routine-2026-09-23T0050Z.json",
     "signals": "signals/latest.json",
     "market": "market/state.json",
     "factory": "factory/candidates.json",
-    "net_sharpe": -0.31334626264185444,
+    "net_sharpe": -0.3133462626418545,
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.51≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 1286,
+    "total_reports": 1288,
     "by_kind": {
-      "routine": 1187,
-      "manual": 88,
+      "manual": 89,
+      "routine": 1188,
       "openclaw": 11
     },
     "by_producer": {
+      "factor-factory-local": 78,
+      "github-actions-routine": 386,
       "hyperliquid-monitor": 802,
-      "github-actions-routine": 385,
-      "factor-factory-local": 77,
       "study-downshift": 4,
       "study-pbo": 4,
       "study-pit-bite": 1,
@@ -85,7 +85,7 @@
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 9,
+    "last_24h": 11,
     "last_7d": 55
   },
   "timeline": {
@@ -197,9 +197,39 @@
     "2026-09-20": 6,
     "2026-09-21": 6,
     "2026-09-22": 8,
-    "2026-09-23": 1
+    "2026-09-23": 3
   },
   "reports": [
+    {
+      "id": "factory-local-2026-09-23T0050Z",
+      "kind": "manual",
+      "produced_at": "2026-09-23T00:50:58Z",
+      "asof_data": "2026-09-22",
+      "producer": "factor-factory-local",
+      "agent_role": "factor-factory",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 0,
+      "n_candidates": 8,
+      "contribution_type": "new_factor",
+      "contribution_summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。",
+      "path": "reports/factory-local-2026-09-23T0050Z.json"
+    },
+    {
+      "id": "routine-2026-09-23T0050Z",
+      "kind": "routine",
+      "produced_at": "2026-09-23T00:50:44Z",
+      "asof_data": "2026-09-22",
+      "producer": "github-actions-routine",
+      "agent_role": "engine",
+      "net_sharpe": -0.3133462626418545,
+      "verdict": "holdout(2025-01-01起)净 Sharpe=-0.51≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)",
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "signal_refresh",
+      "contribution_summary": "刷新做多做空簿(多 26/空 27),净 Sharpe -0.31;市场 risk_on、广度 0.4、拥挤 0.084。",
+      "path": "reports/routine-2026-09-23T0050Z.json"
+    },
     {
       "id": "hl-monitor-2026-09-23T0021Z",
       "kind": "routine",
@@ -1069,39 +1099,28 @@
       "contribution_type": "regime_update",
       "contribution_summary": "HL 衍生品情报:33 流动永续持仓面,跨所错位 60,HIP-3 24/7 资产 105。",
       "path": "reports/hl-monitor-2026-09-15T2114Z.json"
-    },
-    {
-      "id": "routine-2026-09-15T1817Z",
-      "kind": "routine",
-      "produced_at": "2026-09-15T18:17:54Z",
-      "asof_data": "2026-09-15",
-      "producer": "github-actions-routine",
-      "agent_role": "engine",
-      "net_sharpe": -0.32384165058037157,
-      "verdict": "holdout(2025-01-01起)净 Sharpe=-0.55≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.32≤0(净成本是唯一货币 R4)",
-      "n_alerts": 1,
-      "n_candidates": 0,
-      "contribution_type": "signal_refresh",
-      "contribution_summary": "刷新做多做空簿(多 36/空 27),净 Sharpe -0.32;市场 risk_on、广度 0.426、拥挤 0.075。",
-      "path": "reports/routine-2026-09-15T1817Z.json"
-    },
-    {
-      "id": "hl-monitor-2026-09-15T1650Z",
-      "kind": "routine",
-      "produced_at": "2026-09-15T16:50:50Z",
-      "asof_data": "2026-09-15",
-      "producer": "hyperliquid-monitor",
-      "agent_role": "crowding-monitor",
-      "net_sharpe": null,
-      "verdict": null,
-      "n_alerts": 3,
-      "n_candidates": 0,
-      "contribution_type": "regime_update",
-      "contribution_summary": "HL 衍生品情报:33 流动永续持仓面,跨所错位 42,HIP-3 24/7 资产 105。",
-      "path": "reports/hl-monitor-2026-09-15T1650Z.json"
     }
   ],
   "contributions": [
+    {
+      "at": "2026-09-23T00:50:58Z",
+      "producer": "factor-factory-local",
+      "id": "factory-local-2026-09-23T0050Z",
+      "type": "new_factor",
+      "candidates_proposed": 304,
+      "candidates_accepted": 0,
+      "summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。"
+    },
+    {
+      "at": "2026-09-23T00:50:44Z",
+      "producer": "github-actions-routine",
+      "id": "routine-2026-09-23T0050Z",
+      "type": "signal_refresh",
+      "summary": "刷新做多做空簿(多 26/空 27),净 Sharpe -0.31;市场 risk_on、广度 0.4、拥挤 0.084。",
+      "candidates_proposed": 0,
+      "candidates_accepted": 0,
+      "net_sharpe_delta": -0.0
+    },
     {
       "at": "2026-09-23T00:21:28Z",
       "producer": "hyperliquid-monitor",
@@ -1722,20 +1741,6 @@
       "id": "hl-monitor-2026-09-12T1527Z",
       "type": "regime_update",
       "summary": "HL 衍生品情报:28 流动永续持仓面,跨所错位 46,HIP-3 24/7 资产 102。"
-    },
-    {
-      "at": "2026-09-12T12:07:35Z",
-      "producer": "hyperliquid-monitor",
-      "id": "hl-monitor-2026-09-12T1207Z",
-      "type": "regime_update",
-      "summary": "HL 衍生品情报:35 流动永续持仓面,跨所错位 44,HIP-3 24/7 资产 104。"
-    },
-    {
-      "at": "2026-09-12T07:06:45Z",
-      "producer": "hyperliquid-monitor",
-      "id": "hl-monitor-2026-09-12T0706Z",
-      "type": "regime_update",
-      "summary": "HL 衍生品情报:37 流动永续持仓面,跨所错位 44,HIP-3 24/7 资产 104。"
     }
   ]
 }
