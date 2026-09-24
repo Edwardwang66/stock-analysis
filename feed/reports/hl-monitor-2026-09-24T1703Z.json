@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-09-24T1703Z",
+  "kind": "routine",
+  "produced_at": "2026-09-24T17:03:03Z",
+  "asof_data": "2026-09-24",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/36031554854"
+  },
+  "alerts": [
+    {
+      "level": "warning",
+      "code": "crypto-crowding",
+      "message": "加密持仓面拥挤:多头资金费占比 1.0,OI 变化 0.0465(§7.2 尾部风险信号,先于人群减杠杆 R7)。",
+      "tickers": []
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ONDO 资金费年化 169%(OI $73M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ONDO"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "NIL 资金费年化 141%(OI $15M)——挤压/单边持仓信号。",
+      "tickers": [
+        "NIL"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h +0.10% (mark 7708.9,$389M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:43 流动永续持仓面,跨所错位 48,HIP-3 24/7 资产 108。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "e6e203a6ec6de9ed3660669b2cd7f40a7d80b16b876a4ee77e91d25b177be0fd"
+  }
+}
