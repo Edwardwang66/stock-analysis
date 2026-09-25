@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useEffect, useState } from "react";
 import {
   getCryptoState, getFundHoldings, getHealth, getIndex, getSignals, getMarket, getFactory, getMarketHistory, getReport,
@@ -54,13 +55,12 @@ export default function IntelDashboard() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>← 返回</Link>
-        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>🛰️ 市场情报看板</h1>
         <LangSelect />
         <span className="tag">例行任务 + OpenClaw 投递 → feed/ → 本页 · 做多做空引擎(流 B 残差统计套利)</span>
         <button className="btn" style={{ marginLeft: "auto" }} onClick={load}>↻ 刷新</button>
       </div>
+      <Nav />
 
       {err && <div className="err">{err}</div>}
 

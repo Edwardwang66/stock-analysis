@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** User-settable, secret, and platform-provided configuration used by current code and workflows.
-> **Last verified commit:** `e74ad00c026b410db9a1438e46c26c09dad32bd8`
+> **Last verified commit:** `5157635cf88c9d3cb42c98e5376faec790a4ef1e`
 
 ## Configuration rules
 
@@ -110,6 +110,7 @@ These names are internal execution contracts, not settings most users should exp
 | `REPO` | Dependabot workflow | Internal, context-derived | Current repository | No | Merge-gate API calls |
 | `PR_NUMBER` | Dependabot workflow | Internal, event-derived | Current pull request or sweep item | No | Merge gate |
 | `REPORT` | Feed watchdog | Internal, step-derived | Multiline audit output | No | Issue body and diagnostic output |
+| `EXIT_CODE` | Feed watchdog | Internal, step-derived | Exit status of `audit_feed.py` (`0` means no critical finding) | No | Decides whether the `feed-stale` Issue is opened or closed |
 | `HEAD_SHA` | Dependabot workflow | Internal, event-derived | Attested pull-request head | No | Hardened attestation and merge path |
 | `FRONTEND_RESULT` | Test workflow | Internal, needs-derived | Frontend matrix result | No | Aggregate test gate |
 | `PYTHON_RESULT` | Test workflow | Internal, needs-derived | Python matrix result | No | Aggregate test gate |

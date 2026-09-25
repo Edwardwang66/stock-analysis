@@ -3,6 +3,8 @@ name: Premarket pack (盘前隔夜要素包)
 # 每个交易日 12:40 UTC(美东 ~08:40,开盘前 50 分钟):
 # 期货/亚欧指数/隔夜加密/昨日异动 → feed/intraday/overnight.json
 # OpenClaw 盘前 report(13:00-13:30 UTC)直接引用,不用自己抓数。
+# 顺带把 live 分支的盘中快照 latest.json 作为每日副本提交到 main
+# (审计 SLA、Pages 捆绑快照与 /desk 兜底都读 main 副本;盘中 5 分钟真值仍只进 live 分支)。
 on:
   schedule:
     - cron: "40 12 * * 1-5"
@@ -26,7 +28,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
-      - name: 取 live 分支的盘中快照(main 上的 latest.json 是陈旧副本,真数据在 live)
+      - name: 取 live 分支的盘中快照(main 上的 latest.json 是每日副本,真数据在 live)
         run: |
           git fetch origin live --depth 1 2>/dev/null \
             && git checkout origin/live -- feed/intraday/latest.json 2>/dev/null \
@@ -37,13 +39,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 还原从 live 取来的快照,避免脏工作区卡 rebase
-          git checkout -- feed/intraday/latest.json 2>/dev/null || true
-          git add feed/intraday/overnight.json
+          # overnight.json 是本工作流产物;latest.json 是刚从 live 取来的盘中快照,作为 main 的每日副本一并提交
+          git add feed/intraday/overnight.json feed/intraday/latest.json
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "premarket: 盘前要素包 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && exit 0
-            sleep $((5*i))
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
-          exit 1
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi
