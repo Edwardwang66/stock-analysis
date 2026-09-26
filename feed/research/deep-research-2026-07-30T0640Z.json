@@ -1,0 +1,1427 @@
+{
+  "schema_version": "1.0",
+  "id": "deep-research-2026-07-30T0640Z",
+  "kind": "deep-research",
+  "produced_at": "2026-07-30T06:40:00Z",
+  "asof_data": "2026-07-30",
+  "producer": {
+    "name": "deep-research-engine",
+    "agent_role": "red-team",
+    "method": "deterministic-no-llm",
+    "run_url": ""
+  },
+  "run": {
+    "workers": 8,
+    "roles": [
+      "engine",
+      "residual-analyst",
+      "crowding-monitor",
+      "event-risk",
+      "factor-factory",
+      "risk",
+      "red-team"
+    ],
+    "questions_derived": 18,
+    "lenses_run": 18,
+    "lenses_failed": 0,
+    "reports_scanned": 290,
+    "duration_ms": 102
+  },
+  "questions": [
+    {
+      "id": "q-book-identity",
+      "role": "residual-analyst",
+      "title": "簿自报的毛杠杆 / 净敞口能从仓位权重复算出来吗?",
+      "needs": [
+        "feed/signals/latest.json:gross_leverage",
+        "feed/signals/latest.json:net_exposure",
+        "feed/signals/latest.json:positions[].weight"
+      ],
+      "test": "用 sum(|weight|) 与 sum(weight) 复算,与自报值比最大绝对偏差。",
+      "triggered_by": "feed/signals/latest.json 同时有自报口径与逐仓权重。",
+      "answered": true
+    },
+    {
+      "id": "q-book-mean-reversion",
+      "role": "residual-analyst",
+      "title": "当前持仓簿是否真的建立在均值回归上?",
+      "needs": [
+        "feed/signals/latest.json:positions[].hurst",
+        "feed/signals/latest.json:positions[].halflife_days"
+      ],
+      "test": "统计 hurst>=0.5(非均值回归)的仓位数与其占毛杠杆的比重;并给出半衰期分布分位。",
+      "triggered_by": "feed/signals/latest.json 存在且带 positions。",
+      "answered": true
+    },
+    {
+      "id": "q-book-vs-breaker",
+      "role": "residual-analyst",
+      "title": "被熔断排除的标的有没有仍留在簿里?",
+      "needs": [
+        "feed/signals/latest.json:positions[].ticker",
+        "feed/reports/routine-*.json:alerts[cointegration_breaker].tickers"
+      ],
+      "test": "取最新 routine 报告 cointegration_breaker 告警的 tickers,与簿内 ticker 求交集(应为空)。",
+      "triggered_by": "最新 routine 报告带 cointegration_breaker 告警。",
+      "answered": true
+    },
+    {
+      "id": "q-committee-dormancy",
+      "role": "red-team",
+      "title": "外部 agent 委员会还在投递吗?",
+      "needs": [
+        "feed/reports/openclaw-*.json:produced_at"
+      ],
+      "test": "取 openclaw-* 报告的最新 produced_at 龄期与角色分布。",
+      "triggered_by": "feed/reports 存在 openclaw-* 报告。",
+      "answered": true
+    },
+    {
+      "id": "q-cost-vs-signal",
+      "role": "engine",
+      "title": "毛口径有信号而净·扣成本为负,是成本吃掉了信号吗?",
+      "needs": [
+        "feed/reports/routine-*.json:engine.gross.sharpe",
+        "feed/reports/routine-*.json:engine.net.sharpe",
+        "feed/reports/routine-*.json:engine.cost_drag_ann",
+        "feed/reports/routine-*.json:engine.turnover.ann_2way"
+      ],
+      "test": "统计 gross.sharpe>0 且 net.sharpe<=0 的交易日占比;算最新一期盈亏平衡成本 = gross.ann_return - net.ann_return;并对 turnover.ann_2way 与 cost_drag_ann 做 Spearman(机械关系应接近 1)。",
+      "triggered_by": "feed/reports 存在带 engine 段的 routine 报告。",
+      "answered": true
+    },
+    {
+      "id": "q-crowding-signal",
+      "role": "crowding-monitor",
+      "title": "拥挤代理有没有在动,它的告警阈值被行使过吗?",
+      "needs": [
+        "feed/reports/routine-*.json:market_state.crowding_proxy",
+        "feed/reports/routine-*.json:market_state.crowding_alert",
+        "feed/reports/routine-*.json:market_state.breadth_pct_above_50dma"
+      ],
+      "test": "取去重后的 crowding_proxy 序列给最新值与斜率;统计 crowding_alert=true 的期数;并对 crowd[t] 与 breadth[t+1]-breadth[t] 做 Spearman 看有无领先性。",
+      "triggered_by": "routine 报告带 market_state 段。",
+      "answered": true
+    },
+    {
+      "id": "q-crypto-crowding",
+      "role": "crowding-monitor",
+      "title": "衍生品拥挤旗标与资金费错位阈值有区分度吗?",
+      "needs": [
+        "feed/crypto/state.json:crypto.crowding_flag",
+        "feed/crypto/state.json:venues.n_dislocated",
+        "feed/crypto/state.json:venues.n_compared"
+      ],
+      "test": "算 n_dislocated/n_compared 错位占比与 threshold_apr;对照 crowding_flag 与 pct_positive_funding;并检查 errors 是否为空(非空则本快照不完整)。",
+      "triggered_by": "feed/crypto/state.json 存在且带 venues 段。",
+      "answered": true
+    },
+    {
+      "id": "q-dsr-falsification",
+      "role": "engine",
+      "title": "DSR 过拟合校验是否已经否掉了引擎自己?",
+      "needs": [
+        "feed/reports/routine-*.json:engine.deflated_sharpe.dsr",
+        "feed/reports/routine-*.json:engine.deflated_sharpe.p_value",
+        "feed/reports/routine-*.json:engine.deflated_sharpe.n_trials"
+      ],
+      "test": "统计 dsr<0.05 且 p_value>0.95 的期数占比;并检查 n_trials 是否在候选账本增长时保持常数。",
+      "triggered_by": "routine 报告带 engine.deflated_sharpe 段。",
+      "answered": true
+    },
+    {
+      "id": "q-factory-funnel",
+      "role": "factor-factory",
+      "title": "工厂提出了多少候选,最终留在账本里的有多少?",
+      "needs": [
+        "feed/reports/factory-local-*.json:contribution.candidates_proposed",
+        "feed/factory/candidates.json:candidates"
+      ],
+      "test": "累加各期 contribution.candidates_proposed,与账本留存条数比,得暴露率。",
+      "triggered_by": "存在 factory-local 报告且账本非空。",
+      "answered": true
+    },
+    {
+      "id": "q-factory-gates",
+      "role": "factor-factory",
+      "title": "因子工厂的候选有没有真的过自己的门控?",
+      "needs": [
+        "feed/factory/candidates.json:candidates[].decision",
+        "feed/factory/candidates.json:candidates[].passed_gates",
+        "feed/factory/candidates.json:candidates[].t_stat"
+      ],
+      "test": "统计 decision=='accept' 与 passed_gates 为真的条数、|t_stat| 最大值(对照门控③ t≳3)、以及带 pbo 字段的条数(门控① 的可查证据)。",
+      "triggered_by": "feed/factory/candidates.json 非空。",
+      "answered": true
+    },
+    {
+      "id": "q-freshness-gaps",
+      "role": "risk",
+      "title": "哪些工件已经旧到不该再被当前结论引用?",
+      "needs": [
+        "feed/health.json:sources",
+        "feed/index.json:freshness"
+      ],
+      "test": "逐工件比 age_days 与 3.0 天建议线(13F 按季度豁免),并对照 health.json 的 critical/warn 计数。",
+      "triggered_by": "覆盖度台账里至少有一个可解析 asof 的工件。",
+      "answered": true
+    },
+    {
+      "id": "q-holdout-degradation",
+      "role": "engine",
+      "title": "train 到真 holdout 的衰减在扩大还是收敛?",
+      "needs": [
+        "feed/reports/routine-*.json:engine.train.sharpe",
+        "feed/reports/routine-*.json:engine.holdout.sharpe"
+      ],
+      "test": "按 asof 去重后取 holdout.sharpe − train.sharpe 序列,报最新差值与最小二乘斜率(每期变化)。",
+      "triggered_by": "routine 报告同时带 engine.train 与 engine.holdout 段。",
+      "answered": true
+    },
+    {
+      "id": "q-intraday-vs-regime",
+      "role": "event-risk",
+      "title": "盘中广度与日线 regime 判定是否互相矛盾?",
+      "needs": [
+        "feed/intraday/latest.json:summary.up",
+        "feed/intraday/latest.json:summary.down",
+        "feed/market/state.json:regime"
+      ],
+      "test": "算盘中上涨占比 up/(up+down),与 market_state.regime、breadth_pct_above_50dma 对照;并核对 pool_size == quoted(报价覆盖完整性)。",
+      "triggered_by": "feed/intraday/latest.json 与 feed/market/state.json 同时存在。",
+      "answered": true
+    },
+    {
+      "id": "q-notes-coverage",
+      "role": "risk",
+      "title": "个股解读的最新日覆盖率够不够支撑横截面结论?",
+      "needs": [
+        "feed/stock-notes/index.json:symbols[].date"
+      ],
+      "test": "算最新日期的 symbol 占全部 symbol 的比例,并给出日期分布。",
+      "triggered_by": "feed/stock-notes/index.json 存在且 symbols 非空。",
+      "answered": true
+    },
+    {
+      "id": "q-provenance-consistency",
+      "role": "red-team",
+      "title": "市场状态面板与它自报的来源报告一致吗?",
+      "needs": [
+        "feed/market/state.json:source_report",
+        "feed/reports/*.json:market_state"
+      ],
+      "test": "按 source_report 定位报告,逐一比对 7 个 market_state 标量;不一致的键全部点名。",
+      "triggered_by": "feed/market/state.json 带 source_report。",
+      "answered": true
+    },
+    {
+      "id": "q-screener-date-skew",
+      "role": "risk",
+      "title": "选股系三个面板的日期与覆盖是否一致?",
+      "needs": [
+        "feed/screener/latest.json:date",
+        "feed/signals/rs-ranks.json:date",
+        "feed/screener/scores.json:date"
+      ],
+      "test": "比三者 date 是否一致;并对 scores 与 rs-ranks 的键集合求交集看覆盖缺口。",
+      "triggered_by": "选股 latest 与 rs-ranks 同时存在。",
+      "answered": true
+    },
+    {
+      "id": "q-stance-churn",
+      "role": "event-risk",
+      "title": "个股解读的立场翻转有多频繁,多少是真翻转、多少只是覆盖变化?",
+      "needs": [
+        "feed/stock-notes/stance-history.json:stances"
+      ],
+      "test": "对相邻快照取键交集后统计翻转数,得 flip_rate;成员进出单独统计,不混进翻转率。",
+      "triggered_by": "feed/stock-notes/stance-history.json 有 ≥2 个快照。",
+      "answered": true
+    },
+    {
+      "id": "q-truncation-audit",
+      "role": "red-team",
+      "title": "看板上的清单有多少是被截断后仍以完整清单示人的?",
+      "needs": [
+        "feed/reports/routine-*.json:alerts[].tickers",
+        "feed/index.json:reports"
+      ],
+      "test": "从告警文案里解析声明的标的数,与 tickers 数组长度比;再比 index.json 的 reports 长度与 stats.total_reports。",
+      "triggered_by": "最新 routine 报告带 alerts,且 index.json 带 stats。",
+      "answered": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "c01",
+      "role": "residual-analyst",
+      "question": "q-book-identity",
+      "statement": "簿口径可复算:sum(|w|)=0.4144 vs 自报 0.414、sum(w)=0.026 vs 自报 0.026,最大偏差 0.0004;多空计数 22/27 与自报一致。",
+      "unit": "fraction",
+      "n": 49,
+      "min_n": 5,
+      "max_age_days": 10.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "gross_leverage",
+          "value": 0.414,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "net_exposure",
+          "value": 0.026,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[].weight.abs_sum",
+          "value": 0.4144,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "book.identity.max_abs_diff",
+      "value": 0.0004
+    },
+    {
+      "id": "c02",
+      "role": "residual-analyst",
+      "question": "q-book-mean-reversion",
+      "statement": "半衰期中位数 6.4 天(区间 2.3–16.5):这决定了簿的自然持有期,任何按更长周期解读该簿的结论都与半衰期不一致。",
+      "unit": "days",
+      "n": 49,
+      "min_n": 5,
+      "max_age_days": 10.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[].halflife_days.median",
+          "value": 6.4,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "book.halflife_days.median",
+      "value": 6.4
+    },
+    {
+      "id": "c03",
+      "role": "residual-analyst",
+      "question": "q-book-mean-reversion",
+      "statement": "49 个有 hurst 的仓位里 8 个(占已评级仓位的 16%)hurst≥0.5,即按自身指标不具备均值回归性,占全簿毛杠杆的 22%;hurst 最高的是 ORCL(0.611)。残差套利簿的前提是回归,这部分敞口的前提不成立(R2:协整断裂后不得按「会回归」加仓)。",
+      "unit": "fraction",
+      "n": 49,
+      "min_n": 10,
+      "max_age_days": 10.0,
+      "severity": "info",
+      "cites": [
+        "R2"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[ORCL].hurst",
+          "value": 0.611,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions.length",
+          "value": 49,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[].weight.abs_sum",
+          "value": 0.4144,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "book.hurst_ge_0_5.share",
+      "value": 0.163265
+    },
+    {
+      "id": "c04",
+      "role": "residual-analyst",
+      "question": "q-book-vs-breaker",
+      "statement": "同一份报告(routine-2026-07-29T2330Z)的熔断名单与同期簿有 1 只交集 ['ABT'],仍带 0.0043 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。这不是数据损坏,但把 signals/latest.json 读成「已排除熔断标的」的消费方会读错;告警只列前 10 只更放大了这个误读。",
+      "unit": "count",
+      "n": 10,
+      "min_n": 1,
+      "max_age_days": 10.0,
+      "severity": "warning",
+      "cites": [
+        "R2"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "alerts[cointegration_breaker].tickers.length",
+          "value": 10,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[].ticker.count",
+          "value": 49,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/latest.json",
+          "field": "positions[ABT].weight",
+          "value": -0.0043,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "book.breaker_overlap.count",
+      "value": 1
+    },
+    {
+      "id": "c05",
+      "role": "red-team",
+      "question": "q-committee-dormancy",
+      "statement": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 50.3 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
+      "unit": "days",
+      "n": 11,
+      "min_n": 1,
+      "severity": "warning",
+      "evidence": [
+        {
+          "artifact": "feed/reports/openclaw-red-team-2026-06-09T2334Z.json",
+          "field": "produced_at",
+          "value": "2026-06-09T23:34:06Z",
+          "asof": "2026-06-09"
+        },
+        {
+          "artifact": "feed/reports/openclaw-*.json",
+          "field": "count",
+          "value": 11,
+          "asof": null
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "committee.last_submission.age_days",
+      "value": 50.3
+    },
+    {
+      "id": "c06",
+      "role": "engine",
+      "question": "q-cost-vs-signal",
+      "statement": "最新一期(2026-07-29)的成本负担 = 毛年化 +0.0030 − 净年化 -0.0081 = 0.0111(年化分数),报告自报 cost_drag_ann=0.011147。",
+      "unit": "fraction",
+      "max_age_days": 10.0,
+      "severity": "info",
+      "cites": [
+        "R4"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.gross.ann_return",
+          "value": 0.003041,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.net.ann_return",
+          "value": -0.008106,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.cost_drag_ann",
+          "value": 0.011147,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.cost.breakeven_ann",
+      "value": 0.011147
+    },
+    {
+      "id": "c07",
+      "role": "engine",
+      "question": "q-cost-vs-signal",
+      "statement": "23 个同时带毛/净口径的去重交易日中有 23 日(占 100%)毛 Sharpe 为正而净·扣成本 Sharpe ≤ 0:这些日子的问题不是没有信号,而是信号扛不住成本(R4 净口径为唯一计价货币)。",
+      "unit": "fraction",
+      "n": 23,
+      "min_n": 10,
+      "severity": "warning",
+      "cites": [
+        "R4"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.gross.sharpe",
+          "value": 0.103019,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.net.sharpe",
+          "value": -0.274577,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.sharpe.gross_positive_net_nonpositive.share",
+      "value": 1.0
+    },
+    {
+      "id": "c08",
+      "role": "engine",
+      "question": "q-cost-vs-signal",
+      "statement": "Spearman(turnover.ann_2way, cost_drag_ann)=+0.997(n=23):成本项与换手强同向,与「成本随换手放大」一致;这是秩相关,不是因果证明。",
+      "unit": "ratio",
+      "direction": "up",
+      "n": 23,
+      "min_n": 10,
+      "noise_band": 0.3,
+      "severity": "info",
+      "cites": [
+        "R4"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.turnover.ann_2way",
+          "value": 19.077522,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.cost_drag_ann",
+          "value": 0.011147,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.turnover_vs_cost.spearman",
+      "value": 0.997
+    },
+    {
+      "id": "c09",
+      "role": "crowding-monitor",
+      "question": "q-crowding-signal",
+      "statement": "拥挤代理(universe 近 60 日收益的平均两两相关,不是残差相关)最新 0.08,23 期区间 0.079–0.093,crowding_alert 触发 0/23 期:告警阈值在这段样本上从未被行使,因此「未告警」不能当成「不拥挤」的证据(R7)。",
+      "unit": "count",
+      "n": 23,
+      "min_n": 10,
+      "severity": "info",
+      "cites": [
+        "R7"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "market_state.crowding_proxy",
+          "value": 0.08,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "market_state.crowding_alert",
+          "value": false,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "market_state.crowding_alert.fired.count",
+      "value": 0
+    },
+    {
+      "id": "c11",
+      "role": "crowding-monitor",
+      "question": "q-crypto-crowding",
+      "statement": "资金费极值榜 5 个币的未平仓量跨越 $9,506,732(CASHCAT)到 $24,221,955(XPL),相差 3 倍:榜上名次由资金费排序、与规模无关,所以把整张榜当全市场拥挤读数会把小合约的流动性噪声与大合约的仓位拥挤混为一谈。",
+      "unit": "usd",
+      "n": 5,
+      "min_n": 3,
+      "max_age_days": 3.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/crypto/state.json",
+          "field": "crypto.funding_extremes[CASHCAT].oi_usd",
+          "value": 9506732.0,
+          "asof": "2026-07-30T03:17:56Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "crypto.funding_extremes.min_oi_usd",
+      "value": 9506732.0
+    },
+    {
+      "id": "c12",
+      "role": "crowding-monitor",
+      "question": "q-crypto-crowding",
+      "statement": "跨场资金费错位占比 72/232=31%,阈值 threshold_apr=0.1;这个比例下「错位」筛出的是常态而不是异常,当异常信号用会一直亮。crowding_flag=False 由另一套判据得出,与该占比并不同源。",
+      "unit": "fraction",
+      "n": 232,
+      "min_n": 30,
+      "max_age_days": 3.0,
+      "severity": "info",
+      "cites": [
+        "R7"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/crypto/state.json",
+          "field": "venues.n_dislocated",
+          "value": 72,
+          "asof": "2026-07-30T03:17:56Z"
+        },
+        {
+          "artifact": "feed/crypto/state.json",
+          "field": "venues.n_compared",
+          "value": 232,
+          "asof": "2026-07-30T03:17:56Z"
+        },
+        {
+          "artifact": "feed/crypto/state.json",
+          "field": "crypto.crowding_flag",
+          "value": false,
+          "asof": "2026-07-30T03:17:56Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "crypto.venues.dislocated.share",
+      "value": 0.310345
+    },
+    {
+      "id": "c13",
+      "role": "engine",
+      "question": "q-dsr-falsification",
+      "statement": "23 期中有 23 期(占 100%)满足 dsr<0.05(报告里 p_value 与 dsr 互补,两者是同一个判据的两面,不是两次独立检验),最新一期 dsr=0.000312:DSR 口径下引擎的 Sharpe 与「零真实技巧」不可区分。",
+      "unit": "fraction",
+      "n": 23,
+      "min_n": 10,
+      "severity": "warning",
+      "cites": [
+        "R5",
+        "§6.7"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.deflated_sharpe.dsr",
+          "value": 0.000312,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.deflated_sharpe.p_value",
+          "value": 0.999688,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.dsr.falsified.share",
+      "value": 1.0
+    },
+    {
+      "id": "c14",
+      "role": "engine",
+      "question": "q-dsr-falsification",
+      "statement": "n_trials 在这 23 期上取 1 个不同值 [200],而候选账本当前留存 120 条:试验次数是写死的常数,不随实际搜索预算变化(门控① 要求预注册搜索空间与试验次数全部计数)。",
+      "unit": "count",
+      "direction": "flat",
+      "n": 23,
+      "min_n": 10,
+      "severity": "info",
+      "cites": [
+        "门控①"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.deflated_sharpe.n_trials",
+          "value": 200,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates.length",
+          "value": 120,
+          "asof": "2026-07-29T23:30:43Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.dsr.n_trials.distinct",
+      "value": 1
+    },
+    {
+      "id": "c15",
+      "role": "factor-factory",
+      "question": "q-factory-funnel",
+      "statement": "39 期工厂报告累计提出 11856 条候选,账本当前只留存 120 条(暴露率 1.01%),且账本按 120 条截断。看板上看到的候选数不是搜索规模,试验次数必须从报告侧读(门控① 要求全部计数)。",
+      "unit": "fraction",
+      "n": 39,
+      "min_n": 5,
+      "severity": "info",
+      "cites": [
+        "门控①"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/factory-local-2026-07-29T2330Z.json",
+          "field": "contribution.candidates_proposed",
+          "value": 304,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates.length",
+          "value": 120,
+          "asof": "2026-07-29T23:30:43Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "factory.kept_over_proposed.share",
+      "value": 0.010121
+    },
+    {
+      "id": "c16",
+      "role": "factor-factory",
+      "question": "q-factory-gates",
+      "statement": "账本留存 120 条候选:accept 0 条、shadow 0 条、passed_gates 为真 0 条。当前搜索空间里没有任何候选过门,因此账本里不存在可上线因子。",
+      "unit": "count",
+      "n": 120,
+      "min_n": 20,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "cites": [
+        "R3",
+        "门控①"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates.length",
+          "value": 120,
+          "asof": "2026-07-29T23:30:43Z"
+        },
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates[].decision==accept",
+          "value": 0,
+          "asof": "2026-07-29T23:30:43Z"
+        },
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates[].passed_gates==true",
+          "value": 0,
+          "asof": "2026-07-29T23:30:43Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "factory.accepted.count",
+      "value": 0
+    },
+    {
+      "id": "c17",
+      "role": "factor-factory",
+      "question": "q-factory-gates",
+      "statement": "120 条候选里有 0 条带 pbo 字段:门控① 的 PBO(CSCV)证据在留存账本里完全不可查,因此「过门控」这件事无法从 feed 侧独立复核(schema 不校验门控语义,可查不等于通过)。",
+      "unit": "count",
+      "n": 120,
+      "min_n": 20,
+      "max_age_days": 5.0,
+      "severity": "warning",
+      "cites": [
+        "门控①"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates[].pbo",
+          "value": "absent",
+          "asof": "2026-07-29T23:30:43Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "factory.pbo_present.count",
+      "value": 0
+    },
+    {
+      "id": "c18",
+      "role": "factor-factory",
+      "question": "q-factory-gates",
+      "statement": "账本内 |t_stat| 最大为 1.96,门控③ 要求相依 FDR 后 |t|≳3:最好的候选离门槛还差 1.04,不是「差一点」而是量级不足。",
+      "unit": "ratio",
+      "n": 120,
+      "min_n": 20,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "cites": [
+        "门控③"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/factory/candidates.json",
+          "field": "candidates[].t_stat.max_abs",
+          "value": 1.96,
+          "asof": "2026-07-29T23:30:43Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "factory.t_stat.max_abs",
+      "value": 1.96
+    },
+    {
+      "id": "c19",
+      "role": "risk",
+      "question": "q-freshness-gaps",
+      "statement": "16 个可判龄期的工件里有 1 个超过 3.0 天建议线,最旧的是 feed/signals/chan-stats.json(5.12 天);引用它们的结论时效上限必须相应放宽,否则会把旧事实当现状。",
+      "unit": "count",
+      "n": 16,
+      "min_n": 5,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/signals/chan-stats.json",
+          "field": "asof",
+          "value": "2026-07-25T03:48:05+00:00",
+          "asof": "2026-07-25T03:48:05+00:00"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "feed.aging_artifacts.count",
+      "value": 1
+    },
+    {
+      "id": "c20",
+      "role": "risk",
+      "question": "q-freshness-gaps",
+      "statement": "feed/health.json 自报 ok=True、critical=0、warn=0(checked_at 2026-07-30T03:39:53Z):ok 只表示没有 critical,不是完整性或正确性证明。",
+      "unit": "count",
+      "max_age_days": 5.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/health.json",
+          "field": "critical",
+          "value": 0,
+          "asof": "2026-07-30T03:39:53Z"
+        },
+        {
+          "artifact": "feed/health.json",
+          "field": "warn",
+          "value": 0,
+          "asof": "2026-07-30T03:39:53Z"
+        },
+        {
+          "artifact": "feed/health.json",
+          "field": "ok",
+          "value": true,
+          "asof": "2026-07-30T03:39:53Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "feed.health.critical.count",
+      "value": 0
+    },
+    {
+      "id": "c21",
+      "role": "engine",
+      "question": "q-holdout-degradation",
+      "statement": "最新一期 holdout 相对 train 的 Sharpe 差为 -0.2278(train -0.197579 → holdout -0.425374);holdout 起点 2025-01-01 是回顾式指定的切点,按 R5 不能当预注册真 holdout 解读。",
+      "unit": "ratio",
+      "direction": "down",
+      "n": 23,
+      "min_n": 3,
+      "severity": "info",
+      "cites": [
+        "R5"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.train.sharpe",
+          "value": -0.197579,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.holdout.sharpe",
+          "value": -0.425374,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.holdout.start",
+          "value": "2025-01-01",
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.holdout_minus_train.latest",
+      "value": -0.227795
+    },
+    {
+      "id": "c22",
+      "role": "engine",
+      "question": "q-holdout-degradation",
+      "statement": "该差值在 23 期上的最小二乘斜率为 +0.003460/期:衰减在收敛,但窗口只有 23 期,不能外推。",
+      "unit": "ratio",
+      "direction": "up",
+      "n": 23,
+      "min_n": 10,
+      "noise_band": 0.0005,
+      "severity": "info",
+      "cites": [
+        "R5"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "engine.holdout.sharpe",
+          "value": -0.425374,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-06-26T2343Z.json",
+          "field": "engine.holdout.sharpe",
+          "value": -0.437338,
+          "asof": "2026-06-26"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "engine.holdout_minus_train.slope",
+      "value": 0.00346
+    },
+    {
+      "id": "c23",
+      "role": "event-risk",
+      "question": "q-intraday-vs-regime",
+      "statement": "盘中池 134 只全部取到报价(quoted=134),这条广度读数没有报价缺口。",
+      "unit": "count",
+      "n": 134,
+      "min_n": 10,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/intraday/latest.json",
+          "field": "pool_size",
+          "value": 134,
+          "asof": "2026-07-29T14:56:22+00:00"
+        },
+        {
+          "artifact": "feed/intraday/latest.json",
+          "field": "quoted",
+          "value": 134,
+          "asof": "2026-07-29T14:56:22+00:00"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "intraday.pool_minus_quoted",
+      "value": 0
+    },
+    {
+      "id": "c24",
+      "role": "event-risk",
+      "question": "q-intraday-vs-regime",
+      "statement": "盘中上涨占比 52/130=40%,而日线 regime 判为 risk_on、广度 0.643:两个口径当前互相矛盾。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),看板并列展示时必须标注,否则会被读成同一事实的两次确认。",
+      "unit": "fraction",
+      "n": 130,
+      "min_n": 30,
+      "max_age_days": 5.0,
+      "severity": "warning",
+      "evidence": [
+        {
+          "artifact": "feed/intraday/latest.json",
+          "field": "summary.up",
+          "value": 52,
+          "asof": "2026-07-29T14:56:22+00:00"
+        },
+        {
+          "artifact": "feed/intraday/latest.json",
+          "field": "summary.down",
+          "value": 78,
+          "asof": "2026-07-29T14:56:22+00:00"
+        },
+        {
+          "artifact": "feed/market/state.json",
+          "field": "regime",
+          "value": "risk_on",
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/market/state.json",
+          "field": "breadth_pct_above_50dma",
+          "value": 0.643,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "intraday.up_share",
+      "value": 0.4
+    },
+    {
+      "id": "c25",
+      "role": "risk",
+      "question": "q-notes-coverage",
+      "statement": "318 份个股解读分布在 31 个日期上,最新日 2026-07-30 只覆盖 142 份(45%)。任何「全体个股当前立场」的横截面结论实际上是跨日期拼接,必须按日期分层看,否则会把过期解读当今天的观点。",
+      "unit": "fraction",
+      "n": 318,
+      "min_n": 30,
+      "max_age_days": 5.0,
+      "severity": "warning",
+      "evidence": [
+        {
+          "artifact": "feed/stock-notes/index.json",
+          "field": "symbols.length",
+          "value": 318,
+          "asof": "2026-07-30T03:52:35Z"
+        },
+        {
+          "artifact": "feed/stock-notes/index.json",
+          "field": "symbols[date==2026-07-30].count",
+          "value": 142,
+          "asof": "2026-07-30"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "stock_notes.newest_date.coverage",
+      "value": 0.446541
+    },
+    {
+      "id": "c26",
+      "role": "red-team",
+      "question": "q-provenance-consistency",
+      "statement": "面板与来源报告 routine-2026-07-29T2330Z 在 7/7 个可比对的市场状态标量上一致,溯源链在这 7 个键上闭合。",
+      "unit": "count",
+      "n": 7,
+      "min_n": 1,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/market/state.json",
+          "field": "source_report",
+          "value": "routine-2026-07-29T2330Z",
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "market_state.regime",
+          "value": "risk_on",
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "provenance.market_state.mismatched.count",
+      "value": 0
+    },
+    {
+      "id": "c27",
+      "role": "risk",
+      "question": "q-screener-date-skew",
+      "statement": "选股系日期一致(2026-07-29),三个面板可以横向对照。",
+      "unit": "count",
+      "n": 3,
+      "min_n": 2,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/screener/latest.json",
+          "field": "date",
+          "value": "2026-07-29",
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/rs-ranks.json",
+          "field": "date",
+          "value": "2026-07-29",
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/screener/scores.json",
+          "field": "date",
+          "value": "2026-07-29",
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "screener.date_skew.distinct",
+      "value": 1
+    },
+    {
+      "id": "c28",
+      "role": "risk",
+      "question": "q-screener-date-skew",
+      "statement": "技术评分与 RS 排名的键集合交集 509/510(覆盖 99.8%),两者在 509 个可配对标的上的 Spearman(score, rs 名次)=+0.445;rs 名次越小越强,所以负相关才代表「评分高的 RS 也强」,当前符号与该方向相反,两栏在打架。覆盖缺口意味着看板两栏并非同一宇宙。",
+      "unit": "fraction",
+      "n": 510,
+      "min_n": 50,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/screener/scores.json",
+          "field": "scores.length",
+          "value": 510,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/signals/rs-ranks.json",
+          "field": "ranks.length",
+          "value": 509,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "screener.score_vs_rs.coverage",
+      "value": 0.998039
+    },
+    {
+      "id": "c29",
+      "role": "event-risk",
+      "question": "q-stance-churn",
+      "statement": "26 个快照、25 对相邻快照共 3026 次同标的对照中,真翻转 339 次(flip_rate 11.2%),最集中的一对是 2026-06-11→2026-06-17(22 次);快照不是逐日的,所以这是「相邻快照之间」而不是「一天之内」的变化。另有 949 次是覆盖名单进出,已单独计,不计入翻转率 —— 否则覆盖变化会被读成观点变化。",
+      "unit": "fraction",
+      "n": 3026,
+      "min_n": 50,
+      "max_age_days": 5.0,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/stock-notes/stance-history.json",
+          "field": "snapshots.length",
+          "value": 26,
+          "asof": "2026-07-30"
+        },
+        {
+          "artifact": "feed/stock-notes/stance-history.json",
+          "field": "stances.length",
+          "value": 134,
+          "asof": "2026-07-30"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "stance.flip_rate",
+      "value": 0.112029
+    },
+    {
+      "id": "c30",
+      "role": "red-team",
+      "question": "q-truncation-audit",
+      "statement": "告警 cointegration_breaker 文案声明 60 只标的,tickers 数组只带 10 只:看板照 tickers 渲染会少显示 50 只,这不是数据缺失而是刻意截断,消费方必须知道。",
+      "unit": "count",
+      "n": 60,
+      "min_n": 1,
+      "severity": "warning",
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "alerts[cointegration_breaker].message",
+          "value": "60 只标的触发协整断裂熔断(Hurst/半衰期/极端 s),已自动排除。",
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "alerts[cointegration_breaker].tickers.length",
+          "value": 10,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "alerts.cointegration_breaker.tickers.truncated.count",
+      "value": 50
+    },
+    {
+      "id": "c31",
+      "role": "red-team",
+      "question": "q-truncation-audit",
+      "statement": "feed/index.json 只列出最近 60 份报告,而 stats.total_reports=620:任何基于 index.reports 的统计都是近端窗口统计,不是全量;feed/ 也没有任何裁剪机制,历史只增不减。",
+      "unit": "count",
+      "n": 620,
+      "min_n": 1,
+      "severity": "info",
+      "evidence": [
+        {
+          "artifact": "feed/index.json",
+          "field": "reports.length",
+          "value": 60,
+          "asof": "2026-07-30T03:17:58Z"
+        },
+        {
+          "artifact": "feed/index.json",
+          "field": "stats.total_reports",
+          "value": 620,
+          "asof": "2026-07-30T03:17:58Z"
+        }
+      ],
+      "verdict": "confirmed",
+      "refutations": [],
+      "metric": "index.reports.window",
+      "value": 60
+    }
+  ],
+  "refuted": [
+    {
+      "id": "c10",
+      "role": "crowding-monitor",
+      "question": "q-crowding-signal",
+      "statement": "拥挤对次日广度变化的 Spearman=+0.201(n=22):相关性落在 ±0.3 的噪声带内,本样本不足以说拥挤有领先性 —— 这条结论会被within-noise-band 反驳器判为不成立,不得当择时信号用。(R7:拥挤是尾部风险信号,不是做空信号。)",
+      "unit": "ratio",
+      "direction": "up",
+      "n": 22,
+      "min_n": 20,
+      "noise_band": 0.3,
+      "severity": "info",
+      "cites": [
+        "R7"
+      ],
+      "evidence": [
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "market_state.crowding_proxy",
+          "value": 0.08,
+          "asof": "2026-07-29"
+        },
+        {
+          "artifact": "feed/reports/routine-2026-07-29T2330Z.json",
+          "field": "market_state.breadth_pct_above_50dma",
+          "value": 0.643,
+          "asof": "2026-07-29"
+        }
+      ],
+      "verdict": "refuted",
+      "refutations": [
+        {
+          "code": "within-noise-band",
+          "message": "|0.201| < 噪声带 0.3,不足以与「无效应」区分"
+        }
+      ],
+      "metric": "market_state.crowding_leads_breadth.spearman",
+      "value": 0.201
+    }
+  ],
+  "verdicts": {
+    "confirmed": 30,
+    "refuted": 1,
+    "unverified": 0
+  },
+  "open_questions": [],
+  "next_actions": [
+    {
+      "priority": "medium",
+      "action": "刷新 feed/signals/chan-stats.json(已 5.12 天)",
+      "because": "超过 3.0 天建议线,引用它的结论会被 stale-evidence 反驳。"
+    }
+  ],
+  "alerts": [
+    {
+      "level": "warning",
+      "code": "book-breaker-overlap-count",
+      "message": "同一份报告(routine-2026-07-29T2330Z)的熔断名单与同期簿有 1 只交集 ['ABT'],仍带 0.0043 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。这不是数据损坏,但把 signals/latest.json 读成「已排除熔断标的」的消费方会读错;告警只列前 10 只更放大了这个误读。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "committee-last-submission-age-days",
+      "message": "外部 agent 委员会最近一次投递是 2026-06-09T23:34:06Z(已 50.3 天),留档 11 份、覆盖 5 个角色 ['crowding-monitor', 'event-risk', 'factor-factory', 'red-team', 'residual-analyst']。按 30 天口径委员会已休眠,看板上的角色词表是历史留档而不是活跃产能;本引擎是确定性替代,不是委员会本身。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "engine-sharpe-gross-positive-net-nonpositive-share",
+      "message": "23 个同时带毛/净口径的去重交易日中有 23 日(占 100%)毛 Sharpe 为正而净·扣成本 Sharpe ≤ 0:这些日子的问题不是没有信号,而是信号扛不住成本(R4 净口径为唯一计价货币)。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "engine-dsr-falsified-share",
+      "message": "23 期中有 23 期(占 100%)满足 dsr<0.05(报告里 p_value 与 dsr 互补,两者是同一个判据的两面,不是两次独立检验),最新一期 dsr=0.000312:DSR 口径下引擎的 Sharpe 与「零真实技巧」不可区分。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "factory-pbo-present-count",
+      "message": "120 条候选里有 0 条带 pbo 字段:门控① 的 PBO(CSCV)证据在留存账本里完全不可查,因此「过门控」这件事无法从 feed 侧独立复核(schema 不校验门控语义,可查不等于通过)。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "intraday-up-share",
+      "message": "盘中上涨占比 52/130=40%,而日线 regime 判为 risk_on、广度 0.643:两个口径当前互相矛盾。它们本来就不是同一测度(盘内快照 vs 50 日均线以上占比),看板并列展示时必须标注,否则会被读成同一事实的两次确认。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "stock-notes-newest-date-coverage",
+      "message": "318 份个股解读分布在 31 个日期上,最新日 2026-07-30 只覆盖 142 份(45%)。任何「全体个股当前立场」的横截面结论实际上是跨日期拼接,必须按日期分层看,否则会把过期解读当今天的观点。",
+      "tickers": []
+    },
+    {
+      "level": "warning",
+      "code": "alerts-cointegration-breaker-tickers-truncated-count",
+      "message": "告警 cointegration_breaker 文案声明 60 只标的,tickers 数组只带 10 只:看板照 tickers 渲染会少显示 50 只,这不是数据缺失而是刻意截断,消费方必须知道。",
+      "tickers": []
+    }
+  ],
+  "coverage": {
+    "artifacts": [
+      {
+        "key": "index",
+        "path": "feed/index.json",
+        "exists": true,
+        "asof": "2026-07-30T03:17:58Z",
+        "age_days": 0.14
+      },
+      {
+        "key": "health",
+        "path": "feed/health.json",
+        "exists": true,
+        "asof": "2026-07-30T03:39:53Z",
+        "age_days": 0.13
+      },
+      {
+        "key": "market_state",
+        "path": "feed/market/state.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "market_history",
+        "path": "feed/market/history.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "signals_book",
+        "path": "feed/signals/latest.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "rs_ranks",
+        "path": "feed/signals/rs-ranks.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "chan_stats",
+        "path": "feed/signals/chan-stats.json",
+        "exists": true,
+        "asof": "2026-07-25T03:48:05+00:00",
+        "age_days": 5.12
+      },
+      {
+        "key": "screener",
+        "path": "feed/screener/latest.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "screener_scores",
+        "path": "feed/screener/scores.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "screener_history",
+        "path": "feed/screener/history.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      },
+      {
+        "key": "notes_index",
+        "path": "feed/stock-notes/index.json",
+        "exists": true,
+        "asof": "2026-07-30T03:52:35Z",
+        "age_days": 0.12
+      },
+      {
+        "key": "stance_history",
+        "path": "feed/stock-notes/stance-history.json",
+        "exists": true,
+        "asof": "2026-07-30",
+        "age_days": 0.28
+      },
+      {
+        "key": "candidates",
+        "path": "feed/factory/candidates.json",
+        "exists": true,
+        "asof": "2026-07-29T23:30:43Z",
+        "age_days": 0.3
+      },
+      {
+        "key": "funds",
+        "path": "feed/funds/situational-awareness.json",
+        "exists": true,
+        "asof": "2026-03-31",
+        "age_days": 121.28
+      },
+      {
+        "key": "crypto",
+        "path": "feed/crypto/state.json",
+        "exists": true,
+        "asof": "2026-07-30T03:17:56Z",
+        "age_days": 0.14
+      },
+      {
+        "key": "intraday",
+        "path": "feed/intraday/latest.json",
+        "exists": true,
+        "asof": "2026-07-29T14:56:22+00:00",
+        "age_days": 0.66
+      },
+      {
+        "key": "overnight",
+        "path": "feed/intraday/overnight.json",
+        "exists": true,
+        "asof": "2026-07-29",
+        "age_days": 1.28
+      }
+    ],
+    "artifacts_read": 17,
+    "artifacts_missing": 0
+  },
+  "notes": "确定性引擎:未调用任何 LLM 或外部服务,不访问网络,只对仓库内已记录的 feed 工件做可复现计算(deterministic logic and does not require an external LLM provider)。confirmed 表示「计算在已记录数据上成立」,不表示分析正确、不表示门控通过、不构成投资建议;schema 校验不批准研究语义。refuted / unverified 全量留档,缺答案的问题写进 open_questions。注意 stale-evidence 反驳器按运行时刻算龄期:同一份 feed 在更晚的日期重跑,时效相关的裁决会变(其余反驳器与所有数值都只取决于 feed 内容)。所有结论只描述本仓自由公开数据(存在生存者偏差与不完整),铁律(R6):LLM 是研究放大器、不决策;数值必须有来源;不编造。"
+}

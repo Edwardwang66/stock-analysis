@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Repository entry point, runtime selection, verified quick start, and product limitations.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 面向个人研究与自托管的多市场行情、技术分析和自动化情报工作台。
 
@@ -30,6 +30,7 @@
 | Research/backtest code | Implemented | 仓库包含可执行研究程序；忽略的缓存、变化中的 provider、回顾式切分与成本假设限制复现和解释。见 [Research Index](docs/research/index.md)。 |
 | Actions stock-note 的 deterministic fallback | Implemented | 该 workflow 的 fallback 用 OHLCV/SEC 规则生成，不调用 LLM；它设置的 `OPENCLAW_MODEL` 值只填 provenance metadata，不会选择或调用 model，也不能证明外部 agent 参与。见 [OpenClaw Stock Notes](docs/openclaw-stock-notes.md)。 |
 | 本地 deterministic/non-LLM formula-factor factory | Implemented | 当前只评估本地公式候选；breadth gate 未实现、PIT 缺失时可跳过过滤、切分是回顾式。见 [Research Index](docs/research/index.md#equity-factor-and-walk-forward-studies)。 |
+| 确定性深度研究引擎与 `feed/research` 简报族 | Implemented | `scripts/deep_research.py` 用确定性逻辑扫描仓内已有 feed artifacts 自动立题、取证并跑固定反驳器，产出 `feed/research/<brief-id>.json` 与 `index.json`；它不调用 LLM，也不从网络取数，只描述仓内已有数据。通过 schema 校验不等于分析结论获批，简报不是投资建议或策略批准。见 [Deep Research](docs/deep-research.md)。 |
 | FastAPI 数据与兼容分析服务 | Optional | 两种 frontend build profile 都可不启用；无应用认证或 rate limit，且与前端分析代码可能漂移。见 [Backend Guide](backend/README.md)。 |
 | 自定义 `NEXT_PUBLIC_EDGE_BASE` 或自有 Next Edge 部署 | Optional | 可替代默认外部别名；当前没有受支持的配置能完全禁用 hard-coded hosted attempt。见 [Configuration](docs/configuration.md)。 |
 | Hosted FastAPI backend | Optional | 仓库提供 Render、Dockerfile 与 Procfile building blocks；在线 revision、provider 健康和持久性仍由 operator/host 负责。见 [Deployment Matrix](docs/deployment-matrix.md#hosted-frontend-and-hosted-fastapi)。 |

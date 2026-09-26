@@ -966,6 +966,7 @@ FORBIDDEN_INTERPRETER_MUTATIONS = (
 DOCUMENTATION_PYTHON_JOB = ("docs.yml", "docs")
 EXPECTED_PYTHON_POLICY_JOBS = set(PRODUCTION_PYTHON_JOBS) | {
     ("tests.yml", "python"),
+    ("deep-research.yml", "research"),
     DOCUMENTATION_PYTHON_JOB,
 }
 EXPECTED_FALSE_CHECKOUT_COUNTS = {
@@ -1002,6 +1003,7 @@ GENERATED_FEED_IGNORES = [
     "feed/intraday/**",
     "feed/market/**",
     "feed/reports/**",
+    "feed/research/**",
     "feed/screener/**",
     "feed/signals/**",
     "feed/stock-notes/**",
@@ -1270,6 +1272,7 @@ COMMON_PYTHON_ENTRYPOINTS = [
     "python scripts/tests/test_feed_publication.py",
     "python scripts/tests/test_dependabot_merge_gate.py",
     "python scripts/tests/test_workflow_security.py",
+    "python scripts/tests/test_deep_research.py",
 ]
 LOCK_COMPILE_FLAGS = [
     "--generate-hashes",
@@ -5184,7 +5187,7 @@ class WorkflowSecurityTests(unittest.TestCase):
             * len(command_lines(backend_tests, automation_tests))
             + len(primary_commands)
         )
-        self.assertEqual(expanded_process_entrypoints, 22)
+        self.assertEqual(expanded_process_entrypoints, 24)
 
     def test_tests_workflow_stable_gate_requires_both_matrices(self) -> None:
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
@@ -5302,6 +5305,7 @@ class WorkflowSecurityTests(unittest.TestCase):
             "hyperliquid-monitor.yml": 1,
             "monthly-studies.yml": 1,
             "openclaw-notes.yml": 1,
+            "deep-research.yml": 1,
         }
         for filename, expected_count in expected_counts.items():
             text = (ROOT / ".github" / "workflows" / filename).read_text(encoding="utf-8")
@@ -5317,6 +5321,7 @@ class WorkflowSecurityTests(unittest.TestCase):
             "alpha-routine.yml",
             "hyperliquid-monitor.yml",
             "monthly-studies.yml",
+            "deep-research.yml",
         ):
             text = (ROOT / ".github" / "workflows" / filename).read_text(
                 encoding="utf-8"
