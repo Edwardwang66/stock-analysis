@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-28T05:13:14Z",
+  "updated_at": "2026-09-28T05:15:14Z",
   "freshness": {
     "last_report_at": "2026-09-28T05:13:13Z",
     "market_data_asof": "2026-09-25",
-    "report_age_hours": 0.0,
+    "report_age_hours": 0.03,
     "data_age_days": 3.22,
     "stale": false,
     "sources": {
@@ -52,6 +52,11 @@
         "exists": true,
         "asof": "2026-09-28T05:13:11Z",
         "age_days": 0.0
+      },
+      "research": {
+        "exists": true,
+        "asof": "2026-09-22T22:44:53Z",
+        "age_days": 5.27
       }
     }
   },
@@ -64,9 +69,9 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.50≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.31≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 1323,
+    "total_reports": 1324,
     "by_kind": {
-      "routine": 1220,
+      "routine": 1221,
       "manual": 92,
       "openclaw": 11
     },
@@ -74,6 +79,7 @@
       "hyperliquid-monitor": 825,
       "factor-factory-local": 81,
       "github-actions-routine": 395,
+      "deep-research-engine": 1,
       "study-downshift": 4,
       "study-pbo": 4,
       "study-pit-bite": 1,
@@ -86,7 +92,7 @@
       "openclaw-agent:residual-analyst": 3
     },
     "last_24h": 5,
-    "last_7d": 51
+    "last_7d": 52
   },
   "timeline": {
     "2026-06-06": 2,
@@ -196,7 +202,7 @@
     "2026-09-19": 7,
     "2026-09-20": 6,
     "2026-09-21": 6,
-    "2026-09-22": 8,
+    "2026-09-22": 9,
     "2026-09-23": 9,
     "2026-09-24": 8,
     "2026-09-25": 9,
@@ -776,6 +782,21 @@
       "path": "reports/hl-monitor-2026-09-23T0021Z.json"
     },
     {
+      "id": "deep-research-2026-09-22T2244Z",
+      "kind": "routine",
+      "produced_at": "2026-09-22T22:44:53Z",
+      "asof_data": "2026-09-22",
+      "producer": "deep-research-engine",
+      "agent_role": "red-team",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 8,
+      "n_candidates": 0,
+      "contribution_type": "risk_alert",
+      "contribution_summary": "深度研究:立题 18,confirmed 29 / refuted 1 / unverified 1;簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+      "path": "reports/deep-research-2026-09-22T2244Z.json"
+    },
+    {
       "id": "routine-2026-09-22T2128Z",
       "kind": "routine",
       "produced_at": "2026-09-22T21:28:05Z",
@@ -1089,21 +1110,6 @@
       "contribution_type": "regime_update",
       "contribution_summary": "HL 衍生品情报:46 流动永续持仓面,跨所错位 37,HIP-3 24/7 资产 104。",
       "path": "reports/hl-monitor-2026-09-19T2031Z.json"
-    },
-    {
-      "id": "hl-monitor-2026-09-19T1711Z",
-      "kind": "routine",
-      "produced_at": "2026-09-19T17:11:47Z",
-      "asof_data": "2026-09-19",
-      "producer": "hyperliquid-monitor",
-      "agent_role": "crowding-monitor",
-      "net_sharpe": null,
-      "verdict": null,
-      "n_alerts": 4,
-      "n_candidates": 0,
-      "contribution_type": "regime_update",
-      "contribution_summary": "HL 衍生品情报:47 流动永续持仓面,跨所错位 48,HIP-3 24/7 资产 106。",
-      "path": "reports/hl-monitor-2026-09-19T1711Z.json"
     }
   ],
   "contributions": [
@@ -1410,6 +1416,13 @@
       "id": "hl-monitor-2026-09-23T0021Z",
       "type": "regime_update",
       "summary": "HL 衍生品情报:50 流动永续持仓面,跨所错位 78,HIP-3 24/7 资产 107。"
+    },
+    {
+      "at": "2026-09-22T22:44:53Z",
+      "producer": "deep-research-engine",
+      "id": "deep-research-2026-09-22T2244Z",
+      "type": "risk_alert",
+      "summary": "深度研究:立题 18,confirmed 29 / refuted 1 / unverified 1;簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。"
     },
     {
       "at": "2026-09-22T21:28:05Z",
@@ -1739,13 +1752,6 @@
       "id": "hl-monitor-2026-09-17T1808Z",
       "type": "regime_update",
       "summary": "HL 衍生品情报:33 流动永续持仓面,跨所错位 34,HIP-3 24/7 资产 105。"
-    },
-    {
-      "at": "2026-09-17T13:22:22Z",
-      "producer": "hyperliquid-monitor",
-      "id": "hl-monitor-2026-09-17T1322Z",
-      "type": "regime_update",
-      "summary": "HL 衍生品情报:35 流动永续持仓面,跨所错位 41,HIP-3 24/7 资产 105。"
     }
   ]
 }

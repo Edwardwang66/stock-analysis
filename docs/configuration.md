@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** User-settable, secret, and platform-provided configuration used by current code and workflows.
-> **Last verified commit:** `e74ad00c026b410db9a1438e46c26c09dad32bd8`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## Configuration rules
 
@@ -70,6 +70,15 @@ If `CACHE_DB` cannot be opened, the response cache falls back to process memory.
 GitHub does not automatically inject `GITHUB_RUN_URL`; current workflows compose it from GitHub context before passing it to producers. `GITHUB_TOKEN` and `GH_TOKEN` are explicitly mapped into workflow environments rather than treated as ordinary repository Variables.
 
 `FEED_HMAC_SECRET` is fail-closed for external `openclaw` and `manual` report ingress: a missing or invalid signature is rejected. The separate stock-note local and Contents API modes are privileged direct-write paths and must receive only trusted operator input; they do not currently provide equivalent path containment, schema, or HMAC validation.
+
+## Deep research options
+
+| Name | Owner | Requirement | Default | Secret | Consumers |
+|---|---|---|---|---|---|
+| `DEEP_RESEARCH_WORKERS` | Deep-research operator | Optional | `8` concurrent lenses | No | `scripts/deep_research.py`; `.github/workflows/deep-research.yml` maps its `workers` dispatch input |
+| `DEEP_RESEARCH_ROLES` | Deep-research operator | Optional | Empty, which admits every committee role | No | `scripts/deep_research.py`; `.github/workflows/deep-research.yml` maps its `roles` dispatch input |
+
+`DEEP_RESEARCH_WORKERS` is the integer worker count for concurrent evidence collection; `--workers` is the equivalent command-line override. `DEEP_RESEARCH_ROLES` is a comma-separated committee-role allowlist; an empty or unset value runs all roles, and `--roles` is the equivalent command-line override. Neither variable selects a data source, enables a network call, or invokes a model: the engine is deterministic logic over feed artifacts already in this repository. The brief writer's signing secret and provenance stay with `FEED_HMAC_SECRET`, `GITHUB_RUN_URL`, and `FEED_PUBLICATION_MANIFEST`.
 
 ## Intraday and Winter options
 

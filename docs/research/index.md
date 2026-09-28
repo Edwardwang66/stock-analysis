@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Catalog of repository research methods, executable entry points, dated findings, and methodological limitations.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## How to read research status
 
@@ -66,7 +66,7 @@ The maintained [`backtest/README.md`](../../backtest/README.md) is the complete 
 
 ## Dated research snapshots
 
-This is the complete historical-document catalog for this stage. “Undated” means the page itself supplies no reliable publication date; `2026-07-24` is the classification date, not a claimed experiment date.
+This is the complete historical-document catalog for this stage, plus the dated addition of the current deep-research engine. “Undated” means the page itself supplies no reliable publication date; `2026-07-24` is the classification date, not a claimed experiment date.
 
 | Date | Method | Code entry point | Requirements file | Data/cache dependency | Result document | Strongest known limitation |
 |---|---|---|---|---|---|---|
@@ -86,6 +86,7 @@ This is the complete historical-document catalog for this stage. “Undated” m
 | 2026-06-10 | PIT membership reconstruction | [`pit_membership.py`](../../backtest/pit_membership.py) | [`backtest/requirements.txt`](../../backtest/requirements.txt) | Tracked 2026-06-10-era snapshot; refresh uses Wikipedia/Yahoo | [`docs/study-pit-membership-2026-06-10.md`](../study-pit-membership-2026-06-10.md) | Network errors are conflated with unavailable symbols; delisted prices remain missing. |
 | 2026-06-10 | Hyperliquid endpoint and monitor map | [`cryptodata.py`](../../backtest/cryptodata.py), [`hyperliquid_monitor.py`](../../scripts/hyperliquid_monitor.py) | [`backtest/requirements.txt`](../../backtest/requirements.txt) research; [`scripts/requirements.txt`](../../scripts/requirements.txt) monitor | Live Hyperliquid and feed state/history | [`docs/hyperliquid-integration.md`](../hyperliquid-integration.md) | Dated endpoint observations drift, and retained old sections can coexist with a refreshed envelope timestamp. |
 | 2026-06-10 | Survivorship data-source assessment | [`pit_membership.py`](../../backtest/pit_membership.py) plus document-only research | [`backtest/requirements.txt`](../../backtest/requirements.txt) for code; N/A for external research | Tracked PIT snapshot, live public sources, vendor claims | [`docs/survivorship-bias-data-sources.md`](../survivorship-bias-data-sources.md) | Membership alone cannot recover delisted data; prices and availability claims age. |
+| 2026-07-30 | Deterministic multi-role deep-research engine with adversarial refutation over repository feed artifacts | [`deep_research.py`](../../scripts/deep_research.py) | N/A (Python standard library only) | Tracked `feed/` artifacts only; no network access and no market-data cache, so results move with whatever the feed contained at run time | [`docs/deep-research.md`](../deep-research.md) and the family index [`feed/research/index.json`](../../feed/research/index.json); each run also writes a dated brief beside it | Claims are computations over survivorship-biased free public data already in the feed, and the refuter set is a fixed deterministic list, so a confirmed claim is a reproducible computation rather than an independently validated finding. |
 | 2026-06 | AI agents and skills market scan | N/A (document-only research) | N/A (document-only) | External web sources observed at the report date | [`research/ai-agents-skills-market-scan.md`](../../research/ai-agents-skills-market-scan.md) | Product availability, stars, pricing, and integration claims are mutable and require current primary-source verification. |
 | 2026-06-06 | Quant-factor methodology research | N/A (document-only research) | N/A (document-only) | External papers and web sources; no frozen source bundle | [`research/quant-factor-deep-research.md`](../../research/quant-factor-deep-research.md) | It is a methodology survey, not an executable or independently reproduced result in this repository. |
 

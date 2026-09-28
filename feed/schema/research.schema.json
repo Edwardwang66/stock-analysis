@@ -1,0 +1,241 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/edwardwang66/stock-analysis/feed/schema/research.schema.json",
+  "title": "Deep Research Brief",
+  "description": "深度研究简报契约。scripts/deep_research.py 用仓库内已有 feed 工件确定性立题、并发取证、对抗验证后产出此格式;/intel 看板与 feed/research/index.json 消费此格式。校验通过不等于结论正确、也不构成投资建议(与 report.schema.json 同一立场)。",
+  "type": "object",
+  "required": ["schema_version", "id", "kind", "produced_at", "producer", "asof_data", "findings", "verdicts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._:-]{6,80}$",
+      "description": "全局唯一简报 ID,亦作幂等键与文件名。约定 deep-research-<UTC ISO 到分钟>Z。"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["deep-research"],
+      "description": "工件类别。本 schema 只描述深度研究简报;情报报告用 report.schema.json。"
+    },
+    "produced_at": { "type": "string", "format": "date-time", "description": "UTC ISO8601 生成时间。" },
+    "asof_data": { "type": "string", "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "本次取证实际读到的最新证据日期(取所有 evidence[].asof 的最大值,上界为运行日);没有任何带日期的证据时退化为运行日。不得晚于 produced_at 的日期部分,否则 audit_feed 判 future-asof。" },
+    "producer": {
+      "type": "object",
+      "required": ["name", "method"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "description": "如 deep-research-engine。" },
+        "agent_role": { "type": "string", "description": "委员会角色(与 report.schema.json 同一词表);简报整体署名 red-team,因为区分性动作是对抗验证。" },
+        "method": {
+          "type": "string",
+          "enum": ["deterministic-no-llm"],
+          "description": "取证方式。当前只有一个取值:纯确定性、未调用任何 LLM 或外部服务。字段存在即是「不得声称 LLM 参与」的机器可查断言。"
+        },
+        "run_url": { "type": "string", "description": "可回溯运行链接(Actions run)。" }
+      }
+    },
+    "run": {
+      "type": "object",
+      "description": "本次运行的可复现参数与规模。",
+      "additionalProperties": true,
+      "properties": {
+        "workers": { "type": "integer", "minimum": 1, "description": "并发 lens 线程数(stdlib ThreadPoolExecutor)。" },
+        "roles": { "type": "array", "items": { "type": "string" }, "description": "本次启用的委员会角色。" },
+        "questions_derived": { "type": "integer", "minimum": 0 },
+        "lenses_run": { "type": "integer", "minimum": 0 },
+        "lenses_failed": { "type": "integer", "minimum": 0, "description": "抛异常的 lens 数;>0 表示本次取证不完整,不能按完整覆盖解读。" },
+        "reports_scanned": { "type": "integer", "minimum": 0 },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "description": "自动立题结果。每题声明它需要的工件字段与判定测试,便于复核「问题本身」是否合理。",
+      "items": {
+        "type": "object",
+        "required": ["id", "role", "title"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "role": { "type": "string" },
+          "title": { "type": "string" },
+          "needs": { "type": "array", "items": { "type": "string" }, "description": "形如 feed/market/state.json:crowding_proxy 的依赖声明。" },
+          "test": { "type": "string", "description": "确定性判定方法的一句话描述。" },
+          "triggered_by": { "type": "string", "description": "本题被接纳的前置条件(声明式,不是运行时动态触发器)。题库写在代码里,只有依赖在场才会立题。" },
+          "answered": { "type": "boolean", "description": "是否产出了至少一条 confirmed 结论。" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "通过对抗验证的结论。schema 强制 verdict=confirmed:未过验证的结论不允许出现在这里。confirmed 只意味着「对已记录数据的可复现计算成立」,不是投资结论。",
+      "items": {
+        "allOf": [
+          { "$ref": "#/definitions/claim" },
+          { "properties": { "verdict": { "const": "confirmed" } } }
+        ]
+      }
+    },
+    "refuted": {
+      "type": "array",
+      "description": "被反驳(refuted)或无法判定(unverified)的结论。全量留档、不删证:研究价值在于知道什么没站住。schema 强制此处不得出现 confirmed。",
+      "items": {
+        "allOf": [
+          { "$ref": "#/definitions/claim" },
+          { "properties": { "verdict": { "enum": ["refuted", "unverified"] } } }
+        ]
+      }
+    },
+    "verdicts": {
+      "type": "object",
+      "required": ["confirmed", "refuted", "unverified"],
+      "additionalProperties": false,
+      "properties": {
+        "confirmed": { "type": "integer", "minimum": 0 },
+        "refuted": { "type": "integer", "minimum": 0 },
+        "unverified": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "没有被回答的问题及原因(缺输入 / 样本不足 / 全部被反驳)。缺答案本身是研究结果,不隐藏。",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "reason"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "enum": ["missing-input", "insufficient-sample", "all-claims-refuted", "lens-error", "role-disabled"]
+          },
+          "missing": { "type": "array", "items": { "type": "string" } },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "description": "由结论确定性推导出的下一步动作(刷新哪个工件、补哪份数据、查哪条不一致)。不含交易动作。",
+      "items": {
+        "type": "object",
+        "required": ["priority", "action", "because"],
+        "additionalProperties": true,
+        "properties": {
+          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+          "action": { "type": "string" },
+          "because": { "type": "string" }
+        }
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "description": "由 confirmed 结论升格的告警,与 report.schema.json 的 alerts 同一形状,便于复用看板渲染。",
+      "items": {
+        "type": "object",
+        "required": ["level", "message"],
+        "additionalProperties": true,
+        "properties": {
+          "level": { "type": "string", "enum": ["info", "warning", "critical"] },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "tickers": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "description": "取证覆盖度台账:每个工件是否读到、asof 与龄期。读不到的工件不会被推断,只会缺题。",
+      "additionalProperties": true,
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "path", "exists"],
+            "additionalProperties": true,
+            "properties": {
+              "key": { "type": "string" },
+              "path": { "type": "string" },
+              "exists": { "type": "boolean" },
+              "asof": { "type": ["string", "null"] },
+              "age_days": { "type": ["number", "null"] },
+              "error": { "type": "string" }
+            }
+          }
+        },
+        "artifacts_read": { "type": "integer", "minimum": 0 },
+        "artifacts_missing": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "notes": { "type": "string" },
+    "signature": {
+      "type": "object",
+      "description": "可选 HMAC 签名,与 report.schema.json 同一方案(去除 signature 字段后的紧凑 canonical JSON)。",
+      "required": ["alg", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "alg": { "type": "string", "enum": ["HMAC-SHA256"] },
+        "key_id": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    }
+  },
+  "definitions": {
+    "claim": {
+      "type": "object",
+      "required": ["id", "role", "statement", "verdict"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "简报内唯一结论 ID。" },
+        "role": { "type": "string", "description": "产出该结论的委员会角色。" },
+        "question": { "type": "string", "description": "所属问题 id。" },
+        "statement": { "type": "string", "description": "一句话可证伪陈述。" },
+        "metric": { "type": "string", "description": "度量的点名路径,如 engine.net_sharpe.latest。" },
+        "value": { "type": ["number", "string", "boolean", "null"] },
+        "unit": { "type": "string", "description": "fraction / percent / ratio / count / days / usd / none —— 单位必须写明,本仓分数与百分数混用是已知陷阱。" },
+        "direction": { "type": "string", "enum": ["up", "down", "flat", "none"] },
+        "n": { "type": ["integer", "null"], "minimum": 0, "description": "样本量;null 表示该结论不是统计量。" },
+        "min_n": { "type": "integer", "minimum": 0, "description": "反驳器 insufficient-sample 使用的最小样本量门槛。" },
+        "noise_band": { "type": ["number", "null"], "description": "反驳器 within-noise-band 使用的噪声带;|value| 小于它即判反驳。" },
+        "max_age_days": { "type": ["number", "null"], "description": "反驳器 stale-evidence 使用的证据龄期上限。" },
+        "severity": { "type": "string", "enum": ["none", "info", "warning", "critical"] },
+        "cites": { "type": "array", "items": { "type": "string" }, "description": "引用的方法学规则/门控编号,如 R4、R6、门控③。" },
+        "evidence": {
+          "type": "array",
+          "description": "证据链。数值必须有来源(R6):每条给出工件路径、字段、取值与 asof。",
+          "items": {
+            "type": "object",
+            "required": ["artifact", "field"],
+            "additionalProperties": false,
+            "properties": {
+              "artifact": { "type": "string" },
+              "field": { "type": "string" },
+              "value": { "type": ["number", "string", "boolean", "null"] },
+              "asof": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "verdict": { "type": "string", "enum": ["confirmed", "refuted", "unverified"] },
+        "refutations": {
+          "type": "array",
+          "description": "red-team 确定性反驳器命中项。",
+          "items": {
+            "type": "object",
+            "required": ["code", "message"],
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["missing-evidence", "insufficient-sample", "stale-evidence", "within-noise-band", "future-asof", "contradicted"]
+              },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
