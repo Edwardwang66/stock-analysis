@@ -41,7 +41,7 @@ GRID: list[tuple[str, dict]] = [
     ("trade_rate=0.25(更快)", {"trade_rate": 0.25}),
     ("max_positions=50(更专注)", {"max_positions": 50}),
     ("vol_target=4%(波动缩放)", {"vol_target": 0.04}),
-    ("hl=[3,40](宽半衰期带)", {"hl_min": 3.0, "hl_max": 40.0}),
+    ("hl=3~40(宽半衰期带)", {"hl_min": 3.0, "hl_max": 40.0}),  # 勿写成 [3,40](…):Markdown 会解析成链接,docs 门禁报错
 ]
 
 
@@ -88,6 +88,10 @@ def main():
 
     lines = [
         f"# 参数网格 × CSCV-PBO 研究({date})",
+        "",
+        # 文档契约(scripts/check_docs.py):每份 tracked Markdown 必须自带 Status/Scope 头,否则 docs 门禁变红
+        "> **Status:** Historical research snapshot; not maintained",
+        "> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.",
         "",
         f"问题:围绕默认参数的 {len(GRID)} 个经济变体,IS 选优在 OOS 是否站得住?(设计文档 §6.7)",
         "",

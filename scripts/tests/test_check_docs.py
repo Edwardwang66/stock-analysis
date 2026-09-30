@@ -24,6 +24,7 @@ from scripts.check_docs import (
     discover_environment_names,
     github_slug,
     load_config,
+    register_historical_documents,
     main as check_docs_main,
     stamp_documents,
 )
@@ -1135,6 +1136,47 @@ class DocumentationChecks(TestCase):
         path = root / "docs" / "verification.json"
         path.write_text(json.dumps(config), encoding="utf-8")
         return path
+
+    def test_register_historical_documents_is_idempotent_and_fails_closed(self):
+        header = (
+            "> **Status:** Historical research snapshot; not maintained\n"
+            "> **Scope:** Dated research result preserved for provenance.\n"
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = self._write_valid_config(root)
+            first = "docs/study-x-2026-10-02.md"
+            second = "docs/study-y-2026-11-02.md"
+            (root / first).write_text(f"# Study X\n\n{header}\nbody\n", encoding="utf-8")
+            (root / second).write_text(f"# Study Y\n\n{header}\nbody\n", encoding="utf-8")
+            (root / "docs" / "study-bad.md").write_text("# Bad\n", encoding="utf-8")
+
+            self.assertEqual(register_historical_documents(root, path, [first]), [first])
+            self.assertEqual(load_config(root, path)["historical_documents"], [first])
+            self.assertEqual(register_historical_documents(root, path, [first]), [])
+
+            before = path.read_bytes()
+            with self.assertRaises(ValueError):
+                register_historical_documents(root, path, ["docs/study-bad.md"])
+            with self.assertRaises(ValueError):
+                register_historical_documents(root, path, ["docs/plan.md"])
+            with self.assertRaises(ValueError):
+                register_historical_documents(root, path, ["docs/missing.md"])
+            self.assertEqual(path.read_bytes(), before)
+
+            pretty = json.dumps(json.loads(path.read_text(encoding="utf-8")), indent=2) + "\n"
+            path.write_text(pretty, encoding="utf-8")
+            self.assertEqual(register_historical_documents(root, path, [first, second]), [second])
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(
+                '  "historical_documents": [\n'
+                f'    "{first}",\n'
+                f'    "{second}"\n'
+                "  ],",
+                text,
+            )
+            self.assertEqual(json.loads(text)["historical_documents"], [first, second])
+            self.assertEqual(text.count('"schema_version": 1'), 1)
 
     def test_config_loader_rejects_duplicate_keys_and_nonstandard_constants(self):
         with TemporaryDirectory() as tmp:

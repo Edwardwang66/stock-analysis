@@ -49,12 +49,14 @@ jobs:
         env:
           FEED_HMAC_SECRET: ${{ secrets.FEED_HMAC_SECRET }}
         run: python backtest/study_downshift.py --publish
+      - name: 登记新研究文档到文档契约(否则 docs 门禁会因 unclassified-markdown 变红)
+        run: python scripts/check_docs.py --register-historical docs/study-pbo-*.md docs/study-downshift-*.md
       - name: Commit 研究产出
         run: |
           git config user.name  "monthly-studies[bot]"
           git config user.email "actions@github.com"
           python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
-          git add -- docs/study-*.md backtest/sp600_universe.json
+          git add -- docs/study-*.md docs/verification.json backtest/sp600_universe.json
           if git diff --cached --quiet; then
             echo "无变化"
           else

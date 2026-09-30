@@ -2153,11 +2153,79 @@ def stamp_current(
     return sha
 
 
+def register_historical_documents(
+    root: Path,
+    config_path: Path,
+    documents: list[str],
+) -> list[str]:
+    """Add generated research pages to ``historical_documents`` without touching the rest of the manifest.
+
+    The monthly-studies workflow calls this so a freshly generated ``docs/study-*.md`` is classified before
+    the documentation gate runs. Already-registered paths are skipped. Every new page must be a regular
+    Markdown file inside the repository that already carries the historical Status/Scope header; otherwise
+    nothing is written. The pretty-printed manifest layout is preserved when the block can be located.
+    """
+    config = load_config(root, config_path)
+    current = list(config["historical_documents"])
+    elsewhere = set(config["maintained_documents"]) | set(config["archived_documents"])
+    added: list[str] = []
+    for raw in documents:
+        canonical_repo_path(root, raw, "--register-historical", suffix=".md")
+        if raw in elsewhere:
+            raise ValueError(f"{raw} is already a maintained or archived document")
+        if raw in current or raw in added:
+            continue
+        header = mask_fenced_code((root / raw).read_text(encoding="utf-8")).splitlines()[:12]
+        has_scope = any(
+            line.startswith("> **Scope:** ") and line.removeprefix("> **Scope:** ").strip()
+            for line in header
+        )
+        if f"> **Status:** {HISTORICAL_STATUS}" not in header or not has_scope:
+            raise ValueError(f"{raw} lacks the historical Status/Scope header")
+        added.append(raw)
+    if not added:
+        return []
+    original = config_path.read_bytes()
+    text = original.decode("utf-8")
+    items = current + added
+    block = re.search(
+        r'(?ms)^(?P<indent>[ \t]+)"historical_documents": \[\n(?P<body>.*?)^(?P=indent)\]',
+        text,
+    )
+    if block is not None:
+        indent = block.group("indent")
+        body = "".join(f"{indent}{indent}{json.dumps(item)},\n" for item in items)
+        text = text[: block.start("body")] + body[:-2] + "\n" + text[block.end("body"):]
+    else:
+        payload = json.loads(
+            text,
+            object_pairs_hook=reject_duplicate_object,
+            parse_constant=reject_config_constant,
+        )
+        payload["historical_documents"] = items
+        text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+    config_path.write_text(text, encoding="utf-8")
+    try:
+        load_config(root, config_path)
+    except (ConfigError, OSError, json.JSONDecodeError) as exc:
+        config_path.write_bytes(original)
+        raise ValueError(f"registration produced an invalid manifest: {exc}") from exc
+    return added
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="docs/verification.json")
     parser.add_argument("--stamp-current", action="store_true")
     parser.add_argument("--document", action="append", default=[])
+    parser.add_argument(
+        "--register-historical",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="PATH",
+        help="add generated research Markdown to historical_documents (idempotent, fails closed)",
+    )
     args = parser.parse_args(argv)
     try:
         config_path = canonical_repo_path(
@@ -2167,6 +2235,13 @@ def main(argv: list[str] | None = None) -> int:
             suffix=".json",
         )
         config = load_config(ROOT, config_path)
+        if args.register_historical:
+            added = register_historical_documents(ROOT, config_path, args.register_historical)
+            print(
+                "registered historical documents: "
+                + (", ".join(added) if added else "none (already registered)")
+            )
+            return 0
         if args.stamp_current:
             print(
                 "stamped documentation baseline: "

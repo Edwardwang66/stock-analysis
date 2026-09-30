@@ -2,6 +2,7 @@
 // 📜 报告中心:OpenClaw 四类报告(盘前/盘中滚动/收盘前/收盘后汇总)站内阅读。
 // 数据 = feed/screener/analysis-*.md(raw GitHub 即时可见);最近 N 个交易日探测存在性。
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useEffect, useState } from "react";
 import { getAnalysisMd } from "@/lib/feed";
 import LangSelect from "@/components/LangSelect";
@@ -56,13 +57,12 @@ export default function ReportsPage() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>📜 报告中心</h1>
         <span className="tag">OpenClaw 四类报告 · 最近 5 个交易日 · 即投即读(raw 直连)</span>
         <span style={{ marginLeft: "auto" }} />
         <LangSelect />
       </div>
+      <Nav />
 
       {loading && items.length === 0 && <div className="loading">扫描报告中…</div>}
       {!loading && items.length === 0 && (

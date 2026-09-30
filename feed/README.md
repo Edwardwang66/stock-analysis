@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Entry point for repository-backed generated artifacts and their consumers.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `5157635cf88c9d3cb42c98e5376faec790a4ef1e`
 
 ## Role
 
@@ -94,7 +94,7 @@ For most JSON, `frontend/lib/feed.ts` keeps a 30-second in-memory cache by relat
 
 `getIntradayLive()` has no bundled fallback. Its base is produced by replacing the exact `/main/feed` substring in `REMOTE` with `/live/feed`; if a custom base does not contain that substring, the custom base is left unchanged and receives `/intraday/latest.json`. The tracked `frontend/public/feed` tree is partial and can be stale. The Pages workflow builds a selected temporary bundle, but its push trigger covers `frontend/**`, `feed/schema/**`, `.node-version`, and the workflow file—not generated feed artifacts outside `feed/schema`. Its export checks prove declared paths and a few critical files exist, not schema validity, cross-file completeness, or common generation identity.
 
-`index.json` freshness is based on report timestamps, and `health.json` audits selected sources. Neither proves that all required families exist, are mutually consistent, or belong to one publication. The watchdog audit step currently pipes through `tee` without `pipefail`, so its recorded exit status can mask a failing Python audit.
+`index.json` freshness is based on report timestamps, and `health.json` audits selected sources. Neither proves that all required families exist, are mutually consistent, or belong to one publication. The watchdog records the audit script's own exit status (no `tee` pipeline) and still commits `health.json` alongside a critical result, so `health.json` can describe a failing audit.
 
 ## Current limitations
 

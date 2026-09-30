@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -261,27 +262,80 @@ def main() -> int:
     lines.append("---\n_由 daily-digest.yml 自动生成 · 追踪看板:https://edwardwang66.github.io/stock-analysis/tracker/ · 仅供信息参考,非投资建议。_")
     body = "\n".join(lines)
 
-    # 5) 开 Issue(在 Actions 内;本地试跑只打印)
+    # 5) 开 Issue(在 Actions 内;本地试跑只打印),并关闭被取代的旧日报 Issue
     token = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY")
     if token and repo:
         owner = repo.split("/")[0]
-        payload = json.dumps({
+        created = gh_api(repo, token, "POST", "/issues", {
             "title": f"📊 每日股票分析日报 {today}",
             "body": body,
             "labels": ["daily-digest"],
             "assignees": [owner],
-        }).encode()
-        req = urllib.request.Request(
-            f"https://api.github.com/repos/{repo}/issues", data=payload,
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-                     "Content-Type": "application/json", **UA},
-        )
-        with urllib.request.urlopen(req, timeout=30) as r:
-            print(f"Issue created: {json.loads(r.read().decode()).get('html_url')}")
+        })
+        print(f"Issue created: {created.get('html_url')}")
+        close_superseded_digest_issues(repo, token, keep=created.get("number"), today=today)
     else:
         print(body)
     return 0
+
+
+def gh_api(repo: str, token: str, method: str, path: str, payload: dict | None = None,
+           query: str = "") -> dict | list:
+    """GitHub REST 最小封装(仅标准库)。命中限流(403/429)时按 Retry-After 等待并重试一次。"""
+    data = json.dumps(payload).encode() if payload is not None else None
+    for attempt in (1, 2):
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}{path}{query}", data=data, method=method,
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                     "Content-Type": "application/json", **UA},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read().decode()
+            return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429) and attempt == 1:
+                wait = min(int(e.headers.get("Retry-After") or 60), 120)
+                print(f"  ! GitHub 限流({e.code}),等待 {wait}s 后重试一次", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            raise
+    raise RuntimeError("unreachable")
+
+
+def close_superseded_digest_issues(repo: str, token: str, keep: int | None, today: str) -> None:
+    """日报只保留最新一张打开的 Issue:旧日报已被 /tracker 历史与今日日报取代,自动关闭防止长期堆积。
+    每张 2 次写请求,间隔 2s(≈60 次/分钟,低于 GitHub 二级限流 80 次/分钟);重试后仍限流则本轮停止,余下留待下次。
+    任一步失败只打印不抛出(日报本体已投递,清理是次要动作)。"""
+    try:
+        stale: list[int] = []
+        for page in range(1, 4):  # 最多 300 张,足够消化历史积压
+            batch = gh_api(repo, token, "GET", "/issues",
+                           query=f"?labels=daily-digest&state=open&per_page=100&page={page}")
+            if not isinstance(batch, list) or not batch:
+                break
+            stale += [i["number"] for i in batch if "pull_request" not in i and i.get("number") != keep]
+            if len(batch) < 100:
+                break
+        closed = 0
+        for n in sorted(stale):
+            try:
+                gh_api(repo, token, "PATCH", f"/issues/{n}", {"state": "closed", "state_reason": "completed"})
+                closed += 1
+                gh_api(repo, token, "POST", f"/issues/{n}/comments",
+                       {"body": f"已被 {today} 日报" + (f" #{keep}" if keep else "") + " 取代,自动关闭。"})
+            except urllib.error.HTTPError as e:
+                if e.code in (403, 429):
+                    print("  ! 重试后仍被 GitHub 限流,本轮停止清理,余下留待下次", file=sys.stderr)
+                    break
+                print(f"  ! close #{n}: {e}", file=sys.stderr)
+            except Exception as e:  # noqa: BLE001
+                print(f"  ! close #{n}: {e}", file=sys.stderr)
+            time.sleep(2)
+        print(f"已关闭旧日报 Issue {closed}/{len(stale)} 张")
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! 清理旧日报 Issue 失败: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
