@@ -1,22 +1,12 @@
 {
-  "updated_at": "2026-10-01T19:38:13Z",
-  "source_report": "routine-2026-10-01T1938Z",
+  "updated_at": "2026-10-01T23:58:30Z",
+  "source_report": "routine-2026-10-01T2358Z",
   "asof": "2026-10-01",
   "n_long": 25,
   "n_short": 23,
   "gross_leverage": 0.384,
   "net_exposure": 0.0069,
   "positions": [
-    {
-      "ticker": "C",
-      "side": "SHORT",
-      "weight": -0.0223,
-      "s_score": 0.78,
-      "halflife_days": 6.6,
-      "kappa": 26.32,
-      "hurst": 0.327,
-      "sector": "Financials"
-    },
     {
       "ticker": "ISRG",
       "side": "SHORT",
@@ -26,6 +16,16 @@
       "kappa": 31.81,
       "hurst": 0.4,
       "sector": "Health Care"
+    },
+    {
+      "ticker": "C",
+      "side": "SHORT",
+      "weight": -0.0223,
+      "s_score": 0.78,
+      "halflife_days": 6.6,
+      "kappa": 26.32,
+      "hurst": 0.327,
+      "sector": "Financials"
     },
     {
       "ticker": "AEP",
@@ -258,16 +258,6 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "TXN",
-      "side": "LONG",
-      "weight": 0.0012,
-      "s_score": 1.119,
-      "halflife_days": 4.8,
-      "kappa": 36.74,
-      "hurst": 0.403,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "AMD",
       "side": "LONG",
       "weight": 0.0012,
@@ -275,6 +265,16 @@
       "halflife_days": 9.3,
       "kappa": 18.83,
       "hurst": 0.536,
+      "sector": "Information Technology"
+    },
+    {
+      "ticker": "TXN",
+      "side": "LONG",
+      "weight": 0.0012,
+      "s_score": 1.119,
+      "halflife_days": 4.8,
+      "kappa": 36.74,
+      "hurst": 0.403,
       "sector": "Information Technology"
     },
     {
