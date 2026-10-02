@@ -1,22 +1,12 @@
 {
-  "updated_at": "2026-10-01T23:58:30Z",
-  "source_report": "routine-2026-10-01T2358Z",
+  "updated_at": "2026-10-02T01:46:11Z",
+  "source_report": "routine-2026-10-02T0146Z",
   "asof": "2026-10-01",
   "n_long": 25,
   "n_short": 23,
   "gross_leverage": 0.384,
   "net_exposure": 0.0069,
   "positions": [
-    {
-      "ticker": "ISRG",
-      "side": "SHORT",
-      "weight": -0.0223,
-      "s_score": 1.777,
-      "halflife_days": 5.5,
-      "kappa": 31.81,
-      "hurst": 0.4,
-      "sector": "Health Care"
-    },
     {
       "ticker": "C",
       "side": "SHORT",
@@ -26,6 +16,16 @@
       "kappa": 26.32,
       "hurst": 0.327,
       "sector": "Financials"
+    },
+    {
+      "ticker": "ISRG",
+      "side": "SHORT",
+      "weight": -0.0223,
+      "s_score": 1.777,
+      "halflife_days": 5.5,
+      "kappa": 31.81,
+      "hurst": 0.4,
+      "sector": "Health Care"
     },
     {
       "ticker": "AEP",
@@ -258,16 +258,6 @@
       "sector": "Consumer Staples"
     },
     {
-      "ticker": "AMD",
-      "side": "LONG",
-      "weight": 0.0012,
-      "s_score": 0.403,
-      "halflife_days": 9.3,
-      "kappa": 18.83,
-      "hurst": 0.536,
-      "sector": "Information Technology"
-    },
-    {
       "ticker": "TXN",
       "side": "LONG",
       "weight": 0.0012,
@@ -275,6 +265,16 @@
       "halflife_days": 4.8,
       "kappa": 36.74,
       "hurst": 0.403,
+      "sector": "Information Technology"
+    },
+    {
+      "ticker": "AMD",
+      "side": "LONG",
+      "weight": 0.0012,
+      "s_score": 0.403,
+      "halflife_days": 9.3,
+      "kappa": 18.83,
+      "hurst": 0.536,
       "sector": "Information Technology"
     },
     {
@@ -458,16 +458,6 @@
       "sector": "Communication Services"
     },
     {
-      "ticker": "O",
-      "side": "LONG",
-      "weight": 0.0216,
-      "s_score": -1.391,
-      "halflife_days": 5.6,
-      "kappa": 31.0,
-      "hurst": 0.399,
-      "sector": "Real Estate"
-    },
-    {
       "ticker": "UNP",
       "side": "LONG",
       "weight": 0.0216,
@@ -476,6 +466,16 @@
       "kappa": 22.76,
       "hurst": 0.496,
       "sector": "Industrials"
+    },
+    {
+      "ticker": "O",
+      "side": "LONG",
+      "weight": 0.0216,
+      "s_score": -1.391,
+      "halflife_days": 5.6,
+      "kappa": 31.0,
+      "hurst": 0.399,
+      "sector": "Real Estate"
     },
     {
       "ticker": "BMY",
