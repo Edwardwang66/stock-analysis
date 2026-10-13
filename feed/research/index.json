@@ -1,34 +1,47 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-09-22T22:44:53Z",
+  "updated_at": "2026-10-13T08:05:48Z",
   "note": "scripts/deep_research.py 产出的深度研究简报索引。确定性引擎,未调用 LLM;confirmed 只表示对已记录数据的可复现计算成立,不构成投资建议。最多保留 60 条摘要,简报文件本身不裁剪。",
   "latest": {
-    "id": "deep-research-2026-09-22T2244Z",
-    "produced_at": "2026-09-22T22:44:53Z",
-    "asof_data": "2026-09-22",
-    "headline": "簿自报来源报告 routine-2026-09-22T2128Z,该报告的熔断名单与这份簿有 4 只交集 ['AMAT', 'AMT', 'AXP', 'BKNG'],仍带 0.0431 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+    "id": "deep-research-2026-10-13T0805Z",
+    "produced_at": "2026-10-13T08:05:48Z",
+    "asof_data": "2026-10-13",
+    "headline": "簿自报来源报告 routine-2026-10-13T0307Z,该报告的熔断名单与这份簿有 3 只交集 ['AMT', 'BAC', 'C'],仍带 0.0243 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
     "n_questions": 18,
     "n_findings": 29,
     "confirmed": 29,
     "refuted": 1,
     "unverified": 1,
     "n_alerts": 8,
-    "path": "research/deep-research-2026-09-22T2244Z.json"
+    "path": "research/deep-research-2026-10-13T0805Z.json"
   },
   "stats": {
-    "total_briefs": 2,
+    "total_briefs": 3,
     "by_role": {
-      "residual-analyst": 8,
-      "red-team": 8,
-      "engine": 14,
-      "crowding-monitor": 6,
-      "factor-factory": 8,
-      "risk": 10,
-      "event-risk": 5
+      "residual-analyst": 12,
+      "red-team": 12,
+      "engine": 21,
+      "crowding-monitor": 9,
+      "factor-factory": 12,
+      "risk": 15,
+      "event-risk": 7
     },
     "last_7d": 1
   },
   "briefs": [
+    {
+      "id": "deep-research-2026-10-13T0805Z",
+      "produced_at": "2026-10-13T08:05:48Z",
+      "asof_data": "2026-10-13",
+      "headline": "簿自报来源报告 routine-2026-10-13T0307Z,该报告的熔断名单与这份簿有 3 只交集 ['AMT', 'BAC', 'C'],仍带 0.0243 的毛权重。熔断的设计意图是「立即标记平仓,禁止持有等待」(R2),而簿是经 aim 平滑收敛出来的,只按 trade_rate 走一部分,因此被熔断的标的会带残余权重继续出现。",
+      "n_questions": 18,
+      "n_findings": 29,
+      "confirmed": 29,
+      "refuted": 1,
+      "unverified": 1,
+      "n_alerts": 8,
+      "path": "research/deep-research-2026-10-13T0805Z.json"
+    },
     {
       "id": "deep-research-2026-09-22T2244Z",
       "produced_at": "2026-09-22T22:44:53Z",

@@ -1,14 +1,14 @@
 {
   "symbol": "IDX:^HSI",
-  "date": "2026-09-26",
+  "date": "2026-10-13",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: ^HSI 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 24510.09，20/50/200日均线约 25036.35/25332.36/25573.62；TD9 下行1；52周位置 距高 -12.6%、36分位；SuperTrend(10,3) 空头·约 11 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -4.2%/5.0%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: ^HSI 属于 unknown sector/unknown industry，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 24257.65，20/50/200日均线约 24485.05/25078.52/25495.46；TD9 上行1；52周位置 距高 -13.5%、31分位；SuperTrend(10,3) 空头·约 22 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -2.6%/-3.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 IDX 交易所/公司公告源 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: Beijing AI Probe, Firming Oil Prices Churn Asian Stock Markets(MT Newswires)；Wall Street Cues, Tech Strength, Easing Oil Bills Lift Asian Stock Markets(MT Newswires)；China President Xi US Visit, Easing Oil Prices Buoy Asian Stock Markets(MT Newswires)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Oil, Bond Yields Roil Asian Stock Markets in Holiday-Thinned Trading(MT Newswires)；Xiaomi shares surge as SkyNomad EV lineup clocks strong orders(Investing.com)；Tencent shares fall as company weighs up to $5 billion bond sale, Bloomberg says(Investing.com)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行1；52周位置 距高 -12.6%、36分位；SuperTrend(10,3) 空头·约 11 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 上行1；52周位置 距高 -13.5%、31分位；SuperTrend(10,3) 空头·约 22 个交易日前翻转；缠论近似: 当前下行笔，位于中枢内部，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: ^HSI",
@@ -19,18 +19,18 @@
       "url": "https://finance.yahoo.com/quote/^HSI/news/"
     },
     {
-      "title": "Beijing AI Probe, Firming Oil Prices Churn Asian Stock Markets",
-      "url": "https://finance.yahoo.com/markets/world-indices/articles/beijing-ai-probe-firming-oil-103941648.html"
+      "title": "Oil, Bond Yields Roil Asian Stock Markets in Holiday-Thinned Trading",
+      "url": "https://finance.yahoo.com/markets/world-indices/articles/oil-bond-yields-roil-asian-103931743.html"
     },
     {
-      "title": "Wall Street Cues, Tech Strength, Easing Oil Bills Lift Asian Stock Markets",
-      "url": "https://finance.yahoo.com/markets/world-indices/articles/wall-street-cues-tech-strength-104644783.html"
+      "title": "Xiaomi shares surge as SkyNomad EV lineup clocks strong orders",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/xiaomi-shares-surge-skynomad-ev-060940190.html"
     }
   ],
   "methodology": {
-    "td9": "下行1",
-    "week52": "距高 -12.6% · 36分位",
-    "supertrend": "空头·约 11 个交易日前翻转",
-    "chan": "下行笔，接近中枢下沿，有背驰迹象"
+    "td9": "上行1",
+    "week52": "距高 -13.5% · 31分位",
+    "supertrend": "空头·约 22 个交易日前翻转",
+    "chan": "下行笔，位于中枢内部，有背驰迹象"
   }
 }
