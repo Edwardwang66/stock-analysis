@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-10-15T1651Z",
+  "kind": "routine",
+  "produced_at": "2026-10-15T16:51:07Z",
+  "asof_data": "2026-10-15",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/38772378565"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "BLUR 资金费年化 -1653%(OI $1M)——挤压/单边持仓信号。",
+      "tickers": [
+        "BLUR"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.12% (mark 7720.2,$470M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:45 流动永续持仓面,跨所错位 54,HIP-3 24/7 资产 115。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "1d5df8c55b74387c7e2693419a246c1783b13d00a1dd48a32c9255a73eb77f19"
+  }
+}
