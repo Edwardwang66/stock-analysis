@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Status catalog and navigation for maintained, target, historical, and archived documentation.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `11beda8696d1b12c037fc2f7465f4a7fae3183a2`
 
 ## Start here
 
@@ -24,6 +24,7 @@ The current architecture describes what this checkout implements. The target RFC
 - [`../backend/README.md`](../backend/README.md) — optional FastAPI entry points and local runtime notes.
 - [`../feed/README.md`](../feed/README.md) — current report-feed conventions and consumer path.
 - [`openclaw-integration.md`](openclaw-integration.md) and [`openclaw-stock-notes.md`](openclaw-stock-notes.md) — current external report ingress and stock-note contracts.
+- [`deep-research.md`](deep-research.md) — the deterministic deep-research engine, its `feed/research` family, and what a confirmed claim does and does not prove.
 - [`../backtest/README.md`](../backtest/README.md) and [`../backtest/FEATURES.md`](../backtest/FEATURES.md) — maintained backtest entry points, capabilities, and recorded limitations.
 
 Subsystem READMEs are useful operational references. When they conflict with the current architecture or source, the verified current architecture and implementation are authoritative.

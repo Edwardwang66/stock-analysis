@@ -37,6 +37,7 @@
     "docs/self-improving-alpha-loop.md",
     "docs/openclaw-integration.md",
     "docs/openclaw-stock-notes.md",
+    "docs/deep-research.md",
     "docs/superpowers/specs/2026-07-16-stock-analysis-refactor-design.md",
     "docs/superpowers/specs/2026-07-26-open-graph-share-card-design.md",
     "docs/superpowers/plans/2026-07-16-stage-1a-feed-security.md",
@@ -179,6 +180,22 @@
       "document": "feed/README.md",
       "cwd": ".",
       "command": "python scripts/tests/test_workflow_security.py",
+      "kind": "ci",
+      "runtime": "python",
+      "workflow": ".github/workflows/tests.yml",
+      "job": "python"
+    },
+    {
+      "document": "docs/deep-research.md",
+      "cwd": ".",
+      "command": "python scripts/deep_research.py",
+      "kind": "entrypoint",
+      "runtime": "python"
+    },
+    {
+      "document": "docs/deep-research.md",
+      "cwd": ".",
+      "command": "python scripts/tests/test_deep_research.py",
       "kind": "ci",
       "runtime": "python",
       "workflow": ".github/workflows/tests.yml",

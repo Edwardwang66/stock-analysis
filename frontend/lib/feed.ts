@@ -268,6 +268,60 @@ export const getChanStats = () => fetchJson<ChanStatsDoc>("signals/chan-stats.js
 export interface StanceDay { date: string; stances: Record<string, string> }
 export const getStanceHistory = () => fetchJson<StanceDay[]>("stock-notes/stance-history.json");
 
+// 深度研究简报(scripts/deep_research.py 产出;确定性引擎,不调用 LLM)
+// 四段流水:立题 → 并发取证 → 对抗验证(red-team 反驳器) → 合成。
+// 被反驳(refuted)与未验证(unverified)的论断一律保留在简报里供审计,前端也照实展示。
+export interface ResearchEvidence {
+  artifact: string; field: string; value?: number | string | boolean | null; asof?: string | null;
+}
+export interface ResearchRefutation { code: string; message: string }
+export interface ResearchClaim {
+  id: string; role: string; question: string; statement: string;
+  metric?: string | null; value?: number | string | boolean | null; unit?: string | null;
+  direction?: string | null; n?: number | null; severity?: string | null;
+  cites?: string[]; evidence?: ResearchEvidence[];
+  verdict?: string | null; refutations?: ResearchRefutation[];
+}
+export interface ResearchQuestion {
+  id: string; role: string; title: string; needs?: string[];
+  test?: string | null; triggered_by?: string | null; answered?: boolean;
+}
+export interface ResearchOpenQuestion { id: string; title: string; reason: string; missing?: string[] }
+export interface ResearchNextAction { priority: string; action: string; because: string }
+export interface ResearchCoverageArtifact {
+  key: string; path: string; exists: boolean; asof?: string | null; age_days?: number | null;
+}
+export interface ResearchBrief {
+  schema_version: string; id: string; kind: string; produced_at: string; asof_data?: string | null;
+  producer: { name: string; agent_role?: string; method?: string; run_url?: string };
+  run?: { workers?: number; roles?: string[]; questions_derived?: number; lenses_run?: number;
+          lenses_failed?: number; reports_scanned?: number; duration_ms?: number };
+  questions?: ResearchQuestion[];
+  findings?: ResearchClaim[];
+  refuted?: ResearchClaim[];
+  verdicts?: { confirmed: number; refuted: number; unverified: number };
+  open_questions?: ResearchOpenQuestion[];
+  next_actions?: ResearchNextAction[];
+  alerts?: Alert[];
+  coverage?: { artifacts?: ResearchCoverageArtifact[]; artifacts_read?: number; artifacts_missing?: number };
+  notes?: string;
+}
+export interface ResearchBriefSummary {
+  id: string; produced_at: string; asof_data?: string | null; headline?: string | null;
+  n_questions?: number; n_findings?: number;
+  confirmed?: number; refuted?: number; unverified?: number;
+  n_alerts?: number; path: string;
+}
+export interface ResearchIndex {
+  schema_version: string; updated_at: string; note?: string;
+  latest?: ResearchBriefSummary | null;
+  stats?: { total_briefs?: number; by_role?: Record<string, number>; last_7d?: number };
+  briefs?: ResearchBriefSummary[];
+  open_questions?: ResearchOpenQuestion[];
+}
+export const getResearchIndex = () => fetchJson<ResearchIndex>("research/index.json");
+export const getResearchBrief = (path: string) => fetchJson<ResearchBrief>(path);
+
 export const getIndex = () => fetchJson<FeedIndex>("index.json");
 export const getSignals = () => fetchJson<Signals>("signals/latest.json");
 export const getMarket = () => fetchJson<MarketState>("market/state.json");

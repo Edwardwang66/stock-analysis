@@ -12,6 +12,7 @@ on:
       - "feed/intraday/**"
       - "feed/market/**"
       - "feed/reports/**"
+      - "feed/research/**"
       - "feed/screener/**"
       - "feed/signals/**"
       - "feed/stock-notes/**"
@@ -155,6 +156,7 @@ jobs:
           python scripts/tests/test_feed_publication.py
           python scripts/tests/test_dependabot_merge_gate.py
           python scripts/tests/test_workflow_security.py
+          python scripts/tests/test_deep_research.py
       - name: Primary-runtime lock consistency
         if: matrix.python_version == '3.11.15'
         run: |
