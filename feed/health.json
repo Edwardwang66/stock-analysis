@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-17T05:37:46Z",
+  "checked_at": "2026-10-17T07:52:28Z",
   "ok": true,
   "critical": 0,
   "warn": 0,
@@ -12,59 +12,59 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 128.9 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 129.0 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-10-16",
-      "age_days": 1.23
+      "age_days": 1.33
     },
     "market_state": {
       "exists": true,
       "asof": "2026-10-16",
-      "age_days": 1.23
+      "age_days": 1.33
     },
     "screener": {
       "exists": true,
       "asof": "2026-10-17",
-      "age_days": 0.23
+      "age_days": 0.33
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-10-17",
-      "age_days": 0.23
+      "age_days": 0.33
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-10-17T05:12:45Z",
-      "age_days": 0.02
+      "age_days": 0.11
     },
     "intraday": {
       "exists": true,
       "asof": "2026-10-16T16:55:54+00:00",
-      "age_days": 0.53
+      "age_days": 0.62
     },
     "market_history": {
       "exists": true,
       "asof": "2026-10-17T00:45:35+00:00",
-      "age_days": 0.2
+      "age_days": 0.3
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-08-14",
-      "age_days": 64.23
+      "age_days": 64.33
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-10-17T00:20:36Z",
-      "age_days": 0.22
+      "asof": "2026-10-17T06:51:18Z",
+      "age_days": 0.04
     },
     "research": {
       "exists": true,
       "asof": "2026-10-13T08:05:48Z",
-      "age_days": 3.9
+      "age_days": 3.99
     }
   }
 }
