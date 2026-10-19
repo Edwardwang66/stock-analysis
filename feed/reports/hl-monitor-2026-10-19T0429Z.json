@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-10-19T0429Z",
+  "kind": "routine",
+  "produced_at": "2026-10-19T04:29:15Z",
+  "asof_data": "2026-10-19",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/39199677957"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "SAND 资金费年化 -1333%(OI $2M)——挤压/单边持仓信号。",
+      "tickers": [
+        "SAND"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ONDO 资金费年化 -70%(OI $28M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ONDO"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h +1.21% (mark 7716.9,$205M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:38 流动永续持仓面,跨所错位 59,HIP-3 24/7 资产 111。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "b67b258675a7fe21425c4686e9d018f7b1c2180a280ada28929d2dd3f3d966af"
+  }
+}
