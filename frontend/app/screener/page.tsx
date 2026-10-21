@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useEffect, useMemo, useState } from "react";
 import { getQuotes, type Quote } from "@/lib/datasource";
 import { getScreener, type ScreenerList } from "@/lib/feed";
@@ -74,12 +75,11 @@ export default function ScreenerPage() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>📈 每日选股 · 技术评分 ≥ {data?.threshold ?? 50}</h1>
         <LangSelect />
         <span className="tag">标普500 + 纳指100 · 非 LLM 规则化评分</span>
       </div>
+      <Nav />
 
       {rsH.length >= 3 && (() => {
         const a0 = rsH[Math.max(0, rsH.length - 8)].rs, b0 = rsH[rsH.length - 1].rs;

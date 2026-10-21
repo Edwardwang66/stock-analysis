@@ -36,8 +36,9 @@ jobs:
           git add feed/signals/chan-stats.json
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "signals: 缠论买卖点统计 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && exit 0
-            sleep $((5*i))
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
-          exit 1
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi

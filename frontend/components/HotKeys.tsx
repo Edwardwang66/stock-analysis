@@ -1,13 +1,13 @@
 "use client";
-// ⌨️ 全站快捷键:g+键 跳页(g d 总览 / g h 首页 / g r 报告 / g t 追踪 / g s 选股 / g a 告警 / g ? 帮助)。
+// ⌨️ 全站快捷键:g+键 跳页(映射表即 components/Nav.tsx 的 NAV_ITEMS:g h 首页 / g d 总览 / g s 选股 / g t 追踪 /
+// g i 情报 / g r 报告 / g p 持仓 / g a 告警 / g o 数据源 / g ? 帮助;g / 也是帮助)。
 // 输入框聚焦时不触发;800ms 内按第二键生效。
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { NAV_ITEMS } from "@/components/Nav";
 
-const MAP: Record<string, string> = {
-  h: "/", d: "/desk/", r: "/reports/", t: "/tracker/", s: "/screener/",
-  a: "/alerts/", i: "/intel/", p: "/portfolio/", "?": "/help/", "/": "/help/",
-};
+const MAP: Record<string, string> = Object.fromEntries(NAV_ITEMS.map((it) => [it.key, it.href]));
+MAP["/"] = "/help/";
 
 export default function HotKeys() {
   const router = useRouter();
