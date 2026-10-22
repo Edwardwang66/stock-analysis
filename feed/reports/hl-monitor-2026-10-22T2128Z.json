@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-10-22T2128Z",
+  "kind": "routine",
+  "produced_at": "2026-10-22T21:28:22Z",
+  "asof_data": "2026-10-22",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/39857483870"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ALT 资金费年化 -2378%(OI $2M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ALT"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "ADA 资金费年化 -59%(OI $30M)——挤压/单边持仓信号。",
+      "tickers": [
+        "ADA"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -1.18% (mark 7660.4,$315M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:36 流动永续持仓面,跨所错位 65,HIP-3 24/7 资产 114。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "8ad98093937cdbf2498bea3225b6173159fbd5978dc35b212b14e300226b0594"
+  }
+}
