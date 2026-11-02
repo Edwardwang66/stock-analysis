@@ -1,57 +1,57 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-11-01T23:30:16Z",
+  "updated_at": "2026-11-02T02:12:09Z",
   "freshness": {
-    "last_report_at": "2026-11-01T23:30:16Z",
+    "last_report_at": "2026-11-02T02:12:08Z",
     "market_data_asof": "2026-10-30",
     "report_age_hours": 0.0,
-    "data_age_days": 2.98,
+    "data_age_days": 3.09,
     "stale": false,
     "sources": {
       "signals_book": {
         "exists": true,
         "asof": "2026-10-30",
-        "age_days": 2.98
+        "age_days": 3.09
       },
       "market_state": {
         "exists": true,
         "asof": "2026-10-30",
-        "age_days": 2.98
+        "age_days": 3.09
       },
       "screener": {
         "exists": true,
         "asof": "2026-10-31",
-        "age_days": 1.98
+        "age_days": 2.09
       },
       "rs_ranks": {
         "exists": true,
         "asof": "2026-10-31",
-        "age_days": 1.98
+        "age_days": 2.09
       },
       "stock_notes": {
         "exists": true,
         "asof": "2026-10-31T06:28:49Z",
-        "age_days": 1.71
+        "age_days": 1.82
       },
       "intraday": {
         "exists": true,
         "asof": "2026-10-30T18:06:11+00:00",
-        "age_days": 2.23
+        "age_days": 2.34
       },
       "market_history": {
         "exists": true,
         "asof": "2026-10-31T01:47:05+00:00",
-        "age_days": 1.9
+        "age_days": 2.02
       },
       "funds_13f": {
         "exists": true,
         "asof": "2026-08-14",
-        "age_days": 79.98
+        "age_days": 80.09
       },
       "crypto_state": {
         "exists": true,
         "asof": "2026-11-01T23:30:14Z",
-        "age_days": 0.0
+        "age_days": 0.11
       }
     }
   },
@@ -64,18 +64,18 @@
     "verdict": "holdout(2025-01-01起)净 Sharpe=-0.58≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.34≤0(净成本是唯一货币 R4)"
   },
   "stats": {
-    "total_reports": 1567,
+    "total_reports": 1569,
     "by_kind": {
+      "manual": 121,
       "routine": 1437,
-      "manual": 119,
       "openclaw": 11
     },
     "by_producer": {
+      "study-downshift": 6,
+      "study-pbo": 6,
       "hyperliquid-monitor": 969,
       "factor-factory-local": 106,
       "github-actions-routine": 468,
-      "study-downshift": 5,
-      "study-pbo": 5,
       "study-pit-bite": 1,
       "study-pit-membership": 1,
       "study-overnight-gap": 1,
@@ -85,8 +85,8 @@
       "openclaw-agent:crowding-monitor": 2,
       "openclaw-agent:residual-analyst": 3
     },
-    "last_24h": 4,
-    "last_7d": 48
+    "last_24h": 6,
+    "last_7d": 50
   },
   "timeline": {
     "2026-06-06": 2,
@@ -236,9 +236,40 @@
     "2026-10-29": 9,
     "2026-10-30": 8,
     "2026-10-31": 6,
-    "2026-11-01": 4
+    "2026-11-01": 4,
+    "2026-11-02": 2
   },
   "reports": [
+    {
+      "id": "study-downshift-2026-11-02T0212Z",
+      "kind": "manual",
+      "produced_at": "2026-11-02T02:12:08Z",
+      "asof_data": "2026-10-30",
+      "producer": "study-downshift",
+      "agent_role": "engine",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "Universe 下沉实验:毛SR增益 +0.19,净SR增益 +0.12;容量地板将小盘实现杠杆压至 0.45。",
+      "path": "reports/study-downshift-2026-11-02T0212Z.json"
+    },
+    {
+      "id": "study-pbo-2026-11-02T0211Z",
+      "kind": "manual",
+      "produced_at": "2026-11-02T02:11:05Z",
+      "asof_data": "2026-10-30",
+      "producer": "study-pbo",
+      "agent_role": "engine",
+      "net_sharpe": null,
+      "verdict": null,
+      "n_alerts": 1,
+      "n_candidates": 0,
+      "contribution_type": "regime_update",
+      "contribution_summary": "PBO 研究:10 参数变体 CSCV PBO=0.47,train最优=vol_target=4%(波动缩放),holdout 上 +0.11。",
+      "path": "reports/study-pbo-2026-11-02T0211Z.json"
+    },
     {
       "id": "hl-monitor-2026-11-01T2330Z",
       "kind": "routine",
@@ -1108,39 +1139,23 @@
       "contribution_type": "regime_update",
       "contribution_summary": "HL 衍生品情报:29 流动永续持仓面,跨所错位 55,HIP-3 24/7 资产 114。",
       "path": "reports/hl-monitor-2026-10-24T0425Z.json"
-    },
-    {
-      "id": "factory-local-2026-10-24T0057Z",
-      "kind": "manual",
-      "produced_at": "2026-10-24T00:57:06Z",
-      "asof_data": "2026-10-23",
-      "producer": "factor-factory-local",
-      "agent_role": "factor-factory",
-      "net_sharpe": null,
-      "verdict": null,
-      "n_alerts": 0,
-      "n_candidates": 8,
-      "contribution_type": "new_factor",
-      "contribution_summary": "本仓公式因子工厂实跑:预注册 N=304,0 过 train 门控,0 过 holdout 终检进 shadow。",
-      "path": "reports/factory-local-2026-10-24T0057Z.json"
-    },
-    {
-      "id": "routine-2026-10-24T0056Z",
-      "kind": "routine",
-      "produced_at": "2026-10-24T00:56:51Z",
-      "asof_data": "2026-10-23",
-      "producer": "github-actions-routine",
-      "agent_role": "engine",
-      "net_sharpe": -0.31749524397330187,
-      "verdict": "holdout(2025-01-01起)净 Sharpe=-0.51≤0 —— 终检不过,按 R4/R5 应淘汰;全样本净 Sharpe=-0.32≤0(净成本是唯一货币 R4)",
-      "n_alerts": 1,
-      "n_candidates": 0,
-      "contribution_type": "signal_refresh",
-      "contribution_summary": "刷新做多做空簿(多 25/空 29),净 Sharpe -0.32;市场 risk_on、广度 0.583、拥挤 0.092。",
-      "path": "reports/routine-2026-10-24T0056Z.json"
     }
   ],
   "contributions": [
+    {
+      "at": "2026-11-02T02:12:08Z",
+      "producer": "study-downshift",
+      "id": "study-downshift-2026-11-02T0212Z",
+      "type": "regime_update",
+      "summary": "Universe 下沉实验:毛SR增益 +0.19,净SR增益 +0.12;容量地板将小盘实现杠杆压至 0.45。"
+    },
+    {
+      "at": "2026-11-02T02:11:05Z",
+      "producer": "study-pbo",
+      "id": "study-pbo-2026-11-02T0211Z",
+      "type": "regime_update",
+      "summary": "PBO 研究:10 参数变体 CSCV PBO=0.47,train最优=vol_target=4%(波动缩放),holdout 上 +0.11。"
+    },
     {
       "at": "2026-11-01T23:30:16Z",
       "producer": "hyperliquid-monitor",
@@ -1768,26 +1783,6 @@
       "id": "hl-monitor-2026-10-21T2312Z",
       "type": "regime_update",
       "summary": "HL 衍生品情报:33 流动永续持仓面,跨所错位 56,HIP-3 24/7 资产 112。"
-    },
-    {
-      "at": "2026-10-21T22:28:29Z",
-      "producer": "github-actions-routine",
-      "id": "routine-2026-10-21T2228Z",
-      "type": "signal_refresh",
-      "summary": "刷新做多做空簿(多 24/空 27),净 Sharpe -0.31;市场 risk_on、广度 0.583、拥挤 0.089。",
-      "candidates_proposed": 0,
-      "candidates_accepted": 0,
-      "net_sharpe_delta": 0.0
-    },
-    {
-      "at": "2026-10-21T18:46:10Z",
-      "producer": "github-actions-routine",
-      "id": "routine-2026-10-21T1846Z",
-      "type": "signal_refresh",
-      "summary": "刷新做多做空簿(多 24/空 27),净 Sharpe -0.31;市场 risk_on、广度 0.583、拥挤 0.089。",
-      "candidates_proposed": 0,
-      "candidates_accepted": 0,
-      "net_sharpe_delta": -0.014
     }
   ]
 }
