@@ -2,7 +2,7 @@
 
 > **Status:** Current
 > **Scope:** Status catalog and navigation for maintained, target, historical, and archived documentation.
-> **Last verified commit:** `8cff75b8e31d6b3a07a9d6198e0bc54bcb3b594a`
+> **Last verified commit:** `5157635cf88c9d3cb42c98e5376faec790a4ef1e`
 
 ## Start here
 
@@ -53,7 +53,7 @@ These maintained routes preserve former URLs while pointing to current authoriti
 - [`research/index.md`](research/index.md) — maintained catalog for research tracks, dated studies, evidence levels, and limitations.
 - [`../backtest/README.md`](../backtest/README.md), [`../backtest/README_statarb.md`](../backtest/README_statarb.md), and [`../backtest/README_xs.md`](../backtest/README_xs.md) — major equity research tracks.
 - [`../backtest/README_crypto.md`](../backtest/README_crypto.md), [`../backtest/README_crypto_pipeline.md`](../backtest/README_crypto_pipeline.md), and [`../backtest/README_binance.md`](../backtest/README_binance.md) — crypto research tracks.
-- [`study-pbo-2026-06-10.md`](study-pbo-2026-06-10.md), [`study-pbo-2026-07-02.md`](study-pbo-2026-07-02.md), [`study-downshift-2026-06-10.md`](study-downshift-2026-06-10.md), and [`study-downshift-2026-07-02.md`](study-downshift-2026-07-02.md) — dated validation snapshots.
+- [`study-pbo-2026-06-10.md`](study-pbo-2026-06-10.md), [`study-pbo-2026-07-02.md`](study-pbo-2026-07-02.md), [`study-pbo-2026-08-02.md`](study-pbo-2026-08-02.md), [`study-pbo-2026-09-02.md`](study-pbo-2026-09-02.md), [`study-downshift-2026-06-10.md`](study-downshift-2026-06-10.md), [`study-downshift-2026-07-02.md`](study-downshift-2026-07-02.md), [`study-downshift-2026-08-02.md`](study-downshift-2026-08-02.md), and [`study-downshift-2026-09-02.md`](study-downshift-2026-09-02.md) — dated validation snapshots. The `monthly-studies.yml` workflow appends a new pair each month; the generators write the historical header and the workflow registers the files in `verification.json`, but the catalog rows here and in the research index are still maintained by hand.
 - [`study-overnight-gap-2026-06-10.md`](study-overnight-gap-2026-06-10.md), [`study-pit-bite-2026-06-10.md`](study-pit-bite-2026-06-10.md), and [`study-pit-membership-2026-06-10.md`](study-pit-membership-2026-06-10.md) — dated market-structure and point-in-time studies.
 
 Research pages record methods and observations at a particular cutoff. They do not define the current runtime architecture.

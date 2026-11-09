@@ -8,6 +8,12 @@ on:
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
+permissions: {}
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
 jobs:
   ping:
     runs-on: ubuntu-latest

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Chart from "@/components/Chart";
@@ -195,8 +196,6 @@ function SymbolView() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>{nameOf(symbol, lang)}</h1>
         {(() => {
           const nq = night.map[symbol];
@@ -229,6 +228,7 @@ function SymbolView() {
           </>
         )}
       </div>
+      <Nav />
 
       {ext && (
         <div className="ext-quote">

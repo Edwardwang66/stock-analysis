@@ -45,13 +45,14 @@ jobs:
           git add feed/screener feed/watchlist.json feed/signals/rs-ranks.json feed/signals/rs-history.json
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "screener: 每日技术评分清单 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && exit 0
-            sleep $((5*i))
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
-          echo "::error::push 失败(3次重试后)"; exit 1
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi
 
-      - name: 创建/更新当日 Issue(同日去重防刷屏)
+      - name: 创建/更新当日 Issue(同日去重防刷屏,旧日自动关闭)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -59,13 +60,23 @@ jobs:
           THRESH="${{ github.event.inputs.threshold || '80' }}"
           COUNT=$(python -c "import json;print(json.load(open('feed/screener/latest.json'))['count'])")
           TITLE="📈 每日选股 技术评分≥$THRESH · $DATE($COUNT 只)"
+          gh label create daily-screener --color 0E8A16 --description "每日技术评分选股清单" 2>/dev/null || true
           # push 路径触发/手动 dispatch 会让本工作流一天跑多次:已有当日 Issue 则更新,不再新开
           EXIST=$(gh issue list --state open --search "in:title 每日选股 $DATE" \
                     --json number --jq '.[0].number // empty')
           if [ -n "$EXIST" ]; then
-            gh issue edit "$EXIST" --title "$TITLE" --body-file feed/screener/issue.md
+            gh issue edit "$EXIST" --title "$TITLE" --body-file feed/screener/issue.md --add-label daily-screener
             echo "已更新当日 Issue #$EXIST"
           else
-            gh issue create --title "$TITLE" --body-file feed/screener/issue.md \
-              --assignee "${{ github.repository_owner }}" || echo "issue create failed"
+            EXIST=$(gh issue create --title "$TITLE" --body-file feed/screener/issue.md \
+              --label daily-screener --assignee "${{ github.repository_owner }}" | grep -oE '[0-9]+$' || true)
+            [ -n "$EXIST" ] && echo "已创建当日 Issue #$EXIST" || echo "issue create failed"
           fi
+          # 只保留当日一张:旧日的选股 Issue 已被 /screener 与 feed/screener/history.json 取代,自动关闭防止长期堆积
+          gh issue list --state open --limit 300 --search "in:title 每日选股" --json number,title \
+            --jq '.[] | select(.title | contains("每日选股")) | .number' \
+            | while read -r n; do
+                if [ -n "$EXIST" ] && [ "$n" = "$EXIST" ]; then continue; fi
+                gh issue close "$n" --comment "已被 $DATE 的清单取代(历史入库见 /tracker),自动关闭。" || echo "issue close failed: #$n"
+                sleep 2   # 每张 2 次写请求,限速在 GitHub 二级限流(80 次/分钟)之下
+              done
