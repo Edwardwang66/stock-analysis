@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "id": "hl-monitor-2026-11-15T0613Z",
+  "kind": "routine",
+  "produced_at": "2026-11-15T06:13:36Z",
+  "asof_data": "2026-11-15",
+  "producer": {
+    "name": "hyperliquid-monitor",
+    "agent_role": "crowding-monitor",
+    "run_url": "https://github.com/Edwardwang66/stock-analysis/actions/runs/43684444863"
+  },
+  "alerts": [
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "SOPH 资金费年化 -1122%(OI $0M)——挤压/单边持仓信号。",
+      "tickers": [
+        "SOPH"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "funding-extreme",
+      "message": "WLD 资金费年化 -109%(OI $27M)——挤压/单边持仓信号。",
+      "tickers": [
+        "WLD"
+      ]
+    },
+    {
+      "level": "info",
+      "code": "afterhours-proxy",
+      "message": "24/7 美股代理:SP500 永续 24h -0.45% (mark 7498.7,$104M/日)——盘后/周末缺口参考。",
+      "tickers": []
+    }
+  ],
+  "contribution": {
+    "type": "regime_update",
+    "summary": "HL 衍生品情报:40 流动永续持仓面,跨所错位 87,HIP-3 24/7 资产 113。"
+  },
+  "notes": "数据源 Hyperliquid 公开 info 接口;HIP-3 永续价为 mark 价,仅作参考,非证券报价。",
+  "signature": {
+    "alg": "HMAC-SHA256",
+    "key_id": "default",
+    "value": "80514b91aeb50ba45ded100c6b84569ee6e44145d3d490b9a714d638452d518d"
+  }
+}
