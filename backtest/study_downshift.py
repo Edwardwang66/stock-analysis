@@ -118,6 +118,10 @@ def main():
     lines = [
         f"# Universe 下沉实验(D5 容量护城河,{date})",
         "",
+        # 文档契约(scripts/check_docs.py):每份 tracked Markdown 必须自带 Status/Scope 头,否则 docs 门禁变红
+        "> **Status:** Historical research snapshot; not maintained",
+        "> **Scope:** Dated research result preserved for methodology and provenance, not current product behavior.",
+        "",
         "同一引擎、同一默认参数(零调参 R5),大盘拥挤层 vs S&P600 下沉层(分层抽样,seed 预注册)。",
         "",
         "| 层 | N | 毛SR | 净SR | train | holdout | 成本拖累 | 实现毛杠杆 | 日换手 |",

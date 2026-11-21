@@ -11,6 +11,10 @@ permissions:
   contents: write
   issues: write
 
+concurrency:
+  group: funds-13f
+  cancel-in-progress: false
+
 jobs:
   track:
     runs-on: ubuntu-latest
@@ -30,10 +34,12 @@ jobs:
           git add feed/funds
           if git diff --cached --quiet; then echo "无新披露"; exit 0; fi
           git commit -m "funds: 13F 持仓更新 $(date -u +%F)"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && break
-            sleep 5
+          pushed=0
+          for i in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次),不开 Issue"; exit 1; fi
           ASOF=$(python -c "import json;print(json.load(open('feed/funds/situational-awareness.json'))['asof'])")
           gh issue create --title "🦅 Situational Awareness LP 新 13F 披露(截至 $ASOF)" \
             --assignee "${{ github.repository_owner }}" \

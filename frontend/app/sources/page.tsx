@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useEffect, useState } from "react";
 import { SOURCES } from "@/lib/sources";
 import { getBackendHealth, HAS_BACKEND } from "@/lib/datasource";
@@ -31,14 +32,13 @@ export default function SourcesPage() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>← 返回</Link>
-        <Link href="/desk/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted)" }}>📋</Link>
         <h1>🔌 免费数据源接入</h1>
         <LangSelect />
         <span className="tag">
           已接入 <b style={{ color: UP }}>{counts["已接入"] || 0}</b> · 可接入 <b style={{ color: "#f7b500" }}>{counts["可接入"] || 0}</b> · 不可用 <b style={{ color: DOWN }}>{counts["不可用"] || 0}</b>(2026-06 实测)
         </span>
       </div>
+      <Nav />
 
       {/* 后端状态:未配置 → 全部浏览器直连;配置了 → 健康/熔断一览 */}
       <div className="section">

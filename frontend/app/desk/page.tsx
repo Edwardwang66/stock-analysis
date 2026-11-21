@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Nav from "@/components/Nav";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getQuotes, HAS_BACKEND, type Quote } from "@/lib/datasource";
@@ -338,19 +339,15 @@ export default function DeskPage() {
   return (
     <div className="container">
       <div className="header">
-        <Link href="/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>← 返回</Link>
         <h1>📋 总览</h1>
         <span className="tag">全池标签视图 · {rows.length} 只 · 选股日 {scr?.date ?? "—"}(美东 · 阈值 ≥{scr?.threshold ?? 80})</span>
         <a href="https://github.com/Edwardwang66/stock-analysis/issues?q=is%3Aissue+label%3Adaily-digest" target="_blank" rel="noreferrer"
           className="btn" style={{ marginLeft: "auto", background: "transparent", border: "1px solid var(--border)", color: MUT }}>📬 日报</a>
-        <Link href="/reports/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>📜 报告</Link>
-        <Link href="/alerts/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>⏰</Link>
-        <Link href="/tracker/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🎯 追踪</Link>
-        <Link href="/intel/" className="btn" style={{ background: "transparent", border: "1px solid var(--border)", color: MUT }}>🛰️ 情报</Link>
         <LangSelect />
         <LiveClock />
         <TzSelect />
       </div>
+      <Nav />
 
       {loading ? <div className="loading">加载中…</div> : (
         <>

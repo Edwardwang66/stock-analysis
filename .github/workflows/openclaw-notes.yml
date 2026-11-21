@@ -51,8 +51,9 @@ jobs:
           python scripts/feed_publication.py stage "$FEED_PUBLICATION_MANIFEST"
           if git diff --cached --quiet; then echo "无变化"; exit 0; fi
           git commit -m "openclaw: 每日个股 AI 解读 $(date -u +%F)(Actions 备胎)"
+          pushed=0
           for i in 1 2 3 4; do
-            git pull --rebase origin main && git push origin main && exit 0
-            sleep $((5*i))
+            if git pull --rebase origin main && git push origin main; then pushed=1; break; fi
+            if [ "$i" -lt 4 ]; then sleep $((2**i)); fi
           done
-          echo "::error::push 失败(4次重试后)"; exit 1
+          if [ "$pushed" -ne 1 ]; then echo "::error::push 重试耗尽(4 次)"; exit 1; fi
