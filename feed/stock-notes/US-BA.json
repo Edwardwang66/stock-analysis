@@ -1,14 +1,14 @@
 {
   "symbol": "US:BA",
-  "date": "2026-11-20",
+  "date": "2026-11-21",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
   "stance": "中性",
-  "thesis": "多头: BA 属于 Industrials/Aerospace & Defense，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 160.51，20/50/200日均线约 172.18/185.18/211.91；TD9 下行6；52周位置 距高 -36.9%、2分位；SuperTrend(10,3) 空头·约 64 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -14.4%/-24.3%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "thesis": "多头: BA 属于 Industrials/Aerospace & Defense，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 155.89，20/50/200日均线约 170.56/184.09/211.51；TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -38.7%、0分位；SuperTrend(10,3) 空头·约 65 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -17.2%/-25.7%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: His Estate Said the Divorce Canceled His Ex-Wife’s Claim To His $373,000 Boeing 401(k). A Washington Appeals Court Disagreed. Here’s What Every 401(k) Holder Needs To Know About Beneficiary Designation(24/7 Wall St.)；Boeing is down 15%, yet this quiet aviation stock has surged 32%(Investing.com)；Boeing Is Down 25% This Year, and a Director Just Bought In(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: Is Lockheed Martin Stock's 6% Cash Yield Solid?(Trefis)；Boeing (BA) Faces Execution Pressure, Is The Stock Fully Valued?(Simply Wall St.)；Archer Aviation Tumbles 8%, Breaks Below $3 as Air Taxi Rout Rolls On; EHang Slides 6%, Joby Aviation Drops 3%(24/7 Wall St.)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行6；52周位置 距高 -36.9%、2分位；SuperTrend(10,3) 空头·约 64 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "中性: TD9 下行7，7/8/9 高阶计数需防短线衰竭；52周位置 距高 -38.7%、0分位；SuperTrend(10,3) 空头·约 65 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: BA",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/BA/news/"
     },
     {
-      "title": "His Estate Said the Divorce Canceled His Ex-Wife’s Claim To His $373,000 Boeing 401(k). A Washington Appeals Court Disagreed. Here’s What Every 401(k) Holder Needs To Know About Beneficiary Designation",
-      "url": "https://finance.yahoo.com/markets/options/articles/estate-said-divorce-canceled-ex-014644356.html"
+      "title": "Is Lockheed Martin Stock's 6% Cash Yield Solid?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/lockheed-martin-stocks-6-cash-063247416.html"
     },
     {
-      "title": "Boeing is down 15%, yet this quiet aviation stock has surged 32%",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/boeing-down-15-yet-quiet-202604004.html"
+      "title": "Boeing (BA) Faces Execution Pressure, Is The Stock Fully Valued?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/boeing-ba-faces-execution-pressure-181321424.html"
     }
   ],
   "methodology": {
-    "td9": "下行6",
-    "week52": "距高 -36.9% · 2分位",
-    "supertrend": "空头·约 64 个交易日前翻转",
+    "td9": "下行7(防衰竭)",
+    "week52": "距高 -38.7% · 0分位",
+    "supertrend": "空头·约 65 个交易日前翻转",
     "chan": "下行笔，接近中枢下沿，有背驰迹象",
-    "rs": 5
+    "rs": 6
   }
 }
