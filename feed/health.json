@@ -1,33 +1,38 @@
 {
-  "checked_at": "2026-11-23T07:57:47Z",
+  "checked_at": "2026-11-23T20:26:12Z",
   "ok": true,
   "critical": 0,
-  "warn": 5,
+  "warn": 6,
   "issues": [
     {
       "level": "warn",
       "code": "aging",
-      "message": "signals_book 已 3.3 天未更新(SLA 3d)"
+      "message": "signals_book 已 3.9 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "market_state 已 3.3 天未更新(SLA 3d)"
+      "message": "market_state 已 3.9 天未更新(SLA 3d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "screener 已 2.3 天未更新(SLA 2d)"
+      "message": "screener 已 2.9 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "rs_ranks 已 2.3 天未更新(SLA 2d)"
+      "message": "rs_ranks 已 2.9 天未更新(SLA 2d)"
     },
     {
       "level": "warn",
       "code": "aging",
-      "message": "intraday 已 2.5 天未更新(SLA 2d)"
+      "message": "stock_notes 已 2.5 天未更新(SLA 2d)"
+    },
+    {
+      "level": "warn",
+      "code": "aging",
+      "message": "intraday 已 3.0 天未更新(SLA 2d)"
     },
     {
       "level": "info",
@@ -37,53 +42,53 @@
     {
       "level": "info",
       "code": "bundle-drift",
-      "message": "捆绑快照 public/feed 落后 166.0 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
+      "message": "捆绑快照 public/feed 落后 166.5 天(部署时 CI 会刷新;raw 远端为主源,仅提示)"
     }
   ],
   "sources": {
     "signals_book": {
       "exists": true,
       "asof": "2026-11-20",
-      "age_days": 3.33
+      "age_days": 3.85
     },
     "market_state": {
       "exists": true,
       "asof": "2026-11-20",
-      "age_days": 3.33
+      "age_days": 3.85
     },
     "screener": {
       "exists": true,
       "asof": "2026-11-21",
-      "age_days": 2.33
+      "age_days": 2.85
     },
     "rs_ranks": {
       "exists": true,
       "asof": "2026-11-21",
-      "age_days": 2.33
+      "age_days": 2.85
     },
     "stock_notes": {
       "exists": true,
       "asof": "2026-11-21T07:51:13Z",
-      "age_days": 2.0
+      "age_days": 2.52
     },
     "intraday": {
       "exists": true,
       "asof": "2026-11-20T20:03:43+00:00",
-      "age_days": 2.5
+      "age_days": 3.02
     },
     "market_history": {
       "exists": true,
-      "asof": "2026-11-21T03:26:37+00:00",
-      "age_days": 2.19
+      "asof": "2026-11-23T19:24:27+00:00",
+      "age_days": 0.04
     },
     "funds_13f": {
       "exists": true,
       "asof": "2026-11-16",
-      "age_days": 7.33
+      "age_days": 7.85
     },
     "crypto_state": {
       "exists": true,
-      "asof": "2026-11-23T07:22:11Z",
+      "asof": "2026-11-23T20:04:33Z",
       "age_days": 0.02
     }
   }
