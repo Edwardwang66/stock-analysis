@@ -1,14 +1,14 @@
 {
   "symbol": "US:TSLA",
-  "date": "2026-11-21",
+  "date": "2026-11-24",
   "model": "OpenClaw notes (Actions)",
   "producer": "openclaw-agent:stock-analyst",
-  "stance": "中性",
-  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 345.82，20/50/200日均线约 384.80/375.64/381.66；TD9 下行5；52周位置 距高 -30.7%、24分位；SuperTrend(10,3) 空头·约 12 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -7.1%/-2.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
+  "stance": "看多",
+  "thesis": "多头: TSLA 属于 Consumer Cyclical/Auto Manufacturers，当前进入看多清单，技术评分 n/a、RSI14 n/a；最新价约 385.46，20/50/200日均线约 384.49/376.17/381.53；TD9 上行1；52周位置 距高 -22.7%、44分位；SuperTrend(10,3) 空头·约 13 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。；云端自选池 feed/watchlist.json symbols，Edward/Claude 维护的完整必析全集。；近20/60交易日收益约 -1.6%/10.5%。空头: 若 RSI 接近过热或价格远高于短均线，短线回撤风险会上升；财报与新闻仍需逐日复核。",
   "earnings": "本轮未从 SEC companyfacts 可靠取得最近一季核心字段；不编造财报数字。",
-  "news": "近端公开新闻标题: MKBHD Says He Will Honor Tesla Cybercab’s 2024 Bet, Elon Musk Says ‘Fair Enough’: ‘I Will Accept Delivery…’(Stocktwits)；In 2000, Elon Musk Crashed His Uninsured $1 Million McLaren Trying to Show Peter Thiel What It Could Do. In 2025, Thiel’s Fund Quietly Sold Every Tesla Share It Owned(24/7 Wall St.)；Has AI's honeymoon ended on Wall Street?(AFP)。标题只作事件线索，未把新闻当方向性 alpha。",
+  "news": "近端公开新闻标题: FalcoTrader Announces Expanded Stock Trading Capabilities Across Its Simulated Trading Challenge Platform(GlobeNewswire)；Market Chatter: SpaceX, Tesla Directors Named to Committee to Oversee Possible Merger(MT Newswires)；Tesla Stock Is on Track for Only Its 3rd Losing Year Since Its 2010 IPO. Here's What Happened After the Other 2.(Motley Fool)。标题只作事件线索，未把新闻当方向性 alpha。",
   "risks": "风险: 技术评分同质化、财报/宏观事件窗口、估值回撤、行业 beta 与流动性冲击；本文仅信息参考，非投资建议。",
-  "view": "中性: TD9 下行5；52周位置 距高 -30.7%、24分位；SuperTrend(10,3) 空头·约 12 个交易日前翻转；缠论近似: 当前下行笔，接近中枢下沿，有背驰迹象。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
+  "view": "看多: TD9 上行1；52周位置 距高 -22.7%、44分位；SuperTrend(10,3) 空头·约 13 个交易日前翻转；缠论近似: 当前震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰。 规则化技术面只适合作为观察清单；需要结合后续财报与事件风险复核。",
   "sources": [
     {
       "title": "Yahoo Finance chart: TSLA",
@@ -19,19 +19,19 @@
       "url": "https://finance.yahoo.com/quote/TSLA/news/"
     },
     {
-      "title": "MKBHD Says He Will Honor Tesla Cybercab’s 2024 Bet, Elon Musk Says ‘Fair Enough’: ‘I Will Accept Delivery…’",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/mkbhd-says-honor-tesla-cybercab-061400552.html"
+      "title": "FalcoTrader Announces Expanded Stock Trading Capabilities Across Its Simulated Trading Challenge Platform",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/falcotrader-announces-expanded-stock-trading-094700625.html"
     },
     {
-      "title": "In 2000, Elon Musk Crashed His Uninsured $1 Million McLaren Trying to Show Peter Thiel What It Could Do. In 2025, Thiel’s Fund Quietly Sold Every Tesla Share It Owned",
-      "url": "https://finance.yahoo.com/markets/stocks/articles/2000-elon-musk-crashed-uninsured-015202939.html"
+      "title": "Market Chatter: SpaceX, Tesla Directors Named to Committee to Oversee Possible Merger",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/market-chatter-spacex-tesla-directors-092518199.html"
     }
   ],
   "methodology": {
-    "td9": "下行5",
-    "week52": "距高 -30.7% · 24分位",
-    "supertrend": "空头·约 12 个交易日前翻转",
-    "chan": "下行笔，接近中枢下沿，有背驰迹象",
-    "rs": 25
+    "td9": "上行1",
+    "week52": "距高 -22.7% · 44分位",
+    "supertrend": "空头·约 13 个交易日前翻转",
+    "chan": "震荡笔，位于中枢内部，暂未见明显 MACD 面积背驰",
+    "rs": 45
   }
 }
